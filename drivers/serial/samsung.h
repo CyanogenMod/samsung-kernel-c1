@@ -24,6 +24,7 @@ struct s3c24xx_uart_info {
 	/* uart port features */
 
 	unsigned int		has_divslot:1;
+	unsigned int		has_fracval:1;
 
 	/* clock source control */
 
