@@ -14,6 +14,16 @@
 #include <plat/devs.h>
 #include <plat/regs-serial.h>
 
+#ifdef CONFIG_S5PV310_FPGA
+static struct s3c24xx_uart_clksrc s5pv310_serial_clocks[] = {
+	[0] = {
+		.name		= "xtal",
+		.divisor	= 1,
+		.min_baud	= 0,
+		.max_baud	= 0,
+	},
+};
+#else
 static struct s3c24xx_uart_clksrc s5pv310_serial_clocks[] = {
 	[0] = {
 		.name		= "uclk1",
@@ -22,6 +32,7 @@ static struct s3c24xx_uart_clksrc s5pv310_serial_clocks[] = {
 		.max_baud	= 0,
 	},
 };
+#endif
 
 /* uart registration process */
 void __init s5pv310_common_init_uarts(struct s3c2410_uartcfg *cfg, int no)

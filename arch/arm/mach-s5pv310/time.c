@@ -179,7 +179,7 @@ static void __init s5pv310_clockevent_init(void)
 	pclk = clk_get_rate(timerclk);
 
 	/* configure clock tick */
-
+#ifndef CONFIG_S5PV310_FPGA
 	tscaler = clk_get_parent(tdiv4);
 
 	clk_set_rate(tscaler, pclk / 2);
@@ -187,7 +187,9 @@ static void __init s5pv310_clockevent_init(void)
 	clk_set_parent(tin4, tdiv4);
 
 	clock_rate = clk_get_rate(tin4);
-
+#else
+	clock_rate = pclk / 2;
+#endif
 	clock_count_per_tick = clock_rate / HZ;
 
 	pwm_event_device.mult =
@@ -224,10 +226,14 @@ static void __init s5pv310_clocksource_init(void)
 
 	pclk = clk_get_rate(timerclk);
 
+#ifndef CONFIG_S5PV310_FPGA
 	clk_set_rate(tdiv2, pclk / 2);
 	clk_set_parent(tin2, tdiv2);
 
 	clock_rate = clk_get_rate(tin2);
+#else
+	clock_rate = pclk / 2;
+#endif
 
 	pwm_clocksource.mult =
 		clocksource_khz2mult(clock_rate/1000, pwm_clocksource.shift);
@@ -241,6 +247,7 @@ static void __init s5pv310_clocksource_init(void)
 
 static void __init s5pv310_timer_resources(void)
 {
+#ifndef CONFIG_S5PV310_FPGA
 	struct platform_device tmpdev;
 
 	tmpdev.dev.bus = &platform_bus_type;
@@ -271,6 +278,9 @@ static void __init s5pv310_timer_resources(void)
 		panic("failed to get pwm-tdiv4 clock for system timer");
 
 	clk_enable(tin4);
+#else
+	timerclk = clk_get(NULL, "xtal");
+#endif
 }
 
 static void __init s5pv310_timer_init(void)

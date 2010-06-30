@@ -65,7 +65,11 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.init		= s5pv210_init,
 		.name		= name_s5pv210,
 	}, {
+#ifdef CONFIG_S5PV310_FPGA
+		.idcode		= 0x00000000,
+#else
 		.idcode		= 0x43200000,
+#endif
 		.idmask		= 0xfffff000,
 		.map_io		= s5pv310_map_io,
 		.init_clocks	= s5pv310_init_clocks,

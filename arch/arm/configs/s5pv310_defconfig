@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35-rc3
-# Wed Jun 30 16:51:28 2010
+# Wed Jun 30 20:26:22 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -263,6 +263,7 @@ CONFIG_S3C_GPIO_TRACK=y
 CONFIG_PLAT_S5P=y
 CONFIG_CPU_S5PV310=y
 CONFIG_MACH_SMDKV310=y
+CONFIG_S5PV310_FPGA=y
 
 #
 # Processor Type
@@ -355,7 +356,7 @@ CONFIG_ALIGNMENT_TRAP=y
 #
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc"
+CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
 # CONFIG_CMDLINE_FORCE is not set
 # CONFIG_XIP_KERNEL is not set
 # CONFIG_KEXEC is not set

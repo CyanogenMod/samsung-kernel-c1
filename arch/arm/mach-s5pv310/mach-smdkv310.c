@@ -70,7 +70,13 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 static void __init smdkv310_map_io(void)
 {
 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
+
+#ifdef CONFIG_S5PV310_FPGA
+	s3c24xx_init_clocks(10000000);
+#else
 	s3c24xx_init_clocks(24000000);
+#endif
+
 	s3c24xx_init_uarts(smdkv310_uartcfgs, ARRAY_SIZE(smdkv310_uartcfgs));
 }
 

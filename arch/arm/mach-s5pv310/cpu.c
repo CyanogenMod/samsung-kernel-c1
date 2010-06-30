@@ -46,6 +46,14 @@ static struct map_desc s5pv310_iodesc[] __initdata = {
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	},
+#ifdef CONFIG_S5PV310_FPGA
+	{
+		.virtual	= (unsigned long)S5P_VA_TEMP,
+		.pfn		= __phys_to_pfn(0x00001000),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	},
+#endif
 };
 
 static void s5pv310_idle(void)
@@ -70,9 +78,12 @@ void __init s5pv310_init_clocks(int xtal)
 	printk(KERN_DEBUG "%s: initializing clocks\n", __func__);
 
 	s3c24xx_register_baseclocks(xtal);
+
+#ifndef CONFIG_S5PV310_FPGA
 	s5p_register_clocks(xtal);
 	s5pv310_register_clocks();
 	s5pv310_setup_clocks();
+#endif
 }
 
 void __init s5pv310_init_irq(void)

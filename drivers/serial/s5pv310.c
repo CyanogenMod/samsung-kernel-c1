@@ -32,7 +32,11 @@ static int s5pv310_serial_getsource(struct uart_port *port,
 {
 	/* for s5pv310, serial clock source is only uclk1 */
 	clk->divisor = 1;
+#ifdef CONFIG_S5PV310_FPGA
+	clk->name = "xtal";
+#else
 	clk->name = "uclk1";
+#endif
 	return 0;
 };
 

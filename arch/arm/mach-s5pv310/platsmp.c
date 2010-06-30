@@ -138,8 +138,11 @@ static void __init poke_milo(void)
 	 * register. The BootMonitor waits for this register to become
 	 * non-zero.
 	 */
+#ifndef CONFIG_S5PV310_FPGA
 	__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)), S5P_INFORM0);
-
+#else
+        __raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)), S5P_VA_TEMP + 0x8);
+#endif
 	mb();
 }
 

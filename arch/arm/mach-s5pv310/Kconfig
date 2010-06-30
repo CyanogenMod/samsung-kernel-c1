@@ -23,4 +23,9 @@ config MACH_SMDKV310
 	select ARCH_SPARSEMEM_ENABLE
 	help
 	  Machine support for Samsung SMDKV310
+
+config S5PV310_FPGA
+	bool "FPGA"
 endif
+
+
