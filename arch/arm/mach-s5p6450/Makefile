@@ -12,7 +12,7 @@ obj-				:=
 
 # Core support for S5P6450 system
 
-obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o
+obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o dma.o
 obj-$(CONFIG_CPU_S5P6450)	+= setup-i2c0.o gpio.o
 
 # machine support
