@@ -8,7 +8,10 @@
  * published by the Free Software Foundation.
 */
 
+#include <linux/platform_device.h>
 #include <linux/serial_core.h>
+#include <linux/smsc911x.h>
+#include <linux/irq.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
@@ -20,6 +23,7 @@
 #include <plat/s5pv310.h>
 #include <plat/cpu.h>
 
+#include <mach/irqs.h>
 #include <mach/map.h>
 #include <mach/regs-mem.h>
 
@@ -70,6 +74,30 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	},
 };
 
+static struct resource smdkv310_smsc911x_resources[] = {
+	[0] = {
+		.start = S5PV310_PA_SROM3,
+		.end   = S5PV310_PA_SROM3 + SZ_64K - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = EINT_NUMBER(5),
+		.end   = EINT_NUMBER(5),
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device smdkv310_smsc911x = {
+	.name          = "smc911x",
+	.id            = -1,
+	.num_resources = ARRAY_SIZE(smdkv310_smsc911x_resources),
+	.resource      = &smdkv310_smsc911x_resources,
+};
+
+static struct platform_device *smdkv310_devices[] __initdata = {
+	&smdkv310_smsc911x,
+};
+
 static void __init sromc_setup(void)
 {
 	u32 tmp;
@@ -109,6 +137,7 @@ static void __init smdkv310_machine_init(void)
 #ifdef CONFIG_CACHE_L2X0
 	l2x0_init(S5P_VA_L2CC, 1 << 28, 0xffffffff);
 #endif
+	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
 }
 
 MACHINE_START(SMDKV310, "SMDKV310")

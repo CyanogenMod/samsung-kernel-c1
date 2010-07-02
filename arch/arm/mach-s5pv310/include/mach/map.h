@@ -20,6 +20,8 @@
 
 #include <plat/map-s5p.h>
 
+#define S5PV310_PA_SROM3		(0x07000000)
+
 #define S5PV310_PA_CHIPID		(0x10000000)
 #define S5P_PA_CHIPID			S5PV310_PA_CHIPID
 
