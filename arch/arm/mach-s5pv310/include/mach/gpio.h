@@ -18,7 +18,7 @@
 #define gpio_cansleep	__gpio_cansleep
 #define gpio_to_irq	__gpio_to_irq
 
-/* Practically, GPIO banks upto GPZ are the configurable gpio banks */
+/* Practically, GPIO banks upto MP03 are the configurable gpio banks */
 
 /* GPIO bank sizes */
 #define S5PV310_GPIO_A0_NR	(8)
@@ -51,6 +51,10 @@
 #define S5PV310_GPIO_X2_NR	(8)
 #define S5PV310_GPIO_X3_NR	(8)
 #define S5PV310_GPIO_Z_NR	(7)
+
+#define S5PV310_GPIO_MP00_NR	(6)
+#define S5PV310_GPIO_MP01_NR	(4)
+#define S5PV310_GPIO_MP02_NR	(6)
 
 /* GPIO bank numbers */
 
@@ -88,6 +92,9 @@ enum s5p_gpio_number {
 	S5PV310_GPIO_X2_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_X1),
 	S5PV310_GPIO_X3_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_X2),
 	S5PV310_GPIO_Z_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_X3),
+	S5PV310_GPIO_MP00_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_Z),
+	S5PV310_GPIO_MP01_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_MP00),
+	S5PV310_GPIO_MP02_START	= S5PV310_GPIO_NEXT(S5PV310_GPIO_MP01),
 };
 
 /* S5PV310 GPIO number definitions */
@@ -121,13 +128,16 @@ enum s5p_gpio_number {
 #define S5PV310_GPX2(_nr)	(S5PV310_GPIO_X2_START + (_nr))
 #define S5PV310_GPX3(_nr)	(S5PV310_GPIO_X3_START + (_nr))
 #define S5PV310_GPZ(_nr)	(S5PV310_GPIO_Z_START + (_nr))
+#define S5PV310_MP00(_nr)	(S5PV310_GPIO_MP00_START + (_nr))
+#define S5PV310_MP01(_nr)	(S5PV310_GPIO_MP01_START + (_nr))
+#define S5PV310_MP02(_nr)	(S5PV310_GPIO_MP02_START + (_nr))
 
-/* the end of the S5PV310 specific gpios */
-#define S5PV310_GPIO_END	(S5PV310_GPZ(S5PV310_GPIO_Z_NR) + 1)
+/* the end of the S5PC210 specific gpios */
+#define S5PV310_GPIO_END	(S5PV310_MP02(S5PV310_GPIO_MP02_NR) + 1)
 #define S3C_GPIO_END		S5PV310_GPIO_END
 
-/* define the number of gpios we need to the one after the GPZ() range */
-#define ARCH_NR_GPIOS		(S5PV310_GPZ(S5PV310_GPIO_Z_NR) +	\
+/* define the number of gpios we need to the one after the MP03() range */
+#define ARCH_NR_GPIOS		(S5PV310_MP02(S5PV310_GPIO_MP02_NR) +	\
 				 CONFIG_SAMSUNG_GPIO_EXTRA + 1)
 
 #include <asm-generic/gpio.h>
