@@ -14,11 +14,14 @@
 #include <asm/mach-types.h>
 #include <asm/hardware/cache-l2x0.h>
 
+#include <asm/mach/map.h>
+
 #include <plat/regs-serial.h>
 #include <plat/s5pv310.h>
 #include <plat/cpu.h>
 
 #include <mach/map.h>
+#include <mach/regs-mem.h>
 
 extern struct sys_timer s5pv310_timer;
 
@@ -67,6 +70,26 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	},
 };
 
+static void __init sromc_setup(void)
+{
+	u32 tmp;
+
+	tmp = __raw_readl(S5P_SROM_BW);
+	tmp &= ~ ((0xf) << 12);
+	tmp |= (S5P_SROM_BYTE_EN(3) | S5P_SROM_16WIDTH(3));
+	__raw_writel(tmp, S5P_SROM_BW);
+
+	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
+	tmp &= ~(0xfff000);
+	tmp |= 0x222000;
+	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
+
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1a0));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1c0));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1e0));
+}
+
 static void __init smdkv310_map_io(void)
 {
 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
@@ -82,6 +105,7 @@ static void __init smdkv310_map_io(void)
 
 static void __init smdkv310_machine_init(void)
 {
+	sromc_setup();
 #ifdef CONFIG_CACHE_L2X0
 	l2x0_init(S5P_VA_L2CC, 1 << 28, 0xffffffff);
 #endif
