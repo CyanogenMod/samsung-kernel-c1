@@ -12,7 +12,7 @@ obj-				:=
 
 # Core support for S5PV310 system
 obj-$(CONFIG_CPU_S5PV310)	+= cpu.o init.o clock.o irq-combiner.o gpiolib.o
-obj-$(CONFIG_CPU_S5PV310)       += setup-i2c0.o time.o dma.o
+obj-$(CONFIG_CPU_S5PV310)       += setup-i2c0.o time.o dma.o irq-eint.o
 
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
 obj-$(CONFIG_LOCAL_TIMERS)	+= localtimer.o
