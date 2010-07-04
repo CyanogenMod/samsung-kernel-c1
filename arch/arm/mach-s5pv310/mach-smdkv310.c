@@ -108,8 +108,8 @@ static void __init sromc_setup(void)
 	__raw_writel(tmp, S5P_SROM_BW);
 
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
-	tmp &= ~(0xfff000);
-	tmp |= 0x222000;
+	tmp &= ~(0xffffff);
+	tmp |= 0x222222;
 	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
 
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));
