@@ -98,6 +98,9 @@ static struct platform_device smdkv310_smsc911x = {
 
 static struct platform_device *smdkv310_devices[] __initdata = {
 	&smdkv310_smsc911x,
+#ifdef CONFIG_VIDEO_MFC51
+	&s5p_device_mfc,
+#endif
 };
 
 static void __init sromc_setup(void)
