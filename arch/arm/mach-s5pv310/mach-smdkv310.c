@@ -43,6 +43,8 @@ extern struct sys_timer s5pv310_timer;
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
 
+extern void s5pv310_reserve_bootmem(void);
+
 static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	[0] = {
 		.hwport		= 0,
@@ -129,6 +131,8 @@ static void __init smdkv310_map_io(void)
 #endif
 
 	s3c24xx_init_uarts(smdkv310_uartcfgs, ARRAY_SIZE(smdkv310_uartcfgs));
+
+	s5pv310_reserve_bootmem();
 }
 
 static void __init smdkv310_machine_init(void)
