@@ -60,6 +60,15 @@ static struct clksrc_clk clk_mout_epll = {
 	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 2, .size = 1 },
 };
 
+static struct clksrc_clk clk_mout_dpll = {
+	.clk    = {
+		.name           = "mout_dpll",
+		.id             = -1,
+	},
+	.sources        = &clk_src_dpll,
+	.reg_src        = { .reg = S5P_CLK_SRC0, .shift = 5, .size = 1 },
+};
+
 static int s5p6450_epll_enable(struct clk *clk, int enable)
 {
 	unsigned int ctrlbit = clk->ctrlbit;
@@ -450,7 +459,6 @@ static struct clk init_clocks[] = {
 		.name		= "timers",
 		.id		= -1,
 		.parent		= &clk_pclk_to_wdt_pwm.clk,
-//		.parent		= &clk_pclk66.clk,
 		.enable		= s5p6450_pclk_ctrl,
 		.ctrlbit	= S5P_CLKCON_PCLK_PWM,
 	},
@@ -477,6 +485,17 @@ static struct clksrc_sources clkset_uart = {
 	.nr_sources	= ARRAY_SIZE(clkset_uart_list),
 };
 
+static struct clk *clkset_mali_list[] = {
+	&clk_mout_apll.clk,
+	&clk_mout_mpll.clk,
+	&clk_mout_epll.clk,
+};
+
+static struct clksrc_sources clkset_mali = {
+	.sources	= clkset_mali_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mali_list),
+};
+
 static struct clksrc_clk clksrcs[] = {
 	{
 		.clk	= {
@@ -488,6 +507,17 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_uart,
 		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 13, .size = 1 },
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 16, .size = 4 },
+	},
+	{
+		.clk	= {
+			.name		= "aclk_mali",
+			.id		= -1,
+			.ctrlbit        = S5P_CLKCON_SCLK1_MALI,
+			.enable		= s5p6450_sclk1_ctrl,
+		},
+		.sources = &clkset_mali,
+		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 8, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 4, .size = 4 },
 	},
 };
 
@@ -517,6 +547,7 @@ void __init_or_cpufreq s5p6450_setup_clocks(void)
 	unsigned long pclk;
 	unsigned long pclk_low;
 	unsigned long epll;
+	unsigned long dpll;
 	unsigned long apll;
 	unsigned long mpll;
 	unsigned int ptr;
@@ -535,16 +566,19 @@ void __init_or_cpufreq s5p6450_setup_clocks(void)
 
 	epll = s5p_get_pll90xx(xtal, __raw_readl(S5P_EPLL_CON),
 				__raw_readl(S5P_EPLL_CON_K));
+	dpll = s5p_get_pll46xx(xtal, __raw_readl(S5P_DPLL_CON),
+				__raw_readl(S5P_DPLL_CON_K),pll_4650c);
 	mpll = s5p_get_pll45xx(xtal, __raw_readl(S5P_MPLL_CON), pll_4502);
 	apll = s5p_get_pll45xx(xtal, __raw_readl(S5P_APLL_CON), pll_4502);
 
 	clk_fout_mpll.rate = mpll;
 	clk_fout_epll.rate = epll;
+	clk_fout_dpll.rate = dpll;
 	clk_fout_apll.rate = apll;
 
 	printk(KERN_INFO "S5P6450: PLL settings, A=%ld.%ldMHz, M=%ld.%ldMHz," \
-			" E=%ld.%ldMHz\n",
-			print_mhz(apll), print_mhz(mpll), print_mhz(epll));
+			" E=%ld.%ldMHz, D=%ld.%ldMHz\n",
+			print_mhz(apll), print_mhz(mpll), print_mhz(epll), print_mhz(dpll));
 
 	fclk = clk_get_rate(&clk_armclk.clk);
 	hclk = clk_get_rate(&clk_hclk166.clk);
