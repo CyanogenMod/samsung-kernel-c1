@@ -31,4 +31,22 @@
 #include <plat/gpio-cfg.h>
 #include <plat/irqs.h>
 
-/* nothing here yet */
+static struct resource s5p_mfc_resources[] = {
+	[0] = {
+		.start	= S5P_PA_MFC,
+		.end	= S5P_PA_MFC + S5P_SZ_MFC - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_MFC,
+		.end	= IRQ_MFC,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s5p_device_mfc = {
+	.name		= "s5p-mfc",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s5p_mfc_resources),
+	.resource	= s5p_mfc_resources,
+};
