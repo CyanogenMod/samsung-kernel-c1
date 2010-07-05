@@ -52,6 +52,20 @@ static struct s3c_uart_irq uart_irqs[] = {
 		.parent_irq	= IRQ_UART3,
 	},
 #endif
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 4 
+	[4] = {
+		.regs		= S5P_VA_UART4,
+		.base_irq	= IRQ_S5P_UART_BASE4,
+		.parent_irq	= IRQ_UART4,
+	},
+#endif
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 5
+	[5] = {
+		.regs		= S5P_VA_UART5,
+		.base_irq	= IRQ_S5P_UART_BASE5,
+		.parent_irq	= IRQ_UART5,
+	},
+#endif
 };
 
 void __init s5p_init_irq(u32 *vic, u32 num_vic)

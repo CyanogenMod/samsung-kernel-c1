@@ -18,6 +18,7 @@
 #include <mach/regs-clock.h>
 #include <plat/cpu.h>
 #include <plat/s5p6440.h>
+#include <plat/s5p6450.h>
 #include <plat/s5p6442.h>
 #include <plat/s5pc100.h>
 #include <plat/s5pv210.h>
@@ -26,6 +27,7 @@
 /* table of supported CPUs */
 
 static const char name_s5p6440[] = "S5P6440";
+static const char name_s5p6450[] = "S5P6450";
 static const char name_s5p6442[] = "S5P6442";
 static const char name_s5pc100[] = "S5PC100";
 static const char name_s5pv210[] = "S5PV210/S5PC110";
@@ -41,6 +43,15 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.init		= s5p6440_init,
 		.name		= name_s5p6440,
 	}, {
+		.idcode		= 0x36450000,
+		.idmask		= 0xffffff00,
+		.map_io		= s5p6450_map_io,
+		.init_clocks	= s5p6450_init_clocks,
+		.init_uarts	= s5p6450_init_uarts,
+		.init		= s5p6450_init,
+		.name		= name_s5p6450,
+	}, {
+
 		.idcode		= 0x36442000,
 		.idmask		= 0xffffff00,
 		.map_io		= s5p6442_map_io,

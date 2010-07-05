@@ -675,6 +675,15 @@ config ARCH_S5P6440
 	help
 	  Samsung S5P6440 CPU based systems
 
+config ARCH_S5P6450
+	bool "Samsung S5P6450"
+	select CPU_V6
+	select GENERIC_GPIO
+	select HAVE_CLK
+	select ARCH_USES_GETTIMEOFFSET
+	help
+	  Samsung S5P6450 CPU based systems
+
 config ARCH_S5P6442
 	bool "Samsung S5P6442"
 	select CPU_V6
@@ -906,6 +915,8 @@ source "arch/arm/mach-s3c64xx/Kconfig"
 endif
 
 source "arch/arm/mach-s5p6440/Kconfig"
+
+source "arch/arm/mach-s5p6450/Kconfig"
 
 source "arch/arm/mach-s5p6442/Kconfig"
 
@@ -1199,7 +1210,7 @@ config HZ
 	int
 	default 128 if ARCH_L7200
 	default 200 if ARCH_EBSA110 || ARCH_S3C2410 || ARCH_S5P6440 || ARCH_S5P6442 || \
-		       ARCH_S5PV210 || ARCH_S5PV310
+		       ARCH_S5P6450 || ARCH_S5PV210 || ARCH_S5PV310
 	default OMAP_32K_TIMER_HZ if ARCH_OMAP && OMAP_32K_TIMER
 	default AT91_TIMER_HZ if ARCH_AT91
 	default 100
