@@ -273,7 +273,7 @@ struct s3c2410_uartcfg {
  * or platform_add_device() before the console_initcall()
 */
 
-extern struct platform_device *s3c24xx_uart_devs[4];
+extern struct platform_device *s3c24xx_uart_devs[CONFIG_SERIAL_SAMSUNG_UARTS];
 
 #endif /* __ASSEMBLY__ */
 

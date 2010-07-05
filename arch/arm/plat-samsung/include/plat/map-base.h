@@ -36,6 +36,7 @@
 #define S3C_VA_TIMER	S3C_ADDR(0x00300000)	/* timer block */
 #define S3C_VA_WATCHDOG	S3C_ADDR(0x00400000)	/* watchdog */
 #define S3C_VA_UART	S3C_ADDR(0x01000000)	/* UART */
+#define S3C_VA_UART5	S3C_ADDR(0x00800000)    /* UART5 */
 
 /* This is used for the CPU specific mappings that may be needed, so that
  * they do not need to directly used S3C_ADDR() and thus make it easier to

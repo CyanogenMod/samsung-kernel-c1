@@ -38,6 +38,17 @@
 #include <plat/clock.h>
 #include <plat/s5p6450.h>
 
+/* Initial IO mappings */
+
+static struct map_desc s5p6450_iodesc[] __initdata = {
+	{
+		.virtual        = (unsigned long)S3C_VA_UART5,
+		.pfn            = __phys_to_pfn(S3C_PA_UART),
+		.length         = SZ_4K,
+		.type           = MT_DEVICE,
+	},
+};
+
 static void s5p6450_idle(void)
 {
 	unsigned long val;
@@ -60,6 +71,7 @@ static void s5p6450_idle(void)
 
 void __init s5p6450_map_io(void)
 {
+	iotable_init(s5p6450_iodesc, ARRAY_SIZE(s5p6450_iodesc));
 	/* initialize any device information early */
 }
 

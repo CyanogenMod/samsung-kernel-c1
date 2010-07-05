@@ -83,6 +83,24 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 		.ulcon	     = S5P6450_ULCON_DEFAULT,
 		.ufcon	     = S5P6450_UFCON_DEFAULT,
 	},
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 4
+	[4] = {
+		.hwport	     = 4,
+		.flags	     = 0,
+		.ucon	     = S5P6450_UCON_DEFAULT,
+		.ulcon	     = S5P6450_ULCON_DEFAULT,
+		.ufcon	     = S5P6450_UFCON_DEFAULT,
+	},
+#endif
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 5 
+	[5] = {
+		.hwport	     = 5,
+		.flags	     = 0,
+		.ucon	     = S5P6450_UCON_DEFAULT,
+		.ulcon	     = S5P6450_ULCON_DEFAULT,
+		.ufcon	     = S5P6450_UFCON_DEFAULT,
+	},
+#endif
 };
 
 static struct platform_device *smdk6450_devices[] __initdata = {

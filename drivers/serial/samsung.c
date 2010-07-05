@@ -915,7 +915,6 @@ static struct s3c24xx_uart_port s3c24xx_serial_ports[CONFIG_SERIAL_SAMSUNG_UARTS
 		}
 	},
 #if CONFIG_SERIAL_SAMSUNG_UARTS > 2
-
 	[2] = {
 		.port = {
 			.lock		= __SPIN_LOCK_UNLOCKED(s3c24xx_serial_ports[2].port.lock),
@@ -941,7 +940,35 @@ static struct s3c24xx_uart_port s3c24xx_serial_ports[CONFIG_SERIAL_SAMSUNG_UARTS
 			.flags		= UPF_BOOT_AUTOCONF,
 			.line		= 3,
 		}
-	}
+	},
+#endif
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 4 
+	[4] = {
+		.port = {
+			.lock		= __SPIN_LOCK_UNLOCKED(s3c24xx_serial_ports[4].port.lock),
+			.iotype		= UPIO_MEM,
+			.irq		= IRQ_S3CUART_RX4,
+			.uartclk	= 0,
+			.fifosize	= 16,
+			.ops		= &s3c24xx_serial_ops,
+			.flags		= UPF_BOOT_AUTOCONF,
+			.line		= 4,
+		}
+	},
+#endif
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 5
+	[5] = {
+		.port = {
+			.lock		= __SPIN_LOCK_UNLOCKED(s3c24xx_serial_ports[5].port.lock),
+			.iotype		= UPIO_MEM,
+			.irq		= IRQ_S3CUART_RX5,
+			.uartclk	= 0,
+			.fifosize	= 16,
+			.ops		= &s3c24xx_serial_ops,
+			.flags		= UPF_BOOT_AUTOCONF,
+			.line		= 5,
+		}
+	},
 #endif
 };
 
