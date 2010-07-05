@@ -49,6 +49,10 @@
 
 #define S5PV310_PA_SROMC		(0x12570000)
 
+#define S5PV310_PA_MFC			(0x13400000)
+#define S5P_PA_MFC			S5PV310_PA_MFC
+#define S5P_SZ_MFC			SZ_64K
+
 #define S5PV310_PA_UART			(0x13800000)
 
 #define S5P_PA_UART(x)			(S5PV310_PA_UART + ((x) * S3C_UART_OFFSET))
