@@ -408,12 +408,6 @@ static struct clk init_clocks_disable[] = {
  */
 static struct clk init_clocks[] = {
 	{
-		.name           = "lcd",
-		.id             = -1,
-		.parent         = &clk_h,
-		.enable         = s5p6450_hclk1_ctrl,
-		.ctrlbit        = S5P_CLKCON_HCLK1_DISPCON,
-	}, {
 		.name		= "gpio",
 		.id		= -1,
 		.parent		= &clk_pclk66.clk,

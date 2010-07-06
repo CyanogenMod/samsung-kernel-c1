@@ -35,7 +35,6 @@
 #define S3C_VA_MEM	S3C_ADDR(0x00200000)	/* memory control */
 #define S3C_VA_TIMER	S3C_ADDR(0x00300000)	/* timer block */
 #define S3C_VA_WATCHDOG	S3C_ADDR(0x00400000)	/* watchdog */
-#define S3C_VA_LCD      S3C_ADDR(0x00600000)    /* LCD */
 #define S3C_VA_UART	S3C_ADDR(0x01000000)	/* UART */
 #define S3C_VA_UART5	S3C_ADDR(0x00800000)    /* UART5 */
 

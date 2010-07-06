@@ -78,10 +78,6 @@
 
 #define S5P6450_PA_ADC		(0xF3000000)
 
-/* LCD */
-#define S5P6450_PA_LCD	   	(0xEE000000)
-#define S5P6450_SZ_LCD		SZ_1M
-
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5P6450_PA_UART
 #define S3C_PA_IIC		S5P6450_PA_IIC0

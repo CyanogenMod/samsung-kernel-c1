@@ -41,8 +41,6 @@
 #include <plat/adc.h>
 #include <plat/ts.h>
 
-#include <plat/fb.h>
-
 #define S5P6450_UCON_DEFAULT    (S3C2410_UCON_TXILEVEL |	\
 				S3C2410_UCON_RXILEVEL |		\
 				S3C2410_UCON_TXIRQMODE |	\
@@ -106,7 +104,6 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 };
 
 static struct platform_device *smdk6450_devices[] __initdata = {
-	&s3c_device_fb,
 };
 
 static void __init smdk6450_map_io(void)
@@ -120,7 +117,6 @@ static void __init smdk6450_map_io(void)
 
 static void __init smdk6450_machine_init(void)
 {
-	s3cfb_set_platdata(NULL);
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 
