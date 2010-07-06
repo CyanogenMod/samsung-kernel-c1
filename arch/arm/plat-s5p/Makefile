@@ -19,4 +19,5 @@ obj-y				+= devs.o
 obj-y				+= irq.o
 obj-y				+= bootmem.o
 obj-$(CONFIG_S5P_EXT_INT)	+= irq-eint.o
-
+obj-y				+= dev-fb.o
+obj-y				+= setup-fb.o
