@@ -14,6 +14,8 @@ obj-				:=
 
 obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o dma.o
 obj-$(CONFIG_CPU_S5P6450)	+= setup-i2c0.o gpio.o
+obj-y				+= dev-fb.o
+obj-y				+= setup-fb.o
 
 # machine support
 
