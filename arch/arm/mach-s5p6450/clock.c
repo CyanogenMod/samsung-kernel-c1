@@ -467,6 +467,18 @@ static struct clk init_clocks[] = {
 		.parent		= &clk_pclk_to_wdt_pwm.clk,
 		.enable		= s5p6450_pclk_ctrl,
 		.ctrlbit	= S5P_CLKCON_PCLK_PWM,
+	}, {
+		.name           = "i2c",
+		.id             = 0,
+		.parent         = &clk_pclk66.clk,
+		.enable         = s5p6450_pclk_ctrl,
+		.ctrlbit        = S5P_CLKCON_PCLK_IIC0,
+	}, {
+		.name           = "i2c",
+		.id             = 1,
+		.parent         = &clk_pclk66.clk,
+		.enable         = s5p6450_pclk_ctrl,
+		.ctrlbit        = S5P_CLKCON_PCLK_IIC1,
 	},
 };
 
@@ -492,9 +504,9 @@ static struct clksrc_sources clkset_uart = {
 };
 
 static struct clk *clkset_mali_list[] = {
+	&clk_mout_epll.clk,
 	&clk_mout_apll.clk,
 	&clk_mout_mpll.clk,
-	&clk_mout_epll.clk,
 };
 
 static struct clksrc_sources clkset_mali = {
@@ -513,8 +525,7 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_uart,
 		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 13, .size = 1 },
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 16, .size = 4 },
-	},
-	{
+	}, {
 		.clk	= {
 			.name		= "aclk_mali",
 			.id		= -1,
@@ -524,6 +535,16 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_mali,
 		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 8, .size = 2 },
 		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 4, .size = 4 },
+	}, {
+		.clk	= {
+			.name		= "sclk_2d",
+			.id		= -1,
+			.ctrlbit        = S5P_CLKCON_SCLK0_2D,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_mali,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 30, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 20, .size = 4 },
 	},
 };
 
