@@ -99,8 +99,13 @@ static struct platform_device smdkv310_smsc911x = {
 
 static struct platform_device *smdkv310_devices[] __initdata = {
 	&smdkv310_smsc911x,
+
 #ifdef CONFIG_VIDEO_MFC51
 	&s5p_device_mfc,
+#endif
+
+#ifdef CONFIG_S3C_DEV_RTC
+	&s3c_device_rtc,
 #endif
 };
 
