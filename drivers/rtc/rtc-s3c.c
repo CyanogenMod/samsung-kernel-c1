@@ -53,6 +53,10 @@ static irqreturn_t s3c_rtc_alarmirq(int irq, void *id)
 	struct rtc_device *rdev = id;
 
 	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
+
+	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+		writeb(S3C64XX_INTP_ALM, s3c_rtc_base + S3C64XX_INTP);
+
 	return IRQ_HANDLED;
 }
 
@@ -61,6 +65,10 @@ static irqreturn_t s3c_rtc_tickirq(int irq, void *id)
 	struct rtc_device *rdev = id;
 
 	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
+
+	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+		writeb(S3C64XX_INTP_TIC, s3c_rtc_base + S3C64XX_INTP);
+
 	return IRQ_HANDLED;
 }
 
@@ -88,7 +96,7 @@ static int s3c_rtc_setpie(struct device *dev, int enabled)
 	spin_lock_irq(&s3c_rtc_pie_lock);
 
 	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
-		tmp = readb(s3c_rtc_base + S3C2410_RTCCON);
+		tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
 		tmp &= ~S3C64XX_RTCCON_TICEN;
 
 		if (enabled)
@@ -96,7 +104,7 @@ static int s3c_rtc_setpie(struct device *dev, int enabled)
 
 		writeb(tmp, s3c_rtc_base + S3C2410_RTCCON);
 	} else {
-		tmp = readb(s3c_rtc_base + S3C2410_TICNT);
+		tmp = readw(s3c_rtc_base + S3C2410_TICNT);
 		tmp &= ~S3C2410_TICNT_ENABLE;
 
 		if (enabled)
@@ -128,7 +136,7 @@ static int s3c_rtc_setfreq(struct device *dev, int freq)
 
 	tmp |= (rtc_dev->max_user_freq / freq)-1;
 
-	writeb(tmp, s3c_rtc_base + S3C2410_TICNT);
+	writel(tmp, s3c_rtc_base + S3C2410_TICNT);
 	spin_unlock_irq(&s3c_rtc_pie_lock);
 
 	return 0;
@@ -160,8 +168,8 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
 	}
 
 	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
-		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
-		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
+		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec,
+		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday);
 
 	rtc_tm->tm_sec = bcd2bin(rtc_tm->tm_sec);
 	rtc_tm->tm_min = bcd2bin(rtc_tm->tm_min);
@@ -221,8 +229,8 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
 		 alm_en,
-		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
-		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
+		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec,
+		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday);
 
 
 	/* decode the alarm enable field */
@@ -311,7 +319,7 @@ static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
 	unsigned int ticnt;
 
 	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
-		ticnt = readb(s3c_rtc_base + S3C2410_RTCCON);
+		ticnt = readw(s3c_rtc_base + S3C2410_RTCCON);
 		ticnt &= S3C64XX_RTCCON_TICEN;
 	} else {
 		ticnt = readb(s3c_rtc_base + S3C2410_TICNT);
@@ -373,6 +381,7 @@ static const struct rtc_class_ops s3c_rtcops = {
 	.irq_set_freq	= s3c_rtc_setfreq,
 	.irq_set_state	= s3c_rtc_setpie,
 	.proc	        = s3c_rtc_proc,
+	.alarm_irq_enable = s3c_rtc_setaie,
 };
 
 static void s3c_rtc_enable(struct platform_device *pdev, int en)
@@ -384,11 +393,12 @@ static void s3c_rtc_enable(struct platform_device *pdev, int en)
 		return;
 
 	if (!en) {
-		tmp = readb(base + S3C2410_RTCCON);
-		if (s3c_rtc_cpu_type == TYPE_S3C64XX)
+		tmp = readw(base + S3C2410_RTCCON);
+		if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
 			tmp &= ~S3C64XX_RTCCON_TICEN;
-		tmp &= ~S3C2410_RTCCON_RTCEN;
-		writeb(tmp, base + S3C2410_RTCCON);
+			tmp &= ~S3C2410_RTCCON_RTCEN;
+			writew(tmp, base + S3C2410_RTCCON);
+		}
 
 		if (s3c_rtc_cpu_type == TYPE_S3C2410) {
 			tmp = readb(base + S3C2410_TICNT);
@@ -488,13 +498,6 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 		goto err_nomap;
 	}
 
-	/* check to see if everything is setup correctly */
-
-	s3c_rtc_enable(pdev, 1);
-
- 	pr_debug("s3c2410_rtc: RTCCON=%02x\n",
-		 readb(s3c_rtc_base + S3C2410_RTCCON));
-
 	device_init_wakeup(&pdev->dev, 1);
 
 	/* register RTC and exit */
@@ -517,12 +520,16 @@ static int __devinit s3c_rtc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, rtc);
 
+	s3c_rtc_enable(pdev, 1);
+
+	pr_debug("s3c2410_rtc: RTCCON=%02x\n",
+		 readb(s3c_rtc_base + S3C2410_RTCCON));
+
 	s3c_rtc_setfreq(&pdev->dev, 1);
 
 	return 0;
 
  err_nortc:
-	s3c_rtc_enable(pdev, 0);
 	iounmap(s3c_rtc_base);
 
  err_nomap:

@@ -28,6 +28,8 @@
 #define S5PV310_PA_SYSCON		(0x10020000)
 #define S5P_PA_SYSCON			S5PV310_PA_SYSCON
 
+#define S5PV310_PA_RTC			(0x10070000)
+
 #define S5PV310_PA_COMBINER		(0x10448000)
 
 #define S5PV310_PA_COREPERI		(0x10500000)
@@ -75,5 +77,6 @@
 /* compatibiltiy defines. */
 #define S3C_PA_UART			S5PV310_PA_UART
 #define S3C_PA_IIC			S5PV310_PA_IIC0
+#define	S3C_PA_RTC			S5PV310_PA_RTC
 
 #endif /* __ASM_ARCH_MAP_H */
