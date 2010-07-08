@@ -514,6 +514,17 @@ static struct clksrc_sources clkset_mali = {
 	.nr_sources	= ARRAY_SIZE(clkset_mali_list),
 };
 
+static struct clk *clkset_group2_list[] = {
+	&clk_dout_epll.clk,
+	&clk_dout_mpll.clk,
+	&clk_ext_xtal_mux,
+};
+
+static struct clksrc_sources clkset_group2 = {
+	.sources	= clkset_group2_list,
+	.nr_sources	= ARRAY_SIZE(clkset_group2_list),
+};
+
 static struct clksrc_clk clksrcs[] = {
 	{
 		.clk	= {
@@ -545,6 +556,68 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_mali,
 		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 30, .size = 2 },
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 20, .size = 4 },
+	}, {
+		.clk	= {
+			.name		= "sclk_fimc",
+			.id		= 0,
+			.ctrlbit	= S5P_CLKCON_SCLK0_FIMC,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 26, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 12, .size = 4 },
+	}, {
+
+		.clk		= {
+			.name		= "sclk_spi",
+			.id		= 0,
+			.ctrlbit	= S5P_CLKCON_SCLK0_SPI0,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 14, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_spi",
+			.id		= 1,
+			.ctrlbit	= S5P_CLKCON_SCLK0_SPI1,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 16, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 4, .size = 4 },
+	}, {
+
+		.clk		= {
+			.name		= "sclk_mmc",
+			.id		= 0,
+			.ctrlbit	= S5P_CLKCON_SCLK0_MMC0,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 18, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_mmc",
+			.id		= 1,
+			.ctrlbit	= S5P_CLKCON_SCLK0_MMC1,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 20, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 4, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_mmc",
+			.id		= 2,
+			.ctrlbit	= S5P_CLKCON_SCLK0_MMC2,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 22, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 8, .size = 4 },
 	},
 };
 
