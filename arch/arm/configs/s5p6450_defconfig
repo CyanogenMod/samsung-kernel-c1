@@ -359,7 +359,7 @@ CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x20800000,8M console=ttyS
 CONFIG_FPE_NWFPE=y
 # CONFIG_FPE_NWFPE_XP is not set
 # CONFIG_FPE_FASTFPE is not set
-# CONFIG_VFP is not set
+CONFIG_VFP=y
 
 #
 # Userspace binary formats
