@@ -525,6 +525,31 @@ static struct clksrc_sources clkset_group2 = {
 	.nr_sources	= ARRAY_SIZE(clkset_group2_list),
 };
 
+static struct clk *clkset_dispcon_list[] = {
+	&clk_dout_epll.clk,
+	&clk_dout_mpll.clk,
+	&clk_ext_xtal_mux,
+	&clk_mout_dpll,
+};
+
+static struct clksrc_sources clkset_dispcon = {
+	.sources	= clkset_dispcon_list,
+	.nr_sources	= ARRAY_SIZE(clkset_dispcon_list),
+};
+
+static struct clk *clkset_hsmmc44_list[] = {
+	&clk_dout_epll.clk,
+	&clk_dout_mpll.clk,
+	&clk_ext_xtal_mux,
+	&s5p_clk_27m,
+	&clk_48m,
+};
+
+static struct clksrc_sources clkset_hsmmc44 = {
+	.sources	= clkset_hsmmc44_list,
+	.nr_sources	= ARRAY_SIZE(clkset_hsmmc44_list),
+};
+
 static struct clksrc_clk clksrcs[] = {
 	{
 		.clk	= {
@@ -558,8 +583,38 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 20, .size = 4 },
 	}, {
 		.clk	= {
+			.name		= "sclk_usi",
+			.id		= -1,
+			.ctrlbit	= S5P_CLKCON_SCLK0_USI,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 10, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 16, .size = 4 },
+	}, {
+			.clk	= {
+			.name		= "sclk_camif",
+			.id		= -1,
+			.ctrlbit	= S5P_CLKCON_SCLK0_CAMIF,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_group2,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 28, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 20, .size = 4 },
+	}, {
+			.clk	= {
+			.name		= "sclk_dispcon",
+			.id		= -1,
+			.ctrlbit	= S5P_CLKCON_SCLK1_DISPCON,
+			.enable		= s5p6450_sclk1_ctrl,
+		},
+		.sources = &clkset_dispcon,
+		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 4, .size = 2 },
+		.reg_div = { .reg = S5P_CLK_DIV3, .shift = 0, .size = 4 },
+	}, {
+		.clk	= {
 			.name		= "sclk_fimc",
-			.id		= 0,
+			.id		= -1,
 			.ctrlbit	= S5P_CLKCON_SCLK0_FIMC,
 			.enable		= s5p6450_sclk_ctrl,
 		},
@@ -588,7 +643,16 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 16, .size = 2 },
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 4, .size = 4 },
 	}, {
-
+			.clk		= {
+			.name		= "sclk_hsmmc44",
+			.id		= -1,
+			.ctrlbit	= S5P_CLKCON_SCLK0_MMC44,
+			.enable		= s5p6450_sclk_ctrl,
+		},
+		.sources = &clkset_hsmmc44,
+		.reg_src = { .reg = S5P_CLK_SRC0, .shift = 6, .size = 3 },
+		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 28, .size = 4 },
+	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 0,
