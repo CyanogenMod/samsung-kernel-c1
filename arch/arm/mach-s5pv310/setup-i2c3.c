@@ -1,9 +1,9 @@
-/* linux/arch/arm/mach-s5pv310/setup-i2c0.c
+/* linux/arch/arm/mach-s5pv310/setup-i2c3.c
  *
  * Copyright (c) 2009-2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * I2C0 GPIO configuration.
+ * I2C3 GPIO configuration.
  *
  * Based on plat-s3c64xx/setup-i2c0.c
  *
@@ -21,10 +21,10 @@ struct platform_device; /* don't need the contents */
 #include <plat/iic.h>
 #include <plat/gpio-cfg.h>
 
-void s3c_i2c0_cfg_gpio(struct platform_device *dev)
+void s3c_i2c3_cfg_gpio(struct platform_device *dev)
 {
-	s3c_gpio_cfgpin(S5PV310_GPD1(0), S3C_GPIO_SFN(2));
-	s3c_gpio_setpull(S5PV310_GPD1(0), S3C_GPIO_PULL_UP);
-	s3c_gpio_cfgpin(S5PV310_GPD1(1), S3C_GPIO_SFN(2));
-	s3c_gpio_setpull(S5PV310_GPD1(1), S3C_GPIO_PULL_UP);
+	s3c_gpio_cfgpin(S5PV310_GPA1(2), S3C_GPIO_SFN(3));
+	s3c_gpio_setpull(S5PV310_GPA1(2), S3C_GPIO_PULL_UP);
+	s3c_gpio_cfgpin(S5PV310_GPA1(3), S3C_GPIO_SFN(3));
+	s3c_gpio_setpull(S5PV310_GPA1(3), S3C_GPIO_PULL_UP);
 }
