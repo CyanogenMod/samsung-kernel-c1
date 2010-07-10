@@ -96,60 +96,6 @@ static struct clksrc_clk clk_armclk = {
 	},
 };
 
-static struct clksrc_clk clk_aclk_corem0 = {
-	.clk	= {
-		.name		= "aclk_corem0",
-		.id		= -1,
-		.parent		= &clk_coreclk.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 4, .size = 3 },
-};
-
-static struct clksrc_clk clk_aclk_cores = {
-	.clk	= {
-		.name		= "aclk_cores",
-		.id		= -1,
-		.parent		= &clk_coreclk.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 4, .size = 3 },
-};
-
-static struct clksrc_clk clk_aclk_corem1 = {
-	.clk	= {
-		.name		= "aclk_corem1",
-		.id		= -1,
-		.parent		= &clk_coreclk.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 8, .size = 3 },
-};
-
-static struct clksrc_clk clk_periph = {
-	.clk	= {
-		.name		= "periph",
-		.id		= -1,
-		.parent		= &clk_coreclk.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 12, .size = 3 },
-};
-
-static struct clksrc_clk clk_atbout = {
-	.clk	= {
-		.name		= "atbout",
-		.id		= -1,
-		.parent		= &clk_moutcore.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 16, .size = 3 },
-};
-
-static struct clksrc_clk clk_pclk_dbg = {
-	.clk	= {
-		.name		= "pclk_dbg",
-		.id		= -1,
-		.parent		= &clk_atbout.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 20, .size = 3 },
-};
-
 /* Core list of CMU_CORE side */
 
 static struct clk *clkset_corebus_list[] = {
@@ -180,42 +126,6 @@ static struct clksrc_clk clk_sclk_dmc = {
 	.reg_div	= { .reg = S5P_CLKDIV_CORE0, .shift = 12, .size = 3 },
 };
 
-static struct clksrc_clk clk_aclk_cored = {
-	.clk	= {
-		.name		= "aclk_cored",
-		.id		= -1,
-		.parent		= &clk_sclk_dmc.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CORE0, .shift = 16, .size = 3 },
-};
-
-static struct clksrc_clk clk_aclk_corep = {
-	.clk	= {
-		.name		= "aclk_corep",
-		.id		= -1,
-		.parent		= &clk_aclk_cored.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CORE0, .shift = 20, .size = 3 },
-};
-
-static struct clksrc_clk clk_aclk_acp = {
-	.clk	= {
-		.name		= "aclk_acp",
-		.id		= -1,
-		.parent		= &clk_mout_corebus.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CORE0, .shift = 0, .size = 3 },
-};
-
-static struct clksrc_clk clk_pclk_acp = {
-	.clk	= {
-		.name		= "pclk_acp",
-		.id		= -1,
-		.parent		= &clk_aclk_acp.clk,
-	},
-	.reg_div	= { .reg = S5P_CLKDIV_CORE0, .shift = 4, .size = 3 },
-};
-
 /* Core list of CMU_TOP side */
 
 static struct clk *clkset_aclk_top_list[] = {
@@ -223,7 +133,7 @@ static struct clk *clkset_aclk_top_list[] = {
 	[1] = &clk_mout_apll.clk,
 };
 
-static struct clksrc_sources clkset_aclk_200 = {
+static struct clksrc_sources clkset_aclk = {
 	.sources        = clkset_aclk_top_list,
 	.nr_sources     = ARRAY_SIZE(clkset_aclk_top_list),
 };
@@ -233,14 +143,9 @@ static struct clksrc_clk clk_aclk_200 = {
 		.name           = "aclk_200",
 		.id             = -1,
 	},
-	.sources        = &clkset_aclk_200,
+	.sources        = &clkset_aclk,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 12, .size = 1 },
 	.reg_div	= { .reg = S5P_CLKDIV_TOP, .shift = 0, .size = 3 },
-};
-
-static struct clksrc_sources clkset_aclk_100 = {
-	.sources        = clkset_aclk_top_list,
-	.nr_sources     = ARRAY_SIZE(clkset_aclk_top_list),
 };
 
 static struct clksrc_clk clk_aclk_100 = {
@@ -248,14 +153,9 @@ static struct clksrc_clk clk_aclk_100 = {
 		.name           = "aclk_100",
 		.id             = -1,
 	},
-	.sources        = &clkset_aclk_100,
+	.sources        = &clkset_aclk,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 16, .size = 1 },
 	.reg_div	= { .reg = S5P_CLKDIV_TOP, .shift = 4, .size = 4 },
-};
-
-static struct clksrc_sources clkset_aclk_160 = {
-	.sources        = clkset_aclk_top_list,
-	.nr_sources     = ARRAY_SIZE(clkset_aclk_top_list),
 };
 
 static struct clksrc_clk clk_aclk_160 = {
@@ -263,14 +163,9 @@ static struct clksrc_clk clk_aclk_160 = {
 		.name           = "aclk_160",
 		.id             = -1,
 	},
-	.sources        = &clkset_aclk_160,
+	.sources        = &clkset_aclk,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 20, .size = 1 },
 	.reg_div	= { .reg = S5P_CLKDIV_TOP, .shift = 8, .size = 3 },
-};
-
-static struct clksrc_sources clkset_aclk_133 = {
-	.sources        = clkset_aclk_top_list,
-	.nr_sources     = ARRAY_SIZE(clkset_aclk_top_list),
 };
 
 static struct clksrc_clk clk_aclk_133 = {
@@ -278,7 +173,7 @@ static struct clksrc_clk clk_aclk_133 = {
 		.name           = "aclk_133",
 		.id             = -1,
 	},
-	.sources        = &clkset_aclk_133,
+	.sources        = &clkset_aclk,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 24, .size = 1 },
 	.reg_div	= { .reg = S5P_CLKDIV_TOP, .shift = 12, .size = 3 },
 };
@@ -416,18 +311,8 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_moutcore,
 	&clk_coreclk,
 	&clk_armclk,
-	&clk_aclk_corem0,
-	&clk_aclk_cores,
-	&clk_aclk_corem1,
-	&clk_periph,
-	&clk_atbout,
-	&clk_pclk_dbg,
 	&clk_mout_corebus,
 	&clk_sclk_dmc,
-	&clk_aclk_cored,
-	&clk_aclk_corep,
-	&clk_aclk_acp,
-	&clk_pclk_acp,
 	&clk_vpllsrc,
 	&clk_sclk_vpll,
 	&clk_aclk_200,
@@ -446,15 +331,11 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	unsigned long vpllsrc;
 	unsigned long xtal;
 	unsigned long armclk;
-	unsigned long aclk_corem0;
-	unsigned long aclk_cores;
-	unsigned long aclk_corem1;
-	unsigned long periclk;
 	unsigned long sclk_dmc;
-	unsigned long aclk_cored;
-	unsigned long aclk_corep;
-	unsigned long aclk_acp;
-	unsigned long pclk_acp;
+	unsigned long aclk_200;
+	unsigned long aclk_100;
+	unsigned long aclk_160;
+	unsigned long pclk_133;
 	unsigned int ptr;
 
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
@@ -481,26 +362,17 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	clk_fout_epll.rate = epll;
 	clk_fout_vpll.rate = vpll;
 
-	printk(KERN_INFO "S5PV310: PLL settings, A=%ld, M=%ld, E=%ld V=%ld",
-			apll, mpll, epll, vpll);
-
 	armclk = clk_get_rate(&clk_armclk.clk);
-	aclk_corem0 = clk_get_rate(&clk_aclk_corem0.clk);
-	aclk_cores = clk_get_rate(&clk_aclk_cores.clk);
-	aclk_corem1 = clk_get_rate(&clk_aclk_corem1.clk);
-	periclk = clk_get_rate(&clk_periph.clk);
 	sclk_dmc = clk_get_rate(&clk_sclk_dmc.clk);
-	aclk_cored = clk_get_rate(&clk_aclk_cored.clk);
-	aclk_corep = clk_get_rate(&clk_aclk_corep.clk);
-	aclk_acp = clk_get_rate(&clk_aclk_acp.clk);
-	pclk_acp = clk_get_rate(&clk_pclk_acp.clk);
+	aclk_200 = clk_get_rate(&clk_aclk_200.clk);
+	aclk_100 = clk_get_rate(&clk_aclk_100.clk);
+	aclk_160 = clk_get_rate(&clk_aclk_160.clk);
+	pclk_133 = clk_get_rate(&clk_pclk_133.clk);
 
-	printk(KERN_INFO "S5PV310: ARMCLK=%ld, COREM0=%ld, CORES=%ld\n"
-			 "COREM1=%ld, PERI=%ld, DMC=%ld, CORED=%ld\n"
-			 "COREP=%ld, ACLK_ACP=%ld, PCLK_ACP=%ld",
-			armclk, aclk_corem0, aclk_cores, aclk_corem1,
-			periclk, sclk_dmc, aclk_cored, aclk_corep,
-			aclk_acp, pclk_acp);
+	printk(KERN_INFO "S5PV310: ARMCLK=%ld, DMC=%ld, ACLK200=%ld\n"
+			 "ACLK100=%ld, ACLK160=%ld, ACLK133=%ld\n",
+			  armclk, sclk_dmc, aclk_200,
+			  aclk_100,aclk_160, pclk_133);
 
 	clk_f.rate = armclk;
 	clk_h.rate = sclk_dmc;
