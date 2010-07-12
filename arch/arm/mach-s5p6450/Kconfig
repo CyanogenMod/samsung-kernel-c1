@@ -21,6 +21,7 @@ config MACH_SMDK6450
 	select S3C_DEV_HSMMC2
 	select S5P6450_SETUP_SDHCI
 	select S5P6450_SETUP_SDHCI_GPIO
+	select S3C_DEV_WDT
 	help
 	  Machine support for the Samsung SMDK6450
 

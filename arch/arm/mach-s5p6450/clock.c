@@ -401,6 +401,14 @@ static int s5p6450_mem_ctrl(struct clk *clk, int enable)
  */
 static struct clk init_clocks_disable[] = {
 /* To be implemented */
+{
+		.name		= "watchdog",
+		.id		= -1,
+		.parent		= &clk_pclk66.clk,
+		.enable		= s5p6450_pclk_ctrl,
+		.ctrlbit	= S5P_CLKCON_PCLK_WDT,
+	}, 
+
 };
 
 /*

@@ -335,7 +335,7 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	unsigned long aclk_200;
 	unsigned long aclk_100;
 	unsigned long aclk_160;
-	unsigned long pclk_133;
+	unsigned long aclk_133;
 	unsigned int ptr;
 
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
@@ -367,16 +367,16 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	aclk_200 = clk_get_rate(&clk_aclk_200.clk);
 	aclk_100 = clk_get_rate(&clk_aclk_100.clk);
 	aclk_160 = clk_get_rate(&clk_aclk_160.clk);
-	pclk_133 = clk_get_rate(&clk_pclk_133.clk);
+	aclk_133 = clk_get_rate(&clk_aclk_133.clk);
 
 	printk(KERN_INFO "S5PV310: ARMCLK=%ld, DMC=%ld, ACLK200=%ld\n"
 			 "ACLK100=%ld, ACLK160=%ld, ACLK133=%ld\n",
 			  armclk, sclk_dmc, aclk_200,
-			  aclk_100,aclk_160, pclk_133);
+			  aclk_100,aclk_160, aclk_133);
 
 	clk_f.rate = armclk;
 	clk_h.rate = sclk_dmc;
-	clk_p.rate = periclk;
+	clk_p.rate = aclk_200;
 
 	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
 		s3c_set_clksrc(&clksrcs[ptr], true);
