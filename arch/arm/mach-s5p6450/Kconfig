@@ -16,7 +16,22 @@ config CPU_S5P6450
 config MACH_SMDK6450
 	bool "SMDK6450"
 	select CPU_S5P6450
+	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC1
+	select S3C_DEV_HSMMC2
+	select S5P6450_SETUP_SDHCI
+	select S5P6450_SETUP_SDHCI_GPIO
 	help
 	  Machine support for the Samsung SMDK6450
 
+config S5P6450_SETUP_SDHCI
+	bool
+	select S5P6450_SETUP_SDHCI_GPIO
+	help
+	  Internal helper functions for S5P6450 based SDHCI systems.
+
+config S5P6450_SETUP_SDHCI_GPIO
+	bool
+	help
+	  Common setup code for SDHCI gpio.
 endif

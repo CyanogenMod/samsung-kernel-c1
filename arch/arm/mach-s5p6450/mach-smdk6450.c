@@ -40,6 +40,7 @@
 #include <plat/adc.h>
 #include <plat/ts.h>
 #include <plat/fb.h>
+#include <plat/sdhci.h>
 
 extern struct sys_timer s5p6450_timer;
 
@@ -107,6 +108,15 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 
 static struct platform_device *smdk6450_devices[] __initdata = {
 	&s3c_device_fb,
+#ifdef CONFIG_S3C_DEV_HSMMC
+	&s3c_device_hsmmc0,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	&s3c_device_hsmmc1,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	&s3c_device_hsmmc2,
+#endif
 };
 
 static void __init smdk6450_map_io(void)
@@ -121,6 +131,15 @@ static void __init smdk6450_map_io(void)
 static void __init smdk6450_machine_init(void)
 {
 	s3cfb_set_platdata(NULL);
+#ifdef CONFIG_S3C_DEV_HSMMC
+	s5p6450_default_sdhci0();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	s5p6450_default_sdhci1();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	s5p6450_default_sdhci2();
+#endif
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 

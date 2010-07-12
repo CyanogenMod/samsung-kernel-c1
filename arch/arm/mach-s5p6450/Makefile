@@ -20,3 +20,5 @@ obj-y				+= setup-fb.o
 # machine support
 
 obj-$(CONFIG_MACH_SMDK6450)	+= mach-smdk6450.o
+obj-$(CONFIG_S5P6450_SETUP_SDHCI)      += setup-sdhci.o
+obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO) += setup-sdhci-gpio.o
