@@ -10,6 +10,7 @@
 
 #include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/list.h>
 #include <linux/delay.h>
@@ -36,6 +37,7 @@
 #include <mach/regs-clock.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/iic.h>
 #include <plat/pll.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
@@ -106,6 +108,14 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 #endif
 };
 
+static struct i2c_board_info i2c_devs0[] __initdata = {
+	{ I2C_BOARD_INFO("24c08", 0x50), },/* Samsung KS24C080C EEPROM */
+};
+
+static struct i2c_board_info i2c_devs1[] __initdata = {
+	{ I2C_BOARD_INFO("24c128", 0x57), },/* Samsung S524AD0XD1 EEPROM */
+};
+
 static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
@@ -120,6 +130,8 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	&s3c_device_hsmmc2,
 #endif
+	&s3c_device_i2c0,
+	&s3c_device_i2c1,
 };
 
 static void __init smdk6450_map_io(void)
@@ -143,6 +155,12 @@ static void __init smdk6450_machine_init(void)
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	s5p6450_default_sdhci2();
 #endif
+
+	s3c_i2c0_set_platdata(NULL);
+	s3c_i2c1_set_platdata(NULL);
+	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
+	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
+
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 

@@ -35,4 +35,16 @@ config S5P6450_SETUP_SDHCI_GPIO
 	bool
 	help
 	  Common setup code for SDHCI gpio.
+
+config S5P_SETUP_I2C0
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 0.
+
+config S5P_SETUP_I2C1
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 1.
 endif
