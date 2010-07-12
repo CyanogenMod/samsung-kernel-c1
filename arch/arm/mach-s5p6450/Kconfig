@@ -16,6 +16,7 @@ config CPU_S5P6450
 config MACH_SMDK6450
 	bool "SMDK6450"
 	select CPU_S5P6450
+	select S3C_DEV_WDT
 	help
 	  Machine support for the Samsung SMDK6450
 

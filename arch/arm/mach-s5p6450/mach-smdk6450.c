@@ -104,6 +104,9 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 };
 
 static struct platform_device *smdk6450_devices[] __initdata = {
+#ifdef CONFIG_S3C2410_WATCHDOG
+	&s3c_device_wdt,
+#endif
 };
 
 static void __init smdk6450_map_io(void)
