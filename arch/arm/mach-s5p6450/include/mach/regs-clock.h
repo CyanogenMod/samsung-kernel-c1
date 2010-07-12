@@ -207,6 +207,7 @@
 
 /* SCLK1 GATE Registers */
 #define S5P_CLKCON_SCLK1_MALI		(1<<2)
+#define S5P_CLKCON_SCLK1_DISPCON	(1<<1)
 
 /* MEM0 GATE Registers */
 #define S5P_CLKCON_MEM0_HCLK_NFCON	(1<<2)

@@ -12,7 +12,6 @@
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/list.h>
-#include <linux/timer.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/serial_core.h>
@@ -40,6 +39,9 @@
 #include <plat/pll.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
+#include <plat/fb.h>
+
+extern struct sys_timer s5p6450_timer;
 
 #define S5P6450_UCON_DEFAULT    (S3C2410_UCON_TXILEVEL |	\
 				S3C2410_UCON_RXILEVEL |		\
@@ -107,6 +109,7 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
 #endif
+	&s3c_device_fb,
 };
 
 static void __init smdk6450_map_io(void)
@@ -120,6 +123,7 @@ static void __init smdk6450_map_io(void)
 
 static void __init smdk6450_machine_init(void)
 {
+	s3cfb_set_platdata(NULL);
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 
@@ -131,5 +135,5 @@ MACHINE_START(SMDK6450, "SMDK6450")
 	.init_irq	= s5p6450_init_irq,
 	.map_io		= smdk6450_map_io,
 	.init_machine	= smdk6450_machine_init,
-	.timer		= &s3c24xx_timer,
+	.timer		= &s5p6450_timer,
 MACHINE_END

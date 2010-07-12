@@ -680,7 +680,7 @@ config ARCH_S5P6450
 	select CPU_V6
 	select GENERIC_GPIO
 	select HAVE_CLK
-	select ARCH_USES_GETTIMEOFFSET
+	select GENERIC_CLOCKEVENTS
 	help
 	  Samsung S5P6450 CPU based systems
 

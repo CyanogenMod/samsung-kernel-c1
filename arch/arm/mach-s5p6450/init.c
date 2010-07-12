@@ -22,19 +22,17 @@
 
 static struct s3c24xx_uart_clksrc s5p6450_serial_clocks[] = {
 	[0] = {
-		.name		= "clk_pclk66",
+		.name		= "pclk",
 		.divisor	= 1,
 		.min_baud	= 0,
 		.max_baud	= 0,
 	},
-	/*
 	[1] = {
 		.name		= "uclk1",
 		.divisor	= 1,
 		.min_baud	= 0,
 		.max_baud	= 0,
 	},
-	*/
 };
 
 /* uart registration process */
