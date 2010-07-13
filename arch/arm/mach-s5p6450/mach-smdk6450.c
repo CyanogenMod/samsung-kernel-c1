@@ -132,6 +132,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #endif
 	&s3c_device_i2c0,
 	&s3c_device_i2c1,
+#ifdef CONFIG_S3C_DEV_RTC
+	&s3c_device_rtc,
+#endif
 };
 
 static void __init smdk6450_map_io(void)

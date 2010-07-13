@@ -10,6 +10,7 @@ if ARCH_S5P6450
 config CPU_S5P6450
 	bool
 	select S3C_PL330_DMA
+	select S3C_DEV_RTC
 	help
 	  Enable S5P6450 CPU support
 
