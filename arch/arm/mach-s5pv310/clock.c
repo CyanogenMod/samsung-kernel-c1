@@ -222,13 +222,7 @@ static int s5pv310_clk_ip_peril_ctrl(struct clk *clk, int enable)
 }
 
 static struct clk init_clocks_disable[] = {
-	{
-		.name		= "timers",
-		.id		= -1,
-		.parent		= &clk_aclk_100.clk,
-		.enable		= s5pv310_clk_ip_peril_ctrl,
-		.ctrlbit	= (1<<24),
-	}
+	/* Nothing here yet */
 };
 
 static struct clk init_clocks[] = {
@@ -348,6 +342,7 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 
 	printk(KERN_DEBUG "%s: xtal is %ld\n", __func__, xtal);
 
+#ifndef CONFIG_S5PV310_FPGA
 	apll = s5p_get_pll45xx(xtal, __raw_readl(S5P_APLL_CON0), pll_4508);
 	mpll = s5p_get_pll45xx(xtal, __raw_readl(S5P_MPLL_CON0), pll_4508);
 	epll = s5p_get_pll46xx(xtal, __raw_readl(S5P_EPLL_CON0),
@@ -356,6 +351,12 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	vpllsrc = clk_get_rate(&clk_vpllsrc.clk);
 	vpll = s5p_get_pll46xx(vpllsrc, __raw_readl(S5P_VPLL_CON0),
 				__raw_readl(S5P_VPLL_CON1), pll_4502);
+#else
+	apll = xtal;
+	mpll = xtal;
+	epll = xtal;
+	vpll = xtal;
+#endif
 
 	clk_fout_apll.rate = apll;
 	clk_fout_mpll.rate = mpll;
