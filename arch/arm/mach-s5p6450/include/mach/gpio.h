@@ -84,7 +84,7 @@ enum s5p_gpio_number {
 #define S3C_GPIO_END		S5P6450_GPIO_END
 
 /* define the number of gpios we need to the one after the GPR() range */
-#define ARCH_NR_GPIOS		(S5P6450_GPR(S5P6450_GPIO_S_NR) +	\
+#define ARCH_NR_GPIOS		(S5P6450_GPS(S5P6450_GPIO_S_NR) +	\
 				 CONFIG_SAMSUNG_GPIO_EXTRA + 1)
 
 #include <asm-generic/gpio.h>

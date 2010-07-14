@@ -1,7 +1,7 @@
 /* arch/arm/mach-s5p6450/gpio.c
  *
  * Copyright (c) 2009 Samsung Electronics Co., Ltd.
- * 		http://www.samsung.com/
+ * http://www.samsung.com/
  *
  * S5P6450 - GPIO support
  *
@@ -50,7 +50,6 @@ static int s5p6450_gpiolib_rbank_4bit2_input(struct gpio_chip *chip,
 	void __iomem *base = ourchip->base;
 	void __iomem *regcon = base;
 	unsigned long con;
-	unsigned long flags;
 
 	switch (offset) {
 	case 6:
@@ -68,13 +67,9 @@ static int s5p6450_gpiolib_rbank_4bit2_input(struct gpio_chip *chip,
 		break;
 	}
 
-	s3c_gpio_lock(ourchip, flags);
-
 	con = __raw_readl(regcon);
 	con &= ~(0xf << con_4bit_shift(offset));
 	__raw_writel(con, regcon);
-
-	s3c_gpio_unlock(ourchip, flags);
 
 	return 0;
 }
@@ -87,7 +82,6 @@ static int s5p6450_gpiolib_rbank_4bit2_output(struct gpio_chip *chip,
 	void __iomem *regcon = base;
 	unsigned long con;
 	unsigned long dat;
-	unsigned long flags;
 	unsigned con_offset  = offset;
 
 	switch (con_offset) {
@@ -106,8 +100,6 @@ static int s5p6450_gpiolib_rbank_4bit2_output(struct gpio_chip *chip,
 		break;
 	}
 
-	s3c_gpio_lock(ourchip, flags);
-
 	con = __raw_readl(regcon);
 	con &= ~(0xf << con_4bit_shift(con_offset));
 	con |= 0x1 << con_4bit_shift(con_offset);
@@ -121,8 +113,6 @@ static int s5p6450_gpiolib_rbank_4bit2_output(struct gpio_chip *chip,
 	__raw_writel(con, regcon);
 	__raw_writel(dat, base + GPIODAT_OFF);
 
-	s3c_gpio_unlock(ourchip, flags);
-
 	return 0;
 }
 
@@ -131,7 +121,6 @@ int s5p6450_gpio_setcfg_4bit_rbank(struct s3c_gpio_chip *chip,
 {
 	void __iomem *reg = chip->base;
 	unsigned int shift;
-	unsigned long flags;
 	u32 con;
 
 	switch (off) {
@@ -157,14 +146,10 @@ int s5p6450_gpio_setcfg_4bit_rbank(struct s3c_gpio_chip *chip,
 		cfg <<= shift;
 	}
 
-	s3c_gpio_lock(chip, flags);
-
 	con = __raw_readl(reg);
 	con &= ~(0xf << shift);
 	con |= cfg;
 	__raw_writel(con, reg);
-
-	s3c_gpio_unlock(chip, flags);
 
 	return 0;
 }
@@ -218,16 +203,16 @@ static struct s3c_gpio_chip s5p6450_gpio_4bit[] = {
 			.label	= "GPC",
 		},
 	}, {
-		.base	= S5P6450_GPG_BASE,
+		.base	= S5P6450_GPD_BASE,
 		.config	= &s5p6450_gpio_cfgs[1],
 		.chip	= {
-			.base	= S5P6450_GPG(0),
-			.ngpio	= S5P6450_GPIO_G_NR,
+			.base	= S5P6450_GPD(0),
+			.ngpio	= S5P6450_GPIO_D_NR,
 			.label	= "GPD",
 			},
-		},{
+		}, {
 		.base	= S5P6450_GPK_BASE,
-		.config = &s5p6450_gpio_cfgs[1], 
+		.config = &s5p6450_gpio_cfgs[1],
 		.chip	= {
 			.base	= S5P6450_GPK(0),
 			.ngpio	= S5P6450_GPIO_K_NR,
@@ -245,13 +230,13 @@ static struct s3c_gpio_chip s5p6450_gpio_4bit2[] = {
 			.ngpio	= S5P6450_GPIO_G_NR,
 			.label	= "GPG",
 		},
-	},{
-        .base   = S5P6450_GPH_BASE + 0x4,
-        .config = &s5p6450_gpio_cfgs[1],
-        .chip   = {
-            .base   = S5P6450_GPH(0),
-            .ngpio  = S5P6450_GPIO_H_NR,
-            .label  = "GPH",
+	}, {
+		.base   = S5P6450_GPH_BASE + 0x4,
+		.config = &s5p6450_gpio_cfgs[1],
+		.chip   = {
+			.base   = S5P6450_GPH(0),
+			.ngpio  = S5P6450_GPIO_H_NR,
+			.label  = "GPH",
 		},
 	},
 };
@@ -309,21 +294,21 @@ static struct s3c_gpio_chip s5p6450_gpio_2bit[] = {
 			.ngpio	= S5P6450_GPIO_P_NR,
 			.label	= "GPP",
 		},
-		},{
-        .base   = S5P6450_GPQ_BASE,
-        .config = &s5p6450_gpio_cfgs[4],
-        .chip   = {
-            .base   = S5P6450_GPQ(0),
-            .ngpio  = S5P6450_GPIO_Q_NR,
-            .label  = "GPQ",
+	}, {
+		.base   = S5P6450_GPQ_BASE,
+		.config = &s5p6450_gpio_cfgs[4],
+		.chip   = {
+			.base   = S5P6450_GPQ(0),
+			.ngpio  = S5P6450_GPIO_Q_NR,
+			.label  = "GPQ",
 		},
 	    }, {
-        .base   = S5P6450_GPS_BASE,
-        .config = &s5p6450_gpio_cfgs[5],
-        .chip   = {
-            .base   = S5P6450_GPS(0),
-            .ngpio  = S5P6450_GPIO_S_NR,
-            .label  = "GPS",
+		.base   = S5P6450_GPS_BASE,
+		.config = &s5p6450_gpio_cfgs[5],
+		.chip   = {
+			.base   = S5P6450_GPS(0),
+			.ngpio  = S5P6450_GPIO_S_NR,
+			.label  = "GPS",
 		},
 	},
 };
