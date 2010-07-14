@@ -351,13 +351,14 @@ EXPORT_SYMBOL_GPL(s5m8751_device_init);
 
 void s5m8751_device_exit(struct s5m8751 *s5m8751)
 {
+	int i;
 	dev_info(s5m8751->dev, "Unloaded S5M8751 device\n");
+
+	for (i = 0; i < ARRAY_SIZE(s5m8751->pmic.pdev); i++)
+		platform_device_unregister(s5m8751->pmic.pdev[i]);
 
 	free_irq(s5m8751->chip_irq, s5m8751);
 	flush_work(&s5m8751->irq_work);
 }
 EXPORT_SYMBOL_GPL(s5m8751_device_exit);
 
-MODULE_DESCRIPTION("S5M8751 Power Management IC");
-MODULE_AUTHOR("Jongbin, Won <jongbin.won@samsung.com>");
-MODULE_LICENSE("GPL");

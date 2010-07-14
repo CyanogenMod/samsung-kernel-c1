@@ -101,7 +101,7 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 		.ufcon	     = S5P6450_UFCON_DEFAULT,
 	},
 #endif
-#if CONFIG_SERIAL_SAMSUNG_UARTS > 5 
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 5
 	[5] = {
 		.hwport	     = 5,
 		.flags	     = 0,
@@ -113,6 +113,200 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 };
 
 #if defined(CONFIG_MFD_S5M8751)
+/* SYS, EXT */
+static struct regulator_init_data s5m8751_ldo1_data = {
+	.constraints = {
+		.name = "PVDD_SYS/PVDD_EXT",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.min_uA = 0,
+		.max_uA = 300000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 1,
+		}
+	},
+};
+
+/* LCD */
+static struct regulator_init_data s5m8751_ldo2_data = {
+	.constraints = {
+		.name = "PVDD_LCD",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.min_uA = 0,
+		.max_uA = 150000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+};
+
+/* ALIVE */
+static struct regulator_init_data s5m8751_ldo3_data = {
+	.constraints = {
+		.name = "PVDD_ALIVE",
+		.min_uV = 1100000,
+		.max_uV = 1100000,
+		.min_uA = 0,
+		.max_uA = 150000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 1,
+		}
+	},
+};
+
+/* PLL */
+static struct regulator_init_data s5m8751_ldo4_data = {
+	.constraints = {
+		.name = "PVDD_PLL",
+		.min_uV = 1100000,
+		.max_uV = 1100000,
+		.min_uA = 0,
+		.max_uA = 300000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+};
+
+/* MEM/SS */
+static struct regulator_init_data s5m8751_ldo5_data = {
+	.constraints = {
+		.name = "PVDD_MEM/SS",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.min_uA = 0,
+		.max_uA = 300000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 1,
+		}
+	},
+};
+
+/* RTC */
+static struct regulator_init_data s5m8751_ldo6_data = {
+	.constraints = {
+		.name = "PVDD_RTC",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.min_uA = 0,
+		.max_uA = 150000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+};
+
+/* GPS */
+static struct regulator_init_data s5m8751_buck1_1_data = {
+	.constraints = {
+		.name = "PVDD_GPS",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.min_uA = 0,
+		.max_uA = 400000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+};
+
+static struct regulator_init_data s5m8751_buck1_2_data = {
+	.constraints = {
+		.name = "PVDD_GPS",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.min_uA = 0,
+		.max_uA = 400000,
+		.always_on = 1,
+		.apply_uV = 1,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+};
+
+static struct regulator_consumer_supply buck2_1_consumers[] = {
+	{
+		.supply		= "vddarm1",
+	},
+};
+
+static struct regulator_consumer_supply buck2_2_consumers[] = {
+	{
+		.supply		= "vddarm2",
+	},
+};
+
+/* ARM/INT */
+static struct regulator_init_data s5m8751_buck2_1_data = {
+	.constraints = {
+		.name = "PVDD_ARM/PVDD_INT",
+		.min_uV = 950000,
+		.max_uV = 1300000,
+		.min_uA = 0,
+		.max_uA = 1000000,
+		.always_on = 1,
+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+	.num_consumer_supplies	= ARRAY_SIZE(buck2_1_consumers),
+	.consumer_supplies	= buck2_1_consumers,
+};
+
+static struct regulator_init_data s5m8751_buck2_2_data = {
+	.constraints = {
+		.name = "PVDD_ARM/PVDD_INT",
+		.min_uV = 950000,
+		.max_uV = 1300000,
+		.min_uA = 0,
+		.max_uA = 1000000,
+		.always_on = 1,
+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
+		.state_mem = {
+			.uV = 0,
+			.mode = REGULATOR_MODE_STANDBY,
+			.enabled = 0,
+		}
+	},
+	.num_consumer_supplies	= ARRAY_SIZE(buck2_2_consumers),
+	.consumer_supplies	= buck2_2_consumers,
+};
+
 int s5m8751_gpio_irq_init(void)
 {
 	unsigned int gpio_irq;
@@ -127,6 +321,21 @@ int s5m8751_gpio_irq_init(void)
 static int smdk6450_s5m8751_init(struct s5m8751 *s5m8751)
 {
 	s5m8751_gpio_irq_init();
+
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO1, &s5m8751_ldo1_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO2, &s5m8751_ldo2_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO3, &s5m8751_ldo3_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO4, &s5m8751_ldo4_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO5, &s5m8751_ldo5_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_LDO6, &s5m8751_ldo6_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_BUCK1_1,
+							 &s5m8751_buck1_1_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_BUCK1_2,
+							 &s5m8751_buck1_2_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_BUCK2_1,
+							 &s5m8751_buck2_1_data);
+	s5m8751_register_regulator(s5m8751, S5M8751_BUCK2_2,
+							 &s5m8751_buck2_2_data);
 
 	return 0;
 }

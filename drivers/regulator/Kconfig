@@ -201,5 +201,12 @@ config REGULATOR_88PM8607
 	help
 	  This driver supports 88PM8607 voltage regulator chips.
 
+config REGULATOR_S5M8751
+	tristate "Support regulators on Samsung Semiconductor S5M8751 PMIC"
+	depends on MFD_S5M8751
+	help
+	  Say y here to support the BUCKs and LDOs regulators found on
+	  Samsung Semiconductor S5M8751 PMIC.
+
 endif
 

@@ -18,6 +18,7 @@
 #include <linux/mutex.h>
 #include <linux/workqueue.h>
 
+#include <linux/mfd/s5m8751/regulator.h>
 /*
  * Register values.
  */
@@ -153,6 +154,7 @@ struct s5m8751 {
 	int chip_irq;
 
 	/* Client devices */
+	struct s5m8751_pmic pmic;
 };
 
 /**
