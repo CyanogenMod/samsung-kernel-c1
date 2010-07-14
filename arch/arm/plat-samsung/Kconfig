@@ -6,7 +6,7 @@
 
 config PLAT_SAMSUNG
 	bool
-	depends on ARCH_S3C2410 || ARCH_S3C24A0 || ARCH_S3C64XX
+	depends on ARCH_S3C2410 || ARCH_S3C24A0 || ARCH_S3C64XX || ARCH_S5P6450
 	select NO_IOPORT
 	default y
 	help
@@ -166,14 +166,45 @@ config S3C_DEV_HWMON
 	    Compile in platform device definitions for HWMON
 
 config S3C_DEV_I2C1
-	bool
+	bool "I2C1 Information"
 	help
 	  Compile in platform device definitions for I2C channel 1
 
 config S3C_DEV_I2C2
-	bool
+	bool "I2C2 Information"
+	depends on ARCH_S5PC100 || ARCH_S5PV210 || ARCH_S5PV310
 	help
 	  Compile in platform device definitions for I2C channel 2
+
+config S3C_DEV_I2C3
+	bool "I2C3 Information"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 3
+
+config S3C_DEV_I2C4
+	bool "I2C4 Information"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 4
+
+config S3C_DEV_I2C5
+	bool "I2C5 Information"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 5
+
+config S3C_DEV_I2C6
+	bool "I2C6 Information"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 6
+
+config S3C_DEV_I2C7
+	bool "I2C7 Information"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 7
 
 config S3C_DEV_FB
 	bool

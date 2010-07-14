@@ -391,6 +391,44 @@ void __init s3c_disable_clocks(struct clk *clkp, int nr_clks)
 		(clkp->enable)(clkp, 0);
 }
 
+#ifdef CONFIG_S5PV310_FPGA
+static struct clk tmp_clocks[] = {
+	{
+		.name		= "i2c",
+		.id		= 0,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 1,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 2,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 3,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 4,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 5,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 6,
+		.rate		= 10000000,
+	}, {
+		.name		= "i2c",
+		.id		= 7,
+		.rate		= 10000000,
+	},
+};
+#endif
+
 /* initalise all the clocks */
 
 int __init s3c24xx_register_baseclocks(unsigned long xtal)
@@ -419,6 +457,9 @@ int __init s3c24xx_register_baseclocks(unsigned long xtal)
 	if (s3c24xx_register_clock(&clk_p) < 0)
 		printk(KERN_ERR "failed to register cpu pclk\n");
 
+#ifdef CONFIG_S5PV310_FPGA
+	s3c_register_clocks(tmp_clocks, ARRAY_SIZE(tmp_clocks));
+#endif
 	return 0;
 }
 

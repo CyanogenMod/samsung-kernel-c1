@@ -17,6 +17,48 @@ config CPU_S5PV310
 	help
 	  Enable S5PV310 CPU support
 
+config S5PV310_SETUP_I2C1
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 1.
+
+config S5PV310_SETUP_I2C2
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 2.
+
+config S5PV310_SETUP_I2C3
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 3.
+
+config S5PV310_SETUP_I2C4
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 4.
+
+config S5PV310_SETUP_I2C5
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 5.
+
+config S5PV310_SETUP_I2C6
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 6.
+
+config S5PV310_SETUP_I2C7
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 7.
+
 # machine support
 
 config MACH_SMDKV310

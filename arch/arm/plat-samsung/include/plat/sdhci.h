@@ -75,6 +75,9 @@ extern void s5pc100_setup_sdhci0_cfg_gpio(struct platform_device *, int w);
 extern void s5pc100_setup_sdhci1_cfg_gpio(struct platform_device *, int w);
 extern void s5pc100_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
 extern void s3c64xx_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
+extern void s5p6450_setup_sdhci0_cfg_gpio(struct platform_device *, int w);
+extern void s5p6450_setup_sdhci1_cfg_gpio(struct platform_device *, int w);
+extern void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci1_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
@@ -170,6 +173,45 @@ static inline void s3c6400_default_sdhci0(void) { }
 static inline void s3c6400_default_sdhci1(void) { }
 
 #endif /* CONFIG_S3C64XX_SETUP_SDHCI */
+
+/* S5P6450 SDHCI setup */
+#ifdef CONFIG_S5P6450_SETUP_SDHCI
+extern char *s5p6450_hsmmc_clksrcs[4];
+
+extern void s5p6450_setup_sdhci_cfg_card(struct platform_device *dev,
+						void __iomem *r,
+						struct mmc_ios *ios,
+						struct mmc_card *card);
+
+static inline void s5p6450_default_sdhci0(void)
+{
+#ifdef CONFIG_S3C_DEV_HSMMC
+	s3c_hsmmc0_def_platdata.clocks = s5p6450_hsmmc_clksrcs;
+	s3c_hsmmc0_def_platdata.cfg_gpio = s5p6450_setup_sdhci0_cfg_gpio;
+	s3c_hsmmc0_def_platdata.cfg_card = s5p6450_setup_sdhci_cfg_card;
+#endif /* CONFIG_S3C_DEV_HSMMC */
+}
+static inline void s5p6450_default_sdhci1(void)
+{
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	s3c_hsmmc1_def_platdata.clocks = s5p6450_hsmmc_clksrcs;
+	s3c_hsmmc1_def_platdata.cfg_gpio = s5p6450_setup_sdhci1_cfg_gpio;
+	s3c_hsmmc1_def_platdata.cfg_card = s5p6450_setup_sdhci_cfg_card;
+#endif /* CONFIG_S3C_DEV_HSMMC1 */
+}
+static inline void s5p6450_default_sdhci2(void)
+{
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	s3c_hsmmc2_def_platdata.clocks = s5p6450_hsmmc_clksrcs;
+	s3c_hsmmc2_def_platdata.cfg_gpio = s5p6450_setup_sdhci2_cfg_gpio;
+	s3c_hsmmc2_def_platdata.cfg_card = s5p6450_setup_sdhci_cfg_card;
+#endif /* CONFIG_S3C_DEV_HSMMC2 */
+}
+#else
+static inline void s5p6450_default_sdhci0(void) { }
+static inline void s5p6450_default_sdhci1(void) { }
+static inline void s5p6450_default_sdhci2(void) { }
+#endif /* CONFIG_S5P6450_SETUP_SDHCI */
 
 /* S5PC100 SDHCI setup */
 

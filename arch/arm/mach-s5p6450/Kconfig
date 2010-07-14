@@ -10,13 +10,42 @@ if ARCH_S5P6450
 config CPU_S5P6450
 	bool
 	select S3C_PL330_DMA
+	select S3C_DEV_RTC
 	help
 	  Enable S5P6450 CPU support
 
 config MACH_SMDK6450
 	bool "SMDK6450"
 	select CPU_S5P6450
+	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC1
+	select S3C_DEV_HSMMC2
+	select S5P6450_SETUP_SDHCI
+	select S5P6450_SETUP_SDHCI_GPIO
+	select S3C_DEV_WDT
 	help
 	  Machine support for the Samsung SMDK6450
 
+config S5P6450_SETUP_SDHCI
+	bool
+	select S5P6450_SETUP_SDHCI_GPIO
+	help
+	  Internal helper functions for S5P6450 based SDHCI systems.
+
+config S5P6450_SETUP_SDHCI_GPIO
+	bool
+	help
+	  Common setup code for SDHCI gpio.
+
+config S5P_SETUP_I2C0
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 0.
+
+config S5P_SETUP_I2C1
+	bool
+	default y
+	help
+	  Common setup code for i2c bus 1.
 endif
