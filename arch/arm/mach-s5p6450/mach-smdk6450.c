@@ -26,6 +26,7 @@
 
 #include <mach/hardware.h>
 #include <mach/map.h>
+#include <mach/gpio.h>
 
 #include <asm/irq.h>
 #include <asm/mach-types.h>
@@ -43,6 +44,9 @@
 #include <plat/ts.h>
 #include <plat/fb.h>
 #include <plat/sdhci.h>
+#include <plat/gpio-cfg.h>
+
+#include <linux/mfd/s5m8751/core.h>
 
 extern struct sys_timer s5p6450_timer;
 
@@ -108,12 +112,43 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 #endif
 };
 
+#if defined(CONFIG_MFD_S5M8751)
+int s5m8751_gpio_irq_init(void)
+{
+	unsigned int gpio_irq;
+
+	gpio_irq = S5P6450_GPN(7);
+	s3c_gpio_cfgpin(gpio_irq, S3C_GPIO_SFN(2));
+	s3c_gpio_setpull(gpio_irq, S3C_GPIO_PULL_UP);
+
+	return gpio_irq;
+}
+
+static int smdk6450_s5m8751_init(struct s5m8751 *s5m8751)
+{
+	s5m8751_gpio_irq_init();
+
+	return 0;
+}
+
+static struct s5m8751_platform_data __initdata smdk6450_s5m8751_pdata = {
+	.init = smdk6450_s5m8751_init,
+};
+#endif
+
 static struct i2c_board_info i2c_devs0[] __initdata = {
 	{ I2C_BOARD_INFO("24c08", 0x50), },/* Samsung KS24C080C EEPROM */
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
 	{ I2C_BOARD_INFO("24c128", 0x57), },/* Samsung S524AD0XD1 EEPROM */
+#if defined(CONFIG_MFD_S5M8751)
+/* S5M8751_SLAVE_ADDRESS >> 1 = 0xD0 >> 1 = 0x68 */
+	{ I2C_BOARD_INFO("s5m8751", (0xD0 >> 1)),
+	.platform_data = &smdk6450_s5m8751_pdata,
+	.irq = S5P_IRQ(7),
+	},
+#endif
 };
 
 static struct platform_device *smdk6450_devices[] __initdata = {

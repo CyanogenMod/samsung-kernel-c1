@@ -356,6 +356,17 @@ config MFD_PCF50633
 	  facilities, and registers devices for the various functions
 	  so that function-specific drivers can bind to them.
 
+config MFD_S5M8751
+	tristate
+
+config MFD_S5M8751_I2C
+	tristate "Samsung Semiconductor S5M8751 PMIC Support with AUDIO DAC"
+	select MFD_S5M8751
+	depends on I2C
+	help
+	  S5M8751 is an advanced power management with AUDIO DAC. This option
+	  enables chip support for the S5M8751 with I2C as the control interface.
+
 config MFD_MC13783
 	tristate "Support Freescale MC13783"
 	depends on SPI_MASTER
