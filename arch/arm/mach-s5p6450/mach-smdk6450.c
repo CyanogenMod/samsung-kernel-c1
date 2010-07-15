@@ -364,7 +364,7 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
 #endif
-#ifdef CONFIG_FB_S3C
+#ifdef CONFIG_FB_S3C_V2
 	&s3c_device_fb,
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC
@@ -394,7 +394,7 @@ static void __init smdk6450_map_io(void)
 
 static void __init smdk6450_machine_init(void)
 {
-#ifdef CONFIG_FB_S3C
+#ifdef CONFIG_FB_S3C_V2
 	s3cfb_set_platdata(NULL);
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC

@@ -20,7 +20,7 @@ obj-$(CONFIG_S5P_SETUP_I2C1)	+= setup-i2c1.o
 # machine support
 
 obj-$(CONFIG_MACH_SMDK6450)	+= mach-smdk6450.o
-obj-$(CONFIG_FB_S3C)                    += dev-fb.o
+obj-$(CONFIG_FB_S3C_V2)			+= dev-fb.o
 obj-$(CONFIG_S5P6450_SETUP_FB_S3C)	+= setup-fb.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI)      += setup-sdhci.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO) += setup-sdhci-gpio.o
