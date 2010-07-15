@@ -98,7 +98,6 @@ extern int s5pc100_timer_setup (int channel, int usec, unsigned long g_tcnt, uns
  */
 #define S3CFB_GET_BRIGHTNESS		_IOR ('F', 1,  unsigned int)
 #define S3CFB_SET_BRIGHTNESS		_IOW ('F', 2,  unsigned int)
-//#define FBIO_WAITFORVSYNC		_IOW ('F', 32, unsigned int)
 
 #if defined(CONFIG_FB_S3C_VIRTUAL_SCREEN)
 #define S3CFB_VS_START			_IO  ('F', 103)

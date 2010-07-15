@@ -254,7 +254,6 @@ struct s3cfb_user_chroma {
  * C U S T O M  I O C T L S
  *
 */
-/* #define FBIO_WAITFORVSYNC		_IO  ('F', 32) */
 #define S3CFB_WIN_ON			_IO  ('F', 200)
 #define S3CFB_WIN_OFF			_IO  ('F', 201)
 #define S3CFB_WIN_OFF_ALL		_IO  ('F', 202)
