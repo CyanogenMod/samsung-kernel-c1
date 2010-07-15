@@ -1,4 +1,4 @@
-/* linux/arch/arm/plat-s5p64xx/setup-fb.c
+/* linux/arch/arm/mach-s5p6450/setup-fb.c
  *
  * Copyright 2009 Samsung Electronics
  *	Jinsung Yang <jsgood.yang@samsung.com>
@@ -17,7 +17,6 @@
 #include <linux/gpio.h>
 #include <asm/io.h>
 #include <plat/gpio-cfg.h>
-//#include <plat/regs-gpio.h>
 #include <mach/regs-gpio.h>
 #include <mach/map.h>
 

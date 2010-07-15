@@ -1,4 +1,4 @@
-/* linux/arch/arm/plat-s5pc1xx/include/plat/regs-fb.h
+/* linux/arch/arm/plat-s5p/include/plat/regs-fb.h
  *
  * Register definition file for Samsung Display Controller (FIMD) driver
  *

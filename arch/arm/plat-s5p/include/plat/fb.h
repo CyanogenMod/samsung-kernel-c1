@@ -1,4 +1,4 @@
-/* linux/arch/arm/plat-s3c/include/plat/fb.h
+/* linux/arch/arm/plat-s5p/include/plat/fb.h
  *
  * Platform header file for Samsung Display Controller (FIMD) driver
  *
