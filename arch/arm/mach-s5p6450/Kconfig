@@ -26,6 +26,12 @@ config MACH_SMDK6450
 	help
 	  Machine support for the Samsung SMDK6450
 
+config S5P6450_SETUP_FB_S3C
+	bool
+	default y
+	help
+	  Common setup code for S5P6450 with a LCD display helper
+
 config S5P6450_SETUP_SDHCI
 	bool
 	select S5P6450_SETUP_SDHCI_GPIO

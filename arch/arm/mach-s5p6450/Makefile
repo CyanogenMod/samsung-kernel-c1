@@ -15,11 +15,12 @@ obj-				:=
 obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o dma.o
 obj-$(CONFIG_CPU_S5P6450)	+= time.o gpio.o
 obj-y				+= dev-fb.o
-obj-y				+= setup-fb.o setup-i2c0.o
+obj-y				+= setup-i2c0.o
 obj-$(CONFIG_S5P_SETUP_I2C1)	+= setup-i2c1.o
 
 # machine support
 
 obj-$(CONFIG_MACH_SMDK6450)	+= mach-smdk6450.o
+obj-$(CONFIG_S5P6450_SETUP_FB_S3C)	+= setup-fb.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI)      += setup-sdhci.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO) += setup-sdhci-gpio.o
