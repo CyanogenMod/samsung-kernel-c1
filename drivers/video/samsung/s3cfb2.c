@@ -3,7 +3,7 @@
  * Core file for Samsung Display Controller (FIMD) driver
  *
  * Jinsung Yang, Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsungsemi.com/
+ *	http://www.samsungsemi.com/
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -290,7 +290,7 @@ static int s3cfb_check_var(struct fb_var_screeninfo *var,
 	s3cfb_set_bitfield(var);
 	s3cfb_set_alpha_info(var, win);
 
-	return 0;	
+	return 0;
 }
 
 static int s3cfb_set_par(struct fb_info *fb)
@@ -312,7 +312,7 @@ static int s3cfb_set_par(struct fb_info *fb)
 	if (win->id > 0)
 		s3cfb_set_alpha_blending(ctrl, win->id);
 
-	return 0;	
+	return 0;
 }
 
 static int s3cfb_blank(int blank_mode, struct fb_info *fb)
@@ -342,7 +342,7 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 	return 0;
 }
 
-static int s3cfb_pan_display(struct fb_var_screeninfo *var, 
+static int s3cfb_pan_display(struct fb_var_screeninfo *var,
 				struct fb_info *fb)
 {
 	struct s3cfb_window *win = fb->par;
@@ -383,7 +383,7 @@ static int s3cfb_setcolreg(unsigned int regno, unsigned int red,
 		val |= __chan_to_field(red, fb->var.red);
 		val |= __chan_to_field(green, fb->var.green);
 		val |= __chan_to_field(blue, fb->var.blue);
-		val |= __chan_to_field(transp, fb->var.transp);			
+		val |= __chan_to_field(transp, fb->var.transp);
 
 		pal[regno] = val;
 	}
@@ -691,7 +691,7 @@ void s3cfb_enable_dma(int id)
 int s3cfb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 {
 	struct fb_info *fb = ctrl->fb[id];
-	struct fb_var_screeninfo *var = &fb->var;	
+	struct fb_var_screeninfo *var = &fb->var;
 	struct s3cfb_window *win = fb->par;
 	struct s3cfb_lcd *lcd = ctrl->lcd;
 	struct s3cfb_user_window user_win;
@@ -786,7 +786,7 @@ static int s3cfb_init_fbinfo(int id)
 	struct s3cfb_alpha *alpha = &win->alpha;
 	struct s3cfb_lcd *lcd = ctrl->lcd;
 	struct s3cfb_lcd_timing *timing = &lcd->timing;
-	
+
 	memset(win, 0, sizeof(struct s3cfb_window));
 	platform_set_drvdata(to_platform_device(ctrl->dev), fb);
 	strcpy(fix->id, S3CFB_NAME);
@@ -1144,7 +1144,7 @@ int s3cfb_suspend(struct platform_device *pdev, pm_message_t state)
 				dev_info(ctrl->dev, "failed to run the suspend for fifo\n");
 		}
 	}
-	
+
 	s3cfb_display_off(ctrl);
 	clk_disable(ctrl->clock);
 
@@ -1225,7 +1225,7 @@ static void s3cfb_unregister(void)
 
 module_init(s3cfb_register);
 module_exit(s3cfb_unregister);
-	
+
 MODULE_AUTHOR("Jinsung, Yang <jsgood.yang@samsung.com>");
 MODULE_DESCRIPTION("Samsung Display Controller (FIMD) driver");
 MODULE_LICENSE("GPL");

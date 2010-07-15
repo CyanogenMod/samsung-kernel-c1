@@ -145,5 +145,5 @@ config FB_S3C_V2_TL2796
 	bool "TL2796"
 	---help---
 	  This enables support for Samsung  TL2796 WVGA LCD panel
-endchoice	
+endchoice
 

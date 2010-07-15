@@ -3,7 +3,7 @@
  * Register interface file for Samsung Display Controller (FIMD) driver
  *
  * Jinsung Yang, Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsungsemi.com/
+ *	http://www.samsungsemi.com/
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -123,14 +123,14 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	unsigned int cfg, maxclk, src_clk, vclk, div;
 
 	maxclk = 66 * 1000000;
-	
+
 	/* fixed clock source: hclk */
 	cfg = readl(ctrl->regs + S3C_VIDCON0);
 	cfg &= ~(S3C_VIDCON0_CLKSEL_MASK | S3C_VIDCON0_CLKVALUP_MASK |
 		S3C_VIDCON0_VCLKEN_MASK | S3C_VIDCON0_CLKDIR_MASK);
 	cfg |= (S3C_VIDCON0_CLKSEL_HCLK | S3C_VIDCON0_CLKVALUP_ALWAYS |
 		S3C_VIDCON0_VCLKEN_NORMAL | S3C_VIDCON0_CLKDIR_DIVIDED);
-	
+
 	src_clk = ctrl->clock->parent->rate;
 	vclk = ctrl->fb[pdata->default_win]->var.pixclock;
 
@@ -138,7 +138,7 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 		vclk = maxclk;
 
 	div = src_clk / vclk;
-	if (src_clk % vclk) 
+	if (src_clk % vclk)
 		div++;
 
 	cfg |= S3C_VIDCON0_CLKVAL_F(div - 1);
@@ -147,7 +147,7 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	dev_dbg(ctrl->dev, "parent clock: %d, vclk: %d, vclk div: %d\n",
 			src_clk, vclk, div);
 
-	return 0;	
+	return 0;
 }
 
 int s3cfb_set_polarity(struct s3cfb_global *ctrl)
@@ -172,7 +172,7 @@ int s3cfb_set_polarity(struct s3cfb_global *ctrl)
 
 	writel(cfg, ctrl->regs + S3C_VIDCON1);
 
-	return 0;		
+	return 0;
 }
 
 int s3cfb_set_timing(struct s3cfb_global *ctrl)
@@ -234,7 +234,7 @@ int s3cfb_set_global_interrupt(struct s3cfb_global *ctrl, int enable)
 
 	writel(cfg, ctrl->regs + S3C_VIDINTCON0);
 
-	return 0;	
+	return 0;
 }
 
 int s3cfb_set_vsync_interrupt(struct s3cfb_global *ctrl, int enable)
@@ -254,7 +254,7 @@ int s3cfb_set_vsync_interrupt(struct s3cfb_global *ctrl, int enable)
 
 	writel(cfg, ctrl->regs + S3C_VIDINTCON0);
 
-	return 0;	
+	return 0;
 }
 
 #ifdef CONFIG_FB_S3C_V2_TRACE_UNDERRUN
@@ -279,7 +279,7 @@ int s3cfb_set_fifo_interrupt(struct s3cfb_global *ctrl, int enable)
 
 	writel(cfg, ctrl->regs + S3C_VIDINTCON0);
 
-	return 0;	
+	return 0;
 }
 #endif
 
@@ -297,7 +297,7 @@ int s3cfb_clear_interrupt(struct s3cfb_global *ctrl)
 
 	writel(cfg, ctrl->regs + S3C_VIDINTCON1);
 
-	return 0;	
+	return 0;
 }
 
 int s3cfb_window_on(struct s3cfb_global *ctrl, int id)
@@ -369,7 +369,7 @@ int s3cfb_set_window_control(struct s3cfb_global *ctrl, int id)
 
 		if (fb->var.bits_per_pixel == 32 && pdata->swap & FB_SWAP_WORD)
 			cfg |= S3C_WINCON_WSWP_ENABLE;
-		
+
 		/* dma burst */
 		if (win->dma_burst == 4)
 			cfg |= S3C_WINCON_BURSTLEN_4WORD;
@@ -496,7 +496,7 @@ int s3cfb_set_window_position(struct s3cfb_global *ctrl, int id)
 	writel(cfg, ctrl->regs + S3C_VIDOSD_B(id));
 
 	dev_dbg(ctrl->dev, "[fb%d] offset: (%d, %d, %d, %d)\n", id,
-		win->x, win->y, win->x + var->xres - 1, win->y + var->yres -1);
+		win->x, win->y, win->x + var->xres - 1, win->y + var->yres - 1);
 
 	return 0;
 }
@@ -550,7 +550,7 @@ int s3cfb_set_chroma_key(struct s3cfb_global *ctrl, int id)
 		cfg |= S3C_KEYCON0_KEY_ENABLE;
 
 	writel(cfg, ctrl->regs + S3C_KEYCON(id));
-	
+
 	cfg = S3C_KEYCON1_COLVAL(chroma->key);
 	writel(cfg, ctrl->regs + S3C_KEYVAL(id));
 
