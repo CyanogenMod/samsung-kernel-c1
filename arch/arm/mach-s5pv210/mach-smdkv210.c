@@ -10,6 +10,7 @@
 
 #include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/serial_core.h>
 
@@ -25,6 +26,7 @@
 #include <plat/s5pv210.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
 
@@ -73,12 +75,24 @@ static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 	},
 };
 
+static struct i2c_board_info i2c_devs0[] __initdata = {
+};
+
+static struct i2c_board_info i2c_devs1[] __initdata = {
+};
+
+static struct i2c_board_info i2c_devs2[] __initdata = {
+};
+
 static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5pv210_device_iis0,
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
 	&s3c_device_ts,
 	&s3c_device_wdt,
+	&s3c_device_i2c0,
+	&s3c_device_i2c1,
+	&s3c_device_i2c2,
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
@@ -97,6 +111,14 @@ static void __init smdkv210_map_io(void)
 static void __init smdkv210_machine_init(void)
 {
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+
+	s3c_i2c0_set_platdata(NULL);
+	s3c_i2c1_set_platdata(NULL);
+	s3c_i2c2_set_platdata(NULL);
+	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
+	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
+	i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
+
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 
