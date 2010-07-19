@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * Cloned from linux/arch/arm/mach-realview/platsmp.c
+ * Cloned from linux/arch/arm/mach-vexpress/platsmp.c
  *
  *  Copyright (C) 2002 ARM Ltd.
  *  All Rights Reserved
@@ -21,12 +21,11 @@
 #include <linux/io.h>
 
 #include <asm/cacheflush.h>
-#include <mach/hardware.h>
-#include <asm/mach-types.h>
 #include <asm/localtimer.h>
+#include <asm/smp_scu.h>
 #include <asm/unified.h>
 
-#include <asm/smp_scu.h>
+#include <mach/hardware.h>
 #include <mach/regs-clock.h>
 
 extern void s5pv310_secondary_startup(void);
@@ -40,14 +39,6 @@ volatile int __cpuinitdata pen_release = -1;
 static void __iomem *scu_base_addr(void)
 {
 	return (void __iomem *)(S5P_VA_SCU);
-}
-
-static inline unsigned int get_core_count(void)
-{
-	void __iomem *scu_base = scu_base_addr();
-	if (scu_base)
-		return scu_get_core_count(scu_base);
-	return 1;
 }
 
 static DEFINE_SPINLOCK(boot_lock);
@@ -96,17 +87,13 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 * "cpu" is Linux's internal ID.
 	 */
 	pen_release = cpu;
-	flush_cache_all();
+	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
 
 	/*
-	 * XXX
-	 *
-	 * This is a later addition to the booting protocol: the
-	 * bootMonitor now puts secondary cores into WFI, so
-	 * poke_milo() no longer gets the cores moving; we need
-	 * to send a soft interrupt to wake the secondary core.
-	 * Use smp_cross_call() for this, since there's little
-	 * point duplicating the code here
+	 * Send the secondary CPU a soft interrupt, thereby causing
+	 * the boot monitor to read the system wide flags register,
+	 * and branch to the address found there.
 	 */
 	smp_cross_call(cpumask_of(cpu));
 
@@ -128,31 +115,32 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	return pen_release != -1 ? -ENOSYS : 0;
 }
 
-static void __init poke_milo(void)
-{
-	/* nobody is to be released from the pen yet */
-	pen_release = -1;
-
-	/*
-	 * Write the address of secondary startup into the system-wide flags
-	 * register. The BootMonitor waits for this register to become
-	 * non-zero.
-	 */
-#ifndef CONFIG_S5PV310_FPGA
-	__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)), S5P_INFORM0);
-#else
-        __raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)), S5P_VA_TEMP + 0x8);
-#endif
-	mb();
-}
-
 /*
  * Initialise the CPU possible map early - this describes the CPUs
  * which may be present or become present in the system.
  */
 void __init smp_init_cpus(void)
 {
-	unsigned int i, ncores = get_core_count();
+	void __iomem *scu_base = scu_base_addr();
+	unsigned int i, ncores;
+
+	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+
+	/* sanity check */
+	if (ncores == 0) {
+		printk(KERN_ERR
+		       "s5pv310: strange CM count of 0? Default to 1\n");
+
+		ncores = 1;
+	}
+
+	if (ncores > NR_CPUS) {
+		printk(KERN_WARNING
+		       "s5pv310: no. of cores (%d) greater than configured "
+		       "maximum of %d - clipping\n",
+		       ncores, NR_CPUS);
+		ncores = NR_CPUS;
+	}
 
 	for (i = 0; i < ncores; i++)
 		set_cpu_possible(i, true);
@@ -160,25 +148,9 @@ void __init smp_init_cpus(void)
 
 void __init smp_prepare_cpus(unsigned int max_cpus)
 {
-	unsigned int ncores = get_core_count();
+	unsigned int ncores = num_possible_cpus();
 	unsigned int cpu = smp_processor_id();
 	int i;
-
-	/* sanity check */
-	if (ncores == 0) {
-		printk(KERN_ERR
-		       "Realview: strange CM count of 0? Default to 1\n");
-
-		ncores = 1;
-	}
-
-	if (ncores > NR_CPUS) {
-		printk(KERN_WARNING
-		       "Realview: no. of cores (%d) greater than configured "
-		       "maximum of %d - clipping\n",
-		       ncores, NR_CPUS);
-		ncores = NR_CPUS;
-	}
 
 	smp_store_cpu_info(cpu);
 
@@ -197,10 +169,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 
 	/*
 	 * Initialise the SCU if there are more than one CPU and let
-	 * them know where to start. Note that, on modern versions of
-	 * MILO, the "poke" doesn't actually do anything until each
-	 * individual core is sent a soft interrupt to get it out of
-	 * WFI
+	 * them know where to start.
 	 */
 	if (max_cpus > 1) {
 		/*
@@ -210,6 +179,21 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 		percpu_timer_setup();
 
 		scu_enable(scu_base_addr());
-		poke_milo();
+
+		/*
+		 * Write the address of secondary startup into the
+		 * system-wide flags register. The boot monitor waits
+		 * until it receives a soft interrupt, and then the
+		 * secondary CPU branches to this address.
+		 */
+
+#ifndef CONFIG_S5PV310_FPGA
+		__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
+			(void __iomem *)(S5P_INFORM0));
+#else
+        __raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
+			S5P_VA_TEMP + 0x8);
+#endif
 	}
 }
+
