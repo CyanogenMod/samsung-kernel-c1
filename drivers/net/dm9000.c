@@ -1194,6 +1194,10 @@ dm9000_open(struct net_device *dev)
 	if (request_irq(dev->irq, dm9000_interrupt, irqflags, dev->name, dev))
 		return -EAGAIN;
 
+#ifdef CONFIG_MACH_SMDKV210
+	/* Need to activate phyxcer before reset for voguev210 board */
+	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
+#endif
 	/* Initialize DM9000 board */
 	dm9000_reset(db);
 	dm9000_init_dm9000(dev);
