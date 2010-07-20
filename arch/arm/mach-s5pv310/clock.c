@@ -30,6 +30,21 @@ static struct clk clk_sclk_hdmi27m = {
 	.rate           = 27000000,
 };
 
+static struct clk clk_sclk_hdmiphy = {
+	.name		= "sclk_hdmiphy",
+	.id		= -1,
+};
+
+static struct clk clk_sclk_usbphy0 = {
+	.name		= "sclk_usbphy0",
+	.id		= -1,
+};
+
+static struct clk clk_sclk_usbphy1 = {
+	.name		= "sclk_usbphy1",
+	.id		= -1,
+};
+
 /* Core list of CMU_CPU side */
 
 static struct clksrc_clk clk_mout_apll = {
@@ -221,6 +236,21 @@ static int s5pv310_clk_ip_peril_ctrl(struct clk *clk, int enable)
 	return s5p_gatectrl(S5P_CLKGATE_IP_PERIL, clk, enable);
 }
 
+static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_CAM, clk, enable);
+}
+
+static int s5pv310_clk_ip_lcd0_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_LCD0, clk, enable);
+}
+
+static int s5pv310_clk_ip_lcd1_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_LCD1, clk, enable);
+}
+
 static struct clk init_clocks_disable[] = {
 	/* Nothing here yet */
 };
@@ -233,6 +263,9 @@ static struct clk *clkset_group_list[] = {
 	[0] = &clk_ext_xtal_mux,
 	[1] = &clk_xusbxti,
 	[2] = &clk_sclk_hdmi27m,
+	[3] = &clk_sclk_usbphy0,
+	[4] = &clk_sclk_usbphy1,
+	[5] = &clk_sclk_hdmiphy,
 	[6] = &clk_mout_mpll.clk,
 	[7] = &clk_mout_epll.clk,
 	[8] = &clk_sclk_vpll.clk,
@@ -241,6 +274,30 @@ static struct clk *clkset_group_list[] = {
 static struct clksrc_sources clkset_group = {
 	.sources	= clkset_group_list,
 	.nr_sources	= ARRAY_SIZE(clkset_group_list),
+};
+
+static struct clksrc_clk clk_sclk_mipidphy4l = {
+	.clk    = {
+		.name           = "sclk_mipidphy4l",
+		.id             = -1,
+		.enable		= s5pv310_clk_ip_lcd0_ctrl,
+		.ctrlbit	= (1 << 4),
+	},
+	.sources        = &clkset_group,
+	.reg_src        = { .reg = S5P_CLKSRC_LCD0, .shift = 12, .size = 4 },
+	.reg_div	= { .reg = S5P_CLKDIV_LCD0, .shift = 16, .size = 4 },
+};
+
+static struct clksrc_clk clk_sclk_mipidphy2l = {
+	.clk    = {
+		.name           = "sclk_mipidphy2l",
+		.id             = -1,
+		.enable		= s5pv310_clk_ip_lcd1_ctrl,
+		.ctrlbit	= (1 << 4),
+	},
+	.sources        = &clkset_group,
+	.reg_src        = { .reg = S5P_CLKSRC_LCD1, .shift = 12, .size = 4 },
+	.reg_div	= { .reg = S5P_CLKDIV_LCD1, .shift = 16, .size = 4 },
 };
 
 static struct clksrc_clk clksrcs[] = {
@@ -294,6 +351,124 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 24, .size = 4 },
 		.reg_div = { .reg = S5P_CLKDIV_PERIL3, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_csis",
+			.id		= 0,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 6),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 24, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 24, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_csis",
+			.id		= 1,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 7),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 28, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 28, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_cam",
+			.id		= 0,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 4),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 16, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 16, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_cam",
+			.id		= 1,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 5),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 20, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 20, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimc",
+			.id		= 0,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 0),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimc",
+			.id		= 1,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 1),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 4, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 4, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimc",
+			.id		= 2,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 2),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 8, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 8, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimc",
+			.id		= 3,
+			.enable		= s5pv310_clk_ip_cam_ctrl,
+			.ctrlbit	= (1 << 3),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 12, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 12, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimd",
+			.id		= 0,
+			.enable		= s5pv310_clk_ip_lcd0_ctrl,
+			.ctrlbit	= (1 << 0),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_LCD0, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_LCD0, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_fimd",
+			.id		= 1,
+			.enable		= s5pv310_clk_ip_lcd1_ctrl,
+			.ctrlbit	= (1 << 0),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_LCD1, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_LCD1, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_mipi",
+			.id		= 0,
+			.parent		= &clk_sclk_mipidphy4l.clk,
+			.enable		= s5pv310_clk_ip_lcd0_ctrl,
+			.ctrlbit	= (1 << 3),
+		},
+		.reg_div = { .reg = S5P_CLKDIV_LCD0, .shift = 20, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_mipi",
+			.id		= 1,
+			.parent		= &clk_sclk_mipidphy2l.clk,
+			.enable		= s5pv310_clk_ip_lcd1_ctrl,
+			.ctrlbit	= (1 << 3),
+		},
+		.reg_div = { .reg = S5P_CLKDIV_LCD0, .shift = 20, .size = 4 },
 	},
 };
 
@@ -313,6 +488,8 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_aclk_100,
 	&clk_aclk_160,
 	&clk_aclk_133,
+	&clk_sclk_mipidphy4l,
+	&clk_sclk_mipidphy2l,
 };
 
 void __init_or_cpufreq s5pv310_setup_clocks(void)
@@ -322,7 +499,6 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	unsigned long mpll;
 	unsigned long epll;
 	unsigned long vpll;
-	unsigned long vpllsrc;
 	unsigned long xtal;
 	unsigned long armclk;
 	unsigned long sclk_dmc;
