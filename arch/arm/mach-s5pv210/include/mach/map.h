@@ -97,6 +97,10 @@
 
 #define S5PV210_PA_ADC		(0xE1700000)
 
+/* jpeg */
+#define S5PV210_PA_JPEG		(0xFB600000)
+#define S5PV210_SZ_JPEG		SZ_1M
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5PV210_PA_UART
 #define S3C_PA_HSMMC0		S5PV210_PA_HSMMC(0)

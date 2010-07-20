@@ -158,6 +158,11 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&device_dm9000,
 #endif
 
+#ifdef CONFIG_VIDEO_JPEG_V2
+	&s3c_device_jpeg,
+#endif
+
+
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
