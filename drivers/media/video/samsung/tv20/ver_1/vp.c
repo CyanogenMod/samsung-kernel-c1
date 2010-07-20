@@ -152,7 +152,7 @@ void s5p_vp_set_src_dest_size(u32 src_width, u32 src_height,
 	writel(S5P_VP_H_RATIO_VAL(h_ratio), vp_base + S5P_VP_H_RATIO);
 	writel(S5P_VP_V_RATIO_VAL(v_ratio), vp_base + S5P_VP_V_RATIO);
 
-	writel((ipc_2d) ? 
+	writel((ipc_2d) ?
 		(readl(vp_base + S5P_VP_MODE) | S5P_VP_MODE_2D_IPC_ENABLE) :
 		(readl(vp_base + S5P_VP_MODE) & ~S5P_VP_MODE_2D_IPC_ENABLE),
 		vp_base + S5P_VP_MODE);
@@ -555,7 +555,7 @@ void s5p_vp_init_csc_control(bool sub_y_offset_en, bool csc_en)
 	VPPRINTK("%d, %d\n\r", sub_y_offset_en, csc_en);
 
 	temp_reg = (sub_y_offset_en) ? S5P_VP_SUB_Y_OFFSET_ENABLE :
-		   			S5P_VP_SUB_Y_OFFSET_DISABLE;
+					S5P_VP_SUB_Y_OFFSET_DISABLE;
 	temp_reg |= (csc_en) ? S5P_VP_CSC_ENABLE : S5P_VP_CSC_DISABLE;
 	writel(temp_reg, vp_base + S5P_PP_CSC_EN);
 }

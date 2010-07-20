@@ -805,7 +805,7 @@ static int s5p_tv_v4l2_s_std(struct file *file, void *fh, v4l2_std_id *norm)
 
 	do {
 		if (s5p_tv_standards[i].id == std_id) {
-			s5ptv_status.v4l2.std = 
+			s5ptv_status.v4l2.std =
 				(struct v4l2_standard *)&s5p_tv_standards[i];
 			break;
 		}

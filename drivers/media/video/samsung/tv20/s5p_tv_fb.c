@@ -729,7 +729,7 @@ static int s5p_tv_fb_open(struct fb_info *fb, int user)
 	} else {
 		atomic_inc(&win->in_use);
 	}
-	
+
 	mutex_unlock(&s5ptv_status.fb_lock);
 
 	return ret;

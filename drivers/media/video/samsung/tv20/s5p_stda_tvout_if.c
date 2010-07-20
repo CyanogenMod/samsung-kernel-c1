@@ -413,10 +413,9 @@ bool s5p_tv_if_init_sd_reg(void)
 
 	sderr = s5p_sdout_init_video_scale_cfg(cpn_lev, cpn_rat,
 						cps_lev, cps_rat);
-	
+
 	if (sderr != 0)
 		return false;
-
 
 	sderr = s5p_sdout_init_sync_signal_pin(sync_pin);
 

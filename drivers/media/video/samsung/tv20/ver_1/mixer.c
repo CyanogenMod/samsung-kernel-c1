@@ -231,7 +231,7 @@ int s5p_vmx_set_grp_base_address(enum s5p_tv_vmx_layer layer, u32 base_addr)
 
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
-		return -1;`
+		return -1;
 	}
 
 	return 0;

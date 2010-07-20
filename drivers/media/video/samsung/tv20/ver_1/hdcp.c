@@ -1518,10 +1518,9 @@ static bool s5p_hdcp_check_ri_start_bh(void)
 				 * Check whether HDMI receiver is
 				 * repeater or not
 				 */
-				if (hdcp_info.is_repeater) {
+				if (hdcp_info.is_repeater)
 					hdcp_info.auth_status
 						= SECOND_AUTHENTICATION_RDY;
-				}
 				else {
 					hdcp_info.auth_status
 						= FIRST_AUTHENTICATION_DONE;
