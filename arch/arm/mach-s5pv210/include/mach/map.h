@@ -77,6 +77,11 @@
 #define S5PV210_PA_SDRAM	(0x20000000)
 #define S5P_PA_SDRAM		S5PV210_PA_SDRAM
 
+#if defined(CONFIG_DM9000)
+#define S5PV210_PA_DM9000	(0xA8000000)
+#define S5P_PA_DM9000		S5PV210_PA_DM9000
+#endif
+
 /* I2S */
 #define S5PV210_PA_IIS0		0xEEE30000
 #define S5PV210_PA_IIS1		0xE2100000
@@ -91,6 +96,10 @@
 #define S5PV210_PA_AC97		0xE2200000
 
 #define S5PV210_PA_ADC		(0xE1700000)
+
+/* jpeg */
+#define S5PV210_PA_JPEG		(0xFB600000)
+#define S5PV210_SZ_JPEG		SZ_1M
 
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5PV210_PA_UART

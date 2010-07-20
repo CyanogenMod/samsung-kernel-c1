@@ -178,6 +178,13 @@ static int s5pv210_clk_ip4_ctrl(struct clk *clk, int enable)
 	return s5p_gatectrl(S5P_CLKGATE_IP4, clk, enable);
 }
 
+#if !defined(CONFIG_CPU_S5PV210_EVT0)
+static int s5pv210_clk_ip5_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP5, clk, enable);
+}
+#endif
+
 static int s5pv210_clk_mask0_ctrl(struct clk *clk, int enable)
 {
 	return s5p_gatectrl(S5P_CLK_SRC_MASK0, clk, enable);
@@ -413,7 +420,18 @@ static struct clk init_clocks_disable[] = {
 		.parent		= &clk_p,
 		.enable		= s5pv210_clk_ip3_ctrl,
 		.ctrlbit	= (1<<4),
-	}
+	}, {
+		.name		= "jpeg",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+#if defined(CONFIG_CPU_S5PV210_EVT0)
+		.enable 	= s5pv210_clk_ip0_ctrl,
+		.ctrlbit	= (1 << 28),
+#else
+		.enable 	= s5pv210_clk_ip5_ctrl,
+		.ctrlbit	= (1 << 29),
+#endif
+	},
 };
 
 static struct clk init_clocks[] = {
