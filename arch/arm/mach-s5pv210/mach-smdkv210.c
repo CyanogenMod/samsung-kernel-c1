@@ -31,6 +31,7 @@
 #include <plat/s5pv210.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/fb.h>
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
@@ -49,6 +50,7 @@
 #define S5PV210_UFCON_DEFAULT	(S3C2410_UFCON_FIFOMODE |	\
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
+extern void s5pv310_reserve_bootmem(void);
 
 static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 	[0] = {
@@ -147,7 +149,9 @@ static struct i2c_board_info i2c_devs2[] __initdata = {
 };
 
 static struct platform_device *smdkv210_devices[] __initdata = {
-	&s5pv210_device_iis0,
+#ifdef CONFIG_FB_S3C
+	&s3c_device_fb,
+#endif
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
 	&s3c_device_ts,
@@ -192,6 +196,9 @@ static void __init smdkv210_machine_init(void)
 	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
 	i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
 
+#ifdef CONFIG_FB_S3C
+	s3cfb_set_platdata(NULL);
+#endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 

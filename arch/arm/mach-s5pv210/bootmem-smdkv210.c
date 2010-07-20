@@ -21,6 +21,16 @@
 
 struct s5p_media_device media_devs[] = {
 
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMD
+        {
+                .id = S5P_MDEV_FIMD,
+                .name = "fimd",
+                .bank = 1,
+                .memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMD * SZ_1K,
+                .paddr = 0,
+        },
+#endif
+
 #ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_JPEG
 	{
 		.id = S5P_MDEV_JPEG,
