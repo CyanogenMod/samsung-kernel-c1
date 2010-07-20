@@ -13,6 +13,8 @@
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/serial_core.h>
+#include <linux/gpio.h>
+#include <linux/dm9000.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -21,8 +23,11 @@
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-mem.h>
+#include <mach/regs-gpio.h>
 
 #include <plat/regs-serial.h>
+#include <plat/gpio-cfg.h>
 #include <plat/s5pv210.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
@@ -75,6 +80,62 @@ static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 	},
 };
 
+#ifdef CONFIG_DM9000
+static struct resource dm9000_resources[] = {
+	[0] = {
+		.start = S5PV210_PA_DM9000,
+		.end   = S5PV210_PA_DM9000,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = S5PV210_PA_DM9000 + 2,
+		.end   = S5PV210_PA_DM9000 + 2,
+		.flags = IORESOURCE_MEM,
+	},
+	[2] = {
+		.start = IRQ_EINT9,
+		.end   = IRQ_EINT9,
+		.flags = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
+	}
+};
+
+static struct dm9000_plat_data dm9000_platdata = {
+	.flags = DM9000_PLATF_16BITONLY | DM9000_PLATF_NO_EEPROM,
+};
+
+struct platform_device device_dm9000 = {
+	.name		= "dm9000",
+	.id		=  0,
+	.num_resources	= ARRAY_SIZE(dm9000_resources),
+	.resource	= dm9000_resources,
+	.dev		= {
+		.platform_data = &dm9000_platdata,
+	}
+};
+
+static void __init dm9000_set(void)
+{
+	unsigned int tmp;
+
+	tmp = ((0<<28)|(0<<24)|(5<<16)|(0<<12)|(0<<8)|(0<<4)|(0<<0));
+	__raw_writel(tmp, (S5P_SROM_BW + 0x18));
+
+	tmp = __raw_readl(S5P_SROM_BW);
+	tmp &= ~(0xf << 20);
+
+	tmp |= (0x1 << 20);		/* 16bit */
+	__raw_writel(tmp, S5P_SROM_BW);
+
+	tmp = __raw_readl(S5PV210_MP01_BASE);
+	tmp &= ~(0xf << 20);
+	tmp |= (2 << 20);
+
+	__raw_writel(tmp, S5PV210_MP01_BASE);
+}
+#else
+static void __init dm9000_set(void) {}
+#endif
+
 static struct i2c_board_info i2c_devs0[] __initdata = {
 };
 
@@ -93,6 +154,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_i2c0,
 	&s3c_device_i2c1,
 	&s3c_device_i2c2,
+#ifdef CONFIG_DM9000
+	&device_dm9000,
+#endif
+
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
@@ -111,6 +176,7 @@ static void __init smdkv210_map_io(void)
 static void __init smdkv210_machine_init(void)
 {
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+	dm9000_set();
 
 	s3c_i2c0_set_platdata(NULL);
 	s3c_i2c1_set_platdata(NULL);
