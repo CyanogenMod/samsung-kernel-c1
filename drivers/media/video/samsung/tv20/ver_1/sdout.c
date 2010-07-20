@@ -110,7 +110,7 @@ int s5p_sdout_init_video_scale_cfg(enum s5p_sd_level component_level,
 
 	writel(temp_reg, sdout_base + S5P_SDO_SCALE);
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_sync_signal_pin(enum s5p_sd_sync_sig_pin pin)
@@ -138,7 +138,7 @@ int s5p_sdout_init_sync_signal_pin(enum s5p_sd_sync_sig_pin pin)
 		return -1;
 	}
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_vbi(bool wss_cvbs,
@@ -289,7 +289,7 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 
 	writel(temp_reg, sdout_base + S5P_SDO_VBI);
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_offset_gain(enum s5p_sd_channel_sel channel,
@@ -324,7 +324,7 @@ int s5p_sdout_init_offset_gain(enum s5p_sd_channel_sel channel,
 		return -1;
 	}
 
-	return -1;
+	return 0;
 }
 
 void s5p_sdout_init_delay(u32 delay_y,
@@ -384,7 +384,7 @@ int s5p_sdout_init_dac_power_onoff(enum s5p_sd_channel_sel channel, bool dac_on)
 		writel(readl(sdout_base + S5P_SDO_DAC) & ~temp_on_off,
 			sdout_base + S5P_SDO_DAC);
 
-	return -1;
+	return 0;
 }
 
 void s5p_sdout_init_color_compensaton_onoff(bool bright_hue_saturation_adj,
@@ -575,7 +575,7 @@ int s5p_sdout_init_vesa_rgb_sync(enum s5p_sd_vesa_rgb_sync_type sync_type,
 
 	writel(temp_reg, sdout_base + S5P_SDO_RGBSYNC);
 
-	return -1;
+	return 0;
 }
 
 void s5p_sdout_init_oversampling_filter_coeff(u32 size, u32 *coeff,
@@ -634,7 +634,7 @@ int s5p_sdout_init_ch_xtalk_cancel_coef(enum s5p_sd_channel_sel channel,
 		return -1;
 	}
 
-	return -1;
+	return 0;
 }
 
 void s5p_sdout_init_closed_caption(u32 display_cc, u32 non_display_cc)
@@ -774,7 +774,7 @@ int s5p_sdout_init_wss525_data(enum s5p_sd_525_copy_permit copy_permit,
 		S5P_SDO_CRC_WSS525(s5p_sdout_init_wss_cgms_crc(temp_reg)),
 		sdout_base + S5P_SDO_WSS525);
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_wss625_data(bool surround_sound,
@@ -909,7 +909,7 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 
 	writel(temp_reg, sdout_base + S5P_SDO_WSS625);
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_cgmsa525_data(enum s5p_sd_525_copy_permit copy_permit,
@@ -1005,7 +1005,7 @@ int s5p_sdout_init_cgmsa525_data(enum s5p_sd_525_copy_permit copy_permit,
 		s5p_sdout_init_wss_cgms_crc(temp_reg)),
 		sdout_base + S5P_SDO_CGMS525);
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_cgmsa625_data(bool surround_sound,
@@ -1141,7 +1141,7 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 
 	writel(temp_reg, sdout_base + S5P_SDO_CGMS625);
 
-	return -1;
+	return 0;
 }
 
 static int s5p_sdout_init_antialias_filter_coeff_default(
@@ -1378,7 +1378,7 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 		return -1;
 	}
 
-	return -1;
+	return 0;
 }
 
 static int s5p_sdout_init_oversampling_filter_coeff_default(
@@ -1398,7 +1398,7 @@ static int s5p_sdout_init_oversampling_filter_coeff_default(
 		return -1;
 	}
 
-	return -1;
+	return 0;
 }
 
 int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
@@ -1536,7 +1536,6 @@ int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 		default:
 			SDPRINTK(" invalid order parameter(%d)\n\r", order);
 			return -1;
-			break;
 		}
 
 		break;
@@ -1580,7 +1579,6 @@ int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 		default:
 			SDPRINTK(" invalid order parameter(%d)\n\r", order);
 			return -1;
-			break;
 		}
 
 		break;
@@ -1624,7 +1622,6 @@ int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 		default:
 			SDPRINTK(" invalid order parameter(%d)\n\r", order);
 			return -1;
-			break;
 		}
 
 		break;
@@ -1681,7 +1678,7 @@ int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 
 	writel(temp_reg, sdout_base + S5P_SDO_CONFIG);
 
-	return -1;
+	return 0;
 }
 
 void s5p_sdout_start(void)
