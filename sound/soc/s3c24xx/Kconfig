@@ -54,6 +54,15 @@ config SND_S3C24XX_SOC_NEO1973_GTA02_WM8753
 	  This driver provides audio support for the Openmoko Neo FreeRunner
 	  smartphone.
 	  
+config SND_S3C24XX_SOC_SMDK2416_WM8580
+	tristate "SoC I2S Audio support for SMDK2416 - WM8580"
+	depends on SND_S3C24XX_SOC && (CPU_S3C2416)
+	select SND_S3C24XX_SOC_I2S
+	select SND_SOC_WM8580
+	  help
+	  Say Y if you want to add support for SoC audio on smdk2416
+	  with the WM8580.
+
 config SND_S3C24XX_SOC_JIVE_WM8750
 	tristate "SoC I2S Audio support for Jive"
 	depends on SND_S3C24XX_SOC && MACH_JIVE
