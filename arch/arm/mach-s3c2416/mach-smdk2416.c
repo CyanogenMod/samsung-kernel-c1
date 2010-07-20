@@ -23,6 +23,7 @@
 #include <linux/mtd/partitions.h>
 #include <linux/gpio.h>
 #include <linux/fb.h>
+#include <linux/delay.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -35,6 +36,7 @@
 #include <plat/regs-serial.h>
 #include <mach/regs-gpio.h>
 #include <mach/regs-lcd.h>
+#include <mach/regs-s3c2443-clock.h>
 
 #include <mach/idle.h>
 #include <mach/leds-gpio.h>
@@ -168,6 +170,25 @@ struct s3c2410_ts_mach_info s3c_ts_platform = {
                 .oversampling_shift = 2,
 };
 
+void s3c2416_hsudc_gpio_setup(void)
+{
+	s3c_gpio_setpull(S3C2410_GPH(14), S3C_GPIO_PULL_UP);
+	s3c_gpio_setpull(S3C2410_GPF(2), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(14), S3C_GPIO_SFN(1));
+	
+	s3c2410_modify_misccr(S3C2416_MISCCR_SEL_SUSPND, 0);
+	__raw_writel(__raw_readl(S3C2443_PWRCFG)|(1<<4), S3C2443_PWRCFG);
+	__raw_writel((1 << 0), S3C2443_URSTCON);
+	mdelay(1);
+
+	__raw_writel((1<<2)|(1<<1)|(0<<0), S3C2443_URSTCON);
+	__raw_writel((0<<2)|(0<<1)|(0<<0), S3C2443_URSTCON);
+	__raw_writel((0<<3)|(1<<2)|(1<<1)|(0<<0), S3C2443_PHYCTRL);
+	__raw_writel((1<<31)|(0<<4)|(0<<3)|(0<<2)|(0<<1)|(0<<0), S3C2443_PHYPWR);
+	__raw_writel((0<<31)|(1<<2)|(0<<1)|(1<<0), S3C2443_UCLKCON);
+	__raw_writel((1<<31)|(1<<2)|(0<<1)|(1<<0), S3C2443_UCLKCON);
+}
+
 static struct platform_device *smdk2416_devices[] __initdata = {
 	&s3c_device_adc,
 	&s3c_device_fb,
@@ -177,6 +198,7 @@ static struct platform_device *smdk2416_devices[] __initdata = {
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
 	&s3c_device_ts,
+	&s3c_device_usb_hsudc,
 };
 
 static void __init smdk2416_map_io(void)
