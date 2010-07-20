@@ -34,6 +34,7 @@
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
+#include <plat/media.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define S5PV210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -176,6 +177,7 @@ static void __init smdkv210_map_io(void)
 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
 	s3c24xx_init_clocks(24000000);
 	s3c24xx_init_uarts(smdkv210_uartcfgs, ARRAY_SIZE(smdkv210_uartcfgs));
+	s5p_reserve_bootmem();
 }
 
 static void __init smdkv210_machine_init(void)
