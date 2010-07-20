@@ -61,7 +61,6 @@
 		if (clk == NULL) { 					\
 			printk(KERN_ERR					\
 			"failed to find %s clock source\n", name);	\
-
 			return -ENOENT;					\
 		}							\
 		clk_enable(clk)						\
@@ -91,7 +90,6 @@
 			if (IS_ERR(clk)) {				\
 				printk(KERN_ERR 			\
 				"failed to find clock \"%s\"\n", clk_name);\
-
 				return ENOENT;				\
 			}						\
 		} while (0);
