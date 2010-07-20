@@ -32,7 +32,7 @@
 #include <mach/irqs.h>
 #include <linux/semaphore.h>
 #include <mach/map.h>
-/*#include <mach/pd.h>*/
+#include <mach/pd.h>
 #include <linux/miscdevice.h>
 #include <linux/vmalloc.h>
 #include <linux/string.h>
@@ -103,13 +103,11 @@ static int s3c_jpeg_open(struct inode *inode, struct file *file)
 	sspc100_jpg_ctx *jpg_reg_ctx;
 	DWORD	ret;
 
-	/*
 	ret = s5pv210_pd_enable("jpeg_pd");
 	if (ret < 0) {
 		jpg_err("failed to enable jpeg power domain\n");
 		return FALSE;
 	}
-	*/
 
 	/* clock enable */
 	clk_enable(s3c_jpeg_clk);
@@ -173,15 +171,14 @@ static int s3c_jpeg_release(struct inode *inode, struct file *file)
 	unlock_jpg_mutex();
 	kfree(jpg_reg_ctx);
 
-/* clock disable */
+	/* clock disable */
 	clk_disable(s3c_jpeg_clk);
-	/*
+	
 	ret = s5pv210_pd_disable("jpeg_pd");
 	if (ret < 0) {
 		jpg_err("failed to disable jpeg power domain\n");
 		return FALSE;
 	}
-	*/
 
 	return 0;
 }
@@ -466,13 +463,12 @@ static int s3c_jpeg_suspend(struct platform_device *pdev, pm_message_t state)
 	/* clock disable */
 	clk_disable(s3c_jpeg_clk);
 
-	/*
 	ret = s5pv210_pd_disable("jpeg_pd");
 	if (ret < 0) {
 		jpg_err("failed to disable jpeg power domain\n");
 		return FALSE;
 	}
-	*/
+	
 	return 0;
 }
 
@@ -480,13 +476,12 @@ static int s3c_jpeg_resume(struct platform_device *pdev)
 {
 	int ret;
 
-	/*
 	ret = s5pv210_pd_enable("jpeg_pd");
 	if (ret < 0) {
 		jpg_err("failed to enable jpeg power domain\n");
 		return FALSE;
 	}
-	*/
+	
 	/* clock enable */
 	clk_enable(s3c_jpeg_clk);
 
