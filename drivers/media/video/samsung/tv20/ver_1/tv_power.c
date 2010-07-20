@@ -84,7 +84,6 @@ unsigned short s5p_tv_power_get_power_status(void)
 {
 	TVPMPRINTK("(0x%08x)\n\r", readl(S5P_BLK_PWR_STAT));
 
-
 	return TVPWR_TV_BLOCK_STATUS(readl(S5P_BLK_PWR_STAT)) ? 1 : 0;
 }
 
@@ -95,30 +94,24 @@ unsigned short s5p_tv_power_get_dac_power_status(void)
 	return (readl(S5P_DAC_CONTROL) & S5P_DAC_ENABLE) ? 1 : 0;
 }
 
-
 void s5p_tv_power_on(void)
 {
 	TVPMPRINTK("0x%08x\n\r", readl(S3C_VA_SYS + 0xE804));
 
 	writel(readl(S3C_VA_SYS + 0xE804) | 0x1, S3C_VA_SYS + 0xE804);
-
 	writel(readl(S5P_NORMAL_CFG) | TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
 
 	while (!TVPWR_TV_BLOCK_STATUS(readl(S5P_BLK_PWR_STAT)))
 		msleep(1);
-
 }
-
 
 void s5p_tv_power_off(void)
 {
 	TVPMPRINTK("()\n\r");
 
 	s5p_tv_powerset_dac_onoff(0);
-
 	writel(readl(S5P_NORMAL_CFG) & ~TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
 
 	while (TVPWR_TV_BLOCK_STATUS(readl(S5P_BLK_PWR_STAT)))
 		msleep(1);
-
 }

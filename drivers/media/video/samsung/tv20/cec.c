@@ -58,7 +58,6 @@ void s5p_cec_set_rx_state(enum cec_state state)
 	atomic_set(&cec_rx_struct.state, state);
 }
 
-
 int s5p_cec_open(struct inode *inode, struct file *file)
 {
 	s5p_tv_clk_gate(true);
@@ -89,18 +88,16 @@ int s5p_cec_release(struct inode *inode, struct file *file)
 	s5p_cec_mask_tx_interrupts();
 	s5p_cec_mask_rx_interrupts();
 
-
 	return 0;
 }
 
-ssize_t s5p_cec_read(struct file *file, char __user *buffer, size_t count,
-	loff_t *ppos)
+ssize_t s5p_cec_read(struct file *file, char __user *buffer,
+			size_t count, loff_t *ppos)
 {
 	ssize_t retval;
 
 	if (wait_event_interruptible(cec_rx_struct.waitq,
-		atomic_read(&cec_rx_struct.state)
-		== STATE_DONE)) {
+			atomic_read(&cec_rx_struct.state) == STATE_DONE)) {
 		return -ERESTARTSYS;
 	}
 
@@ -108,12 +105,14 @@ ssize_t s5p_cec_read(struct file *file, char __user *buffer, size_t count,
 
 	if (cec_rx_struct.size > count) {
 		spin_unlock_irq(&cec_rx_struct.lock);
+
 		return -1;
 	}
 
 	if (copy_to_user(buffer, cec_rx_struct.buffer, cec_rx_struct.size)) {
 		spin_unlock_irq(&cec_rx_struct.lock);
 		printk(KERN_ERR " copy_to_user() failed!\n");
+
 		return -EFAULT;
 	}
 
@@ -126,7 +125,7 @@ ssize_t s5p_cec_read(struct file *file, char __user *buffer, size_t count,
 }
 
 ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
-	size_t count, loff_t *ppos)
+			size_t count, loff_t *ppos)
 {
 	char *data;
 
@@ -139,12 +138,14 @@ ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 
 	if (!data) {
 		printk(KERN_ERR " kmalloc() failed!\n");
+
 		return -1;
 	}
 
 	if (copy_from_user(data, buffer, count)) {
 		printk(KERN_ERR " copy_from_user() failed!\n");
 		kfree(data);
+
 		return -EFAULT;
 	}
 
@@ -156,6 +157,7 @@ ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 	if (wait_event_interruptible(cec_tx_struct.waitq,
 		atomic_read(&cec_tx_struct.state)
 		!= STATE_TX)) {
+
 		return -ERESTARTSYS;
 	}
 
@@ -166,12 +168,11 @@ ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 }
 
 int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
-	unsigned long arg)
+			unsigned long arg)
 {
 	u32 laddr;
 
 	switch (cmd) {
-
 	case CEC_IOC_SETLADDR:
 		CECIFPRINTK("ioctl(CEC_IOC_SETLADDR)\n");
 
@@ -181,7 +182,6 @@ int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
 		CECIFPRINTK("logical address = 0x%02x\n", laddr);
 
 		s5p_cec_set_addr(laddr);
-
 		break;
 
 	default:
@@ -217,7 +217,6 @@ static struct miscdevice cec_misc_device = {
 	.fops  = &cec_fops,
 };
 
-
 /**
  * @brief CEC interrupt handler
  *
@@ -234,9 +233,8 @@ irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 
 	/* is this our interrupt? */
 /*
-	if (!(flag & (1 << HDMI_IRQ_CEC))) {
+	if (!(flag & (1 << HDMI_IRQ_CEC)))
 		return IRQ_NONE;
-	}
 */
 	status = s5p_cec_get_status();
 
@@ -250,7 +248,6 @@ irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 		}
 
 		s5p_clr_pending_tx();
-
 
 		wake_up_interruptible(&cec_tx_struct.waitq);
 	}
@@ -284,7 +281,6 @@ irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 		/* clear interrupt pending bit */
 		s5p_clr_pending_rx();
 
-
 		wake_up_interruptible(&cec_rx_struct.waitq);
 	}
 
@@ -306,20 +302,25 @@ static int __init s5p_cec_probe(struct platform_device *pdev)
 	if (misc_register(&cec_misc_device)) {
 		printk(KERN_WARNING " Couldn't register device 10, %d.\n",
 			CEC_MINOR);
+
 		return -EBUSY;
 	}
 
 	irq_num = platform_get_irq(pdev, 0);
+
 	if (irq_num < 0) {
 		printk(KERN_ERR  "failed to get %s irq resource\n", "cec");
 		ret = -ENOENT;
+
 		return ret;
 	}
 
 	ret = request_irq(irq_num, s5p_cec_irq_handler, IRQF_DISABLED,
 		pdev->name, &pdev->id);
+
 	if (ret != 0) {
 		printk(KERN_ERR  "failed to install %s irq (%d)\n", "cec", ret);
+
 		return ret;
 	}
 
@@ -333,6 +334,7 @@ static int __init s5p_cec_probe(struct platform_device *pdev)
 	if (!buffer) {
 		printk(KERN_ERR " kmalloc() failed!\n");
 		misc_deregister(&cec_misc_device);
+
 		return -EIO;
 	}
 
@@ -402,6 +404,7 @@ int __init s5p_cec_init(void)
 
 	if (ret) {
 		printk(KERN_ERR "Platform Device Register Failed %d\n", ret);
+
 		return -1;
 	}
 
@@ -413,7 +416,6 @@ static void __exit s5p_cec_exit(void)
 	kfree(cec_rx_struct.buffer);
 
 	platform_driver_unregister(&s5p_cec_driver);
-
 }
 
 module_init(s5p_cec_init);
@@ -422,4 +424,3 @@ module_exit(s5p_cec_exit);
 MODULE_AUTHOR("SangPil Moon");
 MODULE_DESCRIPTION("SS5PC11X CEC driver");
 MODULE_LICENSE("GPL");
-

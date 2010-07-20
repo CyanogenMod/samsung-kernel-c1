@@ -54,7 +54,6 @@ void s5p_cec_set_divider(void)
 	writeb(0x0, cec_base + S5P_CES_DIVISOR_2);
 	writeb(0x0, cec_base + S5P_CES_DIVISOR_1);
 	writeb(div_val, cec_base + S5P_CES_DIVISOR_0);
-
 }
 
 /**
@@ -121,7 +120,6 @@ void s5p_cec_reset(void)
 {
 	writeb(S5P_CES_RX_CTRL_RESET, cec_base + S5P_CES_RX_CTRL);
 	writeb(S5P_CES_TX_CTRL_RESET, cec_base + S5P_CES_TX_CTRL);
-
 }
 
 void s5p_cec_tx_reset(void)
@@ -131,7 +129,8 @@ void s5p_cec_tx_reset(void)
 
 void s5p_cec_rx_reset(void)
 {
-	writeb(S5P_CES_RX_CTRL_RESET, cec_base + S5P_CES_RX_CTRL);}
+	writeb(S5P_CES_RX_CTRL_RESET, cec_base + S5P_CES_RX_CTRL);
+}
 
 void s5p_cec_threshold(void)
 {
@@ -145,7 +144,7 @@ void s5p_cec_copy_packet(char *data, size_t count)
 	u8 reg;
 	/* copy packet to hardware buffer */
 	while (i < count) {
-		writeb(data[i], cec_base + (S5P_CES_TX_BUFF0 + (i*4)));
+		writeb(data[i], cec_base + (S5P_CES_TX_BUFF0 + (i * 4)));
 		i++;
 	}
 
@@ -194,13 +193,15 @@ u32 s5p_cec_get_status(void)
 void s5p_clr_pending_tx(void)
 {
 	/* clear interrupt pending bit */
-	writeb(S5P_CES_IRQ_TX_DONE | S5P_CES_IRQ_TX_ERROR, cec_base + S5P_CES_IRQ_CLEAR);
+	writeb(S5P_CES_IRQ_TX_DONE | S5P_CES_IRQ_TX_ERROR,
+					cec_base + S5P_CES_IRQ_CLEAR);
 }
 
 void s5p_clr_pending_rx(void)
 {
 	/* clear interrupt pending bit */
-	writeb(S5P_CES_IRQ_RX_DONE | S5P_CES_IRQ_RX_ERROR, cec_base + S5P_CES_IRQ_CLEAR);
+	writeb(S5P_CES_IRQ_RX_DONE | S5P_CES_IRQ_RX_ERROR,
+					cec_base + S5P_CES_IRQ_CLEAR);
 }
 
 void s5p_cec_get_rx_buf(u32 size, u8 *buffer)
@@ -225,7 +226,6 @@ void __init s5p_cec_mem_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"failed to get memory region resource for cec\n");
 		ret = -ENOENT;
-
 	}
 
 	size = (res->end - res->start) + 1;
@@ -236,7 +236,6 @@ void __init s5p_cec_mem_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"failed to get memory region for cec\n");
 		ret = -ENOENT;
-
 	}
 
 	cec_base = ioremap(res->start, size);
@@ -245,10 +244,7 @@ void __init s5p_cec_mem_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev,
 			"failed to ioremap address region for cec\n");
 		ret = -ENOENT;
-
-
 	}
-
 }
 
 int __init s5p_cec_mem_release(struct platform_device *pdev)
@@ -268,4 +264,3 @@ int __init s5p_cec_mem_release(struct platform_device *pdev)
 
 	return 0;
 }
-

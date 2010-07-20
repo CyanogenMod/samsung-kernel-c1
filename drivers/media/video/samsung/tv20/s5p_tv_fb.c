@@ -20,7 +20,13 @@
 
 #include "s5p_tv.h"
 
-int s5p_tv_fb_set_output(struct s5p_tv_status *ctrl) { return 0; }
+#define TV_LOGO_W	800
+#define TV_LOGO_H	480
+
+int s5p_tv_fb_set_output(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
 
 int s5p_tv_fb_set_display_mode(struct s5p_tv_status *ctrl)
 {
@@ -63,11 +69,31 @@ int s5p_tv_fb_display_off(struct s5p_tv_status *ctrl)
 	return 0;
 }
 
-int s5p_tv_fb_frame_off(struct s5p_tv_status *ctrl) { return 0; }
-int s5p_tv_fb_set_clock(struct s5p_tv_status *ctrl) { return 0; }
-int s5p_tv_fb_set_polarity(struct s5p_tv_status *ctrl) { return 0; }
-int s5p_tv_fb_set_timing(struct s5p_tv_status *ctrl) { return 0; }
-int s5p_tv_fb_set_lcd_size(struct s5p_tv_status *ctrl) { return 0; }
+int s5p_tv_fb_frame_off(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
+
+int s5p_tv_fb_set_clock(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
+
+int s5p_tv_fb_set_polarity(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
+
+int s5p_tv_fb_set_timing(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
+
+int s5p_tv_fb_set_lcd_size(struct s5p_tv_status *ctrl)
+{
+	return 0;
+}
+
 int s5p_tv_fb_window_on(struct s5p_tv_status *ctrl, int id)
 {
 	s5p_vmx_set_layer_show(VM_GPR0_LAYER, true);
@@ -78,11 +104,20 @@ int s5p_tv_fb_window_on(struct s5p_tv_status *ctrl, int id)
 int s5p_tv_fb_window_off(struct s5p_tv_status *ctrl, int id)
 {
 	s5p_vmx_set_layer_show(VM_GPR0_LAYER, false);
+
 	return 0;
 }
 
-int s5p_tv_fb_set_window_control(struct s5p_tv_status *ctrl, int id) { return 0; }
-int s5p_tv_fb_set_alpha_blending(struct s5p_tv_status *ctrl, int id) { return 0; }
+int s5p_tv_fb_set_window_control(struct s5p_tv_status *ctrl, int id)
+{
+	return 0;
+}
+
+int s5p_tv_fb_set_alpha_blending(struct s5p_tv_status *ctrl, int id)
+{
+	return 0;
+}
+
 int s5p_tv_fb_set_window_position(struct s5p_tv_status *ctrl, int id)
 {
 	u32 off_x, off_y;
@@ -106,7 +141,6 @@ int s5p_tv_fb_set_window_position(struct s5p_tv_status *ctrl, int id)
 	 */
 
 	switch (ctrl->tvout_param.disp_mode) {
-
 	case TVOUT_NTSC_M:
 	case TVOUT_480P_60_16_9:
 	case TVOUT_480P_60_4_3:
@@ -174,6 +208,7 @@ int s5p_tv_fb_set_window_size(struct s5p_tv_status *ctrl, int id)
 
 	return 0;
 }
+
 int s5p_tv_fb_set_buffer_address(struct s5p_tv_status *ctrl, int id)
 {
 	struct fb_fix_screeninfo *fix = &ctrl->fb->fix;
@@ -189,10 +224,14 @@ int s5p_tv_fb_set_buffer_address(struct s5p_tv_status *ctrl, int id)
 	}
 
 	s5p_vmx_set_grp_base_address(VM_GPR0_LAYER, start_addr);
+
 	return 0;
 }
 
-int s5p_tv_fb_set_buffer_size(struct s5p_tv_status *ctrl, int id) { return 0; }
+int s5p_tv_fb_set_buffer_size(struct s5p_tv_status *ctrl, int id)
+{
+	return 0;
+}
 
 int s5p_tv_fb_set_chroma_key(struct s5p_tv_status *ctrl, int id)
 {
@@ -214,9 +253,6 @@ int s5p_tv_fb_set_chroma_key(struct s5p_tv_status *ctrl, int id)
 
 	return 0;
 }
-
-
-
 
 static inline unsigned int s5p_tv_fb_chan_to_field(unsigned int chan,
 						struct fb_bitfield bf)
@@ -241,20 +277,20 @@ static int s5p_tv_fb_set_alpha_info(struct fb_var_screeninfo *var,
 	return 0;
 }
 
-
 static int s5p_tv_fb_enable_window(int id)
 {
 	struct s5ptvfb_window *win = s5ptv_status.fb->par;
 
 	if (s5p_tv_fb_window_on(&s5ptv_status, id)) {
 		win->enabled = 0;
+
 		return -EFAULT;
 	} else {
 		win->enabled = 1;
+
 		return 0;
 	}
 }
-
 
 static int s5p_tv_fb_disable_window(int id)
 {
@@ -262,9 +298,11 @@ static int s5p_tv_fb_disable_window(int id)
 
 	if (s5p_tv_fb_window_off(&s5ptv_status, id)) {
 		win->enabled = 1;
+
 		return -EFAULT;
 	} else {
 		win->enabled = 0;
+
 		return 0;
 	}
 }
@@ -313,14 +351,12 @@ int s5p_tv_fb_map_video_memory(struct fb_info *fb)
 		dev_info(s5ptv_status.dev_fb,
 			"[fb%d] dma: 0x%08x, cpu: 0x%08x,size: 0x%08x\n",
 			win->id, (unsigned int) fix->smem_start,
-				(unsigned int) fb->screen_base,
-				fix->smem_len);
+			(unsigned int) fb->screen_base, fix->smem_len);
 
 	memset(fb->screen_base, 0, fix->smem_len);
 
 	return 0;
 }
-
 
 static int s5p_tv_fb_set_bitfield(struct fb_var_screeninfo *var)
 {
@@ -378,9 +414,6 @@ static int s5p_tv_fb_set_bitfield(struct fb_var_screeninfo *var)
 	return 0;
 }
 
-#define TV_LOGO_W	800
-#define TV_LOGO_H	480
-
 int s5p_tv_fb_draw_logo(struct fb_info *fb)
 {
 	return 0;
@@ -391,7 +424,6 @@ static int s5p_tv_fb_cursor(struct fb_info *info, struct fb_cursor *cursor)
 	/* nothing to do for removing cursor */
 	return 0;
 }
-
 
 static int s5p_tv_fb_setcolreg(unsigned int regno, unsigned int red,
 				unsigned int green, unsigned int blue,
@@ -413,9 +445,8 @@ static int s5p_tv_fb_setcolreg(unsigned int regno, unsigned int red,
 	return 0;
 }
 
-
 static int s5p_tv_fb_pan_display(struct fb_var_screeninfo *var,
-	struct fb_info *fb)
+				struct fb_info *fb)
 {
 	struct s5ptvfb_window *win = fb->par;
 
@@ -540,7 +571,6 @@ int s5p_tv_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 	/* modify the fix info */
 	fix->line_length = var->xres_virtual * var->bits_per_pixel / 8;
 	fix->smem_len = fix->line_length * var->yres_virtual;
-
 
 	s5p_tv_fb_set_bitfield(var);
 	s5p_tv_fb_set_alpha_info(var, win);
@@ -696,9 +726,10 @@ static int s5p_tv_fb_open(struct fb_info *fb, int user)
 		"for window\n");
 		ret = -EBUSY;
 
-	} else
+	} else {
 		atomic_inc(&win->in_use);
-
+	}
+	
 	mutex_unlock(&s5ptv_status.fb_lock);
 
 	return ret;
@@ -730,7 +761,6 @@ int s5p_tv_fb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 	int ret = 0;
 
 	switch (cmd) {
-
 	case FBIO_ALLOC:
 		win->path = (enum s5ptvfb_data_path_t) argp;
 		break;
@@ -783,7 +813,7 @@ int s5p_tv_fb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 
 		s5p_tv_v4l2_init_param();
 
-		/*      s5ptv_status.tvout_param.disp_mode = TVOUT_720P_60; */
+		/* s5ptv_status.tvout_param.disp_mode = TVOUT_720P_60; */
 		s5ptv_status.tvout_param.out_mode  = TVOUT_OUTPUT_HDMI;
 
 		s5p_tv_if_set_disp();
@@ -909,4 +939,3 @@ void s5p_tv_fb_set_lcd_info(struct s5p_tv_status *ctrl)
 {
 	ctrl->lcd = &max_tvfb;
 }
-

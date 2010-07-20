@@ -47,34 +47,34 @@ bool s5p_grp_start(enum s5p_tv_vmx_layer vm_layer)
 	}
 
 	merr = s5p_vmx_init_layer(s5ptv_status.tvout_param.disp_mode,
-			  vm_layer,
-			  true,
-			  s5ptv_overlay[vm_layer].win_blending,
-			  s5ptv_overlay[vm_layer].win.global_alpha,
-			  s5ptv_overlay[vm_layer].priority,
-			  s5ptv_overlay[vm_layer].fb.fmt.pixelformat,
-			  s5ptv_overlay[vm_layer].blank_change,
-			  s5ptv_overlay[vm_layer].pixel_blending,
-			  s5ptv_overlay[vm_layer].pre_mul,
-			  s5ptv_overlay[vm_layer].blank_color,
-			  s5ptv_overlay[vm_layer].base_addr,
-			  s5ptv_overlay[vm_layer].fb.fmt.bytesperline,
-			  s5ptv_overlay[vm_layer].win.w.width,
-			  s5ptv_overlay[vm_layer].win.w.height,
-			  s5ptv_overlay[vm_layer].win.w.left,
-			  s5ptv_overlay[vm_layer].win.w.top,
-			  s5ptv_overlay[vm_layer].dst_rect.left,
-			  s5ptv_overlay[vm_layer].dst_rect.top,
-			  s5ptv_overlay[vm_layer].dst_rect.width,
-			  s5ptv_overlay[vm_layer].dst_rect.height);
+				vm_layer,
+				true,
+				s5ptv_overlay[vm_layer].win_blending,
+				s5ptv_overlay[vm_layer].win.global_alpha,
+				s5ptv_overlay[vm_layer].priority,
+				s5ptv_overlay[vm_layer].fb.fmt.pixelformat,
+				s5ptv_overlay[vm_layer].blank_change,
+				s5ptv_overlay[vm_layer].pixel_blending,
+				s5ptv_overlay[vm_layer].pre_mul,
+				s5ptv_overlay[vm_layer].blank_color,
+				s5ptv_overlay[vm_layer].base_addr,
+				s5ptv_overlay[vm_layer].fb.fmt.bytesperline,
+				s5ptv_overlay[vm_layer].win.w.width,
+				s5ptv_overlay[vm_layer].win.w.height,
+				s5ptv_overlay[vm_layer].win.w.left,
+				s5ptv_overlay[vm_layer].win.w.top,
+				s5ptv_overlay[vm_layer].dst_rect.left,
+				s5ptv_overlay[vm_layer].dst_rect.top,
+				s5ptv_overlay[vm_layer].dst_rect.width,
+				s5ptv_overlay[vm_layer].dst_rect.height);
 
 	if (merr != 0) {
 		GRPPRINTK("can't initialize layer(%d)\n\r", merr);
+
 		return false;
 	}
 
 	s5p_vmx_start();
-
 
 	st->grp_layer_enable[vm_layer] = true;
 
@@ -102,11 +102,9 @@ bool s5p_grp_stop(enum s5p_tv_vmx_layer vm_layer)
 
 	s5p_vmx_start();
 
-
 	st->grp_layer_enable[vm_layer] = false;
 
 	GRPPRINTK("()\n\r");
 
 	return true;
 }
-

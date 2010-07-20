@@ -50,7 +50,7 @@ u8 s5p_vlayer_check_input_mode(enum s5p_vp_src_color color)
 }
 
 u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
-			enum s5p_tv_o_mode out)
+				enum s5p_tv_o_mode out)
 {
 	u8 ret = PROGRESSIVE;
 
@@ -60,6 +60,7 @@ u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
 		ret = INTERLACED;
 		break;
+
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
 	case TVOUT_OUTPUT_HDMI_RGB:
@@ -73,6 +74,7 @@ u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
 		else
 			ret = PROGRESSIVE;
 		break;
+
 	default:
 		break;
 	}
@@ -81,13 +83,12 @@ u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
 
 }
 
-
 static bool s5p_vlayer_wait_previous_update(void)
 {
 	s5p_vp_get_update_status();
+
 	return false;
 }
-
 
 static void s5p_vlayer_calc_inner_values(void)
 {
@@ -294,7 +295,6 @@ bool s5p_vlayer_stop(void)
 	return true;
 }
 
-
 bool s5p_vlayer_set_priority(unsigned long buf_in)
 {
 	int merr;
@@ -341,7 +341,6 @@ bool s5p_vlayer_set_alpha(unsigned long buf_in)
 	if (merr != 0)
 		return false;
 
-
 	return true;
 }
 
@@ -353,7 +352,6 @@ bool s5p_vlayer_set_field_id(unsigned long buf_in)
 
 	if (s5p_vlayer_wait_previous_update())
 		return false;
-
 
 	s5p_vp_set_field_id(s5ptv_status.field_id);
 
@@ -389,12 +387,10 @@ bool s5p_vlayer_set_top_address(unsigned long buf_in)
 	if (s5p_vlayer_wait_previous_update())
 		return false;
 
-
 	verr = s5p_vp_set_top_field_address(t_y_addr, t_c_addr);
 
 	if (verr != 0)
 		return false;
-
 
 	if (s5p_vlayer_check_input_mode(s5ptv_status.src_color) == INTERLACED) {
 		s5p_vp_set_field_id(s5ptv_status.field_id);
@@ -448,20 +444,17 @@ bool s5p_vlayer_set_bottom_address(unsigned long buf_in)
 	if (verr != 0)
 		return false;
 
-
 	if (s5ptv_status.src_color == VPROC_SRC_COLOR_NV12IW) {
 		verr = s5p_vp_set_top_field_address(t_y_addr, t_c_addr);
 
 		if (verr != 0)
 			return false;
-
 	}
 
 	verr = s5p_vp_update();
 
 	if (verr != 0)
 		return false;
-
 
 	return true;
 }
@@ -477,12 +470,10 @@ bool s5p_vlayer_set_img_size(unsigned long buf_in)
 	if (s5p_vlayer_wait_previous_update())
 		return false;
 
-
 	verr = s5p_vp_set_img_size(size->img_width, size->img_height);
 
 	if (verr != 0)
 		return false;
-
 
 	verr = s5p_vp_update();
 
@@ -513,7 +504,6 @@ bool s5p_vlayer_set_src_position(unsigned long buf_in)
 
 	if (verr != 0)
 		return false;
-
 
 	return true;
 }
@@ -622,7 +612,6 @@ bool s5p_vlayer_set_brightness(unsigned long buf_in)
 	if (s5p_vlayer_wait_previous_update())
 		return false;
 
-
 	s5p_vp_set_brightness(s5ptv_status.us_vl_brightness);
 
 
@@ -630,7 +619,6 @@ bool s5p_vlayer_set_brightness(unsigned long buf_in)
 
 	if (verr != 0)
 		return false;
-
 
 	return true;
 }
@@ -644,14 +632,12 @@ bool s5p_vlayer_set_contrast(unsigned long buf_in)
 	if (s5p_vlayer_wait_previous_update())
 		return false;
 
-
 	s5p_vp_set_contrast(s5ptv_status.vl_contrast);
 
 	verr = s5p_vp_update();
 
 	if (verr != 0)
 		return false;
-
 
 	return true;
 }
@@ -676,6 +662,7 @@ bool s5p_vlayer_set_brightness_contrast_control(unsigned long buf_in)
 	if (ctrl->eq_num > VProc_LINE_EQ_7 ||
 		ctrl->eq_num < VProc_LINE_EQ_0) {
 		VLAYERPRINTK("(ERR) : invalid eq_num(%d)\n\r", ctrl->eq_num);
+
 		return false;
 	}
 
@@ -701,7 +688,6 @@ bool s5p_vlayer_set_brightness_contrast_control(unsigned long buf_in)
 	if (verr != 0)
 		return false;
 
-
 	return true;
 }
 
@@ -717,12 +703,12 @@ bool s5p_vlayer_set_poly_filter_coef(unsigned long buf_in)
 		coef->poly_coeff > VPROC_POLY4_C1_HH) {
 		VLAYERPRINTK("(ERR) : invalid poly_coeff(%d)\n\r",
 			coef->poly_coeff);
+
 		return false;
 	}
 
 	if (s5p_vlayer_wait_previous_update())
 		return false;
-
 
 	verr = s5p_vp_init_poly_filter_coef(coef->poly_coeff,
 					coef->ch0, coef->ch1,
@@ -750,6 +736,7 @@ bool s5p_vlayer_set_csc_coef(unsigned long buf_in)
 		coef->csc_coeff > VPROC_CSC_CR2CR_COEF) {
 		VLAYERPRINTK("(ERR) : invalid csc_coeff(%d)\n\r",
 			coef->csc_coeff);
+
 		return false;
 	}
 
@@ -767,7 +754,6 @@ bool s5p_vlayer_set_csc_coef(unsigned long buf_in)
 	if (verr != 0)
 		return false;
 
-
 	s5ptv_status.vl_csc_coef_default = false;
 
 	return true;
@@ -780,37 +766,23 @@ bool s5p_vlayer_init_param(unsigned long buf_in)
 	bool i_mode, o_mode; /* 0 for interlaced, 1 for progressive */
 
 	switch (st->tvout_param.disp_mode) {
-
 	case TVOUT_480P_60_16_9:
-
 	case TVOUT_480P_60_4_3:
-
 	case TVOUT_576P_50_16_9:
-
 	case TVOUT_576P_50_4_3:
-
 	case TVOUT_480P_59:
 		st->vl_csc_type = VPROC_CSC_SD_HD;
 		break;
 
 	case TVOUT_1080I_50:
-
 	case TVOUT_1080I_60:
-
 	case TVOUT_1080P_50:
-
 	case TVOUT_1080P_30:
-
 	case TVOUT_1080P_60:
-
 	case TVOUT_720P_59:
-
 	case TVOUT_1080I_59:
-
 	case TVOUT_1080P_59:
-
 	case TVOUT_720P_50:
-
 	case TVOUT_720P_60:
 		st->vl_csc_type = VPROC_CSC_HD_SD;
 		break;
@@ -820,7 +792,6 @@ bool s5p_vlayer_init_param(unsigned long buf_in)
 	}
 
 	st->vl_csc_control.csc_en = false;
-
 
 	i_mode = s5p_vlayer_check_input_mode(st->src_color);
 	o_mode = s5p_vlayer_check_output_mode(st->tvout_param.disp_mode,
@@ -865,6 +836,7 @@ bool s5p_vlayer_init_param(unsigned long buf_in)
 
 	if (st->vl_mode) {
 		VLAYERPRINTK("(ERR) : Default values are already updated\n\r");
+
 		return true;
 	}
 
@@ -894,4 +866,3 @@ bool s5p_vlayer_init_param(unsigned long buf_in)
 
 	return true;
 }
-

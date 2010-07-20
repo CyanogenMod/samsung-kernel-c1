@@ -39,15 +39,14 @@
 static struct resource	*mixer_mem;
 void __iomem		*mixer_base;
 
-int s5p_vmx_set_layer_show(
-	enum s5p_tv_vmx_layer layer, bool show)
+
+int s5p_vmx_set_layer_show(enum s5p_tv_vmx_layer layer, bool show)
 {
 	u32 mxr_config;
 
 	VMPRINTK("%d, %d\n\r", layer, show);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		mxr_config = (show) ?
 				(readl(mixer_base + S5P_MXR_CFG) |
@@ -75,7 +74,6 @@ int s5p_vmx_set_layer_show(
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	writel(mxr_config, mixer_base + S5P_MXR_CFG);
@@ -83,15 +81,13 @@ int s5p_vmx_set_layer_show(
 	return 0;
 }
 
-int s5p_vmx_set_layer_priority(enum s5p_tv_vmx_layer layer,
-	u32 priority)
+int s5p_vmx_set_layer_priority(enum s5p_tv_vmx_layer layer, u32 priority)
 {
 	u32 layer_cfg;
 
 	VMPRINTK("%d, %d\n\r", layer, priority);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		layer_cfg = S5P_MXR_LAYER_CFG_VP_PRIORITY_CLR(
 				readl(mixer_base + S5P_MXR_LAYER_CFG)) |
@@ -113,7 +109,6 @@ int s5p_vmx_set_layer_priority(enum s5p_tv_vmx_layer layer,
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	writel(layer_cfg, mixer_base + S5P_MXR_LAYER_CFG);
@@ -121,14 +116,13 @@ int s5p_vmx_set_layer_priority(enum s5p_tv_vmx_layer layer,
 	return 0;
 }
 
-int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer,
-	bool enable)
+int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer, bool enable)
 {
 	u32 temp_reg;
+
 	VMPRINTK("%d, %d\n\r", layer, enable);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		temp_reg = readl(mixer_base + S5P_MXR_VIDEO_CFG)
 			   & (~S5P_MXR_VIDEO_CFG_BLEND_EN) ;
@@ -139,7 +133,6 @@ int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer,
 			temp_reg |= S5P_MXR_VIDEO_CFG_BLEND_DIS;
 
 		writel(temp_reg, mixer_base + S5P_MXR_VIDEO_CFG);
-
 		break;
 
 	case VM_GPR0_LAYER:
@@ -152,7 +145,6 @@ int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer,
 			temp_reg |= S5P_MXR_WIN_BLEND_DISABLE;
 
 		writel(temp_reg, mixer_base + S5P_MXR_GRAPHIC0_CFG);
-
 		break;
 
 	case VM_GPR1_LAYER:
@@ -165,29 +157,24 @@ int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer,
 			temp_reg |= S5P_MXR_WIN_BLEND_DISABLE;
 
 		writel(temp_reg, mixer_base + S5P_MXR_GRAPHIC1_CFG);
-
 		break;
 
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
 
 		return -1;
-
-		break;
 	}
 
 	return 0;
 }
 
-
-int s5p_vmx_set_layer_alpha(enum s5p_tv_vmx_layer layer,
-	u32 alpha)
+int s5p_vmx_set_layer_alpha(enum s5p_tv_vmx_layer layer, u32 alpha)
 {
 	u32 temp_reg;
+
 	VMPRINTK("%d, %d\n\r", layer, alpha);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		temp_reg = readl(mixer_base + S5P_MXR_VIDEO_CFG)
 			   & (~S5P_MXR_VIDEO_CFG_ALPHA_MASK) ;
@@ -212,25 +199,22 @@ int s5p_vmx_set_layer_alpha(enum s5p_tv_vmx_layer layer,
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	return 0;
 }
 
-
-int s5p_vmx_set_grp_base_address(enum s5p_tv_vmx_layer layer,
-	u32 base_addr)
+int s5p_vmx_set_grp_base_address(enum s5p_tv_vmx_layer layer, u32 base_addr)
 {
 	VMPRINTK("%d, 0x%x\n\r", layer, base_addr);
 
 	if (S5P_MXR_GRP_ADDR_ILLEGAL(base_addr)) {
 		VMPRINTK(" address is not word align = %d\n\r", base_addr);
+
 		return -1;
 	}
 
 	switch (layer) {
-
 	case VM_GPR0_LAYER:
 		writel(S5P_MXR_GPR_BASE(base_addr),
 			mixer_base + S5P_MXR_GRAPHIC0_BASE);
@@ -247,20 +231,18 @@ int s5p_vmx_set_grp_base_address(enum s5p_tv_vmx_layer layer,
 
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
-		return -1;
-		break;
+		return -1;`
 	}
 
 	return 0;
 }
 
 int s5p_vmx_set_grp_layer_position(enum s5p_tv_vmx_layer layer,
-	u32 dst_offs_x, u32 dst_offs_y)
+					u32 dst_offs_x, u32 dst_offs_y)
 {
 	VMPRINTK("%d, %d, %d)\n\r", layer, dst_offs_x, dst_offs_y);
 
 	switch (layer) {
-
 	case VM_GPR0_LAYER:
 		writel(S5P_MXR_GRP_DESTX(dst_offs_x) |
 			S5P_MXR_GRP_DESTY(dst_offs_y),
@@ -280,24 +262,18 @@ int s5p_vmx_set_grp_layer_position(enum s5p_tv_vmx_layer layer,
 	default:
 		VMPRINTK("invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	return 0;
 }
 
-int s5p_vmx_set_grp_layer_size(enum s5p_tv_vmx_layer layer,
-					u32 span,
-					u32 width,
-					u32 height,
-					u32 src_offs_x,
-					u32 src_offs_y)
+int s5p_vmx_set_grp_layer_size(enum s5p_tv_vmx_layer layer, u32 span, u32 width,
+				u32 height, u32 src_offs_x, u32 src_offs_y)
 {
 	VMPRINTK("%d, %d, %d, %d, %d, %d)\n\r", layer, span, width, height,
 		 src_offs_x, src_offs_y);
 
 	switch (layer) {
-
 	case VM_GPR0_LAYER:
 		writel(S5P_MXR_GRP_SPAN(span),
 			mixer_base + S5P_MXR_GRAPHIC0_SPAN);
@@ -329,16 +305,13 @@ int s5p_vmx_set_grp_layer_size(enum s5p_tv_vmx_layer layer,
 	default:
 		VMPRINTK(" invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	return 0;
 }
 
 int s5p_vmx_set_bg_color(enum s5p_tv_vmx_bg_color_num colornum,
-				u32 color_y,
-				u32 color_cb,
-				u32 color_cr)
+				u32 color_y, u32 color_cb, u32 color_cr)
 {
 	u32 reg_value;
 	VMPRINTK("%d, %d, %d, %d)\n\r", colornum, color_y, color_cb, color_cr);
@@ -348,7 +321,6 @@ int s5p_vmx_set_bg_color(enum s5p_tv_vmx_bg_color_num colornum,
 			S5P_MXR_BG_COLOR_CR(color_cr);
 
 	switch (colornum) {
-
 	case VMIXER_BG_COLOR_0:
 		writel(reg_value, mixer_base + S5P_MXR_BG_COLOR0);
 		VMPRINTK("0x%x\n\r", readl(mixer_base + S5P_MXR_BG_COLOR0));
@@ -367,14 +339,13 @@ int s5p_vmx_set_bg_color(enum s5p_tv_vmx_bg_color_num colornum,
 	default:
 		VMPRINTK(" invalid uiColorNum parameter = %d\n\r", colornum);
 		return -1;
-		break;
 	}
 
 	return 0;
 }
 
 int s5p_vmx_init_status_reg(enum s5p_vmx_burst_mode burst,
-	enum s5p_endian_type endian)
+				enum s5p_endian_type endian)
 {
 	u32 temp_reg = 0;
 
@@ -383,7 +354,6 @@ int s5p_vmx_init_status_reg(enum s5p_vmx_burst_mode burst,
 	temp_reg = S5P_MXR_STATUS_SYNC_ENABLE | S5P_MXR_STATUS_OPERATING;
 
 	switch (burst) {
-
 	case VM_BURST_8:
 		temp_reg |= S5P_MXR_STATUS_8_BURST;
 		break;
@@ -395,11 +365,9 @@ int s5p_vmx_init_status_reg(enum s5p_vmx_burst_mode burst,
 	default:
 		VMPRINTK("[ERR] : invalid burst parameter = %d\n\r", burst);
 		return -1;
-		break;
 	}
 
 	switch (endian) {
-
 	case TVOUT_BIG_ENDIAN_MODE:
 		temp_reg |= S5P_MXR_STATUS_BIG_ENDIAN;
 		break;
@@ -411,7 +379,6 @@ int s5p_vmx_init_status_reg(enum s5p_vmx_burst_mode burst,
 	default:
 		VMPRINTK("[ERR] : invalid endian parameter = %d\n\r", endian);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, mixer_base + S5P_MXR_STATUS);
@@ -420,16 +387,14 @@ int s5p_vmx_init_status_reg(enum s5p_vmx_burst_mode burst,
 }
 
 int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
-	enum s5p_tv_o_mode output_mode)
+				enum s5p_tv_o_mode output_mode)
 {
 	u32 temp_reg = readl(mixer_base + S5P_MXR_CFG);
 
 	VMPRINTK("%d, %d)\n\r", mode, output_mode);
 
 	switch (mode) {
-
 	case TVOUT_NTSC_M:
-
 	case TVOUT_NTSC_443:
 		temp_reg &= ~S5P_MXR_CFG_HD;
 		temp_reg &= ~S5P_MXR_CFG_PAL;
@@ -437,13 +402,9 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_PAL_BDGHI:
-
 	case TVOUT_PAL_M:
-
 	case TVOUT_PAL_N:
-
 	case TVOUT_PAL_NC:
-
 	case TVOUT_PAL_60:
 		temp_reg &= ~S5P_MXR_CFG_HD;
 		temp_reg |= S5P_MXR_CFG_PAL;
@@ -451,9 +412,7 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_480P_60_16_9:
-
 	case TVOUT_480P_60_4_3:
-
 	case TVOUT_480P_59:
 		temp_reg &= ~S5P_MXR_CFG_HD;
 		temp_reg &= ~S5P_MXR_CFG_PAL;
@@ -462,7 +421,6 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_576P_50_16_9:
-
 	case TVOUT_576P_50_4_3:
 		temp_reg &= ~S5P_MXR_CFG_HD;
 		temp_reg |= S5P_MXR_CFG_PAL;
@@ -471,9 +429,7 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_720P_50:
-
 	case TVOUT_720P_59:
-
 	case TVOUT_720P_60:
 		temp_reg |= S5P_MXR_CFG_HD;
 		temp_reg &= ~S5P_MXR_CFG_HD_1080I;
@@ -482,9 +438,7 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_1080I_50:
-
 	case TVOUT_1080I_59:
-
 	case TVOUT_1080I_60:
 		temp_reg |= S5P_MXR_CFG_HD;
 		temp_reg |= S5P_MXR_CFG_HD_1080I;
@@ -493,11 +447,8 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 		break;
 
 	case TVOUT_1080P_50:
-
 	case TVOUT_1080P_59:
-
 	case TVOUT_1080P_60:
-
 	case TVOUT_1080P_30:
 		temp_reg |= S5P_MXR_CFG_HD;
 		temp_reg |= S5P_MXR_CFG_HD_1080P;
@@ -508,11 +459,9 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 	default:
 		VMPRINTK(" invalid mode parameter = %d\n\r", mode);
 		return -1;
-		break;
 	}
 
 	switch (output_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
 	case TVOUT_OUTPUT_SVIDEO:
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
@@ -537,7 +486,6 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 	default:
 		VMPRINTK(" invalid mode parameter = %d\n\r", mode);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, mixer_base + S5P_MXR_CFG);
@@ -568,12 +516,15 @@ u32 s5p_vmx_grp_scaling_factor(u32 src, u32 dst, u32 h_v)
 	case 2:
 		factor = 1;
 		break;
+
 	case 4:
 		factor = 2;
 		break;
+
 	case 8:
 		factor = 3;
 		break;
+
 	default:
 		VMPRINTK(" scaling vector must be 2/4/8x\n");
 		factor = 0;
@@ -589,7 +540,8 @@ void s5p_vmx_set_ctrl(enum s5p_tv_vmx_layer layer,
 			bool blank_change,
 			bool win_blending,
 			enum s5p_tv_vmx_color_fmt color,
-			u32 alpha, u32 blank_color)
+			u32 alpha,
+			u32 blank_color)
 {
 	u32 reg = readl(mixer_base + S5P_MXR_GRAPHIC0_CFG);
 
@@ -609,7 +561,7 @@ void s5p_vmx_set_ctrl(enum s5p_tv_vmx_layer layer,
 	else
 		reg &= ~S5P_MXR_WIN_BLEND_ENABLE;
 
-	reg &= ~S5P_MXR_EG_COLOR_FORMAT(0xf);
+	reg &= ~(S5P_MXR_EG_COLOR_FORMAT(0xf));
 	reg |= S5P_MXR_EG_COLOR_FORMAT(color);
 	reg |= S5P_MXR_GRP_ALPHA_VALUE(alpha);
 
@@ -644,15 +596,14 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 	u32 temp_reg = 0;
 	u32 h_factor = 0, v_factor = 0;
 
-	VMPRINTK("%d, %d, %d, %d, %d, %d, %d, %d, %d, 0x%x,\
-		0x%x, %d, %d, %d, %d, %d, %d, %d)\n\r",
+	VMPRINTK("%d, %d, %d, %d, %d, %d, %d, %d, %d, 0x%x,"
+		"0x%x, %d, %d, %d, %d, %d, %d, %d)\n\r",
 		 layer, show, win_blending, alpha, priority,
 		 color, blank_change, pixel_blending, premul,
 		 blank_color, base_addr, span, width, height,
 		 src_offs_x, src_offs_y, dst_offs_x, dst_offs_y);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		temp_reg = (win_blending) ? S5P_MXR_VIDEO_CFG_BLEND_EN :
 			S5P_MXR_VIDEO_CFG_BLEND_DIS;
@@ -692,7 +643,6 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 		temp_reg &= ~((0x3<<28)|(0x3<<12));
 
 		if (v_factor) {
-
 			u32 reg = readl(mixer_base + S5P_MXR_CFG);
 
 			/* In interlaced mode, vertical scaling must be
@@ -704,9 +654,10 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 				/* scaled up by progressive setting */
 				reg |= S5P_MXR_CFG_PROGRASSIVE;
 				writel(reg, mixer_base + S5P_MXR_CFG);
-			} else
+			} else {
 				/* scaled up by scale factor */
 				temp_reg |= v_factor << 12;
+			}
 		} else {
 			u32 reg = readl(mixer_base + S5P_MXR_CFG);
 
@@ -724,8 +675,6 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 		temp_reg |= h_factor << 28;
 
 		writel(temp_reg , mixer_base + S5P_MXR_GRAPHIC0_WH);
-
-
 		break;
 
 	case VM_GPR1_LAYER:
@@ -758,7 +707,6 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 		temp_reg &= ~((0x3<<28)|(0x3<<12));
 
 		if (v_factor) {
-
 			u32 reg = readl(mixer_base + S5P_MXR_CFG);
 
 			/* In interlaced mode, vertical scaling must be
@@ -795,7 +743,6 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 	default:
 		VMPRINTK("invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	s5p_vmx_set_layer_priority(layer, priority);
@@ -806,8 +753,8 @@ int s5p_vmx_init_layer(enum s5p_tv_disp_mode mode,
 }
 
 void s5p_vmx_init_bg_dither_enable(bool cr_dither_enable,
-				  bool cb_dither_enable,
-				  bool y_dither_enable)
+					bool cb_dither_enable,
+					bool y_dither_enable)
 {
 	u32 temp_reg = 0;
 
@@ -828,21 +775,15 @@ void s5p_vmx_init_bg_dither_enable(bool cr_dither_enable,
 
 }
 
-
-int s5p_vmx_init_bg_color(
-	enum s5p_tv_vmx_bg_color_num color_num,
-	u32 color_y,
-	u32 color_cb,
-	u32 color_cr)
+int s5p_vmx_init_bg_color(enum s5p_tv_vmx_bg_color_num color_num,
+				u32 color_y, u32 color_cb, u32 color_cr)
 {
 	return s5p_vmx_set_bg_color(color_num, color_y, color_cb, color_cr);
 }
 
 int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
-					    enum s5p_tv_coef_y_mode mode,
-					    u32 coeff0,
-					    u32 coeff1,
-					    u32 coeff2)
+				enum s5p_tv_coef_y_mode mode,
+				u32 coeff0, u32 coeff1, u32 coeff2)
 {
 	u32 mxr_cm;
 
@@ -850,7 +791,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 		coeff2);
 
 	switch (component) {
-
 	case TVOUT_YUV_Y:
 		mxr_cm 	= (mode == VMIXER_COEF_Y_WIDE) ?
 			     S5P_MXR_BG_COLOR_WIDE : S5P_MXR_BG_COLOR_NARROW;
@@ -883,7 +823,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 	default:
 		VMPRINTK("invalid component parameter = %d\n\r", component);
 		return -1;
-		break;
 	}
 
 	return 0;
@@ -894,7 +833,6 @@ void s5p_vmx_init_csc_coef_default(enum s5p_tv_vmx_csc_type csc_type)
 	VMPRINTK("%d\n\r", csc_type);
 
 	switch (csc_type) {
-
 	case VMIXER_CSC_RGB_TO_YUV601_LR:
 		writel((0 << 30) | (153 << 20) | (300 << 10) | (58 << 0),
 			mixer_base + S5P_MXR_CM_COEFF_Y);
@@ -938,13 +876,11 @@ void s5p_vmx_init_csc_coef_default(enum s5p_tv_vmx_csc_type csc_type)
 }
 
 int s5p_vmx_get_layer_info(enum s5p_tv_vmx_layer layer,
-				       bool *show,
-				       u32 *priority)
+				bool *show, u32 *priority)
 {
 	VMPRINTK("%d\n\r", layer);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		*show = (readl(mixer_base + S5P_MXR_LAYER_CFG) &
 			S5P_MXR_CFG_VIDEO_ENABLE) ? 1 : 0;
@@ -969,7 +905,6 @@ int s5p_vmx_get_layer_info(enum s5p_tv_vmx_layer layer,
 	default:
 		VMPRINTK("invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	VMPRINTK("%d, %d\n\r", *show, *priority);
@@ -996,15 +931,13 @@ void s5p_vmx_stop(void)
 	} while (reg & S5P_MXR_STATUS_RUN);
 }
 
-int s5p_vmx_set_underflow_interrupt_enable(
-	enum s5p_tv_vmx_layer layer, bool en)
+int s5p_vmx_set_underflow_interrupt_enable(enum s5p_tv_vmx_layer layer, bool en)
 {
 	u32 enablemaks;
 
 	VMPRINTK("%d, %d\n\r", layer, en);
 
 	switch (layer) {
-
 	case VM_VIDEO_LAYER:
 		enablemaks = S5P_MXR_INT_EN_VP_ENABLE;
 		break;
@@ -1020,7 +953,6 @@ int s5p_vmx_set_underflow_interrupt_enable(
 	default:
 		VMPRINTK("invalid layer parameter = %d\n\r", layer);
 		return -1;
-		break;
 	}
 
 	if (en) {
@@ -1037,8 +969,8 @@ int s5p_vmx_set_underflow_interrupt_enable(
 void s5p_vmx_clear_pend_all(void)
 {
 	writel(S5P_MXR_INT_STATUS_INT_FIRED | S5P_MXR_INT_STATUS_VP_FIRED |
-	       S5P_MXR_INT_STATUS_GRP0_FIRED | S5P_MXR_INT_STATUS_GRP1_FIRED,
-	       mixer_base + S5P_MXR_INT_EN);
+		S5P_MXR_INT_STATUS_GRP0_FIRED | S5P_MXR_INT_STATUS_GRP1_FIRED,
+			mixer_base + S5P_MXR_INT_EN);
 }
 
 irqreturn_t s5p_vmx_irq(int irq, void *dev_id)
@@ -1090,10 +1022,8 @@ int __init s5p_vmx_probe(struct platform_device *pdev, u32 res_num)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, res_num);
 
 	if (res == NULL) {
-		dev_err(&pdev->dev,
-			"failed to get memory region resource\n");
+		dev_err(&pdev->dev, "failed to get memory region resource\n");
 		goto error;
-
 	}
 
 	size = (res->end - res->start) + 1;
@@ -1101,21 +1031,17 @@ int __init s5p_vmx_probe(struct platform_device *pdev, u32 res_num)
 	mixer_mem = request_mem_region(res->start, size, pdev->name);
 
 	if (mixer_mem == NULL) {
-		dev_err(&pdev->dev,
-			"failed to get memory region\n");
+		dev_err(&pdev->dev, "failed to get memory region\n");
 		goto error;
-
 	}
 
 	mixer_base = ioremap(res->start, size);
 
 	if (mixer_base == NULL) {
-		dev_err(&pdev->dev,
-			"failed to ioremap address region\n");
+		dev_err(&pdev->dev, "failed to ioremap address region\n");
 		goto error;
-
-
 	}
+
 	return 0;
 error:
 	return -ENOENT;
@@ -1129,8 +1055,7 @@ int __init s5p_vmx_release(struct platform_device *pdev)
 	/* remove memory region */
 	if (mixer_mem != NULL) {
 		if (release_resource(mixer_mem))
-			dev_err(&pdev->dev,
-				"Can't remove tvout drv !!\n");
+			dev_err(&pdev->dev, "Can't remove tvout drv !!\n");
 
 		kfree(mixer_mem);
 

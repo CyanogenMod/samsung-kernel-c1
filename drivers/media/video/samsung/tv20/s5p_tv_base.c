@@ -61,11 +61,11 @@
 		if (clk == NULL) { 					\
 			printk(KERN_ERR					\
 			"failed to find %s clock source\n", name);	\
+
 			return -ENOENT;					\
 		}							\
 		clk_enable(clk)						\
 	} while (0);
-
 
 #define TVOUT_IRQ_INIT(x, ret, dev, num, jump, ftn, m_name) 		\
 	do {								\
@@ -85,13 +85,22 @@
 		}							\
 	} while (0);
 
+#define TV_CLK_GET_WITH_ERR_CHECK(clk, pdev, clk_name)			\
+		do {							\
+			clk = clk_get(&pdev->dev, clk_name);		\
+			if (IS_ERR(clk)) {				\
+				printk(KERN_ERR 			\
+				"failed to find clock \"%s\"\n", clk_name);\
+
+				return ENOENT;				\
+			}						\
+		} while (0);
+
 
 static struct mutex	*mutex_for_fo;
 
-
 struct s5p_tv_status 	s5ptv_status;
 struct s5p_tv_vo 	s5ptv_overlay[2];
-
 
 #ifdef CONFIG_CPU_S5PV210
 int s5p_tv_phy_power(bool on)
@@ -120,73 +129,100 @@ int s5p_tv_phy_power(bool on)
 	return 0;
 }
 
-
 int s5p_tv_clk_gate(bool on)
 {
 	if (on) {
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_enable("vp_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not on for VP\n");
+			printk(KERN_ERR
+				"[Error]The power is not on for VP\n");
+
 			goto err_pm;
 		}
 #endif
 		clk_enable(s5ptv_status.vp_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_enable("mixer_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not on for mixer\n");
+			printk(KERN_ERR
+				"[Error]The power is not on for mixer\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_enable(s5ptv_status.mixer_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_enable("tv_enc_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not on for TV ENC\n");
+			printk(KERN_ERR
+				"[Error]The power is not on for TV ENC\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_enable(s5ptv_status.tvenc_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_enable("hdmi_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not on for HDMI\n");
+			printk(KERN_ERR
+				"[Error]The power is not on for HDMI\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_enable(s5ptv_status.hdmi_clk);
-
 	} else {
-
 		/* off */
 		clk_disable(s5ptv_status.vp_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_disable("vp_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not off for VP\n");
+			printk(KERN_ERR
+				"[Error]The power is not off for VP\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_disable(s5ptv_status.mixer_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (0 != s5pv210_pd_disable("mixer_pd")) {
-			printk(KERN_ERR "[Error]The power is not off for mixer\n");
+			printk(KERN_ERR
+				"[Error]The power is not off for mixer\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_disable(s5ptv_status.tvenc_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_disable("tv_enc_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not off for TV ENC\n");
+			printk(KERN_ERR
+				"[Error]The power is not off for TV ENC\n");
+
 			goto err_pm;
 		}
 #endif
+
 		clk_disable(s5ptv_status.hdmi_clk);
+
 #ifdef CONFIG_S5PV210_PM
 		if (s5pv210_pd_disable("hdmi_pd") < 0) {
-			printk(KERN_ERR "[Error]The power is not off for HDMI\n");
+			printk(KERN_ERR
+				"[Error]The power is not off for HDMI\n");
+
 			goto err_pm;
 		}
 #endif
 	}
 
 	return 0;
+
 #ifdef CONFIG_S5PV210_PM
 err_pm:
 	return -1;
@@ -194,18 +230,8 @@ err_pm:
 }
 EXPORT_SYMBOL(s5p_tv_clk_gate);
 
-#define TV_CLK_GET_WITH_ERR_CHECK(clk, pdev, clk_name)			\
-	do {							        \
-		clk = clk_get(&pdev->dev, clk_name);			\
-		if (IS_ERR(clk)) {					\
-			printk(KERN_ERR					\
-			"failed to find clock \"%s\"\n", clk_name); 	\
-			return ENOENT;					\
-		}							\
-	} while (0);
-
 static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
-	struct s5p_tv_status *ctrl)
+					struct s5p_tv_status *ctrl)
 {
 	struct clk	*ext_xtal_clk,
 			*mout_vpll_src,
@@ -289,6 +315,7 @@ static int s5p_tv_vid_open(struct file *file)
 	}
 
 	mutex_unlock(mutex_for_fo);
+
 	return ret;
 }
 
@@ -311,6 +338,7 @@ static int s5p_tv_v_open(struct file *file)
 	if (s5ptv_status.tvout_output_enable) {
 		BASEPRINTK("tvout drv. already used !!\n");
 		ret =  -EBUSY;
+
 		goto drv_used;
 	}
 
@@ -327,17 +355,17 @@ static int s5p_tv_v_open(struct file *file)
 
 drv_used:
 	mutex_unlock(mutex_for_fo);
+
 	return ret;
 }
 
-int s5p_tv_v_read(struct file *filp, char *buf, size_t count,
-		  loff_t *f_pos)
+int s5p_tv_v_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
 	return 0;
 }
 
-int s5p_tv_v_write(struct file *filp, const char *buf, size_t
-		   count, loff_t *f_pos)
+int s5p_tv_v_write(struct file *filp, const char *buf, size_t count,
+			loff_t *f_pos)
 {
 	return 0;
 }
@@ -353,7 +381,6 @@ int s5p_tv_v_release(struct file *filp)
 	s5p_tv_if_stop();
 
 	s5ptv_status.hdcp_en = false;
-
 	s5ptv_status.tvout_output_enable = false;
 
 	/*
@@ -377,12 +404,14 @@ static int s5p_tv_vo_open(int layer, struct file *file)
 	if (!s5ptv_status.tvout_output_enable) {
 		BASEPRINTK("check tvout start !!\n");
 		ret =  -EACCES;
+
 		goto resource_busy;
 	}
 
 	if (s5ptv_status.grp_layer_enable[layer]) {
 		BASEPRINTK("grp %d layer is busy!!\n", layer);
 		ret =  -EBUSY;
+
 		goto resource_busy;
 	}
 
@@ -404,7 +433,6 @@ resource_busy:
 
 int s5p_tv_vo_release(int layer, struct file *filp)
 {
-
 	s5p_grp_stop(layer);
 
 	return 0;
@@ -413,24 +441,28 @@ int s5p_tv_vo_release(int layer, struct file *filp)
 static int s5p_tv_vo0_open(struct file *file)
 {
 	s5p_tv_vo_open(0, file);
+
 	return 0;
 }
 
 static int s5p_tv_vo0_release(struct file *file)
 {
 	s5p_tv_vo_release(0, file);
+
 	return 0;
 }
 
 static int s5p_tv_vo1_open(struct file *file)
 {
 	s5p_tv_vo_open(1, file);
+
 	return 0;
 }
 
 static int s5p_tv_vo1_release(struct file *file)
 {
 	s5p_tv_vo_release(1, file);
+
 	return 0;
 }
 #endif
@@ -446,6 +478,7 @@ static int s5p_tv_fb_alloc_framebuffer(void)
 	if (!s5ptv_status.fb) {
 		dev_err(s5ptv_status.dev_fb, "not enough memory\n");
 		ret = -ENOMEM;
+
 		goto err_alloc_fb;
 	}
 
@@ -454,17 +487,21 @@ static int s5p_tv_fb_alloc_framebuffer(void)
 		dev_err(s5ptv_status.dev_fb,
 			"failed to allocate memory for fb for tv\n");
 		ret = -ENOMEM;
+
 		goto err_alloc_fb;
 	}
+
 #ifndef CONFIG_USER_ALLOC_TVOUT
 	if (s5p_tv_fb_map_video_memory(s5ptv_status.fb)) {
 		dev_err(s5ptv_status.dev_fb,
 			"failed to map video memory "
 			"for default window \n");
 		ret = -ENOMEM;
+
 		goto err_alloc_fb;
 	}
 #endif
+
 	return 0;
 
 err_alloc_fb:
@@ -494,9 +531,11 @@ int s5p_tv_fb_register_framebuffer(void)
 	int ret;
 
 	ret = register_framebuffer(s5ptv_status.fb);
+
 	if (ret) {
 		dev_err(s5ptv_status.dev_fb, "failed to register "
 			"framebuffer device\n");
+
 		return -EINVAL;
 	}
 #ifndef CONFIG_FRAMEBUFFER_CONSOLE
@@ -511,7 +550,6 @@ int s5p_tv_fb_register_framebuffer(void)
 }
 
 #endif
-
 
 #ifdef CONFIG_TV_FB
 static struct v4l2_file_operations s5p_tv_fops = {
@@ -554,14 +592,12 @@ static struct v4l2_file_operations s5p_tv_vo1_fops = {
 };
 #endif
 
-
 void s5p_tv_vdev_release(struct video_device *vdev)
 {
 	kfree(vdev);
 }
 
 struct video_device s5p_tvout[] = {
-
 #ifdef CONFIG_TV_FB
 	[0] = {
 		.name = "S5PC1xx TVOUT ctrl",
@@ -656,13 +692,12 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 
 		if (video_register_device(s5ptv_status.video_dev[i],
 				VFL_TYPE_GRABBER, s5p_tvout[i].minor) != 0) {
-
 			dev_err(&pdev->dev,
 				"Couldn't register tvout driver.\n");
+
 			return 0;
 		}
 	}
-
 
 #ifdef CONFIG_TV_FB
 	mutex_init(&s5ptv_status.fb_lock);
@@ -687,17 +722,18 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 
 	if (s5p_tv_fb_register_framebuffer())
 		goto err_alloc;
+
 #ifndef CONFIG_USER_ALLOC_TVOUT
 	s5p_tv_fb_display_on(&s5ptv_status);
 #endif
 #endif
 
-	mutex_for_fo = kmalloc(sizeof(struct mutex),
-		GFP_KERNEL);
+	mutex_for_fo = kmalloc(sizeof(struct mutex), GFP_KERNEL);
 
 	if (mutex_for_fo == NULL) {
 		dev_err(&pdev->dev,
 			"failed to create mutex handle\n");
+
 		goto out;
 	}
 
@@ -762,7 +798,6 @@ int s5p_tv_suspend(struct platform_device *dev, pm_message_t state)
 	if (s5ptv_status.vp_layer_enable) {
 		s5p_vlayer_stop();
 		s5ptv_status.vp_layer_enable = true;
-
 	}
 
 	/* grp0 layer stop */
@@ -786,7 +821,6 @@ int s5p_tv_suspend(struct platform_device *dev, pm_message_t state)
 		/* clk & power off */
 		s5p_tv_clk_gate(false);
 		s5p_tv_phy_power(false);
-
 	}
 
 	return 0;
@@ -854,6 +888,7 @@ int __init s5p_tv_init(void)
 
 	if (ret) {
 		printk(KERN_ERR "Platform Device Register Failed %d\n", ret);
+
 		return -1;
 	}
 

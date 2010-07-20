@@ -187,7 +187,6 @@ bool s5p_tv_if_init_param(void)
 	return true;
 }
 
-
 bool s5p_tv_if_init_vm_reg(void)
 {
 	u8 i = 0;
@@ -203,18 +202,15 @@ bool s5p_tv_if_init_vm_reg(void)
 	enum s5p_vmx_burst_mode burst = st->grp_burst;
 	enum s5p_endian_type endian = st->grp_endian;
 
-
 	merr = s5p_vmx_init_status_reg(burst, endian);
 
 	if (merr != 0)
 		return false;
 
-
 	merr = s5p_vmx_init_display_mode(disp_mode, out_mode);
 
 	if (merr != 0)
 		return false;
-
 
 	s5p_vmx_init_bg_dither_enable(cr_en, cb_en, y_en);
 
@@ -229,15 +225,10 @@ bool s5p_tv_if_init_vm_reg(void)
 	}
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
 		s5p_vmx_init_csc_coef_default(VMIXER_CSC_RGB_TO_YUV601_FR);
 		break;
@@ -245,59 +236,40 @@ bool s5p_tv_if_init_vm_reg(void)
 	case TVOUT_OUTPUT_HDMI_RGB:
 	case TVOUT_OUTPUT_HDMI:
 	case TVOUT_OUTPUT_DVI:
-
 		switch (disp_mode) {
-
 		case TVOUT_NTSC_M:
-
 		case TVOUT_PAL_BDGHI:
-
 		case TVOUT_PAL_M:
-
 		case TVOUT_PAL_N:
-
 		case TVOUT_PAL_NC:
-
 		case TVOUT_PAL_60:
-
 		case TVOUT_NTSC_443:
 			break;
 
 		case TVOUT_480P_60_16_9:
-
 		case TVOUT_480P_60_4_3:
-
 		case TVOUT_480P_59:
-
 		case TVOUT_576P_50_16_9:
-
 		case TVOUT_576P_50_4_3:
 			s5p_vmx_init_csc_coef_default(
 				VMIXER_CSC_RGB_TO_YUV601_FR);
 			break;
 
 		case TVOUT_720P_60:
-
 		case TVOUT_720P_50:
-
 		case TVOUT_720P_59:
-
 		case TVOUT_1080I_60:
-
 		case TVOUT_1080I_59:
-
 		case TVOUT_1080I_50:
-
 		case TVOUT_1080P_60:
-
 		case TVOUT_1080P_30:
-
 		case TVOUT_1080P_59:
-
 		case TVOUT_1080P_50:
 			s5p_vmx_init_csc_coef_default(
 				VMIXER_CSC_RGB_TO_YUV709_FR);
-		break;
+			break;
+		default:
+			break;
 		}
 
 		break;
@@ -306,7 +278,6 @@ bool s5p_tv_if_init_vm_reg(void)
 		TVOUTIFPRINTK("invalid tvout_param.out_mode parameter(%d)\n\r",
 			      out_mode);
 		return false;
-		break;
 	}
 
 	s5p_vmx_start();
@@ -440,10 +411,9 @@ bool s5p_tv_if_init_sd_reg(void)
 	if (sderr != 0)
 		return false;
 
-
 	sderr = s5p_sdout_init_video_scale_cfg(cpn_lev, cpn_rat,
 						cps_lev, cps_rat);
-
+	
 	if (sderr != 0)
 		return false;
 
@@ -453,17 +423,14 @@ bool s5p_tv_if_init_sd_reg(void)
 	if (sderr != 0)
 		return false;
 
-
 	sderr = s5p_sdout_init_vbi(wss_cvbs, cap_cvbs, wss_y_svideo,
-		cap_y_svideo, cgmsa_rgb, wss_rgb, cap_rgb, cgmsa_y,
-		wss_y, cap_y_pb_pr);
+			cap_y_svideo, cgmsa_rgb, wss_rgb, cap_rgb, cgmsa_y,
+			wss_y, cap_y_pb_pr);
 
 	if (sderr != 0)
 		return false;
 
-
 	for (i = SDOUT_CHANNEL_0; i <= SDOUT_CHANNEL_2; i++) {
-
 		u32 offset = st->sdout_offset_gain[i].offset;
 		u32 gain = st->sdout_offset_gain[i].gain;
 
@@ -472,7 +439,6 @@ bool s5p_tv_if_init_sd_reg(void)
 		if (sderr != 0)
 			return false;
 	}
-
 
 	s5p_sdout_init_delay(delay, off_v_start, off_v_end);
 
@@ -501,7 +467,6 @@ bool s5p_tv_if_init_sd_reg(void)
 
 	if (sderr != 0)
 		return false;
-
 
 	for (i = SDOUT_CHANNEL_0; i <= SDOUT_CHANNEL_2; i++) {
 		enum s5p_sd_channel_sel channel = st->sdout_xtalk_cc[i].channel;
@@ -533,14 +498,12 @@ bool s5p_tv_if_init_sd_reg(void)
 	if (sderr != 0)
 		return false;
 
-
 	sderr = s5p_sdout_init_cgmsa525_data(c5_copy_permit, c5_mv_psp,
 					c5_copy_info, c5_analog_on,
 					c5_display_ratio);
 
 	if (sderr != 0)
 		return false;
-
 
 	sderr = s5p_sdout_init_cgmsa625_data(c6_surroun_f_sound, c6_copyright,
 					c6_copy_protection, c6_text_subtitles,
@@ -550,7 +513,6 @@ bool s5p_tv_if_init_sd_reg(void)
 
 	if (sderr != 0)
 		return false;
-
 
 	/* Disable All Interrupt */
 	s5p_sdout_set_interrupt_enable(false);
@@ -563,7 +525,6 @@ bool s5p_tv_if_init_sd_reg(void)
 	s5p_tv_powerset_dac_onoff(true);
 
 	for (i = SDOUT_CHANNEL_0; i <= SDOUT_CHANNEL_2; i++) {
-
 		bool dac = st->sdout_dac_on[i];
 
 		sderr = s5p_sdout_init_dac_power_onoff(i, dac);
@@ -584,13 +545,13 @@ unsigned char s5p_tv_if_video_avi_checksum(void)
 	for (i = 0; i < 13; i++)
 		sum += (u32)(st->avi_byte[i]);
 
-
 	return (u8)(0x100 - ((0x91 + sum) & 0xff));
 }
 
 bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 {
 	struct s5p_tv_status *st = &s5ptv_status;
+
 	TVOUTIFPRINTK("(%d, %d)\n\r", tvout_if->disp_mode,
 			tvout_if->out_mode);
 
@@ -599,9 +560,7 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 	st->avi_byte[4] = AVI_NO_PIXEL_REPEAT;
 
 	switch (tvout_if->disp_mode) {
-
 	case TVOUT_480P_59:
-
 	case TVOUT_480P_60_16_9:
 		st->avi_byte[1] = AVI_PAR_16_9 | AVI_ITU601;
 		st->avi_byte[3] = AVI_VIC_3;
@@ -628,7 +587,6 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 		break;
 
 	case TVOUT_720P_60:
-
 	case TVOUT_720P_59:
 		st->avi_byte[1] = AVI_PAR_16_9 | AVI_ITU709;
 		st->avi_byte[3] = AVI_VIC_4;
@@ -664,11 +622,9 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 		TVOUTIFPRINTK("invalid disp_mode parameter(%d)\n\r",
 			tvout_if->out_mode);
 		return false;
-		break;
 	}
 
 	switch (tvout_if->out_mode) {
-
 	case TVOUT_OUTPUT_DVI:
 		st->hdmi_av_info_frame.trans_type = HDMI_DO_NOT_TANS;
 		st->avi_byte[0] = AVI_RGB_IF;
@@ -688,12 +644,10 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 		TVOUTIFPRINTK("invalid out_mode parameter(%d)\n\r",
 			tvout_if->out_mode);
 		return false;
-		break;
 	}
 
-
-
 	TVOUTIFPRINTK("()\n\r");
+
 	return true;
 }
 
@@ -732,6 +686,7 @@ bool s5p_tv_if_init_hd_video_reg(void)
 
 	if (!s5p_tv_if_init_avi_frame(&st->tvout_param)) {
 		st->tvout_param_available = false;
+
 		return false;
 	}
 
@@ -750,7 +705,6 @@ bool s5p_tv_if_init_hd_video_reg(void)
 	s5p_hdmi_video_init_color_range(y_min, y_max, c_min, c_max);
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_HDMI_RGB:
 	case TVOUT_OUTPUT_HDMI:
 		cscType = HDMI_BYPASS;
@@ -765,7 +719,6 @@ bool s5p_tv_if_init_hd_video_reg(void)
 		TVOUTIFPRINTK("invalid out_mode parameter(%d)\n\r",
 				out_mode);
 		return false;
-		break;
 	}
 
 	herr = s5p_hdmi_video_init_csc(cscType);
@@ -786,7 +739,6 @@ bool s5p_tv_if_init_hd_video_reg(void)
 
 	if (herr != 0)
 		return false;
-
 
 	herr = s5p_hdmi_init_spd_infoframe(s_trans_type,
 					spd_header, spd_data);
@@ -811,7 +763,6 @@ bool s5p_tv_if_init_hd_reg(void)
 		return false;
 
 	switch (st->hdmi_audio_type) {
-
 	case HDMI_AUDIO_PCM:
 		/*
 		* PCM, Samplingrate 44100, 16bit,
@@ -827,7 +778,6 @@ bool s5p_tv_if_init_hd_reg(void)
 		TVOUTIFPRINTK("invalid hdmi_audio_type(%d)\n\r",
 			st->hdmi_audio_type);
 		return false;
-		break;
 	}
 
 	if (!s5p_hdmi_start(st->hdmi_audio_type,
@@ -839,8 +789,7 @@ bool s5p_tv_if_init_hd_reg(void)
 	st->hdmi_tg_cmd.tg_en = true;
 	tg_en = st->hdmi_tg_cmd.tg_en;
 
-	s5p_hdmi_video_init_tg_cmd(timing_correction_en,
-		bt656_sync_en, tg_en);
+	s5p_hdmi_video_init_tg_cmd(timing_correction_en, bt656_sync_en, tg_en);
 
 	return true;
 }
@@ -850,18 +799,14 @@ bool s5p_tv_if_start(void)
 	struct s5p_tv_status *st = &s5ptv_status;
 	enum s5p_tv_o_mode out_mode = st->tvout_param.out_mode;
 
-	s5p_vmx_set_underflow_interrupt_enable(VM_VIDEO_LAYER,
-		false);
-	s5p_vmx_set_underflow_interrupt_enable(VM_GPR0_LAYER,
-		false);
-	s5p_vmx_set_underflow_interrupt_enable(VM_GPR1_LAYER,
-		false);
+	s5p_vmx_set_underflow_interrupt_enable(VM_VIDEO_LAYER, false);
+	s5p_vmx_set_underflow_interrupt_enable(VM_GPR0_LAYER, false);
+	s5p_vmx_set_underflow_interrupt_enable(VM_GPR1_LAYER, false);
 
 	s5p_tv_if_stop();
 
 	/* Clear All Interrupt Pending */
 	s5p_vmx_clear_pend_all();
-
 
 	/*
 	* have not to call
@@ -870,27 +815,19 @@ bool s5p_tv_if_start(void)
 	s5p_tv_power_on();
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
-
 		clk_set_parent(st->sclk_mixer, st->sclk_dac);
 		break;
 
 	case TVOUT_OUTPUT_HDMI:
 	case TVOUT_OUTPUT_HDMI_RGB:
 	case TVOUT_OUTPUT_DVI:
-
 		clk_set_parent(st->sclk_mixer, st->sclk_hdmi);
 		clk_set_parent(st->sclk_hdmi, st->sclk_hdmiphy);
-
 		break;
 
 	default:
@@ -899,7 +836,6 @@ bool s5p_tv_if_start(void)
 			st->tvout_param.out_mode);
 		st->tvout_param_available = false;
 		return false;
-		break;
 	}
 
 	if (!s5p_tv_if_init_vm_reg())
@@ -907,20 +843,13 @@ bool s5p_tv_if_start(void)
 
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
-
 		if (!s5p_tv_if_init_sd_reg())
 			return false;
-
 
 		break;
 
@@ -932,7 +861,6 @@ bool s5p_tv_if_start(void)
 		if (!s5p_tv_if_init_hd_reg())
 			return false;
 
-
 		break;
 
 	default:
@@ -940,17 +868,13 @@ bool s5p_tv_if_start(void)
 		TVOUTIFPRINTK("invalid out_mode parameter(%d)\n\r",
 				out_mode);
 		return false;
-		break;
 	}
 
 	st->tvout_output_enable = true;
 
-	s5p_vmx_set_underflow_interrupt_enable(VM_VIDEO_LAYER,
-		true);
-	s5p_vmx_set_underflow_interrupt_enable(VM_GPR0_LAYER,
-		true);
-	s5p_vmx_set_underflow_interrupt_enable(VM_GPR1_LAYER,
-		true);
+	s5p_vmx_set_underflow_interrupt_enable(VM_VIDEO_LAYER, true);
+	s5p_vmx_set_underflow_interrupt_enable(VM_GPR0_LAYER, true);
+	s5p_vmx_set_underflow_interrupt_enable(VM_GPR1_LAYER, true);
 
 	/* Clear All Interrupt Pending */
 	s5p_vmx_clear_pend_all();
@@ -978,18 +902,14 @@ bool s5p_tv_if_stop(void)
 	s5p_vmx_stop();
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
 		if (st->tvout_output_enable)
 			s5p_sdout_stop();
+
 		break;
 
 	case TVOUT_OUTPUT_HDMI:
@@ -997,15 +917,14 @@ bool s5p_tv_if_stop(void)
 	case TVOUT_OUTPUT_DVI:
 		if (st->tvout_output_enable) {
 			s5p_hdmi_stop();
-			s5p_hdmi_video_init_tg_cmd(t_corr_en, sync_en,
-				false);
+			s5p_hdmi_video_init_tg_cmd(t_corr_en, sync_en, false);
 		}
+
 		break;
 
 	default:
 		TVOUTIFPRINTK("invalid out_mode parameter(%d)\n\r", out_mode);
 		return false;
-		break;
 	}
 
 
@@ -1028,9 +947,7 @@ bool s5p_tv_if_set_disp(void)
 	TVOUTIFPRINTK("(%d, %d)\n\r", disp_mode, out_mode);
 
 	switch (disp_mode) {
-
 	case TVOUT_NTSC_M:
-
 	case TVOUT_NTSC_443:
 		st->sdout_video_scale_cfg.component_level =
 			S5P_TV_SD_LEVEL_0IRE;
@@ -1043,13 +960,9 @@ bool s5p_tv_if_set_disp(void)
 		break;
 
 	case TVOUT_PAL_BDGHI:
-
 	case TVOUT_PAL_M:
-
 	case TVOUT_PAL_N:
-
 	case TVOUT_PAL_NC:
-
 	case TVOUT_PAL_60:
 		st->sdout_video_scale_cfg.component_level =
 			S5P_TV_SD_LEVEL_0IRE;
@@ -1062,45 +975,30 @@ bool s5p_tv_if_set_disp(void)
 		break;
 
 	case TVOUT_480P_60_16_9:
-
 	case TVOUT_480P_60_4_3:
-
 	case TVOUT_576P_50_16_9:
-
 	case TVOUT_576P_50_4_3:
-
 	case TVOUT_720P_50:
-
 	case TVOUT_720P_60:
-
 	case TVOUT_1080I_50:
-
 	case TVOUT_1080I_60:
-
 	case TVOUT_1080P_50:
-
 	case TVOUT_1080P_60:
-
 	case TVOUT_1080P_30:
-
 	case TVOUT_480P_59:
-
 	case TVOUT_720P_59:
-
 	case TVOUT_1080I_59:
-
 	case TVOUT_1080P_59:
 		break;
+
 	default:
 		TVOUTIFPRINTK("invalid disp_mode parameter(%d)\n\r",
 			disp_mode);
 		st->tvout_param_available = false;
 		return false;
-		break;
 	}
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
 		st->sdout_order = S5P_TV_SD_O_ORDER_COMPOSITE_Y_C_CVBS;
 		st->sdout_dac_on[2] = false;
@@ -1116,9 +1014,7 @@ bool s5p_tv_if_set_disp(void)
 		break;
 
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
 		st->sdout_order = S5P_TV_SD_O_ORDER_COMPONENT_RBG_PRPBY;
 		st->sdout_dac_on[2] = true;
@@ -1139,7 +1035,6 @@ bool s5p_tv_if_set_disp(void)
 			out_mode);
 		st->tvout_param_available = false;
 		return false;
-		break;
 	}
 
 	s5p_tv_if_start();

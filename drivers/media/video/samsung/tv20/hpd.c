@@ -65,7 +65,7 @@ int s5p_hpd_release(struct inode *inode, struct file *file)
 }
 
 ssize_t s5p_hpd_read(struct file *file, char __user *buffer, size_t count,
-	loff_t *ppos)
+			loff_t *ppos)
 {
 	ssize_t retval;
 
@@ -198,16 +198,14 @@ int s5p_hpd_irq_hdmi(int irq)
 	s5p_hdmi_clear_pending(HDMI_IRQ_HPD_PLUG);
 	s5p_hdmi_clear_pending(HDMI_IRQ_HPD_UNPLUG);
 
-
 	/* is this our interrupt? */
-
 	if (!(flag & (1 << HDMI_IRQ_HPD_PLUG | 1 << HDMI_IRQ_HPD_UNPLUG))) {
 		ret = IRQ_NONE;
+
 		goto out;
 	}
 
 	if (flag == (1 << HDMI_IRQ_HPD_PLUG | 1 << HDMI_IRQ_HPD_UNPLUG)) {
-
 		HPDIFPRINTK("HPD_HI && HPD_LO\n");
 
 		if (last_hpd_state == HPD_HI && s5p_hdmi_get_hpd_status())
@@ -217,7 +215,6 @@ int s5p_hpd_irq_hdmi(int irq)
 	}
 
 	if (flag & (1 << HDMI_IRQ_HPD_PLUG)) {
-
 		s5p_hdmi_enable_interrupts(HDMI_IRQ_HPD_UNPLUG);
 
 		atomic_set(&hpd_struct.state, HPD_HI);
@@ -231,7 +228,6 @@ int s5p_hpd_irq_hdmi(int irq)
 		HPDIFPRINTK("HPD_HI\n");
 
 	} else if (flag & (1 << HDMI_IRQ_HPD_UNPLUG)) {
-
 		s5p_hdcp_encrypt_stop(false);
 
 		s5p_hdmi_enable_interrupts(HDMI_IRQ_HPD_PLUG);
@@ -284,6 +280,7 @@ static int __init s5p_hpd_probe(struct platform_device *pdev)
 	if (misc_register(&hpd_misc_device)) {
 		printk(KERN_WARNING " Couldn't register device 10, %d.\n",
 			HPD_MINOR);
+
 		return -EBUSY;
 	}
 
@@ -313,6 +310,7 @@ static int __init s5p_hpd_probe(struct platform_device *pdev)
 		"hpd", s5p_hpd_irq_handler)) {
 		printk(KERN_ERR  "failed to install %s irq\n", "hpd");
 		misc_deregister(&hpd_misc_device);
+
 		return -EIO;
 	}
 
@@ -329,7 +327,6 @@ static int s5p_hpd_remove(struct platform_device *pdev)
 {
 	return 0;
 }
-
 
 #ifdef CONFIG_PM
 /*
@@ -376,6 +373,7 @@ int __init s5p_hpd_init(void)
 
 	if (ret) {
 		printk(KERN_ERR "Platform Device Register Failed %d\n", ret);
+
 		return -1;
 	}
 
@@ -389,5 +387,3 @@ static void __exit s5p_hpd_exit(void)
 
 module_init(s5p_hpd_init);
 module_exit(s5p_hpd_exit);
-
-

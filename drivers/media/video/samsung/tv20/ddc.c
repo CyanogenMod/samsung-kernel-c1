@@ -53,7 +53,6 @@ int s5p_ddc_read(u8 subaddr, u8 *data, u16 len)
 }
 EXPORT_SYMBOL(s5p_ddc_read);
 
-
 /*
  * DDC_write ftn.
  */
@@ -102,11 +101,9 @@ static int s5p_ddc_resume(struct i2c_client *cl)
 	return 0;
 };
 
-
 static struct i2c_device_id ddc_idtable[] = {
 	{"s5p_ddc", 0},
 };
-
 MODULE_DEVICE_TABLE(i2c, ddc_idtable);
 
 static struct i2c_driver ddc_driver = {
@@ -131,7 +128,6 @@ static void __exit s5p_ddc_exit(void)
 {
 	i2c_del_driver(&ddc_driver);
 }
-
 
 MODULE_AUTHOR("SangPil Moon <sangpil.moon@samsung.com>");
 MODULE_DESCRIPTION("Driver for SMDKV210 I2C DDC devices");

@@ -41,43 +41,18 @@
 #define HDMIPRINTK(fmt, args...)
 #endif
 
-static struct resource	*hdmi_mem;
-void __iomem		*hdmi_base;
-
-static struct resource	*i2c_hdmi_phy_mem;
-void __iomem		*i2c_hdmi_phy_base;
-
-spinlock_t 	lock_hdmi;
-
-/*
- * i2c_hdmi_phy related
- */
-
 #define PHY_I2C_ADDRESS       		0x70
-
 #define I2C_ACK				(1<<7)
 #define I2C_INT				(1<<5)
 #define I2C_PEND			(1<<4)
-
 #define I2C_INT_CLEAR			(0<<4)
-
 #define I2C_CLK				(0x41)
 #define I2C_CLK_PEND_INT		(I2C_CLK|I2C_INT_CLEAR|I2C_INT)
-
 #define I2C_ENABLE			(1<<4)
 #define I2C_START			(1<<5)
-
 #define I2C_MODE_MTX			0xC0
 #define I2C_MODE_MRX			0x80
-
 #define I2C_IDLE			0
-
-static struct {
-	s32    state;
-	u8 	*buffer;
-	s32    bytes;
-} i2c_hdmi_phy_context;
-
 
 #define STATE_IDLE 		0
 #define STATE_TX_EDDC_SEGADDR	1
@@ -92,6 +67,26 @@ static struct {
 #define STATE_TX_DATA		10
 #define STATE_TX_STOP		11
 #define STATE_RX_STOP		12
+
+#define HDMI_IRQ_TOTAL_NUM	6
+
+hdmi_isr hdmi_isr_ftn[HDMI_IRQ_TOTAL_NUM];
+
+static struct resource	*hdmi_mem;
+void __iomem		*hdmi_base;
+
+static struct resource	*i2c_hdmi_phy_mem;
+void __iomem		*i2c_hdmi_phy_base;
+
+static struct {
+	s32    state;
+	u8 	*buffer;
+	s32    bytes;
+} i2c_hdmi_phy_context;
+
+spinlock_t 	lock_hdmi;
+
+
 
 
 static s32 hdmi_i2c_phy_interruptwait(void)
@@ -120,7 +115,6 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 	u32 proc = true;
 
 	i2c_hdmi_phy_context.state = STATE_RX_ADDR;
-
 	i2c_hdmi_phy_context.buffer = buffer;
 	i2c_hdmi_phy_context.bytes = nbytes;
 
@@ -130,25 +124,20 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 		i2c_hdmi_phy_base + HDMI_I2C_STAT);
 	writeb(addr & 0xFE,
 		i2c_hdmi_phy_base + HDMI_I2C_DS);
-
 	writeb(I2C_ENABLE | I2C_START | I2C_MODE_MRX,
 		i2c_hdmi_phy_base + HDMI_I2C_STAT);
 
 	while (proc) {
-
 		if (i2c_hdmi_phy_context.state != STATE_RX_STOP) {
 			if (hdmi_i2c_phy_interruptwait() != 0) {
 				HDMIPRINTK("interrupt wait failed!!!\n");
 				ret = EINVAL;
 				break;
 			}
-
 		}
 
 		switch (i2c_hdmi_phy_context.state) {
-
 		case STATE_RX_DATA:
-
 			reg = readb(i2c_hdmi_phy_base + HDMI_I2C_DS);
 			*(i2c_hdmi_phy_context.buffer) = reg;
 
@@ -162,8 +151,8 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 			} else {
 				writeb(I2C_CLK_PEND_INT | I2C_ACK,
 					i2c_hdmi_phy_base + HDMI_I2C_CON);
-
 			}
+
 			break;
 
 		case STATE_RX_ADDR:
@@ -181,7 +170,6 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 			break;
 
 		case STATE_RX_STOP:
-
 			i2c_hdmi_phy_context.state = STATE_IDLE;
 
 			reg = readb(i2c_hdmi_phy_base + HDMI_I2C_DS);
@@ -190,15 +178,13 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 
 			writeb(I2C_MODE_MRX|I2C_ENABLE,
 				i2c_hdmi_phy_base + HDMI_I2C_STAT);
-
 			writeb(I2C_CLK_PEND_INT,
 				i2c_hdmi_phy_base + HDMI_I2C_CON);
-
 			writeb(I2C_MODE_MRX,
 				i2c_hdmi_phy_base + HDMI_I2C_STAT);
 
 			while (readb(i2c_hdmi_phy_base + HDMI_I2C_STAT) &
-				(1<<5))
+					(1<<5))
 				msleep(1);
 
 			proc = false;
@@ -206,7 +192,6 @@ s32 hdmi_i2c_phy_read(u8 addr, u8 nbytes, u8 *buffer)
 			break;
 
 		case STATE_IDLE:
-
 		default:
 			HDMIPRINTK("error state!!!\n");
 
@@ -228,7 +213,6 @@ s32 hdmi_i2c_phy_write(u8 addr, u8 nbytes, u8 *buffer)
 	u32 proc = true;
 
 	i2c_hdmi_phy_context.state = STATE_TX_ADDR;
-
 	i2c_hdmi_phy_context.buffer = buffer;
 	i2c_hdmi_phy_context.bytes = nbytes;
 
@@ -242,18 +226,16 @@ s32 hdmi_i2c_phy_write(u8 addr, u8 nbytes, u8 *buffer)
 		i2c_hdmi_phy_base + HDMI_I2C_STAT);
 
 	while (proc) {
-
 		if (hdmi_i2c_phy_interruptwait() != 0) {
 			HDMIPRINTK("interrupt wait failed!!!\n");
 			ret = EINVAL;
+
 			break;
 		}
 
 
 		switch (i2c_hdmi_phy_context.state) {
-
 		case STATE_TX_ADDR:
-
 		case STATE_TX_DATA:
 			i2c_hdmi_phy_context.state = STATE_TX_DATA;
 
@@ -268,9 +250,11 @@ s32 hdmi_i2c_phy_write(u8 addr, u8 nbytes, u8 *buffer)
 				i2c_hdmi_phy_context.state = STATE_TX_STOP;
 				writeb(I2C_CLK_PEND_INT,
 					i2c_hdmi_phy_base + HDMI_I2C_CON);
-			} else
+			} else {
 				writeb(I2C_CLK_PEND_INT | I2C_ACK,
 					i2c_hdmi_phy_base + HDMI_I2C_CON);
+			}
+
 			break;
 
 		case STATE_TX_STOP:
@@ -278,15 +262,13 @@ s32 hdmi_i2c_phy_write(u8 addr, u8 nbytes, u8 *buffer)
 
 			writeb(I2C_MODE_MTX | I2C_ENABLE,
 				i2c_hdmi_phy_base + HDMI_I2C_STAT);
-
 			writeb(I2C_CLK_PEND_INT,
 				i2c_hdmi_phy_base + HDMI_I2C_CON);
-
 			writeb(I2C_MODE_MTX,
 				i2c_hdmi_phy_base + HDMI_I2C_STAT);
 
 			while (readb(i2c_hdmi_phy_base + HDMI_I2C_STAT) &
-				(1<<5))
+					(1<<5))
 				msleep(1);
 
 			proc = false;
@@ -294,7 +276,6 @@ s32 hdmi_i2c_phy_write(u8 addr, u8 nbytes, u8 *buffer)
 			break;
 
 		case STATE_IDLE:
-
 		default:
 			HDMIPRINTK("error state!!!\n");
 
@@ -320,10 +301,8 @@ int hdmi_phy_down(bool on, u8 addr, u8 offset, u8 *read_buffer)
 	if (hdmi_i2c_phy_write(PHY_I2C_ADDRESS, 2, buff) != 0)
 		return EINVAL;
 
-
 	return 0;
 }
-
 
 int s5p_hdmi_phy_power(bool on)
 {
@@ -340,10 +319,10 @@ int s5p_hdmi_phy_power(bool on)
 	if (hdmi_i2c_phy_write(PHY_I2C_ADDRESS, 1, buffer) != 0)
 		return EINVAL;
 
-
 	/* read data */
 	if (hdmi_i2c_phy_read(PHY_I2C_ADDRESS, size, read_buffer) != 0) {
 		HDMIPRINTK("hdmi_i2c_phy_read failed.\n");
+
 		return EINVAL;
 	}
 
@@ -396,7 +375,6 @@ s32 hdmi_phy_config(enum phy_freq freq, enum s5p_hdmi_color_depth cd)
 	u8 reg;
 
 	switch (cd) {
-
 	case HDMI_CD_24:
 		index = 0;
 		break;
@@ -419,6 +397,7 @@ s32 hdmi_phy_config(enum phy_freq freq, enum s5p_hdmi_color_depth cd)
 
 	if (hdmi_i2c_phy_write(PHY_I2C_ADDRESS, 2, buffer) != 0) {
 		HDMIPRINTK("hdmi_i2c_phy_write failed.\n");
+
 		return EINVAL;
 	}
 
@@ -432,12 +411,12 @@ s32 hdmi_phy_config(enum phy_freq freq, enum s5p_hdmi_color_depth cd)
 	if (hdmi_i2c_phy_write(PHY_I2C_ADDRESS, size, buffer) != 0)
 		return EINVAL;
 
-
 	/* write offset */
 	buffer[0] = 0x01;
 
 	if (hdmi_i2c_phy_write(PHY_I2C_ADDRESS, 1, buffer) != 0) {
 		HDMIPRINTK("hdmi_i2c_phy_write failed.\n");
+
 		return EINVAL;
 	}
 
@@ -449,21 +428,19 @@ s32 hdmi_phy_config(enum phy_freq freq, enum s5p_hdmi_color_depth cd)
 	/* read data */
 	if (hdmi_i2c_phy_read(PHY_I2C_ADDRESS, size, read_buffer) != 0) {
 		HDMIPRINTK("hdmi_i2c_phy_read failed.\n");
+
 		return EINVAL;
 	}
 
 	HDMIPRINTK("read buffer :\n\t\t");
 
 	for (i = 1; i < size; i++) {
-
-
 		printk("0x%02x", read_buffer[i]);
 
 		if (i % 8)
 			printk(" ");
 		else
 			printk("\n\t\t");
-
 	}
 	printk("\n");
 }
@@ -576,34 +553,41 @@ static s32 hdmi_set_clr_depth(enum s5p_hdmi_color_depth cd)
 {
 	/* if color depth is supported by RX, set GCP packet */
 	switch (cd) {
-
 	case HDMI_CD_48:
-		writeb(S5P_HDMI_GCP_BYTE2_CD_48BPP, hdmi_base + S5P_HDMI_GCP_BYTE2);
+		writeb(S5P_HDMI_GCP_BYTE2_CD_48BPP,
+			hdmi_base + S5P_HDMI_GCP_BYTE2);
 		break;
 
 	case HDMI_CD_36:
-		writeb(S5P_HDMI_GCP_BYTE2_CD_36BPP, hdmi_base + S5P_HDMI_GCP_BYTE2);
+		writeb(S5P_HDMI_GCP_BYTE2_CD_36BPP,
+			hdmi_base + S5P_HDMI_GCP_BYTE2);
 		/* set DC register */
-		writeb(S5P_HDMI_DC_CTL_12, hdmi_base + S5P_HDMI_DC_CONTROL);
+		writeb(S5P_HDMI_DC_CTL_12,
+			hdmi_base + S5P_HDMI_DC_CONTROL);
 		break;
 
 	case HDMI_CD_30:
-		writeb(S5P_HDMI_GCP_BYTE2_CD_30BPP, hdmi_base + S5P_HDMI_GCP_BYTE2);
+		writeb(S5P_HDMI_GCP_BYTE2_CD_30BPP,
+			hdmi_base + S5P_HDMI_GCP_BYTE2);
 		/* set DC register */
-		writeb(S5P_HDMI_DC_CTL_10, hdmi_base + S5P_HDMI_DC_CONTROL);
+		writeb(S5P_HDMI_DC_CTL_10,
+			hdmi_base + S5P_HDMI_DC_CONTROL);
 		break;
 
 	case HDMI_CD_24:
-		writeb(S5P_HDMI_GCP_BYTE2_CD_24BPP, hdmi_base + S5P_HDMI_GCP_BYTE2);
+		writeb(S5P_HDMI_GCP_BYTE2_CD_24BPP,
+			hdmi_base + S5P_HDMI_GCP_BYTE2);
 		/* set DC register */
-		writeb(S5P_HDMI_DC_CTL_8, hdmi_base + S5P_HDMI_DC_CONTROL);
+		writeb(S5P_HDMI_DC_CTL_8,
+			hdmi_base + S5P_HDMI_DC_CONTROL);
 		/* disable GCP */
-		writeb(S5P_HDMI_GCP_CON_NO_TRAN, hdmi_base + S5P_HDMI_GCP_CON);
+		writeb(S5P_HDMI_GCP_CON_NO_TRAN,
+			hdmi_base + S5P_HDMI_GCP_CON);
 		break;
 
 	default:
-		HDMIPRINTK("HDMI core does not support \
-			requested Deep Color mode\n");
+		HDMIPRINTK("HDMI core does not support"
+			"requested Deep Color mode\n");
 		return -EINVAL;
 	}
 
@@ -621,6 +605,7 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 	if (mode > (sizeof(video_params)/sizeof(struct hdmi_v_params)) ||
 		(s32)mode < 0) {
 		HDMIPRINTK("This video mode is not Supported\n");
+
 		return -EINVAL;
 	}
 
@@ -664,19 +649,26 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 		temp_sync2 = video_params[mode].v_sync_gen2;
 		temp_sync3 = video_params[mode].v_sync_gen3;
 
-		writeb((u8)(temp_reg32 & 0xff), hdmi_base + S5P_HDMI_V_BLANK_F_0);
-		writeb((u8)(temp_reg32 >> 8), hdmi_base + S5P_HDMI_V_BLANK_F_1);
-		writeb((u8)(temp_reg32 >> 16), hdmi_base + S5P_HDMI_V_BLANK_F_2);
+		writeb((u8)(temp_reg32 & 0xff),
+			hdmi_base + S5P_HDMI_V_BLANK_F_0);
+		writeb((u8)(temp_reg32 >> 8),
+			hdmi_base + S5P_HDMI_V_BLANK_F_1);
+		writeb((u8)(temp_reg32 >> 16),
+			hdmi_base + S5P_HDMI_V_BLANK_F_2);
 
 		writeb((u8)(temp_sync2 & 0xff),
 			hdmi_base + S5P_HDMI_V_SYNC_GEN_2_0);
-		writeb((u8)(temp_sync2 >> 8), hdmi_base + S5P_HDMI_V_SYNC_GEN_2_1);
-		writeb((u8)(temp_sync2 >> 16), hdmi_base + S5P_HDMI_V_SYNC_GEN_2_2);
+		writeb((u8)(temp_sync2 >> 8),
+			hdmi_base + S5P_HDMI_V_SYNC_GEN_2_1);
+		writeb((u8)(temp_sync2 >> 16),
+			hdmi_base + S5P_HDMI_V_SYNC_GEN_2_2);
 
 		writeb((u8)(temp_sync3 & 0xff),
 			hdmi_base + S5P_HDMI_V_SYNC_GEN_3_0);
-		writeb((u8)(temp_sync3 >> 8), hdmi_base + S5P_HDMI_V_SYNC_GEN_3_1);
-		writeb((u8)(temp_sync3 >> 16), hdmi_base + S5P_HDMI_V_SYNC_GEN_3_2);
+		writeb((u8)(temp_sync3 >> 8),
+			hdmi_base + S5P_HDMI_V_SYNC_GEN_3_1);
+		writeb((u8)(temp_sync3 >> 16),
+			hdmi_base + S5P_HDMI_V_SYNC_GEN_3_2);
 	} else {
 		/* progressive mode */
 		writeb(0x00, hdmi_base + S5P_HDMI_V_BLANK_F_0);
@@ -693,7 +685,8 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 	}
 
 	/* set interlaced mode */
-	writeb(video_params[mode].interlaced, hdmi_base + S5P_HDMI_INT_PRO_MODE);
+	writeb(video_params[mode].interlaced,
+			hdmi_base + S5P_HDMI_INT_PRO_MODE);
 
 	/* pixel repetition */
 	temp_reg8 = readb(hdmi_base + S5P_HDMI_CON_1);
@@ -723,17 +716,18 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 
 	/* clear */
 	temp_reg8 = readb(hdmi_base + S5P_HDMI_AVI_BYTE2) &
-			~(S5P_HDMI_AVI_PICTURE_ASPECT_4_3 | S5P_HDMI_AVI_PICTURE_ASPECT_16_9);
+			~(S5P_HDMI_AVI_PICTURE_ASPECT_4_3 |
+			S5P_HDMI_AVI_PICTURE_ASPECT_16_9);
 
 	if (pxl_ratio == HDMI_PIXEL_RATIO_16_9)
 		temp_reg8 |= S5P_HDMI_AVI_PICTURE_ASPECT_16_9;
 	else
 		temp_reg8 |= S5P_HDMI_AVI_PICTURE_ASPECT_4_3;
 
-
 	/* set color depth */
 	if (hdmi_set_clr_depth(cd) != 0) {
 		HDMIPRINTK("[ERR] Can't set hdmi clr. depth.\n");
+
 		return -EINVAL;
 	}
 
@@ -757,12 +751,12 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 	/* config Phy */
 	if (hdmi_phy_config(video_params[mode].pixel_clock, cd) == EINVAL) {
 		HDMIPRINTK("[ERR] hdmi_phy_config() failed.\n");
+
 		return EINVAL;
 	}
 #endif
 	return 0;
 }
-
 
 void s5p_hdmi_sw_hpd_enable(bool enable)
 {
@@ -793,13 +787,12 @@ void s5p_hdmi_set_hpd_onoff(bool on_off)
 
 }
 
-
 void s5p_hdmi_audio_set_config(enum s5p_tv_audio_codec_type audio_codec)
 {
-
-	u32 data_type = (audio_codec == PCM) ? S5P_HDMI_SPDIFIN_CFG_LINEAR_PCM_TYPE :
-			(audio_codec == AC3) ? S5P_HDMI_SPDIFIN_CFG_NO_LINEAR_PCM_TYPE :
-				0xff;
+	u32 data_type = (audio_codec == PCM) ?
+			S5P_HDMI_SPDIFIN_CFG_LINEAR_PCM_TYPE :
+			(audio_codec == AC3) ?
+				S5P_HDMI_SPDIFIN_CFG_NO_LINEAR_PCM_TYPE : 0xff;
 
 	HDMIPRINTK("audio codec type = %s\n\r",
 		(audio_codec&PCM) ? "PCM" :
@@ -814,11 +807,13 @@ void s5p_hdmi_audio_set_config(enum s5p_tv_audio_codec_type audio_codec)
 	writel(0xFF, hdmi_base + S5P_HDMI_I2S_MUX_CH);
 	writel(0x03, hdmi_base + S5P_HDMI_I2S_MUX_CUV);
 
-	writel(S5P_HDMI_SPDIFIN_CFG_FILTER_2_SAMPLE | data_type
-	       | S5P_HDMI_SPDIFIN_CFG_PCPD_MANUAL_SET | S5P_HDMI_SPDIFIN_CFG_WORD_LENGTH_M_SET
-	       | S5P_HDMI_SPDIFIN_CFG_U_V_C_P_REPORT | S5P_HDMI_SPDIFIN_CFG_BURST_SIZE_2
-	       | S5P_HDMI_SPDIFIN_CFG_DATA_ALIGN_32BIT
-	       , hdmi_base + S5P_HDMI_SPDIFIN_CONFIG_1);
+	writel(S5P_HDMI_SPDIFIN_CFG_FILTER_2_SAMPLE | data_type |
+		S5P_HDMI_SPDIFIN_CFG_PCPD_MANUAL_SET |
+		S5P_HDMI_SPDIFIN_CFG_WORD_LENGTH_M_SET |
+		S5P_HDMI_SPDIFIN_CFG_U_V_C_P_REPORT |
+		S5P_HDMI_SPDIFIN_CFG_BURST_SIZE_2 |
+		S5P_HDMI_SPDIFIN_CFG_DATA_ALIGN_32BIT,
+			hdmi_base + S5P_HDMI_SPDIFIN_CONFIG_1);
 	writel(0, hdmi_base + S5P_HDMI_SPDIFIN_CONFIG_2);
 }
 
@@ -877,10 +872,9 @@ void  s5p_hdmi_audio_clock_enable(void)
 	writel(0x3, hdmi_base + S5P_HDMI_SPDIFIN_OP_CTRL);
 }
 
-
 void s5p_hdmi_audio_set_repetition_time(
-	enum s5p_tv_audio_codec_type audio_codec,
-	u32 bits, u32 frame_size_code)
+				enum s5p_tv_audio_codec_type audio_codec,
+				u32 bits, u32 frame_size_code)
 {
 	/* Only 4'b1011  24bit */
 	u32 wl = 5 << 1 | 1;
@@ -907,10 +901,9 @@ void s5p_hdmi_audio_irq_enable(u32 irq_en)
 	writel(irq_en, hdmi_base + S5P_HDMI_SPDIFIN_IRQ_MASK);
 }
 
-
 void s5p_hdmi_audio_set_aui(enum s5p_tv_audio_codec_type audio_codec,
-			u32 sample_rate,
-			u32 bits)
+				u32 sample_rate,
+				u32 bits)
 {
 	u8 sum_of_bits, bytes1, bytes2, bytes3, check_sum;
 	u32 bit_rate;
@@ -942,13 +935,9 @@ void s5p_hdmi_audio_set_aui(enum s5p_tv_audio_codec_type audio_codec,
 	sum_of_bits = (0x84 + 0x1 + 10);
 
 	bytes1 = (u8)((type << 4) | ch);
-
 	bytes2 = (u8)((sample << 2) | bpsType);
-
 	bit_rate = 256;
-
 	bytes3 = (audio_codec == PCM) ? (u8)0 : (u8)(bit_rate / 8) ;
-
 
 	sum_of_bits += (bytes1 + bytes2 + bytes3);
 	check_sum = 256 - sum_of_bits;
@@ -961,26 +950,23 @@ void s5p_hdmi_audio_set_aui(enum s5p_tv_audio_codec_type audio_codec,
 	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE4); /* 2ch pcm or Stream */
 	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE5); /* 2ch pcm or Stream */
 
-
 	writel(2 , hdmi_base + S5P_HDMI_ACP_CON);
 	writel(1 , hdmi_base + S5P_HDMI_ACP_TYPE);
 
 	writel(0x10 , hdmi_base + S5P_HDMI_GCP_BYTE1);
-
-
 }
 
-void s5p_hdmi_video_set_bluescreen(bool en,
-				     u8 cb_b,
-				     u8 y_g,
-				     u8 cr_r)
+void s5p_hdmi_video_set_bluescreen(bool en, u8 cb_b, u8 y_g, u8 cr_r)
 {
 	HDMIPRINTK("%d, %d, %d, %d\n\r", en, cb_b, y_g, cr_r);
 
 	if (en) {
-		writel(S5P_HDMI_SET_BLUESCREEN_0(cb_b), hdmi_base + S5P_HDMI_BLUE_SCREEN_0);
-		writel(S5P_HDMI_SET_BLUESCREEN_1(y_g), hdmi_base + S5P_HDMI_BLUE_SCREEN_1);
-		writel(S5P_HDMI_SET_BLUESCREEN_2(cr_r), hdmi_base + S5P_HDMI_BLUE_SCREEN_2);
+		writel(S5P_HDMI_SET_BLUESCREEN_0(cb_b),
+			hdmi_base + S5P_HDMI_BLUE_SCREEN_0);
+		writel(S5P_HDMI_SET_BLUESCREEN_1(y_g),
+			hdmi_base + S5P_HDMI_BLUE_SCREEN_1);
+		writel(S5P_HDMI_SET_BLUESCREEN_2(cr_r),
+			hdmi_base + S5P_HDMI_BLUE_SCREEN_2);
 		writel(readl(hdmi_base + S5P_HDMI_CON_0) | S5P_HDMI_BLUE_SCR_EN,
 			hdmi_base + S5P_HDMI_CON_0);
 
@@ -994,37 +980,35 @@ void s5p_hdmi_video_set_bluescreen(bool en,
 		writel(readl(hdmi_base + S5P_HDMI_CON_0)&~S5P_HDMI_BLUE_SCR_EN,
 			hdmi_base + S5P_HDMI_CON_0);
 	}
-
 }
 
 
-int s5p_hdmi_init_spd_infoframe(
-	enum s5p_hdmi_transmit trans_type,
-	u8 *spd_header,
-	u8 *spd_data)
+int s5p_hdmi_init_spd_infoframe(enum s5p_hdmi_transmit trans_type,
+				u8 *spd_header,
+				u8 *spd_data)
 {
-	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type,
-		   (u32)spd_header,
-		   (u32)spd_data);
+	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type, (u32)spd_header,
+					(u32)spd_data);
 
 	switch (trans_type) {
-
 	case HDMI_DO_NOT_TANS:
-		writel(S5P_HDMI_SPD_TX_CON_NO_TRANS, hdmi_base + S5P_HDMI_SPD_CON);
+		writel(S5P_HDMI_SPD_TX_CON_NO_TRANS,
+			hdmi_base + S5P_HDMI_SPD_CON);
 		break;
 
 	case HDMI_TRANS_ONCE:
-		writel(S5P_HDMI_SPD_TX_CON_TRANS_ONCE, hdmi_base + S5P_HDMI_SPD_CON);
+		writel(S5P_HDMI_SPD_TX_CON_TRANS_ONCE,
+			hdmi_base + S5P_HDMI_SPD_CON);
 		break;
 
 	case HDMI_TRANS_EVERY_SYNC:
-		writel(S5P_HDMI_SPD_TX_CON_TRANS_EVERY_VSYNC, hdmi_base + S5P_HDMI_SPD_CON);
+		writel(S5P_HDMI_SPD_TX_CON_TRANS_EVERY_VSYNC,
+			hdmi_base + S5P_HDMI_SPD_CON);
 		break;
 
 	default:
 		HDMIPRINTK(" invalid out_mode parameter(%d)\n\r", trans_type);
 		return -1;
-		break;
 	}
 
 	/*
@@ -1034,27 +1018,44 @@ int s5p_hdmi_init_spd_infoframe(
 
 	if (spd_data == NULL || spd_header == NULL) {
 		HDMIPRINTK("Set default SPD\n");
-		writel(S5P_HDMI_SET_SPD_HEADER(0x83), hdmi_base + S5P_HDMI_SPD_HEADER0);
-		writel(S5P_HDMI_SET_SPD_HEADER(0x01), hdmi_base + S5P_HDMI_SPD_HEADER1);
-		writel(S5P_HDMI_SET_SPD_HEADER(0x19), hdmi_base + S5P_HDMI_SPD_HEADER2);
+		writel(S5P_HDMI_SET_SPD_HEADER(0x83),
+			hdmi_base + S5P_HDMI_SPD_HEADER0);
+		writel(S5P_HDMI_SET_SPD_HEADER(0x01),
+			hdmi_base + S5P_HDMI_SPD_HEADER1);
+		writel(S5P_HDMI_SET_SPD_HEADER(0x19),
+			hdmi_base + S5P_HDMI_SPD_HEADER2);
 
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA0);
-		writel(S5P_HDMI_SET_SPD_DATA('S'), hdmi_base + S5P_HDMI_SPD_DATA1);
-		writel(S5P_HDMI_SET_SPD_DATA('A'), hdmi_base + S5P_HDMI_SPD_DATA2);
-		writel(S5P_HDMI_SET_SPD_DATA('M'), hdmi_base + S5P_HDMI_SPD_DATA3);
-		writel(S5P_HDMI_SET_SPD_DATA('S'), hdmi_base + S5P_HDMI_SPD_DATA4);
-		writel(S5P_HDMI_SET_SPD_DATA('U'), hdmi_base + S5P_HDMI_SPD_DATA5);
-		writel(S5P_HDMI_SET_SPD_DATA('N'), hdmi_base + S5P_HDMI_SPD_DATA6);
-		writel(S5P_HDMI_SET_SPD_DATA('G'), hdmi_base + S5P_HDMI_SPD_DATA7);
+		writel(S5P_HDMI_SET_SPD_DATA('S'),
+			hdmi_base + S5P_HDMI_SPD_DATA1);
+		writel(S5P_HDMI_SET_SPD_DATA('A'),
+			hdmi_base + S5P_HDMI_SPD_DATA2);
+		writel(S5P_HDMI_SET_SPD_DATA('M'),
+			hdmi_base + S5P_HDMI_SPD_DATA3);
+		writel(S5P_HDMI_SET_SPD_DATA('S'),
+			hdmi_base + S5P_HDMI_SPD_DATA4);
+		writel(S5P_HDMI_SET_SPD_DATA('U'),
+			hdmi_base + S5P_HDMI_SPD_DATA5);
+		writel(S5P_HDMI_SET_SPD_DATA('N'),
+			hdmi_base + S5P_HDMI_SPD_DATA6);
+		writel(S5P_HDMI_SET_SPD_DATA('G'),
+			hdmi_base + S5P_HDMI_SPD_DATA7);
 
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA8);
-		writel(S5P_HDMI_SET_SPD_DATA('S'), hdmi_base + S5P_HDMI_SPD_DATA9);
-		writel(S5P_HDMI_SET_SPD_DATA('5'), hdmi_base + S5P_HDMI_SPD_DATA10);
-		writel(S5P_HDMI_SET_SPD_DATA('P'), hdmi_base + S5P_HDMI_SPD_DATA11);
-		writel(S5P_HDMI_SET_SPD_DATA('C'), hdmi_base + S5P_HDMI_SPD_DATA12);
-		writel(S5P_HDMI_SET_SPD_DATA('1'), hdmi_base + S5P_HDMI_SPD_DATA13);
-		writel(S5P_HDMI_SET_SPD_DATA('1'), hdmi_base + S5P_HDMI_SPD_DATA14);
-		writel(S5P_HDMI_SET_SPD_DATA('0'), hdmi_base + S5P_HDMI_SPD_DATA15);
+		writel(S5P_HDMI_SET_SPD_DATA('S'),
+			hdmi_base + S5P_HDMI_SPD_DATA9);
+		writel(S5P_HDMI_SET_SPD_DATA('5'),
+			hdmi_base + S5P_HDMI_SPD_DATA10);
+		writel(S5P_HDMI_SET_SPD_DATA('P'),
+			hdmi_base + S5P_HDMI_SPD_DATA11);
+		writel(S5P_HDMI_SET_SPD_DATA('C'),
+			hdmi_base + S5P_HDMI_SPD_DATA12);
+		writel(S5P_HDMI_SET_SPD_DATA('1'),
+			hdmi_base + S5P_HDMI_SPD_DATA13);
+		writel(S5P_HDMI_SET_SPD_DATA('1'),
+			hdmi_base + S5P_HDMI_SPD_DATA14);
+		writel(S5P_HDMI_SET_SPD_DATA('0'),
+			hdmi_base + S5P_HDMI_SPD_DATA15);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA16);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA17);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA18);
@@ -1065,10 +1066,10 @@ int s5p_hdmi_init_spd_infoframe(
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA23);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA24);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA25);
-		writel(S5P_HDMI_SET_SPD_DATA(0x2), hdmi_base + S5P_HDMI_SPD_DATA26);
+		writel(S5P_HDMI_SET_SPD_DATA(0x2),
+			hdmi_base + S5P_HDMI_SPD_DATA26);
 		writel(0x0, hdmi_base + S5P_HDMI_SPD_DATA27);
 	} else {
-
 		writel(S5P_HDMI_SET_SPD_HEADER(*(spd_header)),
 			hdmi_base + S5P_HDMI_SPD_HEADER0);
 
@@ -1145,11 +1146,9 @@ void s5p_hdmi_init_hpd_onoff(bool on_off)
 }
 
 #ifndef CONFIG_SND_S5P_SPDIF
-static void s5p_hdmi_audio_i2s_config(
-	enum s5p_tv_audio_codec_type audio_codec,
-	u32 sample_rate,
-	u32 bits_per_sample,
-	u32 frame_size_code)
+static void s5p_hdmi_audio_i2s_config(enum s5p_tv_audio_codec_type audio_codec,
+					u32 sample_rate, u32 bits_per_sample,
+					u32 frame_size_code)
 {
 	u32 data_num, bit_ch, sample_frq;
 
@@ -1244,14 +1243,12 @@ static void s5p_hdmi_audio_i2s_config(
 }
 #endif
 
-int s5p_hdmi_audio_init(
-	enum s5p_tv_audio_codec_type audio_codec,
-	u32 sample_rate, u32 bits, u32 frame_size_code)
+int s5p_hdmi_audio_init(enum s5p_tv_audio_codec_type audio_codec,
+			u32 sample_rate, u32 bits, u32 frame_size_code)
 {
 #ifdef CONFIG_SND_S5P_SPDIF
 	s5p_hdmi_audio_set_config(audio_codec);
-	s5p_hdmi_audio_set_repetition_time(audio_codec, bits,
-		frame_size_code);
+	s5p_hdmi_audio_set_repetition_time(audio_codec, bits, frame_size_code);
 	s5p_hdmi_audio_irq_enable(S5P_HDMI_SPDIFIN_IRQ_OVERFLOW_EN);
 	s5p_hdmi_audio_clock_enable();
 
@@ -1267,9 +1264,8 @@ int s5p_hdmi_audio_init(
 	return 0;
 }
 
-int s5p_hdmi_video_init_display_mode(
-	enum s5p_tv_disp_mode disp_mode,
-	enum s5p_tv_o_mode out_mode, u8 *avidata)
+int s5p_hdmi_video_init_display_mode(enum s5p_tv_disp_mode disp_mode,
+				enum s5p_tv_o_mode out_mode, u8 *avidata)
 {
 	enum s5p_hdmi_v_fmt hdmi_v_fmt;
 	enum s5p_tv_hdmi_pxl_aspect aspect;
@@ -1349,12 +1345,12 @@ int s5p_hdmi_video_init_display_mode(
 	default:
 		HDMIPRINTK(" invalid disp_mode parameter(%d)\n\r", disp_mode);
 		return -1;
-		break;
 	}
 
 	if (hdmi_phy_config(video_params[hdmi_v_fmt].pixel_clock, HDMI_CD_24)
 		== EINVAL) {
 		HDMIPRINTK("[ERR] hdmi_phy_config() failed.\n");
+
 		return -1;
 	}
 
@@ -1402,7 +1398,6 @@ int s5p_hdmi_video_init_display_mode(
 	default:
 		HDMIPRINTK("invalid out_mode parameter(%d)\n\r", out_mode);
 		return -1;
-		break;
 	}
 
 	hdmi_set_video_mode(hdmi_v_fmt, HDMI_CD_24, aspect, avidata);
@@ -1410,19 +1405,12 @@ int s5p_hdmi_video_init_display_mode(
 	return 0;
 }
 
-void s5p_hdmi_video_init_bluescreen(bool en,
-				    u8 cb_b,
-				    u8 y_g,
-				    u8 cr_r)
+void s5p_hdmi_video_init_bluescreen(bool en, u8 cb_b, u8 y_g, u8 cr_r)
 {
 	s5p_hdmi_video_set_bluescreen(en, cb_b, y_g, cr_r);
-
 }
 
-void s5p_hdmi_video_init_color_range(u8 y_min,
-				     u8 y_max,
-				     u8 c_min,
-				     u8 c_max)
+void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max)
 {
 	HDMIPRINTK("%d, %d, %d, %d\n\r", y_max, y_min, c_max, c_min);
 
@@ -1432,15 +1420,13 @@ void s5p_hdmi_video_init_color_range(u8 y_min,
 	writel(c_min, hdmi_base + S5P_HDMI_CMIN);
 }
 
-int s5p_hdmi_video_init_csc(
-	enum s5p_tv_hdmi_csc_type csc_type)
+int s5p_hdmi_video_init_csc(enum s5p_tv_hdmi_csc_type csc_type)
 {
 	unsigned short us_csc_coeff[10];
 
 	HDMIPRINTK("%d)\n\r", csc_type);
 
 	switch (csc_type) {
-
 	case HDMI_CSC_YUV601_TO_RGB_LR:
 		us_csc_coeff[0] = 0x23;
 		us_csc_coeff[1] = 256;
@@ -1561,20 +1547,18 @@ int s5p_hdmi_video_init_csc(
 	default:
 		HDMIPRINTK("invalid out_mode parameter(%d)\n\r", csc_type);
 		return -1;
-		break;
 	}
 
 	return 0;
 }
 
-int s5p_hdmi_video_init_avi_infoframe(
-	enum s5p_hdmi_transmit trans_type, u8 check_sum, u8 *avi_data)
+int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,
+					u8 check_sum, u8 *avi_data)
 {
 	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type, (u32)check_sum,
 		(u32)avi_data);
 
 	switch (trans_type) {
-
 	case HDMI_DO_NOT_TANS:
 		writel(S5P_HDMI_AVI_TX_CON_NO_TRANS, hdmi_base + S5P_HDMI_AVI_CON);
 		break;
@@ -1590,7 +1574,6 @@ int s5p_hdmi_video_init_avi_infoframe(
 	default:
 		HDMIPRINTK(" invalid out_mode parameter(%d)\n\r", trans_type);
 		return -1;
-		break;
 	}
 
 	writel(S5P_HDMI_SET_AVI_CHECK_SUM(check_sum), hdmi_base + S5P_HDMI_AVI_CHECK_SUM);
@@ -1612,14 +1595,13 @@ int s5p_hdmi_video_init_avi_infoframe(
 	return 0;
 }
 
-int s5p_hdmi_video_init_mpg_infoframe(
-	enum s5p_hdmi_transmit trans_type, u8 check_sum, u8 *mpg_data)
+int s5p_hdmi_video_init_mpg_infoframe(enum s5p_hdmi_transmit trans_type,
+					u8 check_sum, u8 *mpg_data)
 {
 	HDMIPRINTK("trans_type : %d, %d, %d\n\r", (u32)trans_type,
 			(u32)check_sum, (u32)mpg_data);
 
 	switch (trans_type) {
-
 	case HDMI_DO_NOT_TANS:
 		writel(S5P_HDMI_MPG_TX_CON_NO_TRANS,
 		       hdmi_base + S5P_HDMI_MPG_CON);
@@ -1639,11 +1621,9 @@ int s5p_hdmi_video_init_mpg_infoframe(
 		HDMIPRINTK("invalid out_mode parameter(%d)\n\r",
 			   trans_type);
 		return -1;
-		break;
 	}
 
 	writel(S5P_HDMI_SET_MPG_CHECK_SUM(check_sum),
-
 	       hdmi_base + S5P_HDMI_MPG_CHECK_SUM);
 
 	writel(S5P_HDMI_SET_MPG_DATA(*(mpg_data)),
@@ -1660,9 +1640,7 @@ int s5p_hdmi_video_init_mpg_infoframe(
 	return 0;
 }
 
-void s5p_hdmi_video_init_tg_cmd(bool time_c_e,
-				bool bt656_sync_en,
-				bool tg_en)
+void s5p_hdmi_video_init_tg_cmd(bool time_c_e, bool bt656_sync_en, bool tg_en)
 {
 	u32 temp_reg = 0;
 
@@ -1686,10 +1664,8 @@ void s5p_hdmi_video_init_tg_cmd(bool time_c_e,
 	writel(temp_reg, hdmi_base + S5P_HDMI_TG_CMD);
 }
 
-
-bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type,
-				bool hdcp_en,
-				struct i2c_client *ddc_port)
+bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type, bool hdcp_en,
+			struct i2c_client *ddc_port)
 {
 	u32 temp_reg = S5P_HDMI_EN;
 
@@ -1697,7 +1673,6 @@ bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type,
 		   hdmi_audio_type, hdcp_en);
 
 	switch (hdmi_audio_type) {
-
 	case HDMI_AUDIO_PCM:
 		temp_reg |= S5P_HDMI_ASP_EN;
 		break;
@@ -1709,7 +1684,6 @@ bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type,
 		HDMIPRINTK(" invalid hdmi_audio_type(%d)\n\r",
 			   hdmi_audio_type);
 		return false;
-		break;
 	}
 
 	s5p_hpd_set_hdmiint();
@@ -1739,7 +1713,6 @@ void s5p_hdmi_stop(void)
 	u32 temp = 0, result = 0;
 	HDMIPRINTK("\n\r");
 
-
 	s5p_hdcp_stop();
 
 	/*
@@ -1763,8 +1736,8 @@ void s5p_hdmi_stop(void)
 	s5p_hpd_set_eint();
 }
 
-int __init s5p_hdmi_probe(struct platform_device *pdev,
-	u32 res_num, u32 res_num2)
+int __init s5p_hdmi_probe(struct platform_device *pdev, u32 res_num,
+			u32 res_num2)
 {
 	struct resource *res;
 	size_t	size;
@@ -1860,16 +1833,13 @@ int __init s5p_hdmi_release(struct platform_device *pdev)
 	return 0;
 }
 
-#define HDMI_IRQ_TOTAL_NUM	6
-
-hdmi_isr hdmi_isr_ftn[HDMI_IRQ_TOTAL_NUM];
-
 int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num)
 {
 	HDMIPRINTK("Try to register ISR for IRQ number (%d)\n", irq_num);
 
 	if (isr == NULL) {
 		HDMIPRINTK("Invaild ISR\n");
+
 		return -EINVAL;
 	}
 
@@ -1877,6 +1847,7 @@ int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num)
 	if (irq_num > HDMI_IRQ_TOTAL_NUM) {
 		HDMIPRINTK("irq_num exceeds allowed IRQ number(%d)\n",
 			HDMI_IRQ_TOTAL_NUM);
+
 		return -EINVAL;
 	}
 
@@ -1936,13 +1907,16 @@ irqreturn_t s5p_hdmi_irq(int irq, void *dev_id)
 u8 s5p_hdmi_get_enabled_interrupt(void)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_INTC_CON);
+
 	return reg;
 }
 
 void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_INTC_CON);
 	writeb(reg | (1<<intr) | (1<<HDMI_IRQ_GLOBAL),
 		hdmi_base+S5P_HDMI_INTC_CON);
@@ -1952,6 +1926,7 @@ EXPORT_SYMBOL(s5p_hdmi_enable_interrupts);
 void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_INTC_CON);
 	writeb(reg & ~(1<<intr), hdmi_base+S5P_HDMI_INTC_CON);
 }
@@ -1960,6 +1935,7 @@ EXPORT_SYMBOL(s5p_hdmi_disable_interrupts);
 void s5p_hdmi_clear_pending(enum s5p_tv_hdmi_interrrupt intr)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_INTC_FLAG);
 	writeb(reg | (1<<intr), hdmi_base+S5P_HDMI_INTC_FLAG);
 }
@@ -1968,7 +1944,9 @@ EXPORT_SYMBOL(s5p_hdmi_clear_pending);
 u8 s5p_hdmi_get_interrupts(void)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_INTC_FLAG);
+
 	return reg;
 }
 EXPORT_SYMBOL(s5p_hdmi_get_interrupts);
@@ -1976,7 +1954,9 @@ EXPORT_SYMBOL(s5p_hdmi_get_interrupts);
 u8 s5p_hdmi_get_swhpd_status(void)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_HPD) & S5P_HDMI_HPD_SEL_I_HPD;
+
 	return reg;
 }
 EXPORT_SYMBOL(s5p_hdmi_get_swhpd_status);
@@ -1984,7 +1964,9 @@ EXPORT_SYMBOL(s5p_hdmi_get_swhpd_status);
 u8 s5p_hdmi_get_hpd_status(void)
 {
 	u8 reg;
+
 	reg = readb(hdmi_base+S5P_HDMI_HPD_STATUS);
+
 	return reg;
 }
 EXPORT_SYMBOL(s5p_hdmi_get_hpd_status);
@@ -1992,6 +1974,7 @@ EXPORT_SYMBOL(s5p_hdmi_get_hpd_status);
 void s5p_hdmi_sw_hpd_disable(void)
 {
 	u8 reg;
+
 	reg = writeb(S5P_HDMI_HPD_SEL_SW_HPD, hdmi_base+S5P_HDMI_HPD);
 }
 EXPORT_SYMBOL(s5p_hdmi_sw_hpd_disable);

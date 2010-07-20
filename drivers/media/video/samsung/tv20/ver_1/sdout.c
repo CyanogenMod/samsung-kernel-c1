@@ -38,11 +38,10 @@
 static struct resource	*sdout_mem;
 void __iomem		*sdout_base;
 
-int s5p_sdout_init_video_scale_cfg(
-	enum s5p_sd_level component_level,
-	enum s5p_sd_vsync_ratio component_ratio,
-	enum s5p_sd_level composite_level,
-	enum s5p_sd_vsync_ratio composite_ratio)
+int s5p_sdout_init_video_scale_cfg(enum s5p_sd_level component_level,
+				enum s5p_sd_vsync_ratio component_ratio,
+				enum s5p_sd_level composite_level,
+				enum s5p_sd_vsync_ratio composite_ratio)
 {
 	u32 temp_reg = 0;
 
@@ -50,7 +49,6 @@ int s5p_sdout_init_video_scale_cfg(
 		composite_level, composite_ratio);
 
 	switch (component_level) {
-
 	case S5P_TV_SD_LEVEL_0IRE:
 		temp_reg = S5P_SDO_COMPONENT_LEVEL_SEL_0IRE;
 		break;
@@ -63,11 +61,9 @@ int s5p_sdout_init_video_scale_cfg(
 		SDPRINTK("invalid component_level parameter(%d)\n\r",
 			component_level);
 		return -1;
-		break;
 	}
 
 	switch (composite_level) {
-
 	case SDOUT_VTOS_RATIO_10_4:
 		temp_reg |= S5P_SDO_COMPONENT_VTOS_RATIO_10_4;
 		break;
@@ -80,11 +76,9 @@ int s5p_sdout_init_video_scale_cfg(
 		SDPRINTK(" invalid composite_level parameter(%d)\n\r",
 			composite_level);
 		return -1;
-		break;
 	}
 
 	switch (composite_level) {
-
 	case S5P_TV_SD_LEVEL_0IRE:
 		temp_reg |= S5P_SDO_COMPOSITE_LEVEL_SEL_0IRE;
 		break;
@@ -97,11 +91,9 @@ int s5p_sdout_init_video_scale_cfg(
 		SDPRINTK("invalid composite_ratio parameter(%d)\n\r",
 			composite_ratio);
 		return -1;
-		break;
 	}
 
 	switch (composite_ratio) {
-
 	case SDOUT_VTOS_RATIO_10_4:
 		temp_reg |= S5P_SDO_COMPOSITE_VTOS_RATIO_10_4;
 		break;
@@ -114,7 +106,6 @@ int s5p_sdout_init_video_scale_cfg(
 		SDPRINTK("invalid component_ratio parameter(%d)\n\r",
 			component_ratio);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, sdout_base + S5P_SDO_SCALE);
@@ -122,29 +113,29 @@ int s5p_sdout_init_video_scale_cfg(
 	return -1;
 }
 
-int s5p_sdout_init_sync_signal_pin(
-	enum s5p_sd_sync_sig_pin pin)
+int s5p_sdout_init_sync_signal_pin(enum s5p_sd_sync_sig_pin pin)
 {
 	SDPRINTK("%d\n\r", pin);
 
 	switch (pin) {
-
 	case SDOUT_SYNC_SIG_NO:
-		writel(S5P_SDO_COMPONENT_SYNC_ABSENT, sdout_base + S5P_SDO_SYNC);
+		writel(S5P_SDO_COMPONENT_SYNC_ABSENT,
+			sdout_base + S5P_SDO_SYNC);
 		break;
 
 	case SDOUT_SYNC_SIG_YG:
-		writel(S5P_SDO_COMPONENT_SYNC_YG, sdout_base + S5P_SDO_SYNC);
+		writel(S5P_SDO_COMPONENT_SYNC_YG,
+			sdout_base + S5P_SDO_SYNC);
 		break;
 
 	case SDOUT_SYNC_SIG_ALL:
-		writel(S5P_SDO_COMPONENT_SYNC_ALL, sdout_base + S5P_SDO_SYNC);
+		writel(S5P_SDO_COMPONENT_SYNC_ALL,
+			sdout_base + S5P_SDO_SYNC);
 		break;
 
 	default:
 		SDPRINTK("invalid pin parameter(%d)\n\r", pin);
 		return -1;
-		break;
 	}
 
 	return -1;
@@ -175,7 +166,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 
 
 	switch (caption_cvbs) {
-
 	case SDOUT_NO_INS:
 		temp_reg |= S5P_SDO_CVBS_NO_CLOSED_CAPTION;
 		break;
@@ -196,7 +186,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 		SDPRINTK(" invalid caption_cvbs parameter(%d)\n\r",
 			caption_cvbs);
 		return -1;
-		break;
 	}
 
 	if (wss_y_sideo)
@@ -206,7 +195,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 
 
 	switch (caption_y_sideo) {
-
 	case SDOUT_NO_INS:
 		temp_reg |= S5P_SDO_SVIDEO_NO_CLOSED_CAPTION;
 		break;
@@ -227,7 +215,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 		SDPRINTK("invalid caption_y_sideo parameter(%d)\n\r",
 			caption_y_sideo);
 		return -1;
-		break;
 	}
 
 	if (cgmsa_rgb)
@@ -243,7 +230,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 
 
 	switch (caption_rgb) {
-
 	case SDOUT_NO_INS:
 		temp_reg |= S5P_SDO_RGB_NO_CLOSED_CAPTION;
 		break;
@@ -264,7 +250,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 		SDPRINTK(" invalid caption_rgb parameter(%d)\n\r",
 			caption_rgb);
 		return -1;
-		break;
 	}
 
 	if (cgmsa_y_ppr)
@@ -280,7 +265,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 
 
 	switch (caption_y_ppr) {
-
 	case SDOUT_NO_INS:
 		temp_reg |= S5P_SDO_YPBPR_NO_CLOSED_CAPTION;
 		break;
@@ -301,7 +285,6 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 		SDPRINTK("invalid caption_y_ppr parameter(%d)\n\r",
 			caption_y_ppr);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, sdout_base + S5P_SDO_VBI);
@@ -309,14 +292,12 @@ int s5p_sdout_init_vbi(bool wss_cvbs,
 	return -1;
 }
 
-int s5p_sdout_init_offset_gain(
-	enum s5p_sd_channel_sel channel,
-	u32 offset, u32 gain)
+int s5p_sdout_init_offset_gain(enum s5p_sd_channel_sel channel,
+				u32 offset, u32 gain)
 {
 	SDPRINTK("%d, %d, %d\n\r", channel, offset, gain);
 
 	switch (channel) {
-
 	case SDOUT_CHANNEL_0:
 		writel(S5P_SDO_SCALE_CONV_OFFSET(offset) |
 			S5P_SDO_SCALE_CONV_GAIN(gain),
@@ -341,7 +322,6 @@ int s5p_sdout_init_offset_gain(
 	default:
 		SDPRINTK(" invalid channel parameter(%d)\n\r", channel);
 		return -1;
-		break;
 	}
 
 	return -1;
@@ -365,21 +345,21 @@ void s5p_sdout_init_schlock(bool color_sucarrier_pha_adj)
 	SDPRINTK("%d\n\r", color_sucarrier_pha_adj);
 
 	if (color_sucarrier_pha_adj)
-		writel(S5P_SDO_COLOR_SC_PHASE_ADJ, sdout_base + S5P_SDO_SCHLOCK);
+		writel(S5P_SDO_COLOR_SC_PHASE_ADJ,
+			sdout_base + S5P_SDO_SCHLOCK);
 	else
-		writel(S5P_SDO_COLOR_SC_PHASE_NOADJ, sdout_base + S5P_SDO_SCHLOCK);
+		writel(S5P_SDO_COLOR_SC_PHASE_NOADJ,
+			sdout_base + S5P_SDO_SCHLOCK);
 
 }
 
-int s5p_sdout_init_dac_power_onoff(
-	enum s5p_sd_channel_sel channel, bool dac_on)
+int s5p_sdout_init_dac_power_onoff(enum s5p_sd_channel_sel channel, bool dac_on)
 {
 	u32 temp_on_off;
 
 	SDPRINTK("%d, %d)\n\r", channel, dac_on);
 
 	switch (channel) {
-
 	case SDOUT_CHANNEL_0:
 		temp_on_off = S5P_SDO_POWER_ON_DAC0;
 		break;
@@ -395,7 +375,6 @@ int s5p_sdout_init_dac_power_onoff(
 	default:
 		SDPRINTK("invalid channel parameter(%d)\n\r", channel);
 		return -1;
-		break;
 	}
 
 	if (dac_on)
@@ -470,28 +449,28 @@ void s5p_sdout_init_brightness_hue_saturation(u32 gain_brightness,
 
 	writel(S5P_SDO_BRIGHTNESS_GAIN(gain_brightness) |
 		S5P_SDO_BRIGHTNESS_OFFSET(offset_brightness),
-		sdout_base + S5P_SDO_YSCALE);
+			sdout_base + S5P_SDO_YSCALE);
 
 	writel(S5P_SDO_HS_CB_GAIN0(gain0_cb_hue_saturation) |
 		S5P_SDO_HS_CB_GAIN1(gain1_cb_hue_saturation),
-		sdout_base + S5P_SDO_CBSCALE);
+			sdout_base + S5P_SDO_CBSCALE);
 
 	writel(S5P_SDO_HS_CR_GAIN0(gain0_cr_hue_saturation) |
 		S5P_SDO_HS_CR_GAIN1(gain1_cr_hue_saturation),
-		sdout_base + S5P_SDO_CRSCALE);
+			sdout_base + S5P_SDO_CRSCALE);
 
 	writel(S5P_SDO_HS_CR_OFFSET(offset_cr_hue_saturation) |
 		S5P_SDO_HS_CB_OFFSET(offset_cb_hue_saturation),
-		sdout_base + S5P_SDO_CB_CR_OFFSET);
+			sdout_base + S5P_SDO_CB_CR_OFFSET);
 }
 
-void	s5p_sdout_init_rgb_color_compensation(u32 max_rgbcube,
-						   u32 min_rgbcube)
+void	s5p_sdout_init_rgb_color_compensation(u32 max_rgbcube, u32 min_rgbcube)
 {
 	SDPRINTK("0x%08x, 0x%08x\n\r", max_rgbcube, min_rgbcube);
 
-	writel(S5P_SDO_MAX_RGB_CUBE(max_rgbcube) | S5P_SDO_MIN_RGB_CUBE(min_rgbcube),
-	       sdout_base + S5P_SDO_RGB_CC);
+	writel(S5P_SDO_MAX_RGB_CUBE(max_rgbcube) |
+		S5P_SDO_MIN_RGB_CUBE(min_rgbcube),
+			sdout_base + S5P_SDO_RGB_CC);
 }
 
 void s5p_sdout_init_cvbs_color_compensation(u32 y_lower_mid,
@@ -505,56 +484,52 @@ void s5p_sdout_init_cvbs_color_compensation(u32 y_lower_mid,
 
 	writel(S5P_SDO_Y_LOWER_MID_CVBS_CORN(y_lower_mid) |
 		S5P_SDO_Y_BOTTOM_CVBS_CORN(y_bottom),
-	       sdout_base + S5P_SDO_CVBS_CC_Y1);
+			sdout_base + S5P_SDO_CVBS_CC_Y1);
 	writel(S5P_SDO_Y_TOP_CVBS_CORN(y_top) |
 		S5P_SDO_Y_UPPER_MID_CVBS_CORN(y_upper_mid),
-	       sdout_base + S5P_SDO_CVBS_CC_Y2);
-	writel(S5P_SDO_RADIUS_CVBS_CORN(radius), sdout_base + S5P_SDO_CVBS_CC_C);
+			sdout_base + S5P_SDO_CVBS_CC_Y2);
+	writel(S5P_SDO_RADIUS_CVBS_CORN(radius),
+			sdout_base + S5P_SDO_CVBS_CC_C);
 
 }
 
-void s5p_sdout_init_svideo_color_compensation(u32 y_top,
-					u32 y_bottom,
-					u32 y_c_cylinder)
+void s5p_sdout_init_svideo_color_compensation(u32 y_top, u32 y_bottom,
+						u32 y_c_cylinder)
 {
 	SDPRINTK(" %d, %d, %d)\n\r", y_top, y_bottom, y_c_cylinder);
 
 	writel(S5P_SDO_Y_TOP_YC_CYLINDER(y_top) |
 		S5P_SDO_Y_BOTOM_YC_CYLINDER(y_bottom),
-	       sdout_base + S5P_SDO_YC_CC_Y);
+			sdout_base + S5P_SDO_YC_CC_Y);
 	writel(S5P_SDO_RADIUS_YC_CYLINDER(y_c_cylinder),
-		sdout_base + S5P_SDO_YC_CC_C);
+			sdout_base + S5P_SDO_YC_CC_C);
 
 }
 
-void s5p_sdout_init_component_porch(u32 back_525,
-					u32 front_525,
-					u32 back_625,
-					u32 front_625)
+void s5p_sdout_init_component_porch(u32 back_525, u32 front_525,
+					u32 back_625, u32 front_625)
 {
-	SDPRINTK(" %d, %d, %d, %d)\n\r", back_525,
-		front_525, back_625, front_625);
+	SDPRINTK(" %d, %d, %d, %d)\n\r",
+			back_525, front_525, back_625, front_625);
 
 	writel(S5P_SDO_COMPONENT_525_BP(back_525) |
 		S5P_SDO_COMPONENT_525_FP(front_525),
-	       sdout_base + S5P_SDO_CSC_525_PORCH);
+			sdout_base + S5P_SDO_CSC_525_PORCH);
 	writel(S5P_SDO_COMPONENT_625_BP(back_625) |
 		S5P_SDO_COMPONENT_625_FP(front_625),
-	       sdout_base + S5P_SDO_CSC_625_PORCH);
+			sdout_base + S5P_SDO_CSC_625_PORCH);
 
 }
 
-int s5p_sdout_init_vesa_rgb_sync(
-	enum s5p_sd_vesa_rgb_sync_type sync_type,
-	enum s5p_tv_active_polarity v_sync_active,
-	enum s5p_tv_active_polarity h_sync_active)
+int s5p_sdout_init_vesa_rgb_sync(enum s5p_sd_vesa_rgb_sync_type sync_type,
+				enum s5p_tv_active_polarity v_sync_active,
+				enum s5p_tv_active_polarity h_sync_active)
 {
 	u32 temp_reg = 0;
 
 	SDPRINTK("%d, %d, %d\n\r", sync_type, v_sync_active, h_sync_active);
 
 	switch (sync_type) {
-
 	case SDOUT_VESA_RGB_SYNC_COMPOSITE:
 		temp_reg |= S5P_SDO_RGB_SYNC_COMPOSITE;
 		break;
@@ -566,11 +541,9 @@ int s5p_sdout_init_vesa_rgb_sync(
 	default:
 		SDPRINTK(" invalid sync_type parameter(%d)\n\r", sync_type);
 		return -1;
-		break;
 	}
 
 	switch (v_sync_active) {
-
 	case TVOUT_POL_ACTIVE_LOW:
 		temp_reg |= S5P_SDO_RGB_VSYNC_LOW_ACT;
 		break;
@@ -583,11 +556,9 @@ int s5p_sdout_init_vesa_rgb_sync(
 		SDPRINTK(" invalid v_sync_active parameter(%d)\n\r",
 			v_sync_active);
 		return -1;
-		break;
 	}
 
 	switch (h_sync_active) {
-
 	case TVOUT_POL_ACTIVE_LOW:
 		temp_reg |= S5P_SDO_RGB_HSYNC_LOW_ACT;
 		break;
@@ -600,7 +571,6 @@ int s5p_sdout_init_vesa_rgb_sync(
 		SDPRINTK(" invalid h_sync_active parameter(%d)\n\r",
 			h_sync_active);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, sdout_base + S5P_SDO_RGBSYNC);
@@ -608,10 +578,8 @@ int s5p_sdout_init_vesa_rgb_sync(
 	return -1;
 }
 
-void s5p_sdout_init_oversampling_filter_coeff(u32 size,
-						      u32 *coeff,
-						      u32 *coeff1,
-						      u32 *coeff2)
+void s5p_sdout_init_oversampling_filter_coeff(u32 size, u32 *coeff,
+						u32 *coeff1, u32 *coeff2)
 {
 	u32 *temp_reg = 0;
 
@@ -634,36 +602,36 @@ void s5p_sdout_init_oversampling_filter_coeff(u32 size,
 	}
 }
 
-int s5p_sdout_init_ch_xtalk_cancel_coef(
-	enum s5p_sd_channel_sel channel,
-	u32 coeff2, u32 coeff1)
+int s5p_sdout_init_ch_xtalk_cancel_coef(enum s5p_sd_channel_sel channel,
+					u32 coeff2, u32 coeff1)
 {
 	SDPRINTK(" %d, %d, %d\n\r", channel, coeff2, coeff1);
 
 	switch (channel) {
-
 	case SDOUT_CHANNEL_0:
-		writel(S5P_SDO_XTALK_COEF02(coeff2) | S5P_SDO_XTALK_COEF01(coeff1),
-			sdout_base + S5P_SDO_XTALK0);
+		writel(S5P_SDO_XTALK_COEF02(coeff2) |
+			S5P_SDO_XTALK_COEF01(coeff1),
+				sdout_base + S5P_SDO_XTALK0);
 		SDPRINTK(" 0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK0));
 		break;
 
 	case SDOUT_CHANNEL_1:
-		writel(S5P_SDO_XTALK_COEF02(coeff2) | S5P_SDO_XTALK_COEF01(coeff1),
-			sdout_base + S5P_SDO_XTALK1);
+		writel(S5P_SDO_XTALK_COEF02(coeff2) |
+			S5P_SDO_XTALK_COEF01(coeff1),
+				sdout_base + S5P_SDO_XTALK1);
 		SDPRINTK(" 0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK1));
 		break;
 
 	case SDOUT_CHANNEL_2:
-		writel(S5P_SDO_XTALK_COEF02(coeff2) | S5P_SDO_XTALK_COEF01(coeff1),
-			sdout_base + S5P_SDO_XTALK2);
+		writel(S5P_SDO_XTALK_COEF02(coeff2) |
+			S5P_SDO_XTALK_COEF01(coeff1),
+				sdout_base + S5P_SDO_XTALK2);
 		SDPRINTK("0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK2));
 		break;
 
 	default:
 		SDPRINTK(" invalid channel parameter(%d)\n\r", channel);
 		return -1;
-		break;
 	}
 
 	return -1;
@@ -710,17 +678,14 @@ static u32 s5p_sdout_init_wss_cgms_crc(u32 value)
 	for (i = 0; i < 6; i++)
 		temp_in |= ((u32)(CRC[i] & 0x1) << i);
 
-
 	return temp_in;
 }
 
-
-int s5p_sdout_init_wss525_data(
-	enum s5p_sd_525_copy_permit copy_permit,
-	enum s5p_sd_525_mv_psp mv_psp,
-	enum s5p_sd_525_copy_info copy_info,
-	bool analog_on,
-	enum s5p_sd_525_aspect_ratio display_ratio)
+int s5p_sdout_init_wss525_data(enum s5p_sd_525_copy_permit copy_permit,
+				enum s5p_sd_525_mv_psp mv_psp,
+				enum s5p_sd_525_copy_info copy_info,
+				bool analog_on,
+				enum s5p_sd_525_aspect_ratio display_ratio)
 {
 	u32 temp_reg = 0;
 
@@ -728,7 +693,6 @@ int s5p_sdout_init_wss525_data(
 		display_ratio);
 
 	switch (copy_permit) {
-
 	case SDO_525_COPY_PERMIT:
 		temp_reg = S5P_SDO_WORD2_WSS525_COPY_PERMIT;
 		break;
@@ -744,11 +708,9 @@ int s5p_sdout_init_wss525_data(
 	default:
 		SDPRINTK(" invalid copy_permit parameter(%d)\n\r", copy_permit);
 		return -1;
-		break;
 	}
 
 	switch (mv_psp) {
-
 	case SDO_525_MV_PSP_OFF:
 		temp_reg |= S5P_SDO_WORD2_WSS525_MV_PSP_OFF;
 		break;
@@ -768,11 +730,9 @@ int s5p_sdout_init_wss525_data(
 	default:
 		SDPRINTK(" invalid mv_psp parameter(%d)\n\r", mv_psp);
 		return -1;
-		break;
 	}
 
 	switch (copy_info) {
-
 	case SDO_525_COPY_INFO:
 		temp_reg |= S5P_SDO_WORD1_WSS525_COPY_INFO;
 		break;
@@ -784,7 +744,6 @@ int s5p_sdout_init_wss525_data(
 	default:
 		SDPRINTK(" invalid copy_info parameter(%d)\n\r", copy_info);
 		return -1;
-		break;
 	}
 
 	if (analog_on)
@@ -792,9 +751,7 @@ int s5p_sdout_init_wss525_data(
 	else
 		temp_reg |= S5P_SDO_WORD2_WSS525_ANALOG_OFF;
 
-
 	switch (display_ratio) {
-
 	case SDO_525_COPY_PERMIT:
 		temp_reg |= S5P_SDO_WORD0_WSS525_4_3_NORMAL;
 		break;
@@ -811,7 +768,6 @@ int s5p_sdout_init_wss525_data(
 		SDPRINTK(" invalid display_ratio parameter(%d)\n\r",
 			display_ratio);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg |
@@ -843,27 +799,22 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 	else
 		temp_reg = S5P_SDO_WSS625_SURROUND_SOUND_DISABLE;
 
-
 	if (copyright)
 		temp_reg |= S5P_SDO_WSS625_COPYRIGHT;
 	else
 		temp_reg |= S5P_SDO_WSS625_NO_COPYRIGHT;
-
 
 	if (copy_protection)
 		temp_reg |= S5P_SDO_WSS625_COPY_RESTRICTED;
 	else
 		temp_reg |= S5P_SDO_WSS625_COPY_NOT_RESTRICTED;
 
-
 	if (text_subtitles)
 		temp_reg |= S5P_SDO_WSS625_TELETEXT_SUBTITLES;
 	else
 		temp_reg |= S5P_SDO_WSS625_TELETEXT_NO_SUBTITLES;
 
-
 	switch (open_subtitles) {
-
 	case SDO_625_NO_OPEN_SUBTITLES:
 		temp_reg |= S5P_SDO_WSS625_NO_OPEN_SUBTITLES;
 		break;
@@ -880,11 +831,9 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 		SDPRINTK(" invalid open_subtitles parameter(%d)\n\r",
 			open_subtitles);
 		return -1;
-		break;
 	}
 
 	switch (camera_film) {
-
 	case SDO_625_CAMERA:
 		temp_reg |= S5P_SDO_WSS625_CAMERA;
 		break;
@@ -897,11 +846,9 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 		SDPRINTK("invalid camera_film parameter(%d)\n\r",
 			camera_film);
 		return -1;
-		break;
 	}
 
 	switch (color_encoding) {
-
 	case SDO_625_NORMAL_PAL:
 		temp_reg |= S5P_SDO_WSS625_NORMAL_PAL;
 		break;
@@ -914,7 +861,6 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 		SDPRINTK("invalid color_encoding parameter(%d)\n\r",
 			color_encoding);
 		return -1;
-		break;
 	}
 
 	if (helper_signal)
@@ -922,9 +868,7 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 	else
 		temp_reg |= S5P_SDO_WSS625_HELPER_NO_SIG;
 
-
 	switch (display_ratio) {
-
 	case SDO_625_4_3_FULL_576:
 		temp_reg |= S5P_SDO_WSS625_4_3_FULL_576;
 		break;
@@ -961,7 +905,6 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 		SDPRINTK("invalid display_ratio parameter(%d)\n\r",
 			display_ratio);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, sdout_base + S5P_SDO_WSS625);
@@ -969,12 +912,11 @@ int s5p_sdout_init_wss625_data(bool surround_sound,
 	return -1;
 }
 
-int s5p_sdout_init_cgmsa525_data(
-	enum s5p_sd_525_copy_permit copy_permit,
-	enum s5p_sd_525_mv_psp mv_psp,
-	enum s5p_sd_525_copy_info copy_info,
-	bool analog_on,
-	enum s5p_sd_525_aspect_ratio display_ratio)
+int s5p_sdout_init_cgmsa525_data(enum s5p_sd_525_copy_permit copy_permit,
+				enum s5p_sd_525_mv_psp mv_psp,
+				enum s5p_sd_525_copy_info copy_info,
+				bool analog_on,
+				enum s5p_sd_525_aspect_ratio display_ratio)
 {
 	u32 temp_reg = 0;
 
@@ -982,7 +924,6 @@ int s5p_sdout_init_cgmsa525_data(
 		display_ratio);
 
 	switch (copy_permit) {
-
 	case SDO_525_COPY_PERMIT:
 		temp_reg = S5P_SDO_WORD2_CGMS525_COPY_PERMIT;
 		break;
@@ -998,11 +939,9 @@ int s5p_sdout_init_cgmsa525_data(
 	default:
 		SDPRINTK("invalid copy_permit parameter(%d)\n\r", copy_permit);
 		return -1;
-		break;
 	}
 
 	switch (mv_psp) {
-
 	case SDO_525_MV_PSP_OFF:
 		temp_reg |= S5P_SDO_WORD2_CGMS525_MV_PSP_OFF;
 		break;
@@ -1022,11 +961,9 @@ int s5p_sdout_init_cgmsa525_data(
 	default:
 		SDPRINTK(" invalid mv_psp parameter(%d)\n\r", mv_psp);
 		return -1;
-		break;
 	}
 
 	switch (copy_info) {
-
 	case SDO_525_COPY_INFO:
 		temp_reg |= S5P_SDO_WORD1_CGMS525_COPY_INFO;
 		break;
@@ -1038,7 +975,6 @@ int s5p_sdout_init_cgmsa525_data(
 	default:
 		SDPRINTK("invalid copy_info parameter(%d)\n\r", copy_info);
 		return -1;
-		break;
 	}
 
 	if (analog_on)
@@ -1046,9 +982,7 @@ int s5p_sdout_init_cgmsa525_data(
 	else
 		temp_reg |= S5P_SDO_WORD2_CGMS525_ANALOG_OFF;
 
-
 	switch (display_ratio) {
-
 	case SDO_525_COPY_PERMIT:
 		temp_reg |= S5P_SDO_WORD0_CGMS525_4_3_NORMAL;
 		break;
@@ -1065,7 +999,6 @@ int s5p_sdout_init_cgmsa525_data(
 		SDPRINTK(" invalid display_ratio parameter(%d)\n\r",
 			display_ratio);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg | S5P_SDO_CRC_CGMS525(
@@ -1098,27 +1031,22 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 	else
 		temp_reg = S5P_SDO_CGMS625_SURROUND_SOUND_DISABLE;
 
-
 	if (copyright)
 		temp_reg |= S5P_SDO_CGMS625_COPYRIGHT;
 	else
 		temp_reg |= S5P_SDO_CGMS625_NO_COPYRIGHT;
-
 
 	if (copy_protection)
 		temp_reg |= S5P_SDO_CGMS625_COPY_RESTRICTED;
 	else
 		temp_reg |= S5P_SDO_CGMS625_COPY_NOT_RESTRICTED;
 
-
 	if (text_subtitles)
 		temp_reg |= S5P_SDO_CGMS625_TELETEXT_SUBTITLES;
 	else
 		temp_reg |= S5P_SDO_CGMS625_TELETEXT_NO_SUBTITLES;
 
-
 	switch (open_subtitles) {
-
 	case SDO_625_NO_OPEN_SUBTITLES:
 		temp_reg |= S5P_SDO_CGMS625_NO_OPEN_SUBTITLES;
 		break;
@@ -1135,11 +1063,9 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 		SDPRINTK("invalid open_subtitles parameter(%d)\n\r",
 			open_subtitles);
 		return -1;
-		break;
 	}
 
 	switch (camera_film) {
-
 	case SDO_625_CAMERA:
 		temp_reg |= S5P_SDO_CGMS625_CAMERA;
 		break;
@@ -1152,11 +1078,9 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 		SDPRINTK(" invalid camera_film parameter(%d)\n\r",
 			camera_film);
 		return -1;
-		break;
 	}
 
 	switch (color_encoding) {
-
 	case SDO_625_NORMAL_PAL:
 		temp_reg |= S5P_SDO_CGMS625_NORMAL_PAL;
 		break;
@@ -1169,7 +1093,6 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 		SDPRINTK(" invalid color_encoding parameter(%d)\n\r",
 			color_encoding);
 		return -1;
-		break;
 	}
 
 	if (helper_signal)
@@ -1177,9 +1100,7 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 	else
 		temp_reg |= S5P_SDO_CGMS625_HELPER_NO_SIG;
 
-
 	switch (display_ratio) {
-
 	case SDO_625_4_3_FULL_576:
 		temp_reg |= S5P_SDO_CGMS625_4_3_FULL_576;
 		break;
@@ -1216,7 +1137,6 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 		SDPRINTK("invalid display_ratio parameter(%d)\n\r",
 			display_ratio);
 		return -1;
-		break;
 	}
 
 	writel(temp_reg, sdout_base + S5P_SDO_CGMS625);
@@ -1224,26 +1144,19 @@ int s5p_sdout_init_cgmsa625_data(bool surround_sound,
 	return -1;
 }
 
-
 static int s5p_sdout_init_antialias_filter_coeff_default(
-	enum s5p_sd_level composite_level,
-	enum s5p_sd_vsync_ratio composite_ratio,
-	enum s5p_tv_o_mode out_mode)
+					enum s5p_sd_level composite_level,
+					enum s5p_sd_vsync_ratio composite_ratio,
+					enum s5p_tv_o_mode out_mode)
 {
 	SDPRINTK("%d, %d, %d\n\r", composite_level, composite_ratio, out_mode);
 
 	switch (composite_level) {
-
 	case S5P_TV_SD_LEVEL_0IRE:
-
 		switch (composite_ratio) {
-
 		case SDOUT_VTOS_RATIO_10_4:
-
 			switch (out_mode) {
-
 			case TVOUT_OUTPUT_COMPOSITE:
-
 			case TVOUT_OUTPUT_SVIDEO:
 				writel(0x00000000 , sdout_base + S5P_SDO_Y3);
 				writel(0x00000000 , sdout_base + S5P_SDO_Y4);
@@ -1280,9 +1193,7 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 				break;
 
 			case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-
 			case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-
 			case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
 				writel(0x00000000, sdout_base + S5P_SDO_Y0);
 				writel(0x00000000, sdout_base + S5P_SDO_Y1);
@@ -1325,7 +1236,6 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 				SDPRINTK("invalid out_mode parameter(%d)\n\r",
 					out_mode);
 				return -1;
-				break;
 			}
 
 			break;
@@ -1372,15 +1282,12 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 			SDPRINTK("invalid composite_ratio parameter(%d)\n\r",
 				composite_ratio);
 			return -1;
-			break;
 		}
 
 		break;
 
 	case S5P_TV_SD_LEVEL_75IRE:
-
 		switch (composite_ratio) {
-
 		case SDOUT_VTOS_RATIO_10_4:
 			writel(0x00000000, sdout_base + S5P_SDO_Y0);
 			writel(0x00000000, sdout_base + S5P_SDO_Y1);
@@ -1461,7 +1368,6 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 			SDPRINTK("  invalid composite_ratio parameter(%d)\n\r",
 				composite_ratio);
 			return -1;
-			break;
 		}
 
 		break;
@@ -1470,49 +1376,40 @@ static int s5p_sdout_init_antialias_filter_coeff_default(
 		SDPRINTK("  invalid composite_level parameter(%d)\n\r",
 			composite_level);
 		return -1;
-		break;
 	}
 
 	return -1;
-
 }
 
-
 static int s5p_sdout_init_oversampling_filter_coeff_default(
-	enum s5p_tv_o_mode out_mode)
+						enum s5p_tv_o_mode out_mode)
 {
 
 	SDPRINTK("%d\n\r", out_mode);
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
-
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
 		break;
 
 	default:
 		SDPRINTK("invalid out_mode parameter(%d)\n\r", out_mode);
 		return -1;
-		break;
 	}
 
 	return -1;
 }
 
-int s5p_sdout_init_display_mode(
-		enum s5p_tv_disp_mode disp_mode,
-		enum s5p_tv_o_mode out_mode,
-		enum s5p_sd_order order)
+int s5p_sdout_init_display_mode(enum s5p_tv_disp_mode disp_mode,
+				enum s5p_tv_o_mode out_mode,
+				enum s5p_sd_order order)
 {
 	u32 temp_reg = 0;
 
 	SDPRINTK(" %d, %d, %d\n\r", disp_mode, out_mode, order);
 
 	switch (disp_mode) {
-
 	case TVOUT_NTSC_M:
 		temp_reg |= S5P_SDO_NTSC_M;
 		s5p_sdout_init_video_scale_cfg(S5P_TV_SD_LEVEL_0IRE,
@@ -1597,40 +1494,43 @@ int s5p_sdout_init_display_mode(
 	default:
 		SDPRINTK("invalid disp_mode parameter(%d)\n\r", disp_mode);
 		return -1;
-		break;
 	}
 
 	switch (out_mode) {
-
 	case TVOUT_OUTPUT_COMPOSITE:
-
 	case TVOUT_OUTPUT_SVIDEO:
 		temp_reg |= S5P_SDO_COMPOSITE | S5P_SDO_INTERLACED;
 
 		switch (order) {
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_CVBS_Y_C:
-			temp_reg |= S5P_SDO_DAC2_CVBS | S5P_SDO_DAC1_Y | S5P_SDO_DAC0_C;
+			temp_reg |= S5P_SDO_DAC2_CVBS | S5P_SDO_DAC1_Y |
+					S5P_SDO_DAC0_C;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_CVBS_C_Y:
-			temp_reg |= S5P_SDO_DAC2_CVBS | S5P_SDO_DAC1_C | S5P_SDO_DAC0_Y;
+			temp_reg |= S5P_SDO_DAC2_CVBS | S5P_SDO_DAC1_C |
+					S5P_SDO_DAC0_Y;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_Y_C_CVBS:
-			temp_reg |= S5P_SDO_DAC2_Y | S5P_SDO_DAC1_C | S5P_SDO_DAC0_CVBS;
+			temp_reg |= S5P_SDO_DAC2_Y | S5P_SDO_DAC1_C |
+					S5P_SDO_DAC0_CVBS;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_Y_CVBS_C:
-			temp_reg |= S5P_SDO_DAC2_Y | S5P_SDO_DAC1_CVBS | S5P_SDO_DAC0_C;
+			temp_reg |= S5P_SDO_DAC2_Y | S5P_SDO_DAC1_CVBS |
+					S5P_SDO_DAC0_C;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_C_CVBS_Y:
-			temp_reg |= S5P_SDO_DAC2_C | S5P_SDO_DAC1_CVBS | S5P_SDO_DAC0_Y;
+			temp_reg |= S5P_SDO_DAC2_C | S5P_SDO_DAC1_CVBS |
+					S5P_SDO_DAC0_Y;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPOSITE_C_Y_CVBS:
-			temp_reg |= S5P_SDO_DAC2_C | S5P_SDO_DAC1_Y | S5P_SDO_DAC0_CVBS;
+			temp_reg |= S5P_SDO_DAC2_C | S5P_SDO_DAC1_Y |
+					S5P_SDO_DAC0_CVBS;
 			break;
 
 		default:
@@ -1642,38 +1542,39 @@ int s5p_sdout_init_display_mode(
 		break;
 
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_INERLACED:
-		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_YPBPR | S5P_SDO_INTERLACED;
+		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_YPBPR |
+					S5P_SDO_INTERLACED;
 
 		switch (order) {
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RGB_PRYPB:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RBG_PRPBY:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BGR_PBYPR:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BRG_PBPRY:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GRB_YPRPB:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GBR_YPBPR:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		default:
@@ -1685,38 +1586,39 @@ int s5p_sdout_init_display_mode(
 		break;
 
 	case TVOUT_OUTPUT_COMPONENT_YPBPR_PROGRESSIVE:
-		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_YPBPR | S5P_SDO_PROGRESSIVE;
+		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_YPBPR |
+					S5P_SDO_PROGRESSIVE;
 
 		switch (order) {
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RGB_PRYPB:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RBG_PRPBY:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BGR_PBYPR:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BRG_PBPRY:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GRB_YPRPB:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GBR_YPBPR:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		default:
@@ -1728,44 +1630,44 @@ int s5p_sdout_init_display_mode(
 		break;
 
 	case TVOUT_OUTPUT_COMPONENT_RGB_PROGRESSIVE:
-		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_RGB | S5P_SDO_PROGRESSIVE;
+		temp_reg |= S5P_SDO_COMPONENT | S5P_SDO_RGB |
+				S5P_SDO_PROGRESSIVE;
 
 		switch (order) {
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RGB_PRYPB:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_RBG_PRPBY:
 			temp_reg |= S5P_SDO_DAC2_PR_R | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BGR_PBYPR:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_Y_G |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_BRG_PBPRY:
 			temp_reg |= S5P_SDO_DAC2_PB_B | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_Y_G;
+					S5P_SDO_DAC0_Y_G;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GRB_YPRPB:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PR_R |
-				S5P_SDO_DAC0_PB_B;
+					S5P_SDO_DAC0_PB_B;
 			break;
 
 		case S5P_TV_SD_O_ORDER_COMPONENT_GBR_YPBPR:
 			temp_reg |= S5P_SDO_DAC2_Y_G | S5P_SDO_DAC1_PB_B |
-				S5P_SDO_DAC0_PR_R;
+					S5P_SDO_DAC0_PR_R;
 			break;
 
 		default:
 			SDPRINTK("invalid order parameter(%d)\n\r", order);
 			return -1;
-			break;
 		}
 
 		break;
@@ -1773,7 +1675,6 @@ int s5p_sdout_init_display_mode(
 	default:
 		SDPRINTK(" invalid out_mode parameter(%d)\n\r", out_mode);
 		return -1;
-		break;
 	}
 
 	s5p_sdout_init_oversampling_filter_coeff_default(out_mode);
@@ -1800,14 +1701,14 @@ void s5p_sdout_sw_reset(bool active)
 	SDPRINTK("%d\n\r", active);
 
 	if (active)
-		writel(readl(sdout_base + S5P_SDO_CLKCON) | S5P_SDO_TVOUT_SW_RESET,
-			sdout_base + S5P_SDO_CLKCON);
+		writel(readl(sdout_base + S5P_SDO_CLKCON) |
+			S5P_SDO_TVOUT_SW_RESET,
+				sdout_base + S5P_SDO_CLKCON);
 	else
 		writel(readl(sdout_base + S5P_SDO_CLKCON) &
 			~S5P_SDO_TVOUT_SW_RESET,
-			sdout_base + S5P_SDO_CLKCON);
+				sdout_base + S5P_SDO_CLKCON);
 }
-
 
 void s5p_sdout_set_interrupt_enable(bool vsync_intr_en)
 {
@@ -1816,22 +1717,23 @@ void s5p_sdout_set_interrupt_enable(bool vsync_intr_en)
 	if (vsync_intr_en)
 		writel(readl(sdout_base + S5P_SDO_IRQMASK) &
 			~S5P_SDO_VSYNC_IRQ_DISABLE,
-			sdout_base + S5P_SDO_IRQMASK);
+				sdout_base + S5P_SDO_IRQMASK);
 	else
 		writel(readl(sdout_base + S5P_SDO_IRQMASK) |
 			S5P_SDO_VSYNC_IRQ_DISABLE,
-			sdout_base + S5P_SDO_IRQMASK);
+				sdout_base + S5P_SDO_IRQMASK);
 }
 
 void s5p_sdout_clear_interrupt_pending(void)
 {
 	writel(readl(sdout_base + S5P_SDO_IRQ) | S5P_SDO_VSYNC_IRQ_PEND,
-		sdout_base + S5P_SDO_IRQ);
+			sdout_base + S5P_SDO_IRQ);
 }
 
 bool s5p_sdout_get_interrupt_pending(void)
 {
-	return (readl(sdout_base + S5P_SDO_IRQ) | S5P_SDO_VSYNC_IRQ_PEND) ? 1 : 0;
+	return (readl(sdout_base + S5P_SDO_IRQ) | S5P_SDO_VSYNC_IRQ_PEND) ?
+		1 : 0;
 }
 
 int __init s5p_sdout_probe(struct platform_device *pdev, u32 res_num)
@@ -1842,8 +1744,7 @@ int __init s5p_sdout_probe(struct platform_device *pdev, u32 res_num)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, res_num);
 
 	if (res == NULL) {
-		dev_err(&pdev->dev,
-			"failed to get memory region resource\n");
+		dev_err(&pdev->dev, "failed to get memory region resource\n");
 		goto error;
 	}
 
@@ -1852,24 +1753,20 @@ int __init s5p_sdout_probe(struct platform_device *pdev, u32 res_num)
 	sdout_mem = request_mem_region(res->start, size, pdev->name);
 
 	if (sdout_mem == NULL) {
-		dev_err(&pdev->dev,
-			"failed to get memory region\n");
+		dev_err(&pdev->dev, "failed to get memory region\n");
 		goto error;
 	}
 
 	sdout_base = ioremap(res->start, size);
 
 	if (sdout_base == NULL) {
-		dev_err(&pdev->dev,
-			"failed to ioremap address region\n");
+		dev_err(&pdev->dev, "failed to ioremap address region\n");
 		goto error;
-
 	}
 
 	return 0;
 error:
 	return -ENOENT;
-
 }
 
 int __init s5p_sdout_release(struct platform_device *pdev)
@@ -1879,8 +1776,7 @@ int __init s5p_sdout_release(struct platform_device *pdev)
 	/* remove memory region */
 	if (sdout_mem != NULL) {
 		if (release_resource(sdout_mem))
-			dev_err(&pdev->dev,
-				"Can't remove tvout drv !!\n");
+			dev_err(&pdev->dev, "Can't remove tvout drv !!\n");
 
 		kfree(sdout_mem);
 
