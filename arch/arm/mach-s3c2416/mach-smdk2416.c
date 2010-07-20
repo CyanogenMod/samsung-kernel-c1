@@ -49,6 +49,8 @@
 
 #include <plat/regs-fb-v4.h>
 #include <plat/fb.h>
+#include <plat/regs-adc.h>
+#include <plat/ts.h>
 
 #include <plat/common-smdk.h>
 
@@ -159,13 +161,22 @@ static struct s3c_fb_platdata smdk2416_fb_platdata = {
 	.vidcon1	= VIDCON1_INV_HSYNC | VIDCON1_INV_VSYNC,
 };
 
+
+struct s3c2410_ts_mach_info s3c_ts_platform = {
+                .delay = 10000,
+                .presc = 49,
+                .oversampling_shift = 2,
+};
+
 static struct platform_device *smdk2416_devices[] __initdata = {
+	&s3c_device_adc,
 	&s3c_device_fb,
 	&s3c_device_wdt,
 	&s3c_device_ohci,
 	&s3c_device_i2c0,
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
+	&s3c_device_ts,
 };
 
 static void __init smdk2416_map_io(void)
@@ -177,6 +188,8 @@ static void __init smdk2416_map_io(void)
 
 static void __init smdk2416_machine_init(void)
 {
+	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+
 	s3c_i2c0_set_platdata(NULL);
 	s3c_fb_set_platdata(&smdk2416_fb_platdata);
 
