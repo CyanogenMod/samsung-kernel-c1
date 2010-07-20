@@ -1,0 +1,22 @@
+config VIDEO_SAMSUNG
+	bool "Samsung Multimedia Devices"
+	depends on VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2
+	select VIDEO_FIXED_MINOR_RANGES
+	default n
+	help
+	  This is a representative video4linux configuration for Samsung multimedia devices.
+
+if CPU_S5PV210
+source "drivers/media/video/samsung/jpeg_v2/Kconfig"
+endif
+
+
+if VIDEO_SAMSUNG
+comment "Reserved memory configurations"
+
+config VIDEO_SAMSUNG_MEMSIZE_JPEG
+	int "Memory size in kbytes for JPEG"
+	depends on VIDEO_JPEG_V2 
+	default "32768"
+
+endif
