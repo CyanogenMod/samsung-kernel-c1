@@ -118,6 +118,10 @@ static struct s3c2410_uartcfg smdk2416_uartcfgs[] __initdata = {
 	}
 };
 
+static struct i2c_board_info i2c_devs0[] __initdata = {
+       { I2C_BOARD_INFO("wm8580", 0x1b), },
+};
+
 struct s3c_fb_pd_win smdk2416_fb_win[] = {
 	[0] = {
 		/* think this is the same as the smdk6410 */
@@ -212,6 +216,7 @@ static struct platform_device *smdk2416_devices[] __initdata = {
 	&s3c_device_hsmmc1,
 	&s3c_device_ts,
 	&s3c_device_usb_hsudc,
+	&s3c_device_iis,
 };
 
 static void __init smdk2416_map_io(void)
@@ -239,6 +244,8 @@ static void __init smdk2416_machine_init(void)
 
 	gpio_request(S3C2410_GPB(1), "Display Reset");
 	gpio_direction_output(S3C2410_GPB(1), 1);
+
+	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
 
 	platform_add_devices(smdk2416_devices, ARRAY_SIZE(smdk2416_devices));
 	smdk_machine_init();
