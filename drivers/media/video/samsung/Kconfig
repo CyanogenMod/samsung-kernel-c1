@@ -8,6 +8,7 @@ config VIDEO_SAMSUNG
 
 if CPU_S5PV210
 source "drivers/media/video/samsung/jpeg_v2/Kconfig"
+source "drivers/media/video/samsung/tv20/Kconfig"
 endif
 
 
@@ -19,4 +20,8 @@ config VIDEO_SAMSUNG_MEMSIZE_JPEG
 	depends on VIDEO_JPEG_V2 
 	default "32768"
 
+config VIDEO_SAMSUNG_MEMSIZE_TV
+        int "Memory size in kbytes for TV"
+        depends on VIDEO_TV
+        default "8192"
 endif
