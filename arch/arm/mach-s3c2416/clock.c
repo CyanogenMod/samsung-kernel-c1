@@ -93,6 +93,13 @@ static struct clksrc_clk hsmmc_mux[] = {
 	},
 };
 
+static struct clk hsmmc1_clk = {
+       .name           = "hsmmc",
+       .id             = 1,
+       .parent         = &clk_h,
+       .enable         = s3c2443_clkcon_enable_h,
+       .ctrlbit        = S3C2416_HCLKCON_HSMMC0,
+};
 
 static inline unsigned int s3c2416_fclk_div(unsigned long clkcon0)
 {
@@ -129,6 +136,8 @@ void __init s3c2416_init_clocks(int xtal)
 
 	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
 		s3c_register_clksrc(clksrcs[ptr], 1);
+
+	s3c24xx_register_clock(&hsmmc1_clk);
 
 	s3c_pwmclk_init();
 

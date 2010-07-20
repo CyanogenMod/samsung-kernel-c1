@@ -139,6 +139,15 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.init		= s3c2412_init,
 		.name		= name_s3c2412,
 	},
+	{			/* an earlier version of the s3c2416 */
+		.idcode		= 0x32450001,
+		.idmask		= 0xffffffff,
+		.map_io		= s3c2416_map_io,
+		.init_clocks	= s3c2416_init_clocks,
+		.init_uarts	= s3c2416_init_uarts,
+		.init		= s3c2416_init,
+		.name		= name_s3c2416,
+	},
 	{			/* a strange version of the s3c2416 */
 		.idcode		= 0x32450003,
 		.idmask		= 0xffffffff,

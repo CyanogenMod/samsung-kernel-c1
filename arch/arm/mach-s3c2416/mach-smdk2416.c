@@ -48,6 +48,7 @@
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/nand.h>
+#include <plat/sdhci.h>
 
 #include <plat/regs-fb-v4.h>
 #include <plat/fb.h>
@@ -189,6 +190,18 @@ void s3c2416_hsudc_gpio_setup(void)
 	__raw_writel((1<<31)|(1<<2)|(0<<1)|(1<<0), S3C2443_UCLKCON);
 }
 
+static struct s3c_sdhci_platdata smdk2416_hsmmc1_pdata __initdata = {
+       .max_width              = 4,
+       .cd_type                = S3C_SDHCI_CD_GPIO,
+       .ext_cd_gpio            = S3C2410_GPF(1),
+       .ext_cd_gpio_invert     = 1,
+};
+
+static struct s3c_sdhci_platdata smdk2416_hsmmc0_pdata __initdata = {
+       .max_width              = 4,
+       .cd_type                = S3C_SDHCI_CD_NONE,
+};
+
 static struct platform_device *smdk2416_devices[] __initdata = {
 	&s3c_device_adc,
 	&s3c_device_fb,
@@ -214,6 +227,9 @@ static void __init smdk2416_machine_init(void)
 
 	s3c_i2c0_set_platdata(NULL);
 	s3c_fb_set_platdata(&smdk2416_fb_platdata);
+
+	s3c_sdhci0_set_platdata(&smdk2416_hsmmc0_pdata);
+	s3c_sdhci1_set_platdata(&smdk2416_hsmmc1_pdata);
 
 	gpio_request(S3C2410_GPB(4), "USBHost Power");
 	gpio_direction_output(S3C2410_GPB(4), 1);

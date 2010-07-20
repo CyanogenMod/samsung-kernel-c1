@@ -53,6 +53,7 @@
 #include <plat/s3c2416.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/sdhci.h>
 
 #include <plat/iic-core.h>
 #include <plat/nand-core.h>
@@ -91,7 +92,9 @@ int __init s3c2416_init(void)
 	s3c_i2c0_setname("s3c2440-i2c");
 	s3c_i2c1_setname("s3c2440-i2c");
 
+#ifdef CONFIG_S3C_DEV_FB
 	s3c_device_fb.name = "s3c2443-fb";
+#endif
 
 	return sysdev_register(&s3c2416_sysdev);
 }
@@ -113,6 +116,10 @@ void __init s3c2416_map_io(void)
 {
 	s3c24xx_gpiocfg_default.set_pull = s3c_gpio_setpull_updown;
 	s3c24xx_gpiocfg_default.get_pull = s3c_gpio_getpull_updown;
+
+	/* initialize device information early */
+	s3c2416_default_sdhci0();
+	s3c2416_default_sdhci1();
 
 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
 }
