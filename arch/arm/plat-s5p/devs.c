@@ -158,3 +158,85 @@ struct platform_device s3c_device_jpeg = {
 EXPORT_SYMBOL(s3c_device_jpeg);
 #endif /* CONFIG_VIDEO_JPEG_V2 */
 
+#ifdef CONFIG_VIDEO_TV20
+/* TVOUT interface */
+static struct resource s5p_tvout_resources[] = {
+	[0] = {
+		.start  = S5P_PA_TVENC,
+		.end    = S5P_PA_TVENC + S5P_SZ_TVENC - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start  = S5P_PA_VP,
+		.end    = S5P_PA_VP + S5P_SZ_VP - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[2] = {
+		.start  = S5P_PA_MIXER,
+		.end    = S5P_PA_MIXER + S5P_SZ_MIXER - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[3] = {
+		.start  = S5P_PA_HDMI,
+		.end    = S5P_PA_HDMI + S5P_SZ_HDMI - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[4] = {
+		.start  = S5P_I2C_HDMI_PHY,
+		.end    = S5P_I2C_HDMI_PHY + S5P_I2C_HDMI_SZ_PHY - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[5] = {
+		.start  = IRQ_MIXER,
+		.end    = IRQ_MIXER,
+		.flags  = IORESOURCE_IRQ,
+	},
+	[6] = {
+		.start  = IRQ_HDMI,
+		.end    = IRQ_HDMI,
+		.flags  = IORESOURCE_IRQ,
+	},
+	[7] = {
+		.start  = IRQ_TVENC,
+		.end    = IRQ_TVENC,
+		.flags  = IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s5p_device_tvout = {
+	.name           = "s5p-tvout",
+	.id             = -1,
+	.num_resources  = ARRAY_SIZE(s5p_tvout_resources),
+	.resource       = s5p_tvout_resources,
+};
+EXPORT_SYMBOL(s5p_device_tvout);
+
+/* CEC */
+static struct resource s5p_cec_resources[] = {
+	[0] = {
+		.start  = S5P_PA_CEC,
+		.end    = S5P_PA_CEC + S5P_SZ_CEC - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start  = IRQ_CEC,
+		.end    = IRQ_CEC,
+		.flags  = IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s5p_device_cec = {
+	.name           = "s5p-cec",
+	.id             = -1,
+	.num_resources  = ARRAY_SIZE(s5p_cec_resources),
+	.resource       = s5p_cec_resources,
+};
+EXPORT_SYMBOL(s5p_device_cec);
+
+/* HPD */
+struct platform_device s5p_device_hpd = {
+	.name           = "s5p-hpd",
+	.id             = -1,
+};
+EXPORT_SYMBOL(s5p_device_hpd);
+#endif

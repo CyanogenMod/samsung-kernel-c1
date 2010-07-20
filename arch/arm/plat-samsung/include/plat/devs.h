@@ -118,3 +118,8 @@ extern struct platform_device s3c_device_camif;
 extern struct platform_device s3c_device_ac97;
 
 #endif
+
+extern struct platform_device s5p_device_tvout;
+extern struct platform_device s5p_device_cec;
+extern struct platform_device s5p_device_hpd;
+

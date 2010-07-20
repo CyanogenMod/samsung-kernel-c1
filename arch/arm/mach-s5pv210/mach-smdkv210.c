@@ -143,6 +143,11 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
+#ifdef CONFIG_VIDEO_TV20
+	{
+		I2C_BOARD_INFO("s5p_ddc", (0x74>>1)),
+	},
+#endif
 };
 
 static struct i2c_board_info i2c_devs2[] __initdata = {
@@ -167,7 +172,11 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_jpeg,
 #endif
 
-
+#ifdef CONFIG_VIDEO_TV20
+	&s5p_device_tvout,
+	&s5p_device_cec,
+	&s5p_device_hpd,
+#endif
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {

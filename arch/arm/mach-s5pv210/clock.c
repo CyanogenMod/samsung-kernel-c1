@@ -431,7 +431,38 @@ static struct clk init_clocks_disable[] = {
 		.enable 	= s5pv210_clk_ip5_ctrl,
 		.ctrlbit	= (1 << 29),
 #endif
+	}, {
+		.name           = "i2c-hdmiphy",
+		.id             = -1,
+		.parent         = &clk_pclk_psys.clk,
+		.enable         = s5pv210_clk_ip3_ctrl,
+		.ctrlbit        = (1 << 11),
+	}, {
+		.name		= "hdmi",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip1_ctrl,
+		.ctrlbit	= (1 << 11),
+	}, {
+		.name		= "tvenc",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip1_ctrl,
+		.ctrlbit	= (1 << 10),
+	}, {
+		.name		= "mixer",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip1_ctrl,
+		.ctrlbit	= (1 << 9),
+	}, {
+		.name		= "vp",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip1_ctrl,
+		.ctrlbit	= (1 << 8),
 	},
+
 };
 
 static struct clk init_clocks[] = {
