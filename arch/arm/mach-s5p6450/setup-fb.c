@@ -64,7 +64,7 @@ int s3cfb_backlight_on(struct platform_device *pdev)
 }
 #endif
 
-int s3cfb_reset_lcd(struct platform_device *pdev)
+int s3cfb_lcd_on(struct platform_device *pdev)
 {
 	int err;
 
