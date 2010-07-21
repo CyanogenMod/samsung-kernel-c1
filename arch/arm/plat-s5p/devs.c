@@ -161,6 +161,28 @@ struct platform_device s3c_device_jpeg = {
 EXPORT_SYMBOL(s3c_device_jpeg);
 #endif /* CONFIG_VIDEO_JPEG_V2 */
 
+/* rotator interface */
+static struct resource s5p_rotator_resource[] = {
+	[0] = {
+		.start = S5P_PA_ROTATOR,
+		.end   = S5P_PA_ROTATOR + S5P_SZ_ROTATOR - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_ROTATOR,
+		.end   = IRQ_ROTATOR,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s5p_device_rotator = {
+	.name		= "s5p-rotator",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s5p_rotator_resource),
+	.resource	= s5p_rotator_resource
+};
+EXPORT_SYMBOL(s5p_device_rotator);
+
 #ifdef CONFIG_VIDEO_TV20
 /* TVOUT interface */
 static struct resource s5p_tvout_resources[] = {
