@@ -3,100 +3,92 @@
 #
 
 config FB_S3C
-	tristate "S3C Framebuffer Support"
+	tristate "S3C Framebuffer support"
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
-	select FRAMEBUFFER_CONSOLE
-	select LOGO
-	select LOGO_LINUX_LANDSCAPED_CLUT224
-	depends on FB && (ARCH_S3C64XX || ARCH_S5P64XX || ARCH_S5PC1XX || ARCH_S5P6450)
-
+	select FRAMEBUFFER_CONSOLE_DETECT_PRIMARY
+	depends on FB && ARCH_S5PV210
 	default n
-	---help---
-	TBA
+	help
+	  This enables support for Samsung Display Controller (FIMD)
+
+config FB_S3C_SPLASH_SCREEN
+	bool "SPLASH_SCREEN on LCD"
+	depends on FB_S3C
+	default y
+
+config FB_S3C_LCD_INIT
+	bool "LCD init in kernel"
+	depends on FB_S3C
+	default y
+
+config FB_S3C_DEBUG
+	bool "S3C Framebuffer debug messages"
+	depends on FB_S3C
+
+config FB_S3C_TRACE_UNDERRUN
+	bool "S3C Framebuffer FIFO underrun trace"
+	depends on FB_S3C
+
+config FB_S3C_DEFAULT_WINDOW
+	int "Default Window (0-4)"
+	depends on FB_S3C
+	default "0"
+	help
+	  This indicates the default window number, and which is used as console framebuffer
+
+config FB_S3C_NR_BUFFERS
+	int "Number of frame buffers (1-3)"
+	depends on FB_S3C
+	default "1"
+	help
+	  This indicates the number of buffers for pan display,
+	  1 means no pan display and
+	  2 means the double size of video buffer will be allocated for default window
+
+config FB_S3C_VIRTUAL
+	bool "Virtual Screen"
+	depends on FB_S3C
+	default n
+	help
+	  This uses 1920 x 1080 virtual screen.
+
+config FB_S3C_X_VRES
+	int "xres_virtual"
+	depends on FB_S3C && FB_S3C_VIRTUAL
+	default "1920"
+	help
+	  This indicates var.xres_virtual which has to be bigger than var.xres.
+
+config FB_S3C_Y_VRES
+	int "yres_virtual"
+	depends on FB_S3C && FB_S3C_VIRTUAL
+	default "1080"
+	help
+	  This indicates var.yres_virtual which has to be bigger than var.yres.
+
+config VIDEO_SAMSUNG_MEMSIZE_FIMD
+	int "Memory size in kbytes for FIMD"
+	depends on FB_S3C
+	default "24576"
 
 choice
 depends on FB_S3C
 prompt "Select LCD Type"
 default FB_S3C_LTE480WV
 config FB_S3C_LTE480WV
-	bool "LTE480WV/LTP700WV"
-	---help---
-	TBA
+	bool "LTE480WV"
+	depends on MACH_SMDKV210 || MACH_SMDKC110
+	help
+	  This enables support for Samsung LTE480WV 4.8\" WVGA LCD panel
 
-config FB_S3C_LTV350QV
-	bool "LTV350QV"
-	---help---
-	TBA
-
-config FB_S3C_LTS222QV
-	bool "LTS222QV"
-	---help---
-	TBA
-
+config FB_S3C_HT101HD1
+	bool "HT101HD1"
+	depends on MACH_SMDKV210 || MACH_SMDKC110
+	help
+	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
 endchoice
-
-config FB_S3C_BPP
-	tristate "Advanced options for S3C Framebuffer"
-	depends on FB_S3C
-	default n
-	---help---
-	TBA
-
-choice
-depends on FB_S3C_BPP
-prompt "Select BPP(Bits Per Pixel)"
-default FB_S3C_BPP_16
-config FB_S3C_BPP_8
-	bool "8 BPP"
-	---help---
-	TBA
-
-config FB_S3C_BPP_16
-	bool "16 BPP"
-	---help---
-	TBA
-
-config FB_S3C_BPP_24
-	bool "24 BPP(XRGB888)"
-	---help---
-	TBA
-
-
-config FB_S3C_BPP_28
-	bool "28 BPP(ARGB4888)"
-	---help---
-	TBA
-
-config FB_S3C_BPP_32
-	bool "32 BPP(ARGB8888)"
-	---help---
-	TBA
-endchoice
-
-config FB_S3C_NUM
-	int "Number of Framebuffers"
-	depends on FB_S3C_BPP && (ARCH_S3C64XX || ARCH_S5P64XX || ARCH_S5PC1XX)
-	default "1"
-	---help---
-	TBA
-
-config FB_S3C_VIRTUAL_SCREEN
-	bool "Enable Virtual Screen"
-	depends on FB_S3C_BPP
-
-	default n
-	---help---
-	TBA
-
-config FB_S3C_DOUBLE_BUFFERING
-	bool "Enable Double Buffering"
-	depends on FB_S3C_BPP
-
-	default n
-	---help---
-	TBA
 
 config FB_S3C_V2
 	tristate "S3C Framebuffer version 2 support"
@@ -146,4 +138,3 @@ config FB_S3C_V2_TL2796
 	---help---
 	  This enables support for Samsung  TL2796 WVGA LCD panel
 endchoice
-

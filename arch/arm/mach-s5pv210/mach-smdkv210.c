@@ -31,9 +31,11 @@
 #include <plat/s5pv210.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+#include <plat/fb.h>
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
+#include <plat/media.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define S5PV210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -48,6 +50,7 @@
 #define S5PV210_UFCON_DEFAULT	(S3C2410_UFCON_FIFOMODE |	\
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
+extern void s5pv310_reserve_bootmem(void);
 
 static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 	[0] = {
@@ -140,13 +143,20 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
+#ifdef CONFIG_VIDEO_TV20
+	{
+		I2C_BOARD_INFO("s5p_ddc", (0x74>>1)),
+	},
+#endif
 };
 
 static struct i2c_board_info i2c_devs2[] __initdata = {
 };
 
 static struct platform_device *smdkv210_devices[] __initdata = {
-	&s5pv210_device_iis0,
+#ifdef CONFIG_FB_S3C
+	&s3c_device_fb,
+#endif
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
 	&s3c_device_ts,
@@ -162,7 +172,15 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_jpeg,
 #endif
 
+#ifdef CONFIG_VIDEO_ROTATOR
+	&s5p_device_rotator,
+#endif
 
+#ifdef CONFIG_VIDEO_TV20
+	&s5p_device_tvout,
+	&s5p_device_cec,
+	&s5p_device_hpd,
+#endif
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
@@ -176,6 +194,7 @@ static void __init smdkv210_map_io(void)
 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
 	s3c24xx_init_clocks(24000000);
 	s3c24xx_init_uarts(smdkv210_uartcfgs, ARRAY_SIZE(smdkv210_uartcfgs));
+	s5p_reserve_bootmem();
 }
 
 static void __init smdkv210_machine_init(void)
@@ -190,6 +209,9 @@ static void __init smdkv210_machine_init(void)
 	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
 	i2c_register_board_info(2, i2c_devs2, ARRAY_SIZE(i2c_devs2));
 
+#ifdef CONFIG_FB_S3C
+	s3cfb_set_platdata(NULL);
+#endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 

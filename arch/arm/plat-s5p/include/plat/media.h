@@ -16,9 +16,7 @@
 #include <linux/types.h>
 #include <asm/setup.h>
 
-#define S3C_MDEV_MFC		1
-
-struct s3c_media_device {
+struct s5p_media_device {
 	u32		id;
 	const char	*name;
 	u32		bank;
@@ -27,8 +25,9 @@ struct s3c_media_device {
 };
 
 extern struct meminfo meminfo;
-extern dma_addr_t s3c_get_media_memory_bank(int dev_id, int bank);
-extern size_t s3c_get_media_memsize_bank(int dev_id, int bank);
+extern dma_addr_t s5p_get_media_memory_bank(int dev_id, int bank);
+extern size_t s5p_get_media_memsize_bank(int dev_id, int bank);
+extern void s5p_reserve_bootmem(void);
 
 #endif
 

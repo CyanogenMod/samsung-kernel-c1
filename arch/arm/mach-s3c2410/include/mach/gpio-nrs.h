@@ -18,6 +18,7 @@
 
 #define S3C2410_GPIO_BANKG   (32*6)
 #define S3C2410_GPIO_BANKH   (32*7)
+#define S3C2416_GPIO_BANKM	(32 * 11)
 
 /* GPIO sizes for various SoCs:
  *

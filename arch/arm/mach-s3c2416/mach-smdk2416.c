@@ -23,6 +23,7 @@
 #include <linux/mtd/partitions.h>
 #include <linux/gpio.h>
 #include <linux/fb.h>
+#include <linux/delay.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -35,6 +36,7 @@
 #include <plat/regs-serial.h>
 #include <mach/regs-gpio.h>
 #include <mach/regs-lcd.h>
+#include <mach/regs-s3c2443-clock.h>
 
 #include <mach/idle.h>
 #include <mach/leds-gpio.h>
@@ -46,9 +48,12 @@
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/nand.h>
+#include <plat/sdhci.h>
 
 #include <plat/regs-fb-v4.h>
 #include <plat/fb.h>
+#include <plat/regs-adc.h>
+#include <plat/ts.h>
 
 #include <plat/common-smdk.h>
 
@@ -113,6 +118,10 @@ static struct s3c2410_uartcfg smdk2416_uartcfgs[] __initdata = {
 	}
 };
 
+static struct i2c_board_info i2c_devs0[] __initdata = {
+       { I2C_BOARD_INFO("wm8580", 0x1b), },
+};
+
 struct s3c_fb_pd_win smdk2416_fb_win[] = {
 	[0] = {
 		/* think this is the same as the smdk6410 */
@@ -159,13 +168,55 @@ static struct s3c_fb_platdata smdk2416_fb_platdata = {
 	.vidcon1	= VIDCON1_INV_HSYNC | VIDCON1_INV_VSYNC,
 };
 
+
+struct s3c2410_ts_mach_info s3c_ts_platform = {
+                .delay = 10000,
+                .presc = 49,
+                .oversampling_shift = 2,
+};
+
+void s3c2416_hsudc_gpio_setup(void)
+{
+	s3c_gpio_setpull(S3C2410_GPH(14), S3C_GPIO_PULL_UP);
+	s3c_gpio_setpull(S3C2410_GPF(2), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(14), S3C_GPIO_SFN(1));
+	
+	s3c2410_modify_misccr(S3C2416_MISCCR_SEL_SUSPND, 0);
+	__raw_writel(__raw_readl(S3C2443_PWRCFG)|(1<<4), S3C2443_PWRCFG);
+	__raw_writel((1 << 0), S3C2443_URSTCON);
+	mdelay(1);
+
+	__raw_writel((1<<2)|(1<<1)|(0<<0), S3C2443_URSTCON);
+	__raw_writel((0<<2)|(0<<1)|(0<<0), S3C2443_URSTCON);
+	__raw_writel((0<<3)|(1<<2)|(1<<1)|(0<<0), S3C2443_PHYCTRL);
+	__raw_writel((1<<31)|(0<<4)|(0<<3)|(0<<2)|(0<<1)|(0<<0), S3C2443_PHYPWR);
+	__raw_writel((0<<31)|(1<<2)|(0<<1)|(1<<0), S3C2443_UCLKCON);
+	__raw_writel((1<<31)|(1<<2)|(0<<1)|(1<<0), S3C2443_UCLKCON);
+}
+
+static struct s3c_sdhci_platdata smdk2416_hsmmc1_pdata __initdata = {
+       .max_width              = 4,
+       .cd_type                = S3C_SDHCI_CD_GPIO,
+       .ext_cd_gpio            = S3C2410_GPF(1),
+       .ext_cd_gpio_invert     = 1,
+};
+
+static struct s3c_sdhci_platdata smdk2416_hsmmc0_pdata __initdata = {
+       .max_width              = 4,
+       .cd_type                = S3C_SDHCI_CD_NONE,
+};
+
 static struct platform_device *smdk2416_devices[] __initdata = {
+	&s3c_device_adc,
 	&s3c_device_fb,
 	&s3c_device_wdt,
 	&s3c_device_ohci,
 	&s3c_device_i2c0,
 	&s3c_device_hsmmc0,
 	&s3c_device_hsmmc1,
+	&s3c_device_ts,
+	&s3c_device_usb_hsudc,
+	&s3c_device_iis,
 };
 
 static void __init smdk2416_map_io(void)
@@ -177,8 +228,13 @@ static void __init smdk2416_map_io(void)
 
 static void __init smdk2416_machine_init(void)
 {
+	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+
 	s3c_i2c0_set_platdata(NULL);
 	s3c_fb_set_platdata(&smdk2416_fb_platdata);
+
+	s3c_sdhci0_set_platdata(&smdk2416_hsmmc0_pdata);
+	s3c_sdhci1_set_platdata(&smdk2416_hsmmc1_pdata);
 
 	gpio_request(S3C2410_GPB(4), "USBHost Power");
 	gpio_direction_output(S3C2410_GPB(4), 1);
@@ -188,6 +244,8 @@ static void __init smdk2416_machine_init(void)
 
 	gpio_request(S3C2410_GPB(1), "Display Reset");
 	gpio_direction_output(S3C2410_GPB(1), 1);
+
+	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
 
 	platform_add_devices(smdk2416_devices, ARRAY_SIZE(smdk2416_devices));
 	smdk_machine_init();
