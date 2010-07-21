@@ -161,6 +161,7 @@ struct platform_device s3c_device_jpeg = {
 EXPORT_SYMBOL(s3c_device_jpeg);
 #endif /* CONFIG_VIDEO_JPEG_V2 */
 
+#ifdef CONFIG_VIDEO_TV20
 /* TVOUT interface */
 static struct resource s5p_tvout_resources[] = {
 	[0] = {
@@ -241,4 +242,4 @@ struct platform_device s5p_device_hpd = {
 	.id             = -1,
 };
 EXPORT_SYMBOL(s5p_device_hpd);
-
+#endif
