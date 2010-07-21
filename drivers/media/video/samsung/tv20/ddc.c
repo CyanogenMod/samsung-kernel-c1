@@ -130,7 +130,7 @@ static void __exit s5p_ddc_exit(void)
 }
 
 MODULE_AUTHOR("SangPil Moon <sangpil.moon@samsung.com>");
-MODULE_DESCRIPTION("Driver for SMDKV210 I2C DDC devices");
+MODULE_DESCRIPTION("Driver for S5P I2C DDC devices");
 
 MODULE_LICENSE("GPL");
 

@@ -392,7 +392,7 @@ static struct platform_driver s5p_cec_driver = {
 };
 
 static char banner[] __initdata =
-	"S5PC11X CEC Driver, (c) 2009 Samsung Electronics\n";
+	"S5P CEC Driver, (c) 2009 Samsung Electronics\n";
 
 int __init s5p_cec_init(void)
 {
@@ -422,5 +422,5 @@ module_init(s5p_cec_init);
 module_exit(s5p_cec_exit);
 
 MODULE_AUTHOR("SangPil Moon");
-MODULE_DESCRIPTION("SS5PC11X CEC driver");
+MODULE_DESCRIPTION("S5P CEC driver");
 MODULE_LICENSE("GPL");

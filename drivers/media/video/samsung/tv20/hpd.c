@@ -361,7 +361,7 @@ static struct platform_driver s5p_hpd_driver = {
 };
 
 static char banner[] __initdata =
-	"S5PC11X HPD Driver, (c) 2009 Samsung Electronics\n";
+	"S5P HPD Driver, (c) 2009 Samsung Electronics\n";
 
 int __init s5p_hpd_init(void)
 {

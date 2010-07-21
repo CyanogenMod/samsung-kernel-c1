@@ -598,7 +598,7 @@ void s5p_tv_vdev_release(struct video_device *vdev)
 struct video_device s5p_tvout[] = {
 #ifdef CONFIG_TV_FB
 	[0] = {
-		.name = "S5PC1xx TVOUT ctrl",
+		.name = "S5P TVOUT ctrl",
 		.fops = &s5p_tv_fops,
 		.ioctl_ops = &s5p_tv_v4l2_ops,
 		.release  = s5p_tv_vdev_release,
@@ -606,7 +606,7 @@ struct video_device s5p_tvout[] = {
 		.tvnorms = V4L2_STD_ALL_HD,
 	},
 	[1] = {
-		.name = "S5PC1xx TVOUT for Video",
+		.name = "S5P TVOUT for Video",
 		.fops = &s5p_tv_vid_fops,
 		.ioctl_ops = &s5p_tv_v4l2_vid_ops,
 		.release  = s5p_tv_vdev_release,
@@ -615,7 +615,7 @@ struct video_device s5p_tvout[] = {
 	},
 #else
 	[0] = {
-		.name = "S5PC1xx TVOUT Video",
+		.name = "S5P TVOUT Video",
 		.fops = &s5p_tv_v_fops,
 		.ioctl_ops = &s5p_tv_v4l2_v_ops,
 		.release  = s5p_tv_vdev_release,
@@ -623,7 +623,7 @@ struct video_device s5p_tvout[] = {
 		.tvnorms = V4L2_STD_ALL_HD,
 	},
 	[1] = {
-		.name = "S5PC1xx TVOUT Overlay0",
+		.name = "S5P TVOUT Overlay0",
 		.fops = &s5p_tv_vo0_fops,
 		.ioctl_ops = &s5p_tv_v4l2_vo_ops,
 		.release  = s5p_tv_vdev_release,
@@ -631,7 +631,7 @@ struct video_device s5p_tvout[] = {
 		.tvnorms = V4L2_STD_ALL_HD,
 	},
 	[2] = {
-		.name = "S5PC1xx TVOUT Overlay1",
+		.name = "S5P TVOUT Overlay1",
 		.fops = &s5p_tv_vo1_fops,
 		.ioctl_ops = &s5p_tv_v4l2_vo_ops,
 		.release  = s5p_tv_vdev_release,
@@ -874,7 +874,7 @@ static struct platform_driver s5p_tv_driver = {
 };
 
 static char banner[] __initdata =
-	KERN_INFO "S5PC1XX TVOUT Driver, (c) 2009 Samsung Electronics\n";
+	KERN_INFO "S5P TVOUT Driver, (c) 2009 Samsung Electronics\n";
 
 int __init s5p_tv_init(void)
 {
@@ -902,5 +902,5 @@ late_initcall(s5p_tv_init);
 module_exit(s5p_tv_exit);
 
 MODULE_AUTHOR("SangPil Moon");
-MODULE_DESCRIPTION("SS5PC1XX TVOUT driver");
+MODULE_DESCRIPTION("S5P TVOUT driver");
 MODULE_LICENSE("GPL");
