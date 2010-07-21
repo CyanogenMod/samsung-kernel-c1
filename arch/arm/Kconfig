@@ -681,6 +681,7 @@ config ARCH_S5P6450
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select GENERIC_CLOCKEVENTS
+	select S3C_ADC
 	help
 	  Samsung S5P6450 CPU based systems
 

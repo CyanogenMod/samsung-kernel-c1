@@ -364,6 +364,12 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
 #endif
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
+	&s3c_device_ts,
+#endif
+#ifdef CONFIG_S3C_ADC
+	&s3c_device_adc,
+#endif
 #ifdef CONFIG_FB_S3C_V2
 	&s3c_device_fb,
 #endif
@@ -391,6 +397,11 @@ static void __init smdk6450_map_io(void)
 
 	s3c24xx_init_uarts(smdk6450_uartcfgs, ARRAY_SIZE(smdk6450_uartcfgs));
 }
+static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
+	.delay			= 10000,
+	.presc			= 49,
+	.oversampling_shift	= 2,
+};
 
 static void __init smdk6450_machine_init(void)
 {
@@ -405,6 +416,9 @@ static void __init smdk6450_machine_init(void)
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	s5p6450_default_sdhci2();
+#endif
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
+	s3c24xx_ts_set_platdata(&s3c_ts_platform);
 #endif
 
 	s3c_i2c0_set_platdata(NULL);

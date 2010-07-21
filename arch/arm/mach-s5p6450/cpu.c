@@ -36,6 +36,7 @@
 #include <plat/cpu.h>
 #include <plat/devs.h>
 #include <plat/clock.h>
+#include <plat/adc-core.h>
 #include <plat/s5p6450.h>
 
 /* Initial IO mappings */
@@ -73,6 +74,7 @@ void __init s5p6450_map_io(void)
 {
 	iotable_init(s5p6450_iodesc, ARRAY_SIZE(s5p6450_iodesc));
 	/* initialize any device information early */
+	s3c_adc_setname("s3c64xx-adc");
 }
 
 void __init s5p6450_init_clocks(int xtal)
