@@ -1678,4 +1678,3 @@ int s5p_hdcp_encrypt_stop(bool on)
 
 	return 0;
 }
-

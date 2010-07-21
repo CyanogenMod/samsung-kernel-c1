@@ -632,21 +632,15 @@ struct v4l2_pix_format_s5p_tvout {
 	struct v4l2_pix_format	pix_fmt;
 };
 
-extern const struct v4l2_ioctl_ops s5p_tv_v4l2_v_ops;
-extern const struct v4l2_ioctl_ops s5p_tv_v4l2_vo_ops;
-extern const struct v4l2_ioctl_ops s5p_tv_v4l2_ops;
-extern const struct v4l2_ioctl_ops s5p_tv_v4l2_vid_ops;
+void s5p_tv_v4l2_init_param(void);
 
-
-extern void s5p_tv_v4l2_init_param(void);
-
-extern long s5p_tv_ioctl(struct file *file, u32 cmd, unsigned long arg);
-extern long s5p_tv_vid_ioctl(struct file *file, u32 cmd, unsigned long arg);
-extern long s5p_tv_v_ioctl(struct file *file, u32 cmd, unsigned long arg);
-extern long s5p_tv_vo_ioctl(struct file *file, u32 cmd, unsigned long arg);
+long s5p_tv_ioctl(struct file *file, u32 cmd, unsigned long arg);
+long s5p_tv_vid_ioctl(struct file *file, u32 cmd, unsigned long arg);
+long s5p_tv_v_ioctl(struct file *file, u32 cmd, unsigned long arg);
+long s5p_tv_vo_ioctl(struct file *file, u32 cmd, unsigned long arg);
 
 int __init s5p_hdmi_probe(struct platform_device *pdev,
-				u32 res_num, u32 res_num2);
+			u32 res_num, u32 res_num2);
 int s5p_hdmi_phy_power(bool on);
 
 int __init s5p_sdout_probe(struct platform_device *pdev, u32 res_num);
@@ -658,34 +652,34 @@ int __init s5p_sdout_release(struct platform_device *pdev);
 int __init s5p_vmx_release(struct platform_device *pdev);
 int __init s5p_vp_release(struct platform_device *pdev);
 
-extern	bool s5p_grp_start(enum s5p_tv_vmx_layer vmLayer);
-extern	bool s5p_grp_stop(enum s5p_tv_vmx_layer vmLayer);
+bool s5p_grp_start(enum s5p_tv_vmx_layer vmLayer);
+bool s5p_grp_stop(enum s5p_tv_vmx_layer vmLayer);
 
-extern	bool s5p_tv_if_init_param(void);
-extern	bool s5p_tv_if_start(void);
-extern	bool s5p_tv_if_stop(void);
-extern	bool s5p_tv_if_set_disp(void);
+bool s5p_tv_if_init_param(void);
+bool s5p_tv_if_start(void);
+bool s5p_tv_if_stop(void);
+bool s5p_tv_if_set_disp(void);
 
-extern	bool s5p_vlayer_set_blending(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_alpha(unsigned long p_buf_in);
-extern	bool s5p_vlayer_init_param(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_priority(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_field_id(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_top_address(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_bottom_address(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_img_size(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_src_position(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_dest_position(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_src_size(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_dest_size(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_brightness(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_contrast(unsigned long p_buf_in);
-extern	void s5p_vlayer_get_priority(unsigned long p_buf_out);
-extern	bool s5p_vlayer_set_brightness_contrast_control(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_poly_filter_coef(unsigned long p_buf_in);
-extern	bool s5p_vlayer_set_csc_coef(unsigned long p_buf_in);
-extern	bool s5p_vlayer_start(void);
-extern	bool s5p_vlayer_stop(void);
+bool s5p_vlayer_set_blending(unsigned long p_buf_in);
+bool s5p_vlayer_set_alpha(unsigned long p_buf_in);
+bool s5p_vlayer_init_param(unsigned long p_buf_in);
+bool s5p_vlayer_set_priority(unsigned long p_buf_in);
+bool s5p_vlayer_set_field_id(unsigned long p_buf_in);
+bool s5p_vlayer_set_top_address(unsigned long p_buf_in);
+bool s5p_vlayer_set_bottom_address(unsigned long p_buf_in);
+bool s5p_vlayer_set_img_size(unsigned long p_buf_in);
+bool s5p_vlayer_set_src_position(unsigned long p_buf_in);
+bool s5p_vlayer_set_dest_position(unsigned long p_buf_in);
+bool s5p_vlayer_set_src_size(unsigned long p_buf_in);
+bool s5p_vlayer_set_dest_size(unsigned long p_buf_in);
+bool s5p_vlayer_set_brightness(unsigned long p_buf_in);
+bool s5p_vlayer_set_contrast(unsigned long p_buf_in);
+void s5p_vlayer_get_priority(unsigned long p_buf_out);
+bool s5p_vlayer_set_brightness_contrast_control(unsigned long p_buf_in);
+bool s5p_vlayer_set_poly_filter_coef(unsigned long p_buf_in);
+bool s5p_vlayer_set_csc_coef(unsigned long p_buf_in);
+bool s5p_vlayer_start(void);
+bool s5p_vlayer_stop(void);
 
 irqreturn_t s5p_hdmi_irq(int irq, void *dev_id);
 
@@ -894,31 +888,28 @@ void s5p_tv_powerset_dac_onoff(bool on);
 void s5p_tv_power_on(void);
 void s5p_tv_power_off(void);
 
-extern struct s5p_tv_status s5ptv_status;
-extern struct s5p_tv_vo s5ptv_overlay[2];
+void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
+void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
+void s5p_hdmi_clear_pending(enum s5p_tv_hdmi_interrrupt intr);
+u8 s5p_hdmi_get_interrupts(void);
+int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
+int s5p_hpd_init(void);
+u8 s5p_hdmi_get_swhpd_status(void);
+u8 s5p_hdmi_get_hpd_status(void);
+void s5p_hdmi_hpd_gen(void);
+int __init s5p_hdcp_init(void);
+int s5p_tv_clk_gate(bool on);
 
-extern void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
-extern void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
-extern void s5p_hdmi_clear_pending(enum s5p_tv_hdmi_interrrupt intr);
-extern u8 s5p_hdmi_get_interrupts(void);
-extern int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
-extern int s5p_hpd_init(void);
-extern u8 s5p_hdmi_get_swhpd_status(void);
-extern u8 s5p_hdmi_get_hpd_status(void);
-extern void s5p_hdmi_hpd_gen(void);
-extern int __init s5p_hdcp_init(void);
-extern int s5p_tv_clk_gate(bool on);
-
-extern int s5p_tv_fb_init_fbinfo(int id);
-extern int s5p_tv_fb_map_video_memory(struct fb_info *fb);
-extern int s5p_tv_fb_check_var(struct fb_var_screeninfo *var,
-			struct fb_info *fb);
-extern int s5p_tv_fb_set_par(struct fb_info *fb);
-extern int s5p_tv_fb_draw_logo(struct fb_info *fb);
-extern void s5p_tv_fb_set_lcd_info(struct s5p_tv_status *ctrl);
-extern int s5p_tv_fb_display_on(struct s5p_tv_status *ctrl);
-extern int s5p_hpd_get_state(void);
-extern void s5p_tv_kobject_uevent(void);
+int s5p_tv_fb_init_fbinfo(int id);
+int s5p_tv_fb_map_video_memory(struct fb_info *fb);
+int s5p_tv_fb_check_var(struct fb_var_screeninfo *var,
+		struct fb_info *fb);
+int s5p_tv_fb_set_par(struct fb_info *fb);
+int s5p_tv_fb_draw_logo(struct fb_info *fb);
+void s5p_tv_fb_set_lcd_info(struct s5p_tv_status *ctrl);
+int s5p_tv_fb_display_on(struct s5p_tv_status *ctrl);
+int s5p_hpd_get_state(void);
+void s5p_tv_kobject_uevent(void);
 
 #define S5PTVFB_POWER_OFF	_IOW('F', 217, u32)
 #define S5PTVFB_POWER_ON	_IOW('F', 218, u32)
@@ -926,19 +917,25 @@ extern void s5p_tv_kobject_uevent(void);
 #define S5PTVFB_SET_WIN_ON	_IOW('F', 220, u32)
 #define S5PTVFB_SET_WIN_OFF	_IOW('F', 221, u32)
 
-extern int s5p_tv_clk_gate(bool on);
-extern int s5p_tv_phy_power(bool on);
-extern int s5p_tv_fb_unmap_video_memory(struct fb_info *fb);
+int s5p_tv_clk_gate(bool on);
+int s5p_tv_phy_power(bool on);
+int s5p_tv_fb_unmap_video_memory(struct fb_info *fb);
+
+bool s5p_tv_if_set_disp(void);
+int s5p_hdcp_encrypt_stop(bool on);
+int s5p_hdcp_hdmi_set_dvi(bool en);
+int s5p_hdcp_hdmi_set_mute(bool en);
+int s5p_hdcp_hdmi_get_mute(void);
+int s5p_hdcp_hdmi_audio_enable(bool en);
+void s5p_hdcp_hdmi_set_audio(bool en);
+void s5p_hdcp_hdmi_mute_en(bool en);
+bool s5p_hdcp_start(void);
 
 extern struct s5p_tv_status s5ptv_status;
-extern bool s5p_tv_if_set_disp(void);
-extern int s5p_hdcp_encrypt_stop(bool on);
-extern int s5p_hdcp_hdmi_set_dvi(bool en);
-extern int s5p_hdcp_hdmi_set_mute(bool en);
-extern int s5p_hdcp_hdmi_get_mute(void);
-extern int s5p_hdcp_hdmi_audio_enable(bool en);
-extern void s5p_hdcp_hdmi_set_audio(bool en);
-extern void s5p_hdcp_hdmi_mute_en(bool en);
-extern bool s5p_hdcp_start(void);
-extern bool s5p_hdcp_stop(void);
+extern struct s5p_tv_vo s5ptv_overlay[2];
+
+extern const struct v4l2_ioctl_ops s5p_tv_v4l2_v_ops;
+extern const struct v4l2_ioctl_ops s5p_tv_v4l2_vo_ops;
+extern const struct v4l2_ioctl_ops s5p_tv_v4l2_ops;
+extern const struct v4l2_ioctl_ops s5p_tv_v4l2_vid_ops;
 

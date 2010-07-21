@@ -528,22 +528,23 @@ enum s5p_tv_hdmi_interrrupt {
 
 typedef int (*hdmi_isr)(int irq);
 
-extern void s5p_hdmi_sw_hpd_enable(bool enable);
-extern void s5p_hdmi_set_hpd_onoff(bool on_off);
-extern int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
-extern void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
-extern void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
-extern void s5p_hdmi_hpd_gen(void);
-extern u8 s5p_hdmi_get_interrupts(void);
-extern u8 s5p_hdmi_get_enabled_interrupt(void);
-extern int s5p_hdcp_hdmi_set_dvi(bool en);
-extern void s5p_hdcp_hdmi_mute_en(bool en);
+void s5p_hdmi_sw_hpd_enable(bool enable);
+void s5p_hdmi_set_hpd_onoff(bool on_off);
 
-extern void __iomem *hdmi_base;
-extern bool s5p_hdcp_start(void);
-extern bool s5p_hdcp_stop(void);
+int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
+void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
+void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
+void s5p_hdmi_hpd_gen(void);
+u8 s5p_hdmi_get_interrupts(void);
+u8 s5p_hdmi_get_enabled_interrupt(void);
+int s5p_hdcp_hdmi_set_dvi(bool en);
+void s5p_hdcp_hdmi_mute_en(bool en);
+
+bool s5p_hdcp_stop(void);
 
  /* 0 - hdcp stopped, 1 - hdcp started, 2 - hdcp reset */
 extern u8 hdcp_protocol_status;
+extern void __iomem *hdmi_base;
+
 
 void  s5p_hdmi_video_set_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);

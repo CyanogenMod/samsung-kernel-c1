@@ -25,6 +25,6 @@ struct hpd_struct {
 	atomic_t state;
 };
 
-extern int s5p_hpd_set_eint(void);
-extern int s5p_hpd_set_hdmiint(void);
+int s5p_hpd_set_eint(void);
+int s5p_hpd_set_hdmiint(void);
 
