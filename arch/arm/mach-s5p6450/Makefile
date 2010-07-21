@@ -14,6 +14,7 @@ obj-				:=
 
 obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o dma.o
 obj-$(CONFIG_CPU_S5P6450)	+= setup-i2c0.o time.o gpio.o
+obj-$(CONFIG_CPU_S5P6450)	+= bootmem-smdk6450.o
 
 # machine support
 
