@@ -131,7 +131,6 @@ int s5p_hpd_set_hdmiint(void)
 
 	return 0;
 }
-EXPORT_SYMBOL(s5p_hpd_set_hdmiint);
 
 int s5p_hpd_set_eint(void)
 {
@@ -150,7 +149,6 @@ int s5p_hpd_set_eint(void)
 
 	return 0;
 }
-EXPORT_SYMBOL(s5p_hpd_set_eint);
 
 int s5p_hdp_irq_eint(int irq)
 {

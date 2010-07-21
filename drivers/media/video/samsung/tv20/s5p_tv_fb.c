@@ -840,7 +840,6 @@ int s5p_tv_fb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 
 	return ret;
 }
-EXPORT_SYMBOL(s5p_tv_fb_direct_ioctl);
 
 int s5p_tv_fb_init_fbinfo(int id)
 {

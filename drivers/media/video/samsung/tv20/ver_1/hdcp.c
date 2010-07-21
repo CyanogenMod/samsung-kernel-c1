@@ -1678,4 +1678,4 @@ int s5p_hdcp_encrypt_stop(bool on)
 
 	return 0;
 }
-EXPORT_SYMBOL(s5p_hdcp_encrypt_stop);
+

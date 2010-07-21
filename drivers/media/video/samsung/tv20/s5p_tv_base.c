@@ -226,7 +226,6 @@ err_pm:
 	return -1;
 #endif
 }
-EXPORT_SYMBOL(s5p_tv_clk_gate);
 
 static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
 					struct s5p_tv_status *ctrl)

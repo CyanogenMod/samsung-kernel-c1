@@ -1860,7 +1860,6 @@ int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num)
 
 	return 0;
 }
-EXPORT_SYMBOL(s5p_hdmi_register_isr);
 
 irqreturn_t s5p_hdmi_irq(int irq, void *dev_id)
 {
@@ -1902,6 +1901,7 @@ irqreturn_t s5p_hdmi_irq(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
+
 u8 s5p_hdmi_get_enabled_interrupt(void)
 {
 	u8 reg;
@@ -1919,7 +1919,6 @@ void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr)
 	writeb(reg | (1<<intr) | (1<<HDMI_IRQ_GLOBAL),
 		hdmi_base+S5P_HDMI_INTC_CON);
 }
-EXPORT_SYMBOL(s5p_hdmi_enable_interrupts);
 
 void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr)
 {
@@ -1928,7 +1927,6 @@ void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr)
 	reg = readb(hdmi_base+S5P_HDMI_INTC_CON);
 	writeb(reg & ~(1<<intr), hdmi_base+S5P_HDMI_INTC_CON);
 }
-EXPORT_SYMBOL(s5p_hdmi_disable_interrupts);
 
 void s5p_hdmi_clear_pending(enum s5p_tv_hdmi_interrrupt intr)
 {
@@ -1937,7 +1935,6 @@ void s5p_hdmi_clear_pending(enum s5p_tv_hdmi_interrrupt intr)
 	reg = readb(hdmi_base+S5P_HDMI_INTC_FLAG);
 	writeb(reg | (1<<intr), hdmi_base+S5P_HDMI_INTC_FLAG);
 }
-EXPORT_SYMBOL(s5p_hdmi_clear_pending);
 
 u8 s5p_hdmi_get_interrupts(void)
 {
@@ -1947,7 +1944,6 @@ u8 s5p_hdmi_get_interrupts(void)
 
 	return reg;
 }
-EXPORT_SYMBOL(s5p_hdmi_get_interrupts);
 
 u8 s5p_hdmi_get_swhpd_status(void)
 {
@@ -1957,7 +1953,6 @@ u8 s5p_hdmi_get_swhpd_status(void)
 
 	return reg;
 }
-EXPORT_SYMBOL(s5p_hdmi_get_swhpd_status);
 
 u8 s5p_hdmi_get_hpd_status(void)
 {
@@ -1967,11 +1962,9 @@ u8 s5p_hdmi_get_hpd_status(void)
 
 	return reg;
 }
-EXPORT_SYMBOL(s5p_hdmi_get_hpd_status);
 
 void s5p_hdmi_hpd_gen(void)
 {
 	writeb(0xFF, hdmi_base+S5P_HDMI_HPD_GEN);
 }
-EXPORT_SYMBOL(s5p_hdmi_hpd_gen);
 

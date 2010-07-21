@@ -63,7 +63,6 @@ int s5p_ddc_read(u8 subaddr, u8 *data, u16 len)
 
 	return ret;
 }
-EXPORT_SYMBOL(s5p_ddc_read);
 
 /*
  * DDC_write ftn.
@@ -77,7 +76,6 @@ int s5p_ddc_write(u8 *data, u16 len)
 
 	return ret;
 }
-EXPORT_SYMBOL(s5p_ddc_write);
 
 /*
  * i2c client ftn.
