@@ -215,7 +215,7 @@ bool s5p_tv_if_init_vm_reg(void)
 	s5p_vmx_init_bg_dither_enable(cr_en, cb_en, y_en);
 
 	for (i = VMIXER_BG_COLOR_0; i <= VMIXER_BG_COLOR_2; i++) {
-		merr = s5p_vmx_init_bg_color(i,
+		merr = s5p_vmx_set_bg_color(i,
 				     st->bg_color[i].color_y,
 				     st->bg_color[i].color_cb,
 				     st->bg_color[i].color_cr);

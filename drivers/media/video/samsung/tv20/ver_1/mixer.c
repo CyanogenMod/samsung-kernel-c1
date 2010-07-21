@@ -775,12 +775,6 @@ void s5p_vmx_init_bg_dither_enable(bool cr_dither_enable,
 
 }
 
-int s5p_vmx_init_bg_color(enum s5p_tv_vmx_bg_color_num color_num,
-				u32 color_y, u32 color_cb, u32 color_cr)
-{
-	return s5p_vmx_set_bg_color(color_num, color_y, color_cb, color_cr);
-}
-
 int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 				enum s5p_tv_coef_y_mode mode,
 				u32 coeff0, u32 coeff1, u32 coeff2)

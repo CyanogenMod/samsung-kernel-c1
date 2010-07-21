@@ -203,7 +203,7 @@ bool s5p_vlayer_start(void)
 	enum s5p_vp_csc_type csc_type = s5ptv_status.vl_csc_type;
 
 	s5p_vp_sw_reset();
-	s5p_vp_init_field_id(f_id);
+	s5p_vp_set_field_id(f_id);
 	s5p_vp_init_op_mode(l_skip, m_mode, cro_ex, f_id_tog);
 	s5p_vp_init_pixel_rate_control(p_rate);
 
@@ -231,12 +231,12 @@ bool s5p_vlayer_start(void)
 	s5p_vp_init_bypass_post_process(bypass);
 	s5p_vp_init_sharpness(noise, sharp);
 	s5p_vp_init_saturation(saturation);
-	s5p_vp_init_brightness(bright);
-	s5p_vp_init_contrast(contrast);
+	s5p_vp_set_brightness(bright);
+	s5p_vp_set_contrast(contrast);
 
 	for (i = VProc_LINE_EQ_0; i <= VProc_LINE_EQ_7; i++) {
 		if (s5ptv_status.vl_bc_control[i].eq_num == i)
-			verr = s5p_vp_init_brightness_contrast_control(
+			verr = s5p_vp_set_brightness_contrast_control(
 					s5ptv_status.vl_bc_control[i].eq_num,
 					s5ptv_status.vl_bc_control[i].intc,
 					s5ptv_status.vl_bc_control[i].slope);
@@ -710,7 +710,7 @@ bool s5p_vlayer_set_poly_filter_coef(unsigned long buf_in)
 	if (s5p_vlayer_wait_previous_update())
 		return false;
 
-	verr = s5p_vp_init_poly_filter_coef(coef->poly_coeff,
+	verr = s5p_vp_set_poly_filter_coef(coef->poly_coeff,
 					coef->ch0, coef->ch1,
 					coef->ch2, coef->ch3);
 

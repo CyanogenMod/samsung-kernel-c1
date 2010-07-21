@@ -831,8 +831,6 @@ void s5p_vmx_set_ctrl(enum s5p_tv_vmx_layer layer, bool premul,
 			u32 alpha, u32 blank_color);
 void s5p_vmx_init_bg_dither_enable(bool cr_dither_enable, bool cdither_enable,
 			bool y_dither_enable);
-int s5p_vmx_init_bg_color(enum s5p_tv_vmx_bg_color_num color_num,
-			u32 color_y, u32 color_cb, u32 color_cr);
 int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 			enum s5p_tv_coef_y_mode mode, u32 coeff0, u32 coeff1,
 			u32 coeff2);
@@ -869,7 +867,6 @@ void s5p_vp_set_contrast(u8 contrast);
 int s5p_vp_update(void);
 enum s5p_vp_field s5p_vp_get_field_id(void);
 bool s5p_vp_get_update_status(void);
-void s5p_vp_init_field_id(enum s5p_vp_field mode);
 void s5p_vp_init_op_mode(bool line_skip, enum s5p_vp_mem_mode mem_mode,
 			enum s5p_vp_chroma_expansion chroma_exp,
 			enum s5p_vp_filed_id_toggle toggle_id);
@@ -887,18 +884,11 @@ int s5p_vp_init_layer_def_poly_filter_coef(u32 top_y_addr, u32 top_c_addr,
 			u32 src_off_y, u32 src_width, u32 src_height,
 			u32 dst_off_x, u32 dst_off_y, u32 dst_width,
 			u32 dst_height, bool ipc_2d);
-int s5p_vp_init_poly_filter_coef(enum s5p_vp_poly_coeff poly_coeff,
-			signed char ch0, signed char ch1, signed char ch2,
-			signed char ch3);
 void s5p_vp_init_bypass_post_process(bool bypass);
 int s5p_vp_init_csc_coef(enum s5p_vp_csc_coeff csc_coeff, u32 coeff);
 void s5p_vp_init_saturation(u32 sat);
 void s5p_vp_init_sharpness(u32 th_h_noise,
 			enum s5p_vp_sharpness_control sharpness);
-int s5p_vp_init_brightness_contrast_control(enum s5p_vp_line_eq eq_num,
-			u32 intc, u32 slope);
-void s5p_vp_init_brightness(bool brightness);
-void s5p_vp_init_contrast(u8 contrast);
 void s5p_vp_init_brightness_offset(u32 offset);
 void s5p_vp_init_csc_control(bool suy_offset_en, bool csc_en);
 int s5p_vp_init_csc_coef_default(enum s5p_vp_csc_type csc_type);

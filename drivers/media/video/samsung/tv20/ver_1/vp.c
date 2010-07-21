@@ -354,11 +354,6 @@ unsigned short s5p_vp_get_update_status(void)
 		S5P_VP_SHADOW_UPDATE_ENABLE;
 }
 
-void s5p_vp_init_field_id(enum s5p_vp_field mode)
-{
-	s5p_vp_set_field_id(mode);
-}
-
 void s5p_vp_init_op_mode(bool line_skip,
 			enum s5p_vp_mem_mode mem_mode,
 			enum s5p_vp_chroma_expansion chroma_exp,
@@ -478,13 +473,6 @@ int s5p_vp_init_layer_def_poly_filter_coef(u32 top_y_addr,
 	return error;
 }
 
-int s5p_vp_init_poly_filter_coef(enum s5p_vp_poly_coeff poly_coeff,
-				signed char ch0, signed char ch1,
-				signed char ch2, signed char ch3)
-{
-	return s5p_vp_set_poly_filter_coef(poly_coeff, ch0, ch1, ch2, ch3);
-}
-
 void s5p_vp_init_bypass_post_process(bool bypass)
 {
 	VPPRINTK("%d\n\r", bypass);
@@ -524,22 +512,6 @@ void s5p_vp_init_sharpness(u32 th_h_noise,
 
 	writel(S5P_VP_TH_HNOISE(th_h_noise) | S5P_VP_SHARPNESS(sharpness),
 			vp_base + S5P_PP_SHARPNESS);
-}
-
-int s5p_vp_init_brightness_contrast_control(enum s5p_vp_line_eq eq_num,
-						u32 intc, u32 slope)
-{
-	return s5p_vp_set_brightness_contrast_control(eq_num, intc, slope);
-}
-
-void s5p_vp_init_brightness(bool brightness)
-{
-	s5p_vp_set_brightness(brightness);
-}
-
-void s5p_vp_init_contrast(u8 contrast)
-{
-	s5p_vp_set_contrast(contrast);
 }
 
 void s5p_vp_init_brightness_offset(u32 offset)
