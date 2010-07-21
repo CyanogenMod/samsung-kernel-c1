@@ -221,16 +221,6 @@ void s5p_hdcp_hdmi_set_audio(bool en)
 		audio_en = false;
 }
 
-int s5p_hdcp_is_reset(void)
-{
-	int ret = 0;
-
-	if (spin_is_locked(&hdcp_info.reset_lock))
-		return 1;
-
-	return ret;
-}
-
 int s5p_hdcp_hdmi_set_dvi(bool en)
 {
 	if (en)
@@ -702,72 +692,6 @@ void s5p_hdcp_reset_authentication(void)
 
 	spin_unlock_irq(&hdcp_info.reset_lock);
 }
-
-/*
- * Set the timing parameter for load e-fuse key.
- */
-
-/* TODO: must use clk_get for pclk rate */
-#define PCLK_D_RATE_FOR_HDCP	166000000
-
-u32 s5p_hdcp_efuse_ceil(u32 val, u32 time)
-{
-	u32 res;
-
-	res = val / time;
-
-	if (val % time)
-		res += 1;
-
-	return res;
-}
-
-#if 0
-static void hdcp_efuse_timing(void)
-{
-	u32 time, val;
-
-	/* TODO: must use clk_get for pclk rate */
-	time = 1000000000/PCLK_D_RATE_FOR_HDCP;
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_ADDR_WIDTH, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_ADDR_WIDTH);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SIGDEV_ASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SIGDEV_ASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SIGDEV_DEASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SIGDEV_DEASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_PRCHG_ASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_PRCHG_ASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_PRCHG_DEASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_PRCHG_DEASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_FSET_ASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_FSET_ASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_FSET_DEASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_FSET_DEASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SENSING, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SENSING);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SCK_ASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SCK_ASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SCK_DEASSERT, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SCK_DEASSERT);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_SDOUT_OFFSET, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_SDOUT_OFFSET);
-
-	val = s5p_hdcp_efuse_ceil(EFUSE_READ_OFFSET, time);
-	writeb(val, hdmi_base + S5P_HDMI_EFUSE_READ_OFFSET);
-
-}
-#endif
 
 /*
  * load hdcp key from e-fuse mem.
@@ -1629,23 +1553,6 @@ static void s5p_hdcp_work(void *arg)
 	}
 }
 
-void s5p_hdcp_init_old(bool hpd_status, struct i2c_client *ddc_port)
-{
-	HDCPPRINTK("HDCP ftn. Init!!\n");
-
-	is_dvi = false;
-	av_mute = false;
-	audio_en = true;
-
-	/* for bh */
-	INIT_WORK(&hdcp_info.work, (work_func_t)s5p_hdcp_work);
-
-	init_waitqueue_head(&hdcp_info.waitq);
-
-	/* for dev_dbg err. */
-	spin_lock_init(&hdcp_info.lock);
-}
-
 irqreturn_t s5p_hdcp_irq_handler(int irq)
 {
 	u32 event = 0;
@@ -1714,24 +1621,6 @@ irqreturn_t s5p_hdcp_irq_handler(int irq)
 	spin_unlock_irq(&hdcp_info.lock);
 
 	return IRQ_HANDLED;
-}
-
-bool s5p_set_hpd_detection(bool detection, bool hdcp_enabled,
-				struct i2c_client *client)
-{
-	u32 hpd_reg_val = 0;
-
-	if (detection)
-		hpd_reg_val = S5P_HDMI_SW_HPD_PLUGGED;
-	else
-		hpd_reg_val = S5P_HDMI_SW_HPD_UNPLUGGED;
-
-	writel(hpd_reg_val, hdmi_base + S5P_HDMI_HPD);
-
-	HDCPPRINTK("HPD status :: 0x%08x\n\r",
-		readl(hdmi_base + S5P_HDMI_HPD));
-
-	return true;
 }
 
 int s5p_hdcp_init(void)

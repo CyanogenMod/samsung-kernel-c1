@@ -688,8 +688,6 @@ extern	bool s5p_vlayer_start(void);
 extern	bool s5p_vlayer_stop(void);
 
 irqreturn_t s5p_hdmi_irq(int irq, void *dev_id);
-void s5p_set_hpd_detection(u32 detection_type, bool hdcp_enabled,
-			struct i2c_client *client);
 
 void s5p_hdmi_set_hpd_onoff(bool on_off);
 void s5p_hdmi_audio_set_config(enum s5p_tv_audio_codec_type audio_codec);
@@ -801,7 +799,6 @@ void s5p_sdout_stop(void);
 void s5p_sdout_sw_reset(bool active);
 void s5p_sdout_set_interrupt_enable(bool vsync_intr_en);
 void s5p_sdout_clear_interrupt_pending(void);
-bool s5p_sdout_get_interrupt_pending(void);
 
 int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer, bool enable);
 int s5p_vmx_set_layer_alpha(enum s5p_tv_vmx_layer layer, u32 alpha);
@@ -835,8 +832,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 			enum s5p_tv_coef_y_mode mode, u32 coeff0, u32 coeff1,
 			u32 coeff2);
 void s5p_vmx_init_csc_coef_default(enum s5p_tv_vmx_csc_type csc_type);
-int s5p_vmx_get_layer_info(enum s5p_tv_vmx_layer layer, bool *show,
-			u32 *priority);
 void s5p_vmx_start(void);
 void s5p_vmx_stop(void);
 int s5p_vmx_set_underflow_interrupt_enable(enum s5p_tv_vmx_layer layer,
@@ -865,7 +860,6 @@ int s5p_vp_set_brightness_contrast_control(enum s5p_vp_line_eq eq_num,
 void s5p_vp_set_brightness(bool brightness);
 void s5p_vp_set_contrast(u8 contrast);
 int s5p_vp_update(void);
-enum s5p_vp_field s5p_vp_get_field_id(void);
 bool s5p_vp_get_update_status(void);
 void s5p_vp_init_op_mode(bool line_skip, enum s5p_vp_mem_mode mem_mode,
 			enum s5p_vp_chroma_expansion chroma_exp,
@@ -896,11 +890,7 @@ int s5p_vp_start(void);
 int s5p_vp_stop(void);
 void s5p_vp_sw_reset(void);
 
-void s5p_tv_power_init_mtc_stable_counter(u32 value);
-void s5p_tv_powerinitialize_dac_onoff(bool on);
 void s5p_tv_powerset_dac_onoff(bool on);
-bool s5p_tv_power_get_power_status(void);
-bool s5p_tv_power_get_dac_power_status(void);
 void s5p_tv_power_on(void);
 void s5p_tv_power_off(void);
 
@@ -915,7 +905,6 @@ extern int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
 extern int s5p_hpd_init(void);
 extern u8 s5p_hdmi_get_swhpd_status(void);
 extern u8 s5p_hdmi_get_hpd_status(void);
-extern void s5p_hdmi_sw_hpd_disable(void);
 extern void s5p_hdmi_hpd_gen(void);
 extern int __init s5p_hdcp_init(void);
 extern int s5p_tv_clk_gate(bool on);
@@ -938,7 +927,6 @@ extern void s5p_tv_kobject_uevent(void);
 #define S5PTVFB_SET_WIN_OFF	_IOW('F', 221, u32)
 
 extern int s5p_tv_clk_gate(bool on);
-extern int s5p_hdcp_is_reset(void);
 extern int s5p_tv_phy_power(bool on);
 extern int s5p_tv_fb_unmap_video_memory(struct fb_info *fb);
 

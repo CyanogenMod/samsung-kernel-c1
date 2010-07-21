@@ -341,13 +341,6 @@ int s5p_vp_update(void)
 	return 0;
 }
 
-enum s5p_vp_field s5p_vp_get_field_id(void)
-{
-	return (readl(vp_base + S5P_VP_FIELD_ID) ==
-		S5P_VP_FIELD_ID_BOTTOM) ?
-		VPROC_BOTTOM_FIELD : VPROC_TOP_FIELD;
-}
-
 unsigned short s5p_vp_get_update_status(void)
 {
 	return readl(vp_base + S5P_VP_SHADOW_UPDATE) &

@@ -1727,12 +1727,6 @@ void s5p_sdout_clear_interrupt_pending(void)
 			sdout_base + S5P_SDO_IRQ);
 }
 
-bool s5p_sdout_get_interrupt_pending(void)
-{
-	return (readl(sdout_base + S5P_SDO_IRQ) | S5P_SDO_VSYNC_IRQ_PEND) ?
-		1 : 0;
-}
-
 int __init s5p_sdout_probe(struct platform_device *pdev, u32 res_num)
 {
 	struct resource *res;

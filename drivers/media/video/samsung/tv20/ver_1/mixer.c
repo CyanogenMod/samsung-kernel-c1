@@ -869,43 +869,6 @@ void s5p_vmx_init_csc_coef_default(enum s5p_tv_vmx_csc_type csc_type)
 	}
 }
 
-int s5p_vmx_get_layer_info(enum s5p_tv_vmx_layer layer,
-				bool *show, u32 *priority)
-{
-	VMPRINTK("%d\n\r", layer);
-
-	switch (layer) {
-	case VM_VIDEO_LAYER:
-		*show = (readl(mixer_base + S5P_MXR_LAYER_CFG) &
-			S5P_MXR_CFG_VIDEO_ENABLE) ? 1 : 0;
-		*priority = S5P_MXR_LAYER_CFG_VP_PRIORITY_INFO(
-			readl(mixer_base + S5P_MXR_LAYER_CFG));
-		break;
-
-	case VM_GPR0_LAYER:
-		*show = (readl(mixer_base + S5P_MXR_LAYER_CFG) &
-			S5P_MXR_CFG_GRAPHIC0_ENABLE) ? 1 : 0;
-		*priority = S5P_MXR_LAYER_CFG_GRP0_PRIORITY_INFO(
-			readl(mixer_base + S5P_MXR_LAYER_CFG));
-		break;
-
-	case VM_GPR1_LAYER:
-		*show = (readl(mixer_base + S5P_MXR_LAYER_CFG) &
-			S5P_MXR_CFG_GRAPHIC1_ENABLE) ? 1 : 0;
-		*priority = S5P_MXR_LAYER_CFG_GRP1_PRIORITY_INFO(
-			readl(mixer_base + S5P_MXR_LAYER_CFG));
-		break;
-
-	default:
-		VMPRINTK("invalid layer parameter = %d\n\r", layer);
-		return -1;
-	}
-
-	VMPRINTK("%d, %d\n\r", *show, *priority);
-
-	return 0;
-}
-
 void s5p_vmx_start(void)
 {
 	writel((readl(mixer_base + S5P_MXR_STATUS) | S5P_MXR_STATUS_RUN),

@@ -83,13 +83,6 @@ u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
 
 }
 
-static bool s5p_vlayer_wait_previous_update(void)
-{
-	s5p_vp_get_update_status();
-
-	return false;
-}
-
 static void s5p_vlayer_calc_inner_values(void)
 {
 	struct s5p_tv_status *st = &s5ptv_status;
@@ -282,7 +275,7 @@ bool s5p_vlayer_stop(void)
 
 	s5p_vmx_set_layer_show(VM_VIDEO_LAYER, false);
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_stop();
@@ -350,7 +343,7 @@ bool s5p_vlayer_set_field_id(unsigned long buf_in)
 
 	s5ptv_status.field_id = (enum s5p_vp_field)(buf_in);
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_field_id(s5ptv_status.field_id);
@@ -384,7 +377,7 @@ bool s5p_vlayer_set_top_address(unsigned long buf_in)
 	b_y_addr = s5ptv_status.vl_bottom_y_address;
 	b_c_addr = s5ptv_status.vl_bottom_c_address;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_set_top_field_address(t_y_addr, t_c_addr);
@@ -436,7 +429,7 @@ bool s5p_vlayer_set_bottom_address(unsigned long buf_in)
 	b_y_addr = s5ptv_status.vl_bottom_y_address;
 	b_c_addr = s5ptv_status.vl_bottom_c_address;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_set_bottom_field_address(b_y_addr, b_c_addr);
@@ -467,7 +460,7 @@ bool s5p_vlayer_set_img_size(unsigned long buf_in)
 	s5ptv_status.vl_basic_param.img_width = size->img_width;
 	s5ptv_status.vl_basic_param.img_height = size->img_height;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_set_img_size(size->img_width, size->img_height);
@@ -492,7 +485,7 @@ bool s5p_vlayer_set_src_position(unsigned long buf_in)
 	s5ptv_status.vl_basic_param.src_offset_y = offset->offset_y;
 	s5p_vlayer_calc_inner_values();
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 
@@ -522,7 +515,7 @@ bool s5p_vlayer_set_dest_position(unsigned long buf_in)
 	d_ox = s5ptv_status.vl_dest_offset_x;
 	d_oy = s5ptv_status.vl_dest_offset_y;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_dest_position(d_ox, d_oy);
@@ -556,7 +549,7 @@ bool s5p_vlayer_set_src_size(unsigned long buf_in)
 	d_h = s5ptv_status.vl_dest_height;
 	ipc = s5ptv_status.vl2d_ipc;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_src_dest_size(s_w, s_h, d_w, d_h, ipc);
@@ -590,7 +583,7 @@ bool s5p_vlayer_set_dest_size(unsigned long buf_in)
 	d_h = s5ptv_status.vl_dest_height;
 	ipc = s5ptv_status.vl2d_ipc;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_src_dest_size(s_w, s_h, d_w, d_h, ipc);
@@ -609,7 +602,7 @@ bool s5p_vlayer_set_brightness(unsigned long buf_in)
 
 	s5ptv_status.us_vl_brightness = (unsigned short)buf_in;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_brightness(s5ptv_status.us_vl_brightness);
@@ -629,7 +622,7 @@ bool s5p_vlayer_set_contrast(unsigned long buf_in)
 
 	s5ptv_status.vl_contrast = (unsigned char)buf_in;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	s5p_vp_set_contrast(s5ptv_status.vl_contrast);
@@ -673,7 +666,7 @@ bool s5p_vlayer_set_brightness_contrast_control(unsigned long buf_in)
 	intc 	= s5ptv_status.vl_bc_control[ctrl->eq_num].intc;
 	slope 	= s5ptv_status.vl_bc_control[ctrl->eq_num].slope;
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 
@@ -707,7 +700,7 @@ bool s5p_vlayer_set_poly_filter_coef(unsigned long buf_in)
 		return false;
 	}
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_set_poly_filter_coef(coef->poly_coeff,
@@ -740,7 +733,7 @@ bool s5p_vlayer_set_csc_coef(unsigned long buf_in)
 		return false;
 	}
 
-	if (s5p_vlayer_wait_previous_update())
+	if (s5p_vp_get_update_status())
 		return false;
 
 	verr = s5p_vp_init_csc_coef(coef->csc_coeff, coef->coeff);

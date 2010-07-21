@@ -1969,14 +1969,6 @@ u8 s5p_hdmi_get_hpd_status(void)
 }
 EXPORT_SYMBOL(s5p_hdmi_get_hpd_status);
 
-void s5p_hdmi_sw_hpd_disable(void)
-{
-	u8 reg;
-
-	reg = writeb(S5P_HDMI_HPD_SEL_SW_HPD, hdmi_base+S5P_HDMI_HPD);
-}
-EXPORT_SYMBOL(s5p_hdmi_sw_hpd_disable);
-
 void s5p_hdmi_hpd_gen(void)
 {
 	writeb(0xFF, hdmi_base+S5P_HDMI_HPD_GEN);

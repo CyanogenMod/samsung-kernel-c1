@@ -542,7 +542,6 @@ extern void s5p_hdcp_hdmi_mute_en(bool en);
 extern void __iomem *hdmi_base;
 extern bool s5p_hdcp_start(void);
 extern bool s5p_hdcp_stop(void);
-extern void s5p_hdcp_init_old(bool hpd_status, struct i2c_client *ddc_port);
 
  /* 0 - hdcp stopped, 1 - hdcp started, 2 - hdcp reset */
 extern u8 hdcp_protocol_status;
