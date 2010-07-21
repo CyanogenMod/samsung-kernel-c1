@@ -1062,8 +1062,8 @@ static int s3cfb_probe(struct platform_device *pdev)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 
-	if (pdata->reset_lcd)
-		pdata->reset_lcd(pdev);
+	if (pdata->lcd_on)
+		pdata->lcd_on(pdev);
 
 	if (ctrl->lcd->init_ldi)
 		ctrl->lcd->init_ldi();
@@ -1166,8 +1166,8 @@ int s3cfb_resume(struct platform_device *pdev)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 
-	if (pdata->reset_lcd)
-		pdata->reset_lcd(pdev);
+	if (pdata->lcd_on)
+		pdata->lcd_on(pdev);
 
 	if (ctrl->lcd->init_ldi)
 		ctrl->lcd->init_ldi();
