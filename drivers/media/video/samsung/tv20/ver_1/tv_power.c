@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/samsung/tv20/s5pv210/tv_power_s5pv210.c
- *
- * power raw ftn  file for Samsung TVOut driver
+/* linux/drivers/media/video/samsung/tv20/ver_1/tv_power.c
  *
  * Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsungsemi.com/
+ * 	http://www.samsung.com/
+ *
+ * power raw ftn  file for Samsung TVOut driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

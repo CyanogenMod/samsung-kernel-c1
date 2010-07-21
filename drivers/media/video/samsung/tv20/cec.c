@@ -1,9 +1,9 @@
 /* linux/drivers/media/video/samsung/tv20/cec.c
  *
- * cec interface file for Samsung TVOut driver (only s5pv210)
- *
  * Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsungsemi.com/
+ * 	http://www.samsung.com/
+ *
+ * cec interface file for Samsung TVOut driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

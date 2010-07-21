@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/samsung/tv20/s5pv210/hdcp_s5pv210.c
- *
- * hdcp raw ftn  file for Samsung TVOut driver
+/* linux/drivers/media/video/samsung/tv20/ver_1/hdcp.c
  *
  * Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsungsemi.com/
+ * 	http://www.samsung.com/
+ *
+ * hdcp raw ftn  file for Samsung TVOut driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
