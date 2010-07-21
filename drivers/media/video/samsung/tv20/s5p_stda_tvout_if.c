@@ -645,8 +645,6 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 		return false;
 	}
 
-	TVOUTIFPRINTK("()\n\r");
-
 	return true;
 }
 
@@ -877,8 +875,6 @@ bool s5p_tv_if_start(void)
 
 	/* Clear All Interrupt Pending */
 	s5p_vmx_clear_pend_all();
-
-	TVOUTIFPRINTK("()\n\r");
 
 	return true;
 }

@@ -218,15 +218,11 @@ int s5p_vmx_set_grp_base_address(enum s5p_tv_vmx_layer layer, u32 base_addr)
 	case VM_GPR0_LAYER:
 		writel(S5P_MXR_GPR_BASE(base_addr),
 			mixer_base + S5P_MXR_GRAPHIC0_BASE);
-		VMPRINTK("0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC0_BASE));
 		break;
 
 	case VM_GPR1_LAYER:
 		writel(S5P_MXR_GPR_BASE(base_addr),
 			mixer_base + S5P_MXR_GRAPHIC1_BASE);
-		VMPRINTK("0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC1_BASE));
 		break;
 
 	default:
@@ -247,16 +243,12 @@ int s5p_vmx_set_grp_layer_position(enum s5p_tv_vmx_layer layer,
 		writel(S5P_MXR_GRP_DESTX(dst_offs_x) |
 			S5P_MXR_GRP_DESTY(dst_offs_y),
 			mixer_base + S5P_MXR_GRAPHIC0_DXY);
-		VMPRINTK("0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC0_DXY));
 		break;
 
 	case VM_GPR1_LAYER:
 		writel(S5P_MXR_GRP_DESTX(dst_offs_x) |
 			S5P_MXR_GRP_DESTY(dst_offs_y),
 			mixer_base + S5P_MXR_GRAPHIC1_DXY);
-		VMPRINTK("0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC1_DXY));
 		break;
 
 	default:
@@ -282,10 +274,6 @@ int s5p_vmx_set_grp_layer_size(enum s5p_tv_vmx_layer layer, u32 span, u32 width,
 		writel(S5P_MXR_GRP_STARTX(src_offs_x) |
 			S5P_MXR_GRP_STARTY(src_offs_y),
 		       mixer_base + S5P_MXR_GRAPHIC0_SXY);
-		VMPRINTK("0x%x, 0x%x, 0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC0_SPAN),
-			readl(mixer_base + S5P_MXR_GRAPHIC0_WH),
-			readl(mixer_base + S5P_MXR_GRAPHIC0_SXY));
 		break;
 
 	case VM_GPR1_LAYER:
@@ -296,10 +284,6 @@ int s5p_vmx_set_grp_layer_size(enum s5p_tv_vmx_layer layer, u32 span, u32 width,
 		writel(S5P_MXR_GRP_STARTX(src_offs_x) |
 			S5P_MXR_GRP_STARTY(src_offs_y),
 		       mixer_base + S5P_MXR_GRAPHIC1_SXY);
-		VMPRINTK("0x%x, 0x%x, 0x%x\n\r",
-			readl(mixer_base + S5P_MXR_GRAPHIC1_SPAN),
-			readl(mixer_base + S5P_MXR_GRAPHIC1_WH),
-			readl(mixer_base + S5P_MXR_GRAPHIC1_SXY));
 		break;
 
 	default:
@@ -323,17 +307,14 @@ int s5p_vmx_set_bg_color(enum s5p_tv_vmx_bg_color_num colornum,
 	switch (colornum) {
 	case VMIXER_BG_COLOR_0:
 		writel(reg_value, mixer_base + S5P_MXR_BG_COLOR0);
-		VMPRINTK("0x%x\n\r", readl(mixer_base + S5P_MXR_BG_COLOR0));
 		break;
 
 	case VMIXER_BG_COLOR_1:
 		writel(reg_value, mixer_base + S5P_MXR_BG_COLOR1);
-		VMPRINTK("0x%x\n\r", readl(mixer_base + S5P_MXR_BG_COLOR1));
 		break;
 
 	case VMIXER_BG_COLOR_2:
 		writel(reg_value, mixer_base + S5P_MXR_BG_COLOR2);
-		VMPRINTK("0x%x\n\r", readl(mixer_base + S5P_MXR_BG_COLOR2));
 		break;
 
 	default:
@@ -792,8 +773,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 			     S5P_MXR_BG_COEFF_1(coeff1) |
 			     S5P_MXR_BG_COEFF_2(coeff2);
 		writel(mxr_cm, mixer_base + S5P_MXR_CM_COEFF_Y);
-		VMPRINTK("--(0x%x)\n\r",
-			readl(mixer_base + S5P_MXR_CM_COEFF_Y));
 		break;
 
 	case TVOUT_YUV_CB:
@@ -801,8 +780,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 			     S5P_MXR_BG_COEFF_1(coeff1) |
 			     S5P_MXR_BG_COEFF_2(coeff2);
 		writel(mxr_cm, mixer_base + S5P_MXR_CM_COEFF_CB);
-		VMPRINTK("--(0x%x)\n\r",
-			readl(mixer_base + S5P_MXR_CM_COEFF_CB));
 		break;
 
 	case TVOUT_YUV_CR:
@@ -810,8 +787,6 @@ int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
 			     S5P_MXR_BG_COEFF_1(coeff1) |
 			     S5P_MXR_BG_COEFF_2(coeff2);
 		writel(mxr_cm, S5P_MXR_CM_COEFF_CR);
-		VMPRINTK("--(0x%x)\n\r",
-			readl(mixer_base + S5P_MXR_CM_COEFF_CR));
 		break;
 
 	default:

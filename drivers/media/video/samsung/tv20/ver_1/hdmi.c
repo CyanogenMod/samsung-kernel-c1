@@ -955,13 +955,6 @@ void s5p_hdmi_video_set_bluescreen(bool en, u8 cb_b, u8 y_g, u8 cr_r)
 			hdmi_base + S5P_HDMI_BLUE_SCREEN_2);
 		writel(readl(hdmi_base + S5P_HDMI_CON_0) | S5P_HDMI_BLUE_SCR_EN,
 			hdmi_base + S5P_HDMI_CON_0);
-
-		HDMIPRINTK("HDMI_BLUE_SCREEN0 = 0x%08x \n\r",
-			readl(hdmi_base + S5P_HDMI_BLUE_SCREEN_0));
-		HDMIPRINTK("HDMI_BLUE_SCREEN1 = 0x%08x \n\r",
-			readl(hdmi_base + S5P_HDMI_BLUE_SCREEN_1));
-		HDMIPRINTK("HDMI_BLUE_SCREEN2 = 0x%08x \n\r",
-			readl(hdmi_base + S5P_HDMI_BLUE_SCREEN_2));
 	} else {
 		writel(readl(hdmi_base + S5P_HDMI_CON_0)&
 			~S5P_HDMI_BLUE_SCR_EN, hdmi_base + S5P_HDMI_CON_0);
@@ -1706,7 +1699,6 @@ bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type, bool hdcp_en,
 void s5p_hdmi_stop(void)
 {
 	u32 temp = 0, result = 0;
-	HDMIPRINTK("\n\r");
 
 	s5p_hdcp_stop();
 

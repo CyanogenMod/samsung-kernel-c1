@@ -1070,27 +1070,6 @@ bool s5p_hdcp_stop(void)
 	writel(S5P_HDMI_HDCP_CLR_ALL_RESULTS,
 			hdmi_base + S5P_HDMI_HDCP_CHECK_RESULT);
 
-	/* hdmi disable */
-#if 0
-	sfr_val = readl(hdmi_base + S5P_HDMI_CON_0);
-	sfr_val &= ~(S5P_HDMI_PWDN_ENB_NORMAL | S5P_HDMI_EN | S5P_HDMI_ASP_EN);
-	writel(sfr_val, hdmi_base + S5P_HDMI_CON_0);
-	*/
-	HDCPPRINTK("\tSTATUS \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_SYS_STATUS));
-	HDCPPRINTK("\tSTATUS_EN \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_STATUS_EN));
-	HDCPPRINTK("\tHPD \t0x%08x\n", readl(hdmi_base + S5P_HDMI_HPD));
-	HDCPPRINTK("\tHDCP_CTRL \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_HDCP_CTRL1));
-	HDCPPRINTK("\tMODE_SEL \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_MODE_SEL));
-	HDCPPRINTK("\tENC_EN \t0x%08x\n", readl(hdmi_base + S5P_HDMI_ENC_EN));
-	HDCPPRINTK("\tHDMI_CON_0 \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_CON_0));
-
-	writel(sfr_val, hdmi_base + S5P_HDMI_CON_0);
-#endif
 	return true;
 }
 
@@ -1182,20 +1161,6 @@ bool s5p_hdcp_start(void)
 	}
 
 	hdcp_info.hdcp_enable = true;
-
-	HDCPPRINTK("\tSTATUS \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_SYS_STATUS));
-	HDCPPRINTK("\tSTATUS_EN \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_STATUS_EN));
-	HDCPPRINTK("\tHPD \t0x%08x\n", readl(hdmi_base + S5P_HDMI_HPD));
-	HDCPPRINTK("\tHDCP_CTRL \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_HDCP_CTRL1));
-	HDCPPRINTK("\tMODE_SEL \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_MODE_SEL));
-	HDCPPRINTK("\tENC_EN \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_ENC_EN));
-	HDCPPRINTK("\tHDMI_CON_0 \t0x%08x\n",
-		readl(hdmi_base + S5P_HDMI_CON_0));
 
 	return true;
 }

@@ -46,8 +46,6 @@
 
 void s5p_tv_powerset_dac_onoff(unsigned short on)
 {
-	TVPMPRINTK("(%d)\n\r", on);
-
 	if (on)
 		writel(S5P_DAC_ENABLE, S5P_DAC_CONTROL);
 	else
@@ -56,8 +54,6 @@ void s5p_tv_powerset_dac_onoff(unsigned short on)
 
 void s5p_tv_power_on(void)
 {
-	TVPMPRINTK("0x%08x\n\r", readl(S3C_VA_SYS + 0xE804));
-
 	writel(readl(S3C_VA_SYS + 0xE804) | 0x1, S3C_VA_SYS + 0xE804);
 	writel(readl(S5P_NORMAL_CFG) | TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
 
@@ -67,8 +63,6 @@ void s5p_tv_power_on(void)
 
 void s5p_tv_power_off(void)
 {
-	TVPMPRINTK("()\n\r");
-
 	s5p_tv_powerset_dac_onoff(0);
 	writel(readl(S5P_NORMAL_CFG) & ~TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
 

@@ -318,8 +318,6 @@ static int s5p_tv_v4l2_enum_fmt_vid_out(struct file *file, void *fh,
 {
 	int index = f->index;
 
-	V4L2PRINTK("(%d)++\n", f->index);
-
 	if (index >= S5P_TVOUT_MAX_O_FMT_DESC) {
 		V4L2PRINTK("exceeded S5P_TVOUT_MAX_O_FMT_DESC\n");
 
@@ -327,8 +325,6 @@ static int s5p_tv_v4l2_enum_fmt_vid_out(struct file *file, void *fh,
 	}
 
 	memcpy(f, &s5p_tv_o_fmt_desc[index], sizeof(struct v4l2_fmtdesc));
-
-	V4L2PRINTK("()--\n");
 
 	return 0;
 
@@ -339,8 +335,6 @@ static int s5p_tv_v4l2_enum_fmt_vid_out_overlay(struct file *file,
 {
 	int index = f->index;
 
-	V4L2PRINTK("(%d)++\n", f->index);
-
 	if (index >= S5P_TVOUT_MAX_O_OVERLAY_FMT_DESC) {
 		V4L2PRINTK("exceeded S5P_TVOUT_MAX_O_OVERLAY_FMT_DESC\n");
 
@@ -350,8 +344,6 @@ static int s5p_tv_v4l2_enum_fmt_vid_out_overlay(struct file *file,
 	memcpy(f, &s5p_tv_o_overlay_fmt_desc[index],
 			sizeof(struct v4l2_fmtdesc));
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
@@ -359,8 +351,6 @@ static int s5p_tv_v4l2_g_fmt_vid_out(struct file *file, void *fh,
 					struct v4l2_format *f)
 {
 	struct v4l2_format *vid_out_fmt = f;
-
-	V4L2PRINTK("(0x%08x)++\n", f->type);
 
 	switch (vid_out_fmt->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT: {
@@ -402,8 +392,6 @@ static int s5p_tv_v4l2_g_fmt_vid_out_overlay(struct file *file,
 {
 
 	struct v4l2_format *vid_out_fmt = f;
-
-	V4L2PRINTK("(0x%08x)++\n", f->type);
 
 	switch (vid_out_fmt->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY: {
@@ -447,8 +435,6 @@ static int s5p_tv_v4l2_g_fmt_vid_out_overlay(struct file *file,
 		break;
 	}
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
@@ -457,8 +443,6 @@ static int s5p_tv_v4l2_s_fmt_vid_out(struct file *file, void *fh,
 {
 
 	struct v4l2_format *vid_out_fmt = f;
-
-	V4L2PRINTK("(0x%08x)++\n", f->type);
 
 	switch (vid_out_fmt->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT: {
@@ -585,7 +569,6 @@ static int s5p_tv_v4l2_s_fmt_vid_out(struct file *file, void *fh,
 			s5ptv_status.vl_basic_param.top_c_address,
 			s5ptv_status.vl_basic_param.src_width,
 			s5ptv_status.vl_basic_param.src_height);
-	V4L2PRINTK("()--\n");
 
 	return 0;
 }
@@ -594,8 +577,6 @@ static int s5p_tv_v4l2_s_fmt_vid_out_overlay(struct file *file, void *fh,
 						struct v4l2_format *f)
 {
 	struct v4l2_format *vid_out_fmt = f;
-
-	V4L2PRINTK("(0x%08x)++\n", f->type);
 
 	switch (vid_out_fmt->type) {
 	case V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY: {
@@ -653,8 +634,6 @@ static int s5p_tv_v4l2_s_fmt_vid_out_overlay(struct file *file, void *fh,
 		break;
 	}
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
@@ -663,7 +642,6 @@ static int s5p_tv_v4l2_overlay(struct file *file, void *fh, unsigned int i)
 	struct s5p_tv_vo *layer = (struct s5p_tv_vo *)fh;
 	int	start = i;
 
-	V4L2PRINTK("(0x%08x)++\n", i);
 
 	if (start)
 		s5p_grp_start(layer->index);
@@ -726,7 +704,6 @@ static int s5p_tv_v4l2_streamon(struct file *file, void *fh,
 {
 	struct s5p_tv_vo *layer = (struct s5p_tv_vo *)fh;
 
-	V4L2PRINTK("(0x%08x)++\n", i);
 
 	switch (i) {
 		/* Vlayer */
@@ -751,8 +728,6 @@ static int s5p_tv_v4l2_streamon(struct file *file, void *fh,
 		break;
 	}
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
@@ -760,8 +735,6 @@ static int s5p_tv_v4l2_streamoff(struct file *file, void *fh,
 	enum v4l2_buf_type i)
 {
 	struct s5p_tv_vo *layer = (struct s5p_tv_vo *)fh;
-
-	V4L2PRINTK("(0x%08x)++\n", i);
 
 	switch (i) {
 		/* Vlayer */
@@ -778,18 +751,12 @@ static int s5p_tv_v4l2_streamoff(struct file *file, void *fh,
 		break;
 	}
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
 static int s5p_tv_v4l2_g_std(struct file *file, void *fh, v4l2_std_id *norm)
 {
-	V4L2PRINTK("()++\n");
-
 	*norm = s5ptv_status.v4l2.std->id;
-
-	V4L2PRINTK("(%d)++\n", (int)(*norm));
 
 	return 0;
 }
@@ -798,8 +765,6 @@ static int s5p_tv_v4l2_s_std(struct file *file, void *fh, v4l2_std_id *norm)
 {
 	unsigned int i = 0;
 	v4l2_std_id std_id = *norm;
-
-	V4L2PRINTK("(0x%08Lx)++\n", std_id);
 
 	s5ptv_status.v4l2.std = NULL;
 
@@ -915,8 +880,6 @@ static int s5p_tv_v4l2_s_std(struct file *file, void *fh, v4l2_std_id *norm)
 		return -EINVAL;
 	}
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
@@ -924,8 +887,6 @@ static int s5p_tv_v4l2_enum_output(struct file *file, void *fh,
 	struct v4l2_output *a)
 {
 	unsigned int index = a->index;
-
-	V4L2PRINTK("(%d)++\n", a->index);
 
 	if (index >= S5P_TVOUT_MAX_O_TYPES) {
 		V4L2PRINTK("exceeded supported output!!\n");
@@ -935,25 +896,18 @@ static int s5p_tv_v4l2_enum_output(struct file *file, void *fh,
 
 	memcpy(a, &s5p_tv_outputs[index], sizeof(struct v4l2_output));
 
-	V4L2PRINTK("()--\n");
-
 	return 0;
 }
 
 static int s5p_tv_v4l2_g_output(struct file *file, void *fh, unsigned int *i)
 {
-	V4L2PRINTK("(%d)++\n", *i);
-
 	*i = s5ptv_status.v4l2.output->index;
-
-	V4L2PRINTK("()--\n");
 
 	return 0;
 }
 
 static int s5p_tv_v4l2_s_output(struct file *file, void *fh, unsigned int i)
 {
-	V4L2PRINTK("(%d)++\n", i);
 
 	if (i >= S5P_TVOUT_MAX_O_TYPES)
 		return -EINVAL;
@@ -1006,8 +960,6 @@ static int s5p_tv_v4l2_s_output(struct file *file, void *fh, unsigned int i)
 	}
 
 	s5p_tv_if_set_disp();
-
-	V4L2PRINTK("()--\n");
 
 	return 0;
 };
@@ -1273,8 +1225,6 @@ static int s5p_tv_v4l2_g_parm_vo(struct file *file, void *fh,
 	struct s5p_tv_vo *layer = (struct s5p_tv_vo *)fh;
 
 	memset(&vparam, 0, sizeof(struct v4l2_window_s5p_tvout));
-
-	V4L2PRINTK("entered\n");
 
 	if (s5ptv_overlay[layer->index].win_blending) {
 		vparam.flags 		= V4L2_FBUF_FLAG_GLOBAL_ALPHA;

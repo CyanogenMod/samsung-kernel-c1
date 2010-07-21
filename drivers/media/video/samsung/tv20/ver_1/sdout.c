@@ -612,21 +612,18 @@ int s5p_sdout_init_ch_xtalk_cancel_coef(enum s5p_sd_channel_sel channel,
 		writel(S5P_SDO_XTALK_COEF02(coeff2) |
 			S5P_SDO_XTALK_COEF01(coeff1),
 				sdout_base + S5P_SDO_XTALK0);
-		SDPRINTK(" 0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK0));
 		break;
 
 	case SDOUT_CHANNEL_1:
 		writel(S5P_SDO_XTALK_COEF02(coeff2) |
 			S5P_SDO_XTALK_COEF01(coeff1),
 				sdout_base + S5P_SDO_XTALK1);
-		SDPRINTK(" 0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK1));
 		break;
 
 	case SDOUT_CHANNEL_2:
 		writel(S5P_SDO_XTALK_COEF02(coeff2) |
 			S5P_SDO_XTALK_COEF01(coeff1),
 				sdout_base + S5P_SDO_XTALK2);
-		SDPRINTK("0x%08x)\n\r", readl(sdout_base + S5P_SDO_XTALK2));
 		break;
 
 	default:

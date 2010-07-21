@@ -78,8 +78,6 @@ bool s5p_grp_start(enum s5p_tv_vmx_layer vm_layer)
 
 	st->grp_layer_enable[vm_layer] = true;
 
-	GRPPRINTK("()\n\r");
-
 	return true;
 }
 
@@ -87,8 +85,6 @@ bool s5p_grp_stop(enum s5p_tv_vmx_layer vm_layer)
 {
 	int merr;
 	struct s5p_tv_status *st = &s5ptv_status;
-
-	GRPPRINTK("()\n\r");
 
 	merr = s5p_vmx_set_layer_show(vm_layer, false);
 
@@ -103,8 +99,6 @@ bool s5p_grp_stop(enum s5p_tv_vmx_layer vm_layer)
 	s5p_vmx_start();
 
 	st->grp_layer_enable[vm_layer] = false;
-
-	GRPPRINTK("()\n\r");
 
 	return true;
 }
