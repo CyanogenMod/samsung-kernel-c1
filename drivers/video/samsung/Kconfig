@@ -89,3 +89,52 @@ config FB_S3C_HT101HD1
 	help
 	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
 endchoice
+
+config FB_S3C_V2
+	tristate "S3C Framebuffer version 2 support"
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select FRAMEBUFFER_CONSOLE_DETECT_PRIMARY
+	depends on FB && (FB_S3C != y) && (FB_S3C != m) && (ARCH_S3C64XX || ARCH_S5P64XX || ARCH_S5PC1XX || ARCH_S5P6450)
+	default n
+	---help---
+	  This enables support for Samsung Display Controller (FIMD)
+
+config FB_S3C_V2_DEBUG
+        bool "S3C Framebuffer version 2 debug messages"
+        depends on FB_S3C_V2
+
+config FB_S3C_V2_TRACE_UNDERRUN
+        bool "S3C Framebuffer version 2 FIFO underrun trace"
+        depends on FB_S3C_V2
+
+config FB_S3C_V2_DEFAULT_WINDOW
+	int "Default Window (0-4)"
+	depends on FB_S3C_V2
+	default "1"
+	---help---
+	  This indicates the default window number, and which is used as console framebuffer
+
+config FB_S3C_V2_YPANSTEP
+	int "Vertical Panning Step (0-2)"
+	depends on FB_S3C_V2
+	default "1"
+	---help---
+	  This indicates the number of vertical steps for pan display, 0 means no pan display and
+	  1 means the double size of video buffer will be allocated for default window
+
+choice
+depends on FB_S3C_V2
+prompt "Select LCD Type"
+default FB_S3C_V2_LTE480WV
+config FB_S3C_V2_LTE480WV
+	bool "LTE480WV"
+	---help---
+	  This enables support for Samsung LTE480WV 4.8\" WVGA LCD panel
+
+config FB_S3C_V2_TL2796
+	bool "TL2796"
+	---help---
+	  This enables support for Samsung  TL2796 WVGA LCD panel
+endchoice
