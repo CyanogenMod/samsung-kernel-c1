@@ -80,7 +80,7 @@ void __init s3cfb_set_platdata(struct s3c_platform_fb *pd)
 
 	npd->cfg_gpio = s3cfb_cfg_gpio;
 	npd->backlight_on = s3cfb_backlight_on;
-	npd->reset_lcd = s3cfb_reset_lcd;
+	npd->lcd_on = s3cfb_lcd_on;
 
 	s3c_device_fb.dev.platform_data = npd;
 }

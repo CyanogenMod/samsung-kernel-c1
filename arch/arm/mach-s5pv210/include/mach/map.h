@@ -74,7 +74,7 @@
 #define S5PV210_PA_VIC3		(0xF2300000)
 #define S5P_PA_VIC3		S5PV210_PA_VIC3
 
-#define S5PV210_PA_LCD	   	(0xF8000000)
+#define S5PV210_PA_LCD		(0xF8000000)
 #define S5P_PA_LCD		S5PV210_PA_LCD
 #define S5PV210_SZ_LCD		SZ_1M
 #define S5P_SZ_LCD		S5PV210_SZ_LCD
@@ -104,6 +104,11 @@
 /* jpeg */
 #define S5PV210_PA_JPEG		(0xFB600000)
 #define S5PV210_SZ_JPEG		SZ_1M
+
+/* rotator */
+#define S5PV210_PA_ROTATOR	(0xFA300000)
+#define S5P_PA_ROTATOR		S5PV210_PA_ROTATOR
+#define S5P_SZ_ROTATOR		SZ_1M
 
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5PV210_PA_UART

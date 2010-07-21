@@ -55,6 +55,7 @@ struct platform_device s5p_device_mfc = {
 
 #endif
 
+#ifdef CONFIG_FB_S3C
 static struct resource s3cfb_resource[] = {
 	[0] = {
 		.start	= S5P_PA_LCD,
@@ -134,6 +135,8 @@ void __init s3cfb_set_platdata(struct s3c_platform_fb *pd)
 		s3c_device_fb.dev.platform_data = npd;
 	}
 }
+#endif
+
 #ifdef CONFIG_VIDEO_JPEG_V2
 /* JPEG controller  */
 static struct resource s3c_jpeg_resource[] = {
@@ -158,6 +161,31 @@ struct platform_device s3c_device_jpeg = {
 EXPORT_SYMBOL(s3c_device_jpeg);
 #endif /* CONFIG_VIDEO_JPEG_V2 */
 
+#ifdef CONFIG_VIDEO_ROTATOR
+/* rotator interface */
+static struct resource s5p_rotator_resource[] = {
+	[0] = {
+		.start = S5P_PA_ROTATOR,
+		.end   = S5P_PA_ROTATOR + S5P_SZ_ROTATOR - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_ROTATOR,
+		.end   = IRQ_ROTATOR,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s5p_device_rotator = {
+	.name		= "s5p-rotator",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s5p_rotator_resource),
+	.resource	= s5p_rotator_resource
+};
+EXPORT_SYMBOL(s5p_device_rotator);
+#endif
+
+#ifdef CONFIG_VIDEO_TV20
 /* TVOUT interface */
 static struct resource s5p_tvout_resources[] = {
 	[0] = {
@@ -238,4 +266,4 @@ struct platform_device s5p_device_hpd = {
 	.id             = -1,
 };
 EXPORT_SYMBOL(s5p_device_hpd);
-
+#endif

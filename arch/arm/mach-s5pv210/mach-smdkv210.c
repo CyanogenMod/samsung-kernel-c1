@@ -172,6 +172,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_jpeg,
 #endif
 
+#ifdef CONFIG_VIDEO_ROTATOR
+	&s5p_device_rotator,
+#endif
+
 #ifdef CONFIG_VIDEO_TV20
 	&s5p_device_tvout,
 	&s5p_device_cec,
