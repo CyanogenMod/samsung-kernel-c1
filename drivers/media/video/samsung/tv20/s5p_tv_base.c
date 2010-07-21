@@ -250,18 +250,15 @@ static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_hdmiphy,	pdev, "sclk_hdmiphy");
 
 	TV_CLK_GET_WITH_ERR_CHECK(ext_xtal_clk,		pdev, "ext_xtal");
-	TV_CLK_GET_WITH_ERR_CHECK(mout_vpll_src,	pdev, "mout_vpll_src");
+	TV_CLK_GET_WITH_ERR_CHECK(mout_vpll_src,	pdev, "vpll_src");
 	TV_CLK_GET_WITH_ERR_CHECK(fout_vpll,		pdev, "fout_vpll");
-	TV_CLK_GET_WITH_ERR_CHECK(mout_vpll,		pdev, "mout_vpll");
+	TV_CLK_GET_WITH_ERR_CHECK(mout_vpll,		pdev, "sclk_vpll");
 
 	clk_set_parent(mout_vpll_src, ext_xtal_clk);
 	clk_set_parent(mout_vpll, fout_vpll);
 
 	/* sclk_dac's parent is fixed as mout_vpll */
 	clk_set_parent(ctrl->sclk_dac, mout_vpll);
-
-	clk_set_rate(fout_vpll, 54000000);
-	clk_set_rate(ctrl->sclk_pixel, 54000000);
 
 	clk_enable(ctrl->sclk_dac);
 	clk_enable(ctrl->sclk_mixer);
