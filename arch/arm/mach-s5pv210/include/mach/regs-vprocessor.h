@@ -22,7 +22,7 @@
 #define S5P_VP_SRESET				(0x0004)
 #define S5P_VP_SHADOW_UPDATE			(0x0008)
 #define S5P_VP_FIELD_ID				(0x000C)
-#define S5P_VP_MODE				(0x0022110)
+#define S5P_VP_MODE				(0x0010)
 #define S5P_VP_IMG_SIZE_Y			(0x0014)
 #define S5P_VP_IMG_SIZE_C			(0x0018)
 #define S5P_VP_PER_RATE_CTRL			(0x001C)
