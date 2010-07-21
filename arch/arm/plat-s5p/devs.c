@@ -55,6 +55,7 @@ struct platform_device s5p_device_mfc = {
 
 #endif
 
+#ifdef CONFIG_FB_S3C
 static struct resource s3cfb_resource[] = {
 	[0] = {
 		.start	= S5P_PA_LCD,
@@ -134,6 +135,8 @@ void __init s3cfb_set_platdata(struct s3c_platform_fb *pd)
 		s3c_device_fb.dev.platform_data = npd;
 	}
 }
+#endif
+
 #ifdef CONFIG_VIDEO_JPEG_V2
 /* JPEG controller  */
 static struct resource s3c_jpeg_resource[] = {
