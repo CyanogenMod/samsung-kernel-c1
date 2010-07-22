@@ -7,6 +7,7 @@ config VIDEO_SAMSUNG
 	  This is a representative video4linux configuration for Samsung multimedia devices.
 
 if CPU_S5PV210
+source "drivers/media/video/samsung/fimc/Kconfig"
 source "drivers/media/video/samsung/jpeg_v2/Kconfig"
 source "drivers/media/video/samsung/tv20/Kconfig"
 source "drivers/media/video/samsung/rotator/Kconfig"
@@ -15,6 +16,20 @@ endif
 
 if VIDEO_SAMSUNG
 comment "Reserved memory configurations"
+config VIDEO_SAMSUNG_MEMSIZE_FIMC0
+	int "Memory size in kbytes for FIMC0"
+	depends on VIDEO_FIMC
+	default "5120"
+
+config VIDEO_SAMSUNG_MEMSIZE_FIMC1
+	int "Memory size in kbytes for FIMC1"
+	depends on VIDEO_FIMC
+	default "5120"
+
+config VIDEO_SAMSUNG_MEMSIZE_FIMC2
+	int "Memory size in kbytes for FIMC2"
+	depends on VIDEO_FIMC
+	default "5120"
 
 config VIDEO_SAMSUNG_MEMSIZE_JPEG
 	int "Memory size in kbytes for JPEG"
