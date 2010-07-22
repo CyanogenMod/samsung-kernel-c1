@@ -20,6 +20,7 @@
 #include <mach/regs-cec.h>
 
 #include "../cec.h"
+#include "cec.h"
 
 #ifdef CECDEBUG
 #define CECPRINTK(fmt, args...) \
@@ -30,9 +31,6 @@
 
 static struct resource	*cec_mem;
 void __iomem		*cec_base;
-
-#define S5P_HDMI_FIN	24000000
-#define CEC_DIV_RATIO	187500
 
 void s5p_cec_set_divider(void)
 {

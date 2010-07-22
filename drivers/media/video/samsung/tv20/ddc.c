@@ -14,7 +14,6 @@
 #include <linux/kernel.h>
 #include <linux/i2c.h>
 
-#define I2C_DRIVERID_S5P_HDCP		510
 #define S5P_HDCP_I2C_ADDR		0x74
 
 const static u16 ignore[] = { I2C_CLIENT_END };

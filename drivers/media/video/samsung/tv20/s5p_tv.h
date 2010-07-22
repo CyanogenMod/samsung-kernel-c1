@@ -59,9 +59,11 @@
 #define AVI_VIC_31			(31<<0)
 #define AVI_VIC_34			(34<<0)
 
-
 #define VP_UPDATE_RETRY_MAXIMUM 	30
 #define VP_WAIT_UPDATE_SLEEP 		3
+
+#define INTERLACED 			0
+#define PROGRESSIVE 			1
 
 struct tvout_output_if {
 	enum s5p_tv_disp_mode	disp_mode;

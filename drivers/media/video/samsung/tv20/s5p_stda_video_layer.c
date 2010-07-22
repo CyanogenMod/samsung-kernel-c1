@@ -32,9 +32,6 @@
 #define VLAYERPRINTK(fmt, args...)
 #endif
 
-#define INTERLACED 	0
-#define PROGRESSIVE 	1
-
 u8 s5p_vlayer_check_input_mode(enum s5p_vp_src_color color)
 {
 	u8 ret = PROGRESSIVE;

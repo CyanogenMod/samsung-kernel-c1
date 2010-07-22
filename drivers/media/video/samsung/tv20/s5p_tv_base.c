@@ -87,7 +87,7 @@
 			clk = clk_get(&pdev->dev, clk_name);		\
 			if (IS_ERR(clk)) {				\
 				printk(KERN_ERR 			\
-				"failed to find clock \"%s\"\n", clk_name);\
+				"failed to find clock %s\n", clk_name);	\
 				return ENOENT;				\
 			}						\
 		} while (0);
@@ -484,7 +484,7 @@ static struct v4l2_file_operations s5p_tv_vid_fops = {
 };
 
 
- #else
+#else
 static struct v4l2_file_operations s5p_tv_v_fops = {
 	.owner		= THIS_MODULE,
 	.open		= s5p_tv_v_open,
@@ -576,8 +576,6 @@ void s5p_tv_kobject_uevent(void)
 	}
 }
 
-#define S5P_TVMAX_CTRLS 	ARRAY_SIZE(s5p_tvout)
-
 static int __devinit s5p_tv_probe(struct platform_device *pdev)
 {
 	int 	irq_num;
@@ -605,7 +603,7 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 	set_irq_type(IRQ_EINT5, IRQ_TYPE_LEVEL_LOW);
 
 	/* v4l2 video device registration */
-	for (i = 0; i < S5P_TVMAX_CTRLS; i++) {
+	for (i = 0; i < ARRAY_SIZE(s5p_tvout); i++) {
 		s5ptv_status.video_dev[i] = &s5p_tvout[i];
 
 		if (video_register_device(s5ptv_status.video_dev[i],

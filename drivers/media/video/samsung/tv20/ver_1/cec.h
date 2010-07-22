@@ -17,4 +17,7 @@
 
 #define CEC_IOC_SETLADDR     _IOW(CEC_IOC_MAGIC, 0, unsigned int)
 
+#define S5P_HDMI_FIN	24000000
+#define CEC_DIV_RATIO	187500
+
 #endif /* _LINUX_CEC_H_ */

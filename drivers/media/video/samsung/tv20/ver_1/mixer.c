@@ -36,9 +36,9 @@
 #define VMPRINTK(fmt, args...)
 #endif
 
+
 static struct resource	*mixer_mem;
 void __iomem		*mixer_base;
-
 
 int s5p_vmx_set_layer_show(enum s5p_tv_vmx_layer layer, bool show)
 {

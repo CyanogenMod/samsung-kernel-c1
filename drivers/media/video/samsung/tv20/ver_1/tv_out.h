@@ -22,6 +22,118 @@
 #define bit_del_s(val, addr)	writes(reads(addr) & ~val, addr)
 #define bit_del_b(val, addr)	writeb(readb(addr) & ~val, addr)
 
+/* HDCP */
+#define INFINITE		0xffffffff
+
+#define AN_SIZE 		8
+#define AKSV_SIZE 		5
+#define BKSV_SIZE 		5
+#define R_VAL_RETRY_CNT   	5
+#define AINFO_SIZE		1
+#define BCAPS_SIZE		1
+#define BSTATUS_SIZE		2
+#define SHA_1_HASH_SIZE		20
+#define HDCP_MAX_DEVS		128
+#define HDCP_KSV_SIZE		5
+
+#define HDCP_Bksv		0x00
+#define HDCP_Ri			0x08
+#define HDCP_Aksv		0x10
+#define HDCP_Ainfo		0x15
+#define HDCP_An			0x18
+#define HDCP_SHA1		0x20
+#define HDCP_Bcaps		0x40
+#define HDCP_BStatus		0x41
+#define HDCP_KSVFIFO		0x43
+
+#define KSV_FIFO_READY		(0x1 << 5)
+
+#define MAX_CASCADE_EXCEEDED_ERROR 	(-1)
+#define MAX_DEVS_EXCEEDED_ERROR    	(-2)
+#define REPEATER_ILLEGAL_DEVICE_ERROR	(-3)
+#define REPEATER_TIMEOUT_ERROR		(-4)
+
+#define SET_HDCP_KSV_READ		(0x1 << 0)
+#define SET_HDCP_KSV_END		(0x1 << 1)
+#define SET_HDCP_KSV_LIST_EMPTY 	(0x1 << 2)
+#define SET_HDCP_KSV_WRITE_DONE		(0x1 << 3)
+
+#define SET_HDCP_SHA_VALID		(0x1 << 0)
+#define SET_HDCP_SHA_VALID_READY	(0x1 << 1)
+
+#define MAX_CASCADE_EXCEEDED       	(0x1 << 3)
+#define MAX_DEVS_EXCEEDED          	(0x1 << 7)
+
+enum hdcp_event {
+	HDCP_EVENT_STOP,
+	HDCP_EVENT_START,
+	HDCP_EVENT_READ_BKSV_START,
+	HDCP_EVENT_WRITE_AKSV_START,
+	HDCP_EVENT_CHECK_RI_START,
+	HDCP_EVENT_SECOND_AUTH_START
+};
+
+enum hdcp_state {
+	NOT_AUTHENTICATED,
+	RECEIVER_READ_READY,
+	BCAPS_READ_DONE,
+	BKSV_READ_DONE,
+	AN_WRITE_DONE,
+	AKSV_WRITE_DONE,
+	FIRST_AUTHENTICATION_DONE,
+	SECOND_AUTHENTICATION_RDY,
+	RECEIVER_FIFOLSIT_READY,
+	SECOND_AUTHENTICATION_DONE,
+};
+
+struct s5p_hdcp_info {
+	bool	is_repeater;
+	bool	hpd_status;
+	u32	time_out;
+	u32	hdcp_enable;
+
+	spinlock_t 	lock;
+	spinlock_t 	reset_lock;
+
+	struct i2c_client 	*client;
+
+	wait_queue_head_t 	waitq;
+	enum hdcp_event 	event;
+	enum hdcp_state 	auth_status;
+
+	struct work_struct  	work;
+};
+
+/* HDMI */
+#define PHY_I2C_ADDRESS       		0x70
+#define I2C_ACK				(1 << 7)
+#define I2C_INT				(1 << 5)
+#define I2C_PEND			(1 << 4)
+#define I2C_INT_CLEAR			(0 << 4)
+#define I2C_CLK				(0x41)
+#define I2C_CLK_PEND_INT		(I2C_CLK | I2C_INT_CLEAR | I2C_INT)
+#define I2C_ENABLE			(1 << 4)
+#define I2C_START			(1 << 5)
+#define I2C_MODE_MTX			0xC0
+#define I2C_MODE_MRX			0x80
+#define I2C_IDLE			0
+
+#define STATE_IDLE 			0
+#define STATE_TX_EDDC_SEGADDR		1
+#define STATE_TX_EDDC_SEGNUM		2
+#define STATE_TX_DDC_ADDR		3
+#define STATE_TX_DDC_OFFSET		4
+#define STATE_RX_DDC_ADDR		5
+#define STATE_RX_DDC_DATA		6
+#define STATE_RX_ADDR			7
+#define STATE_RX_DATA			8
+#define STATE_TX_ADDR			9
+#define STATE_TX_DATA			10
+#define STATE_TX_STOP			11
+#define STATE_RX_STOP			12
+
+#define HDMI_IRQ_TOTAL_NUM		6
+
 
 enum s5p_tv_audio_codec_type {
 	PCM = 1, AC3, MP3, WMA

@@ -41,35 +41,6 @@
 #define HDMIPRINTK(fmt, args...)
 #endif
 
-#define PHY_I2C_ADDRESS       		0x70
-#define I2C_ACK				(1 << 7)
-#define I2C_INT				(1 << 5)
-#define I2C_PEND			(1 << 4)
-#define I2C_INT_CLEAR			(0 << 4)
-#define I2C_CLK				(0x41)
-#define I2C_CLK_PEND_INT		(I2C_CLK | I2C_INT_CLEAR | I2C_INT)
-#define I2C_ENABLE			(1 << 4)
-#define I2C_START			(1 << 5)
-#define I2C_MODE_MTX			0xC0
-#define I2C_MODE_MRX			0x80
-#define I2C_IDLE			0
-
-#define STATE_IDLE 			0
-#define STATE_TX_EDDC_SEGADDR		1
-#define STATE_TX_EDDC_SEGNUM		2
-#define STATE_TX_DDC_ADDR		3
-#define STATE_TX_DDC_OFFSET		4
-#define STATE_RX_DDC_ADDR		5
-#define STATE_RX_DDC_DATA		6
-#define STATE_RX_ADDR			7
-#define STATE_RX_DATA			8
-#define STATE_TX_ADDR			9
-#define STATE_TX_DATA			10
-#define STATE_TX_STOP			11
-#define STATE_RX_STOP			12
-
-#define HDMI_IRQ_TOTAL_NUM		6
-
 hdmi_isr hdmi_isr_ftn[HDMI_IRQ_TOTAL_NUM];
 
 static struct resource	*hdmi_mem;

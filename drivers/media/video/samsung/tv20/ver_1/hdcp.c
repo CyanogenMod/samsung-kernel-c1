@@ -53,82 +53,10 @@
 #define AUTHPRINTK(fmt, args...)
 #endif
 
-enum hdmi_run_mode {
-	DVI_MODE,
-	HDMI_MODE
-};
-
-enum hdmi_resolution {
-	SD480P,
-	SD480I,
-	WWSD480P,
-	HD720P,
-	SD576P,
-	WWSD576P,
-	HD1080I
-};
-
-enum hdmi_color_bar_type {
-	HORIZONTAL,
-	VERTICAL
-};
-
-enum hdcp_event {
-	/* Stop HDCP */
-	HDCP_EVENT_STOP,
-	/* Start HDCP*/
-	HDCP_EVENT_START,
-	/* Start to read Bksv, Bcaps */
-	HDCP_EVENT_READ_BKSV_START,
-	/* Start to write Aksv, An */
-	HDCP_EVENT_WRITE_AKSV_START,
-	/* Start to check if Ri is equal to Rj */
-	HDCP_EVENT_CHECK_RI_START,
-	/* Start 2nd authentication process */
-	HDCP_EVENT_SECOND_AUTH_START
-};
-
-enum hdcp_state {
-	NOT_AUTHENTICATED,
-	RECEIVER_READ_READY,
-	BCAPS_READ_DONE,
-	BKSV_READ_DONE,
-	AN_WRITE_DONE,
-	AKSV_WRITE_DONE,
-	FIRST_AUTHENTICATION_DONE,
-	SECOND_AUTHENTICATION_RDY,
-	RECEIVER_FIFOLSIT_READY,
-	SECOND_AUTHENTICATION_DONE,
-};
-
-enum hdmi_intr_src {
-	WAIT_FOR_ACTIVE_RX,
-	WDT_FOR_REPEATER,
-	EXCHANGE_KSV,
-	UPDATE_P_VAL,
-	UPDATE_R_VAL,
-	AUDIO_OVERFLOW,
-	AUTHEN_ACK,
-	UNKNOWN_INT
-};
-
-struct s5p_hdcp_info {
-	bool	is_repeater;
-	bool	hpd_status;
-	u32	time_out;
-	u32	hdcp_enable;
-
-	spinlock_t 	lock;
-	spinlock_t 	reset_lock;
-
-	struct i2c_client 	*client;
-
-	wait_queue_head_t 	waitq;
-	enum hdcp_event 	event;
-	enum hdcp_state 	auth_status;
-
-	struct work_struct  	work;
-};
+static bool sw_reset;
+static bool is_dvi;
+static bool av_mute;
+static bool audio_en;
 
 static struct s5p_hdcp_info hdcp_info = {
 	.is_repeater 	= false,
@@ -140,69 +68,6 @@ static struct s5p_hdcp_info hdcp_info = {
 
 };
 
-#define HDCP_RI_OFFSET          0x08
-#define INFINITE		0xffffffff
-
-#define HDMI_SYS_ENABLE		(1 << 0)
-#define HDMI_ASP_ENABLE		(1 << 2)
-#define HDMI_ASP_DISABLE	(~HDMI_ASP_ENABLE)
-
-#define MAX_DEVS_EXCEEDED          (0x1 << 7)
-#define MAX_CASCADE_EXCEEDED       (0x1 << 3)
-
-#define MAX_CASCADE_EXCEEDED_ERROR 	(-1)
-#define MAX_DEVS_EXCEEDED_ERROR    	(-2)
-#define REPEATER_ILLEGAL_DEVICE_ERROR	(-3)
-#define REPEATER_TIMEOUT_ERROR		(-4)
-
-#define AINFO_SIZE		1
-#define BCAPS_SIZE		1
-#define BSTATUS_SIZE		2
-#define SHA_1_HASH_SIZE		20
-
-#define KSV_FIFO_READY	(0x1 << 5)
-
-#define SET_HDCP_KSV_WRITE_DONE		(0x1 << 3)
-#define CLEAR_HDCP_KSV_WRITE_DONE	(~SET_HDCP_KSV_WRITE_DONE)
-
-#define SET_HDCP_KSV_LIST_EMPTY 	(0x1 << 2)
-#define CLEAR_HDCP_KSV_LIST_EMPTY	(~SET_HDCP_KSV_LIST_EMPTY)
-#define SET_HDCP_KSV_END		(0x1 << 1)
-#define CLEAR_HDCP_KSV_END		(~SET_HDCP_KSV_END)
-#define SET_HDCP_KSV_READ		(0x1 << 0)
-#define CLEAR_HDCP_KSV_READ		(~SET_HDCP_KSV_READ)
-
-#define SET_HDCP_SHA_VALID_READY	(0x1 << 1)
-#define CLEAR_HDCP_SHA_VALID_READY	(~SET_HDCP_SHA_VALID_READY)
-#define SET_HDCP_SHA_VALID	(0x1 << 0)
-#define CLEAR_HDCP_SHA_VALID	(~SET_HDCP_SHA_VALID)
-
-#define TRANSMIT_EVERY_VSYNC	(0x1 << 1)
-
-#define AN_SIZE 8
-#define AKSV_SIZE 5
-#define BKSV_SIZE 5
-#define EDID_POS_ERROR    512
-#define R_VAL_RETRY_CNT   5
-
-#define HDCP_MAX_DEVS	128
-#define HDCP_KSV_SIZE	5
-#define HDCPLink_Addr	0x74
-#define HDCP_Bksv	0x00
-#define HDCP_Aksv	0x10
-#define HDCP_Ainfo	0x15
-#define HDCP_An		0x18
-#define HDCP_Ri		0x08
-#define HDCP_Bcaps	0x40
-#define HDCP_BStatus	0x41
-#define HDCP_Pj		0x0a
-#define HDCP_KSVFIFO	0x43
-#define HDCP_SHA1	0x20
-
-static bool sw_reset;
-static bool is_dvi;
-static bool av_mute;
-static bool audio_en;
 
 void s5p_hdcp_hdmi_set_audio(bool en)
 {
