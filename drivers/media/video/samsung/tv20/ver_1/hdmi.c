@@ -733,14 +733,6 @@ s32 hdmi_set_video_mode(enum s5p_hdmi_v_fmt mode, enum s5p_hdmi_color_depth cd,
 		writeb(gcp_con, hdmi_base + S5P_HDMI_GCP_CON);
 	}
 
-#if 0
-	/* config Phy */
-	if (hdmi_phy_config(video_params[mode].pixel_clock, cd) == EINVAL) {
-		HDMIPRINTK("[ERR] hdmi_phy_config() failed.\n");
-
-		return EINVAL;
-	}
-#endif
 	return 0;
 }
 
@@ -932,9 +924,9 @@ void s5p_hdmi_audio_set_aui(enum s5p_tv_audio_codec_type audio_codec,
 	writel(check_sum , hdmi_base + S5P_HDMI_AUI_CHECK_SUM);
 	writel(bytes1 , hdmi_base + S5P_HDMI_AUI_BYTE1);
 	writel(bytes2 , hdmi_base + S5P_HDMI_AUI_BYTE2);
-	writel(bytes3 , hdmi_base + S5P_HDMI_AUI_BYTE3);/* Pcm or stream */
-	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE4); /* 2ch pcm or Stream */
-	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE5); /* 2ch pcm or Stream */
+	writel(bytes3 , hdmi_base + S5P_HDMI_AUI_BYTE3);
+	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE4);
+	writel(0x00 , hdmi_base + S5P_HDMI_AUI_BYTE5);
 
 	writel(2 , hdmi_base + S5P_HDMI_ACP_CON);
 	writel(1 , hdmi_base + S5P_HDMI_ACP_TYPE);
@@ -1791,11 +1783,7 @@ int __init s5p_hdmi_probe(struct platform_device *pdev, u32 res_num,
 
 	/* i2c_hdmi init - set i2c filtering */
 	writeb(0x5, i2c_hdmi_phy_base + HDMI_I2C_LC);
-
-	/* temp for test - hdmi intr. global enable */
-//	reg = readb(hdmi_base+S5P_HDMI_INTC_CON);
-//	writeb(reg | (1<<HDMI_IRQ_GLOBAL), hdmi_base+S5P_HDMI_INTC_CON);
-
+	
 	return 0;
 
 error:
@@ -1864,7 +1852,7 @@ irqreturn_t s5p_hdmi_irq(int irq, void *dev_id)
 	HDMIPRINTK("S5P_HDMI_INTC_FLAG = 0x%02x\n", irq_state);
 
 	/* Check interrupt happened */
-	/* Priority of Interrupt  HDCP> I2C > Audio > CEC (Not implemented) */
+	/* Priority of Interrupt  HDCP> I2C > Audio > CEC */
 	if (irq_state) {
 		/* HDCP IRQ*/
 		irq_num = 0;

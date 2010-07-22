@@ -22,10 +22,6 @@
 
 #define CEC_FILTER_THRESHOLD          0x15
 
-/*
- * @enum cec_state
- * Defines all possible states of CEC software state machine
- */
 enum cec_state {
 	STATE_RX,
 	STATE_TX,
@@ -33,10 +29,6 @@ enum cec_state {
 	STATE_ERROR
 };
 
-/*
- * @struct cec_rx_struct
- * Holds CEC Rx state and data
- */
 
 struct cec_rx_struct {
 	spinlock_t lock;
@@ -45,11 +37,6 @@ struct cec_rx_struct {
 	u8 *buffer;
 	unsigned int size;
 };
-
-/*
- * @struct cec_tx_struct
- * Holds CEC Tx state and data
- */
 
 struct cec_tx_struct {
 	wait_queue_head_t waitq;
@@ -71,9 +58,6 @@ struct cec_tx_struct {
 
 #define CEC_IOC_MAGIC        'c'
 
-/*
- * CEC device request code to set logical address.
- */
 #define CEC_IOC_SETLADDR     _IOW(CEC_IOC_MAGIC, 0, unsigned int)
 
 

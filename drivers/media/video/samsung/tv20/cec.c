@@ -40,19 +40,11 @@ static struct cec_tx_struct cec_tx_struct;
 
 static bool hdmi_on;
 
-/**
- * Change CEC Tx state to state
- * @param state [in] new CEC Tx state.
- */
 void s5p_cec_set_tx_state(enum cec_state state)
 {
 	atomic_set(&cec_tx_struct.state, state);
 }
 
-/**
- * Change CEC Rx state to @c state.
- * @param state [in] new CEC Rx state.
- */
 void s5p_cec_set_rx_state(enum cec_state state)
 {
 	atomic_set(&cec_rx_struct.state, state);
@@ -217,25 +209,11 @@ static struct miscdevice cec_misc_device = {
 	.fops  = &cec_fops,
 };
 
-/**
- * @brief CEC interrupt handler
- *
- * Handles interrupt requests from CEC hardware. \n
- * Action depends on current state of CEC hardware.
- */
 irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 {
 
 	u32 status = 0;
 
-	/* read flag register */
-
-
-	/* is this our interrupt? */
-/*
-	if (!(flag & (1 << HDMI_IRQ_CEC)))
-		return IRQ_NONE;
-*/
 	status = s5p_cec_get_status();
 
 	if (status & CEC_STATUS_TX_DONE) {
@@ -345,18 +323,12 @@ static int __init s5p_cec_probe(struct platform_device *pdev)
 	return 0;
 }
 
-/*
- *  Remove
- */
 static int s5p_cec_remove(struct platform_device *pdev)
 {
 	return 0;
 }
 
 #ifdef CONFIG_PM
-/*
- *  Suspend
- */
 int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
 {
 	if (hdmi_on)
@@ -365,9 +337,6 @@ int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
 	return 0;
 }
 
-/*
- *  Resume
- */
 int s5p_cec_resume(struct platform_device *dev)
 {
 	if (hdmi_on)

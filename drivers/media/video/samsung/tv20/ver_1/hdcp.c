@@ -101,13 +101,6 @@ enum hdcp_state {
 	SECOND_AUTHENTICATION_DONE,
 };
 
-/*
- * Below CSC_TYPE is temporary. CSC_TYPE enum.
- * may be included in SetSD480pVars_60Hz etc.
- *
- * LR : Limited Range (16~235)
- * FR : Full Range (0~255)
- */
 enum hdmi_intr_src {
 	WAIT_FOR_ACTIVE_RX,
 	WDT_FOR_REPEATER,
@@ -169,7 +162,6 @@ static struct s5p_hdcp_info hdcp_info = {
 
 #define KSV_FIFO_READY	(0x1 << 5)
 
-/* spmoon for test : it's not in manual */
 #define SET_HDCP_KSV_WRITE_DONE		(0x1 << 3)
 #define CLEAR_HDCP_KSV_WRITE_DONE	(~SET_HDCP_KSV_WRITE_DONE)
 
@@ -207,7 +199,6 @@ static struct s5p_hdcp_info hdcp_info = {
 #define HDCP_KSVFIFO	0x43
 #define HDCP_SHA1	0x20
 
-/* must be checked */
 static bool sw_reset;
 static bool is_dvi;
 static bool av_mute;
@@ -452,10 +443,6 @@ static bool s5p_hdcp_read_again_bksv(void)
 #ifdef S5P_HDCP_AUTH_DEBUG
 		for (i = 0; i < BKSV_SIZE; i++)
 			AUTHPRINTK("set reg : Bksv[%d]: 0x%x\n", i, bk_sv[i]);
-
-		/*
-		writel(S5P_HDMI_HDCP_ENC_ENABLE, hdmi_base + S5P_HDMI_ENC_EN);
-		*/
 #endif
 		return true;
 	} else {
@@ -636,26 +623,18 @@ void s5p_hdcp_reset_authentication(void)
 	writeb(S5P_HDMI_HDCP_CLR_ALL_RESULTS,
 				hdmi_base + S5P_HDMI_HDCP_CHECK_RESULT);
 
-	/*
-	 * 1. Mask HPD plug and unplug interrupt
-	 * disable HPD INT
-	*/
 	sw_reset = true;
 	reg = s5p_hdmi_get_enabled_interrupt();
 
 	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_PLUG);
 	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
 
-	/* 2. Enable software HPD */
 	s5p_hdmi_sw_hpd_enable(true);
 
-	/* 3. Make software HPD logical 0 */
 	s5p_hdmi_set_hpd_onoff(false);
 
-	/* 4. Make software HPD logical 1 */
 	s5p_hdmi_set_hpd_onoff(true);
 
-	/* 5. Disable software HPD */
 	s5p_hdmi_sw_hpd_enable(false);
 
 	/* 6. Unmask HPD plug and unplug interrupt */
@@ -667,15 +646,6 @@ void s5p_hdcp_reset_authentication(void)
 
 	sw_reset = false;
 
-	/* clear result */
-#if 0
-	writel(S5P_HDMI_HDCP_Ri_MATCH_RESULT_N,
-		hdmi_base + S5P_HDMI_HDCP_CHECK_RESULT);
-	writel(readl(hdmi_base + S5P_HDMI_CON_0) & S5P_HDMI_DIS,
-		hdmi_base + S5P_HDMI_CON_0);
-	writel(readl(hdmi_base + S5P_HDMI_CON_0) | S5P_HDMI_EN,
-		hdmi_base + S5P_HDMI_CON_0);
-#endif
 	writel(S5P_HDMI_HDCP_CLR_ALL_RESULTS,
 		hdmi_base + S5P_HDMI_HDCP_CHECK_RESULT);
 
@@ -700,9 +670,6 @@ static int s5p_hdcp_loadkey(void)
 {
 	u8 status;
 
-#if 0
-	hdcp_efuse_timing();
-#endif
 	/* read HDCP key from E-Fuse */
 	writeb(S5P_HDMI_EFUSE_CTRL_HDCP_KEY_READ,
 				hdmi_base + S5P_HDMI_EFUSE_CTRL);
@@ -904,15 +871,9 @@ static int s5p_hdmi_check_repeater(void)
 		HDCPPRINTK("i : %d, dev_cnt : %d, val = 0x%08x\n",
 			i, dev_cnt, val);
 
-	} else {
-
-		/*
-		mdelay(200);
-		*/
-
+	} else
 		writel(SET_HDCP_KSV_LIST_EMPTY,
 			hdmi_base + S5P_HDMI_HDCP_RX_KSV_LIST_CTRL);
-	}
 
 	/* Read SHA-1 from receiver */
 	ret = s5p_ddc_read(HDCP_SHA1, rx_v, SHA_1_HASH_SIZE);
@@ -1012,19 +973,12 @@ static bool s5p_hdcp_try_read_receiver(void)
 	return false;
 }
 
-/*
- * stop  - stop functions are only called under running HDCP
- */
 bool s5p_hdcp_stop(void)
 {
 	u32  sfr_val = 0;
 
 	HDCPPRINTK("HDCP ftn. Stop!!\n");
 
-#if 0
-	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_PLUG);
-	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
-#endif
 	s5p_hdmi_disable_interrupts(HDMI_IRQ_HDCP);
 
 	hdcp_protocol_status = 0;
@@ -1034,11 +988,6 @@ bool s5p_hdcp_stop(void)
 	hdcp_info.auth_status 	= NOT_AUTHENTICATED;
 	hdcp_info.hdcp_enable 	= false;
 
-	/*
-	hdcp_info.client	= NULL;
-	*/
-
-	/* 3. disable hdcp control reg. */
 	sfr_val = readl(hdmi_base + S5P_HDMI_HDCP_CTRL1);
 	sfr_val &= (S5P_HDMI_HDCP_ENABLE_1_1_FEATURE_DIS
 			& S5P_HDMI_HDCP_CLEAR_REPEATER_TIMEOUT
@@ -1046,25 +995,20 @@ bool s5p_hdcp_stop(void)
 			& S5P_HDMI_HDCP_CP_DESIRED_DIS);
 	writel(sfr_val, hdmi_base + S5P_HDMI_HDCP_CTRL1);
 
-	/* 1-3. disable hdmi hpd reg. */
 	s5p_hdmi_sw_hpd_enable(false);
 
-	/* 1-2. disable hdmi status enable reg. */
 	sfr_val = readl(hdmi_base + S5P_HDMI_STATUS_EN);
 	sfr_val &= S5P_HDMI_INT_DIS_ALL;
 	writel(sfr_val, hdmi_base + S5P_HDMI_STATUS_EN);
 
-	/* 1-1. clear all status pending */
 	sfr_val = readl(hdmi_base + S5P_HDMI_SYS_STATUS);
 	sfr_val |= S5P_HDMI_INT_EN_ALL;
 	writel(sfr_val, hdmi_base + S5P_HDMI_SYS_STATUS);
 
-	/* disable encryption */
 	HDCPPRINTK("Stop Encryption by Stop!!\n");
 	writel(S5P_HDMI_HDCP_ENC_DISABLE, hdmi_base + S5P_HDMI_ENC_EN);
 	s5p_hdcp_hdmi_mute_en(true);
 
-	/* clear result */
 	writel(S5P_HDMI_HDCP_Ri_MATCH_RESULT_N,
 			hdmi_base + S5P_HDMI_HDCP_CHECK_RESULT);
 	writel(S5P_HDMI_HDCP_CLR_ALL_RESULTS,
@@ -1082,9 +1026,6 @@ void s5p_hdcp_reset(void)
 	HDCPPRINTK("HDCP ftn. reset!!\n");
 }
 
-/*
- * start  - start functions are only called under stopping HDCP
- */
 bool s5p_hdcp_start(void)
 {
 	u8 reg;
@@ -1102,20 +1043,15 @@ bool s5p_hdcp_start(void)
 	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_PLUG);
 	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
 
-	/* 2. Enable software HPD */
 	s5p_hdmi_sw_hpd_enable(true);
 
-	/* 3. Make software HPD logical */
 	s5p_hdmi_set_hpd_onoff(false);
 
-	/* 4. Make software HPD logical */
 	s5p_hdmi_set_hpd_onoff(true);
 
-	/* 5. Disable software HPD */
 	s5p_hdmi_sw_hpd_enable(false);
 	s5p_hdmi_set_hpd_onoff(false);
 
-	/* 6. Unmask HPD plug and unplug interrupt */
 
 	if (reg & 1<<HDMI_IRQ_HPD_PLUG)
 		s5p_hdmi_enable_interrupts(HDMI_IRQ_HPD_PLUG);
@@ -1136,19 +1072,8 @@ bool s5p_hdcp_start(void)
 	/* for av mute */
 	writel(S5P_HDMI_GCP_CON_NO_TRAN, hdmi_base + S5P_HDMI_GCP_CON);
 
-	/*
-	 * 1-1. set hdmi status enable reg.
-	 * Update_Ri_int_en should be enabled after
-	 * s/w gets ExchangeKSV_int.
-	 */
 	writel(S5P_HDMI_INT_EN_ALL, hdmi_base + S5P_HDMI_STATUS_EN);
 
-	/*
-	 * 3. set hdcp control reg.
-	 * Disable advance cipher option, Enable CP(Content Protection),
-	 * Disable time-out (This bit is only available in a REPEATER)
-	 * Disable XOR shift, Disable Pj port update, Use external key
-	 */
 	sfr_val = 0;
 	sfr_val |= S5P_HDMI_HDCP_CP_DESIRED_EN;
 	writel(sfr_val, hdmi_base + S5P_HDMI_HDCP_CTRL1);
@@ -1445,25 +1370,13 @@ static bool s5p_hdcp_check_ri_start_bh(void)
 static void s5p_hdcp_work(void *arg)
 {
 	/*
-	HDCPPRINTK("event : 0x%08x \n\r", hdcp_info.event);
-	*/
-
-	/*
 	 * I2C int. was occurred
 	 * for reading Bksv and Bcaps
 	 */
 
 	if (hdcp_info.event & (1 << HDCP_EVENT_READ_BKSV_START)) {
 		s5p_hdcp_bksv_start_bh();
-
-		/* clear event */
-		/*
-		spin_lock_bh(&hdcp_info.lock);
-		*/
 		hdcp_info.event &= ~(1 << HDCP_EVENT_READ_BKSV_START);
-		/*
-		spin_unlock_bh(&hdcp_info.lock);
-		*/
 	}
 
 	/*
@@ -1472,15 +1385,7 @@ static void s5p_hdcp_work(void *arg)
 	 */
 	if (hdcp_info.event & (1 << HDCP_EVENT_SECOND_AUTH_START)) {
 		s5p_hdcp_second_auth_start_bh();
-
-		/* clear event */
-		/*
-		spin_lock_bh(&hdcp_info.lock);
-		*/
 		hdcp_info.event &= ~(1 << HDCP_EVENT_SECOND_AUTH_START);
-		/*
-		spin_unlock_bh(&hdcp_info.lock);
-		*/
 	}
 
 	/*
@@ -1489,15 +1394,7 @@ static void s5p_hdcp_work(void *arg)
 	 */
 	if (hdcp_info.event & (1 << HDCP_EVENT_WRITE_AKSV_START)) {
 		s5p_hdcp_s5p_hdcp_write_aksv_start_bh();
-
-		/* clear event */
-		/*
-		spin_lock_bh(&hdcp_info.lock);
-		*/
 		hdcp_info.event  &= ~(1 << HDCP_EVENT_WRITE_AKSV_START);
-		/*
-		spin_unlock_bh(&hdcp_info.lock);
-		*/
 	}
 
 	/*
@@ -1506,15 +1403,7 @@ static void s5p_hdcp_work(void *arg)
 	 */
 	if (hdcp_info.event & (1 << HDCP_EVENT_CHECK_RI_START)) {
 		s5p_hdcp_check_ri_start_bh();
-
-		/* clear event */
-		/*
-		spin_lock_bh(&hdcp_info.lock);
-		*/
 		hdcp_info.event &= ~(1 << HDCP_EVENT_CHECK_RI_START);
-		/*
-		spin_unlock_bh(&hdcp_info.lock);
-		*/
 	}
 }
 
@@ -1605,7 +1494,6 @@ int s5p_hdcp_init(void)
 	return 0;
 }
 
-/* called by hpd */
 int s5p_hdcp_encrypt_stop(bool on)
 {
 	u32 reg;

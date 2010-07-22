@@ -113,11 +113,6 @@ enum s5p_hdmi_audio_type {
 	HDMI_AUDIO_PCM
 };
 
-
-/*
-* enum
-*/
-
 enum s5p_tv_active_polarity {
 	TVOUT_POL_ACTIVE_LOW,
 	TVOUT_POL_ACTIVE_HIGH
@@ -509,7 +504,6 @@ enum s5p_tv_hdmi_disp_mode {
 	S5P_TV_HDMI_DISP_MODE_NUM = 9
 };
 
-/* pixel aspect ratio for HDMI HW (AVI packet and EDID) */
 enum s5p_tv_hdmi_pxl_aspect {
     HDMI_PIXEL_RATIO_4_3,
     HDMI_PIXEL_RATIO_16_9
@@ -542,7 +536,6 @@ void s5p_hdcp_hdmi_mute_en(bool en);
 
 bool s5p_hdcp_stop(void);
 
- /* 0 - hdcp stopped, 1 - hdcp started, 2 - hdcp reset */
 extern u8 hdcp_protocol_status;
 extern void __iomem *hdmi_base;
 

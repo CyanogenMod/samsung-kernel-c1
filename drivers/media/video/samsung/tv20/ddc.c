@@ -25,19 +25,8 @@ const static u16 normal_addr[] = {
 
 const static u16 *forces[] = { NULL };
 
-/*static struct i2c_client_address_data ddc_addr = {
-	.normal_i2c	= normal_addr,
-	.probe		= ignore,
-	.ignore		= ignore,
-	.forces		= forces,
-};
-*/
-
 struct i2c_client *ddc_port;
 
-/*
- * DDC read ftn.
- */
 int s5p_ddc_read(u8 subaddr, u8 *data, u16 len)
 {
 	u8 addr = subaddr;
@@ -64,9 +53,6 @@ int s5p_ddc_read(u8 subaddr, u8 *data, u16 len)
 	return ret;
 }
 
-/*
- * DDC_write ftn.
- */
 int s5p_ddc_write(u8 *data, u16 len)
 {
 	int ret = 0;
@@ -77,9 +63,6 @@ int s5p_ddc_write(u8 *data, u16 len)
 	return ret;
 }
 
-/*
- * i2c client ftn.
- */
 static int __devinit s5p_ddc_probe(struct i2c_client *client,
 			const struct i2c_device_id *dev_id)
 {
@@ -123,8 +106,6 @@ static struct i2c_driver ddc_driver = {
 	.id_table 	= ddc_idtable,
 	.probe 		= s5p_ddc_probe,
 	.remove 	= __devexit_p(s5p_ddc_remove),
-//	.address_data 	= &ddc_addr,
-
 	.suspend	= s5p_ddc_suspend,
 	.resume 	= s5p_ddc_resume,
 };
