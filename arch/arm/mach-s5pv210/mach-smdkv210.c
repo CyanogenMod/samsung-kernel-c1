@@ -35,6 +35,8 @@
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
+#include <plat/fimc.h>
+#include <plat/csis.h>
 #include <plat/media.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
@@ -139,6 +141,10 @@ static void __init dm9000_set(void)
 static void __init dm9000_set(void) {}
 #endif
 
+static struct s3c_platform_fimc fimc_plat = {
+	.hw_ver		= 0x43,
+};
+
 static struct i2c_board_info i2c_devs0[] __initdata = {
 };
 
@@ -166,6 +172,14 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_i2c2,
 #ifdef CONFIG_DM9000
 	&device_dm9000,
+#endif
+
+#ifdef CONFIG_VIDEO_FIMC
+	&s3c_device_fimc0,
+	&s3c_device_fimc1,
+	&s3c_device_fimc2,
+	&s3c_device_csis,
+	&s3c_device_ipc,
 #endif
 
 #ifdef CONFIG_VIDEO_JPEG_V2
@@ -211,6 +225,13 @@ static void __init smdkv210_machine_init(void)
 
 #ifdef CONFIG_FB_S3C
 	s3cfb_set_platdata(NULL);
+#endif
+#ifdef CONFIG_VIDEO_FIMC
+	/* fimc */
+	s3c_fimc0_set_platdata(&fimc_plat);
+	s3c_fimc1_set_platdata(&fimc_plat);
+	s3c_fimc2_set_platdata(&fimc_plat);
+	s3c_csis_set_platdata(NULL);
 #endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }

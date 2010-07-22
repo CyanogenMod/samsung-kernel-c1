@@ -277,6 +277,24 @@ static struct clk_ops clk_hclk_imem_ops = {
 
 static struct clk init_clocks_disable[] = {
 	{
+		.name		= "fimc",
+		.id		= 2,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip0_ctrl,
+		.ctrlbit	= (1<<26),
+	}, {
+		.name		= "fimc",
+		.id		= 1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip0_ctrl,
+		.ctrlbit	= (1<<25),
+	}, {
+		.name		= "fimc",
+		.id		= 0,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip0_ctrl,
+		.ctrlbit	= (1<<24),
+	}, {
 		.name		= "rot",
 		.id		= -1,
 		.parent		= &clk_hclk_dsys.clk,

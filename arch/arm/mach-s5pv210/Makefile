@@ -28,6 +28,10 @@ obj-y				+= dev-audio.o
 obj-$(CONFIG_S3C64XX_DEV_SPI)	+= dev-spi.o
 obj-$(CONFIG_S5PC110_DEV_ONENAND) += dev-onenand.o
 obj-$(CONFIG_S5PV210_SETUP_FB_S3C)	+= setup-fb.o
+obj-$(CONFIG_S5PV210_SETUP_FIMC0)	+= setup-fimc0.o
+obj-$(CONFIG_S5PV210_SETUP_FIMC1)	+= setup-fimc1.o
+obj-$(CONFIG_S5PV210_SETUP_FIMC2)	+= setup-fimc2.o
+obj-$(CONFIG_S5PV210_SETUP_CSIS)	+= setup-csis.o
 
 obj-$(CONFIG_S5PV210_SETUP_FB_24BPP)	+= setup-fb-24bpp.o
 obj-$(CONFIG_S5PV210_SETUP_I2C1) 	+= setup-i2c1.o
