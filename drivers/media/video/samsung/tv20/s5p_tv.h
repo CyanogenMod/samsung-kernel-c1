@@ -704,7 +704,6 @@ int s5p_hdmi_audio_init(enum s5p_tv_audio_codec_type audio_codec,
 			u32 sample_rate, u32 bits, u32 frame_size_code);
 int s5p_hdmi_video_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 			enum s5p_tv_o_mode out_mode, u8 *avidata);
-void s5p_hdmi_video_init_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);
 void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max);
 int s5p_hdmi_video_init_csc(enum s5p_tv_hdmi_csc_type csc_type);
 int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,

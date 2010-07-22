@@ -1345,11 +1345,6 @@ int s5p_hdmi_video_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 	return 0;
 }
 
-void s5p_hdmi_video_init_bluescreen(bool en, u8 cb_b, u8 y_g, u8 cr_r)
-{
-	s5p_hdmi_video_set_bluescreen(en, cb_b, y_g, cr_r);
-}
-
 void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max)
 {
 	HDMIPRINTK("%d, %d, %d, %d\n\r", y_max, y_min, c_max, c_min);

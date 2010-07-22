@@ -695,7 +695,7 @@ bool s5p_tv_if_init_hd_video_reg(void)
 	st->hdmi_av_info_frame.check_sum = s5p_tv_if_video_avi_checksum();
 
 	if (!st->hdcp_en)
-		s5p_hdmi_video_init_bluescreen(
+		s5p_hdmi_video_set_bluescreen(
 				st->hdmi_video_blue_screen.enable,
 				cb_b, y_g, cr_r);
 
