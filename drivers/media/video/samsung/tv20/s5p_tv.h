@@ -794,6 +794,8 @@ void s5p_sdout_sw_reset(bool active);
 void s5p_sdout_set_interrupt_enable(bool vsync_intr_en);
 void s5p_sdout_clear_interrupt_pending(void);
 
+void s5p_tv_powerset_dac_onoff(unsigned short on);
+
 int s5p_vmx_set_win_blend(enum s5p_tv_vmx_layer layer, bool enable);
 int s5p_vmx_set_layer_alpha(enum s5p_tv_vmx_layer layer, u32 alpha);
 int s5p_vmx_set_layer_show(enum s5p_tv_vmx_layer layer, bool show);
@@ -883,10 +885,6 @@ int s5p_vp_init_csc_coef_default(enum s5p_vp_csc_type csc_type);
 int s5p_vp_start(void);
 int s5p_vp_stop(void);
 void s5p_vp_sw_reset(void);
-
-void s5p_tv_powerset_dac_onoff(bool on);
-void s5p_tv_power_on(void);
-void s5p_tv_power_off(void);
 
 void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
 void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);

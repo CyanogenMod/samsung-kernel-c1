@@ -21,7 +21,6 @@ ifeq ($(CONFIG_CPU_S5PV210), y)
 s5p_tvout-y	+=	ver_1/hdcp.o \
 			ver_1/hdmi.o  \
 			ver_1/sdout.o  \
-			ver_1/tv_power.o  \
 			ver_1/mixer.o  \
 			ver_1/vp.o
 endif

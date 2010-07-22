@@ -38,9 +38,7 @@
 #include <plat/gpio-cfg.h>
 #include <mach/regs-gpio.h>
 
-#ifdef CONFIG_S5PV210_PM
 #include <mach/pd.h>
-#endif
 
 #include "s5p_tv.h"
 
@@ -130,101 +128,32 @@ int s5p_tv_phy_power(bool on)
 int s5p_tv_clk_gate(bool on)
 {
 	if (on) {
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_enable("vp_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not on for VP\n");
-
-			goto err_pm;
-		}
-#endif
+		s5pv210_pd_enable("vp_pd");
 		clk_enable(s5ptv_status.vp_clk);
 
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_enable("mixer_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not on for mixer\n");
-
-			goto err_pm;
-		}
-#endif
-
+		s5pv210_pd_enable("mixer_pd");
 		clk_enable(s5ptv_status.mixer_clk);
 
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_enable("tv_enc_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not on for TV ENC\n");
-
-			goto err_pm;
-		}
-#endif
-
+		s5pv210_pd_enable("tv_enc_pd");
 		clk_enable(s5ptv_status.tvenc_clk);
 
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_enable("hdmi_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not on for HDMI\n");
-
-			goto err_pm;
-		}
-#endif
-
+		s5pv210_pd_enable("hdmi_pd");
 		clk_enable(s5ptv_status.hdmi_clk);
 	} else {
-		/* off */
 		clk_disable(s5ptv_status.vp_clk);
-
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_disable("vp_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not off for VP\n");
-
-			goto err_pm;
-		}
-#endif
+		s5pv210_pd_disable("vp_pd");
 
 		clk_disable(s5ptv_status.mixer_clk);
-
-#ifdef CONFIG_S5PV210_PM
-		if (0 != s5pv210_pd_disable("mixer_pd")) {
-			printk(KERN_ERR
-				"[Error]The power is not off for mixer\n");
-
-			goto err_pm;
-		}
-#endif
+		s5pv210_pd_disable("mixer_pd");
 
 		clk_disable(s5ptv_status.tvenc_clk);
-
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_disable("tv_enc_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not off for TV ENC\n");
-
-			goto err_pm;
-		}
-#endif
+		s5pv210_pd_disable("tv_enc_pd");
 
 		clk_disable(s5ptv_status.hdmi_clk);
-
-#ifdef CONFIG_S5PV210_PM
-		if (s5pv210_pd_disable("hdmi_pd") < 0) {
-			printk(KERN_ERR
-				"[Error]The power is not off for HDMI\n");
-
-			goto err_pm;
-		}
-#endif
+		s5pv210_pd_disable("hdmi_pd");
 	}
 
 	return 0;
-
-#ifdef CONFIG_S5PV210_PM
-err_pm:
-	return -1;
-#endif
 }
 
 static int __devinit s5p_tv_clk_get(struct platform_device *pdev,

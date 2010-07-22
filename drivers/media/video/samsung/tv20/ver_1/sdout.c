@@ -20,6 +20,8 @@
 #include <linux/slab.h>
 
 #include <plat/clock.h>
+#include <mach/regs-clock.h>
+
 #include "tv_out.h"
 
 #include <mach/regs-sdaout.h>
@@ -37,6 +39,14 @@
 
 static struct resource	*sdout_mem;
 void __iomem		*sdout_base;
+
+void s5p_tv_powerset_dac_onoff(unsigned short on)
+{
+	if (on)
+		writel(S5P_DAC_ENABLE, S5P_DAC_CONTROL);
+	else
+		writel(S5P_DAC_DISABLE, S5P_DAC_CONTROL);
+}
 
 int s5p_sdout_init_video_scale_cfg(enum s5p_sd_level component_level,
 				enum s5p_sd_vsync_ratio component_ratio,

@@ -805,8 +805,6 @@ bool s5p_tv_if_start(void)
 	/* Clear All Interrupt Pending */
 	s5p_vmx_clear_pend_all();
 
-	s5p_tv_power_on();
-
 	switch (out_mode) {
 	case TVOUT_OUTPUT_COMPOSITE:
 	case TVOUT_OUTPUT_SVIDEO:
