@@ -346,19 +346,10 @@ static int s3c_csis_probe(struct platform_device *pdev)
 	s3c_csis_set_info();
 
 	s3c_csis->dev = &pdev->dev;
-
-	printk("\n**********************\n");
-	printk("\n start s3c_csis_probe \n");
-	printk("\n**********************\n");
 	
 	pdata = to_csis_plat(&pdev->dev);
 	if (pdata->cfg_gpio)
 		pdata->cfg_gpio();
-
-	printk("\n**********************\n");
-	printk("\n start s3c_csis_probe \n");
-	printk("\n**********************\n");
-	
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
