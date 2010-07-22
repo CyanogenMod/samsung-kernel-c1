@@ -31,6 +31,8 @@
 #include <plat/gpio-cfg.h>
 #include <plat/irqs.h>
 #include <plat/fb.h>
+#include <plat/fimc.h>
+#include <plat/csis.h>
 
 #ifdef CONFIG_VIDEO_MFC51
 static struct resource s5p_mfc_resources[] = {
@@ -88,11 +90,7 @@ struct platform_device s3c_device_fb = {
 };
 
 static struct s3c_platform_fb default_fb_data __initdata = {
-#if defined(CONFIG_CPU_S5PV210_EVT0)
-	.hw_ver	= 0x60,
-#else
 	.hw_ver	= 0x62,
-#endif
 	.nr_wins	= 5,
 #if defined(CONFIG_FB_S3C_DEFAULT_WINDOW)
 	.default_win	= CONFIG_FB_S3C_DEFAULT_WINDOW,
@@ -134,6 +132,239 @@ void __init s3cfb_set_platdata(struct s3c_platform_fb *pd)
 
 		s3c_device_fb.dev.platform_data = npd;
 	}
+}
+#endif
+
+#ifdef CONFIG_VIDEO_FIMC
+static struct resource s3c_fimc0_resource[] = {
+	[0] = {
+		.start	= S5P_PA_FIMC0,
+		.end	= S5P_PA_FIMC0 + S5P_SZ_FIMC0 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_FIMC0,
+		.end	= IRQ_FIMC0,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_fimc0 = {
+	.name		= "s3c-fimc",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(s3c_fimc0_resource),
+	.resource	= s3c_fimc0_resource,
+};
+
+static struct s3c_platform_fimc default_fimc0_data __initdata = {
+	.default_cam	= CAMERA_PAR_A,
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+	.hw_ver	= 0x45,
+#else
+	.hw_ver	= 0x43,
+#endif
+};
+
+void __init s3c_fimc0_set_platdata(struct s3c_platform_fimc *pd)
+{
+	struct s3c_platform_fimc *npd;
+
+	if (!pd)
+		pd = &default_fimc0_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_fimc), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+	else {
+		if (!npd->cfg_gpio)
+			npd->cfg_gpio = s3c_fimc0_cfg_gpio;
+
+		if (!npd->clk_on)
+			npd->clk_on = s3c_fimc_clk_on;
+
+		if (!npd->clk_off)
+			npd->clk_off = s3c_fimc_clk_off;
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+		npd->hw_ver = 0x45;
+#else
+		npd->hw_ver = 0x43;
+#endif
+
+		s3c_device_fimc0.dev.platform_data = npd;
+	}
+}
+
+static struct resource s3c_fimc1_resource[] = {
+	[0] = {
+		.start	= S5P_PA_FIMC1,
+		.end	= S5P_PA_FIMC1 + S5P_SZ_FIMC1 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_FIMC1,
+		.end	= IRQ_FIMC1,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_fimc1 = {
+	.name		= "s3c-fimc",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(s3c_fimc1_resource),
+	.resource	= s3c_fimc1_resource,
+};
+
+static struct s3c_platform_fimc default_fimc1_data __initdata = {
+	.default_cam	= CAMERA_PAR_A,
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+	.hw_ver	= 0x50,
+#else
+	.hw_ver	= 0x43,
+#endif
+};
+
+void __init s3c_fimc1_set_platdata(struct s3c_platform_fimc *pd)
+{
+	struct s3c_platform_fimc *npd;
+
+	if (!pd)
+		pd = &default_fimc1_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_fimc), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+	else {
+		if (!npd->cfg_gpio)
+			npd->cfg_gpio = s3c_fimc1_cfg_gpio;
+
+		if (!npd->clk_on)
+			npd->clk_on = s3c_fimc_clk_on;
+
+		if (!npd->clk_off)
+			npd->clk_off = s3c_fimc_clk_off;
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+		npd->hw_ver = 0x50;
+#else
+		npd->hw_ver = 0x43;
+#endif
+
+		s3c_device_fimc1.dev.platform_data = npd;
+	}
+}
+
+static struct resource s3c_fimc2_resource[] = {
+	[0] = {
+		.start	= S5P_PA_FIMC2,
+		.end	= S5P_PA_FIMC2 + S5P_SZ_FIMC2 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_FIMC2,
+		.end	= IRQ_FIMC2,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_fimc2 = {
+	.name		= "s3c-fimc",
+	.id		= 2,
+	.num_resources	= ARRAY_SIZE(s3c_fimc2_resource),
+	.resource	= s3c_fimc2_resource,
+};
+
+static struct s3c_platform_fimc default_fimc2_data __initdata = {
+	.default_cam	= CAMERA_PAR_A,
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+	.hw_ver	= 0x45,
+#else
+	.hw_ver	= 0x43,
+#endif
+};
+
+void __init s3c_fimc2_set_platdata(struct s3c_platform_fimc *pd)
+{
+	struct s3c_platform_fimc *npd;
+
+	if (!pd)
+		pd = &default_fimc2_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_fimc), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+	else {
+		if (!npd->cfg_gpio)
+			npd->cfg_gpio = s3c_fimc2_cfg_gpio;
+
+		if (!npd->clk_on)
+			npd->clk_on = s3c_fimc_clk_on;
+
+		if (!npd->clk_off)
+			npd->clk_off = s3c_fimc_clk_off;
+#if defined(CONFIG_CPU_S5PV210_EVT1)
+		npd->hw_ver = 0x45;
+#else
+		npd->hw_ver = 0x43;
+#endif
+
+		s3c_device_fimc2.dev.platform_data = npd;
+	}
+}
+
+static struct resource s3c_ipc_resource[] = {
+	[0] = {
+		.start	= S5P_PA_IPC,
+		.end	= S5P_PA_IPC + S5P_SZ_IPC - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+};
+
+struct platform_device s3c_device_ipc = {
+	.name		= "s3c-ipc",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s3c_ipc_resource),
+	.resource	= s3c_ipc_resource,
+};
+static struct resource s3c_csis_resource[] = {
+	[0] = {
+		.start	= S5P_PA_CSIS,
+		.end	= S5P_PA_CSIS + S5P_SZ_CSIS - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_MIPICSI,
+		.end	= IRQ_MIPICSI,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_csis = {
+	.name		= "s3c-csis",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(s3c_csis_resource),
+	.resource	= s3c_csis_resource,
+};
+
+static struct s3c_platform_csis default_csis_data __initdata = {
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_csis",
+	.clk_rate	= 166000000,
+};
+
+void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
+{
+	struct s3c_platform_csis *npd;
+
+	if (!pd)
+		pd = &default_csis_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_csis), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+
+	npd->cfg_gpio = s3c_csis_cfg_gpio;
+	npd->cfg_phy_global = s3c_csis_cfg_phy_global;
+
+	s3c_device_csis.dev.platform_data = npd;
 }
 #endif
 
