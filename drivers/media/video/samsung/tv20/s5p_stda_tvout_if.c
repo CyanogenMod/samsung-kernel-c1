@@ -805,10 +805,6 @@ bool s5p_tv_if_start(void)
 	/* Clear All Interrupt Pending */
 	s5p_vmx_clear_pend_all();
 
-	/*
-	* have not to call
-	* another request function simultaneously
-	*/
 	s5p_tv_power_on();
 
 	switch (out_mode) {

@@ -33,15 +33,12 @@
 #define TVPMPRINTK(fmt, args...)
 #endif
 
-/* NORMAL_CFG */
 #define TVPWR_SUBSYSTEM_ACTIVE (1<<4)
 #define TVPWR_SUBSYSTEM_LP     (0<<4)
 
-/* MTC_STABLE */
 #define TVPWR_MTC_COUNTER_CLEAR(a) (((~0xf)<<16)&a)
 #define TVPWR_MTC_COUNTER_SET(a)   ((0xf&a)<<16)
 
-/* BLK_PWR_STAT */
 #define TVPWR_TV_BLOCK_STATUS(a)    ((0x1<<4)&a)
 
 void s5p_tv_powerset_dac_onoff(unsigned short on)

@@ -377,11 +377,6 @@ int s5p_tv_v_release(struct file *filp)
 	s5ptv_status.hdcp_en = false;
 	s5ptv_status.tvout_output_enable = false;
 
-	/*
-	 * drv. release
-	 *        - just check drv. state reg. or not.
-	 */
-
 	s5p_tv_clk_gate(false);
 	s5p_tv_phy_power(false);
 

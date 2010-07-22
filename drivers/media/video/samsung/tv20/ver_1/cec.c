@@ -34,9 +34,6 @@ void __iomem		*cec_base;
 #define S5P_HDMI_FIN	24000000
 #define CEC_DIV_RATIO	187500
 
-/**
- * Set CEC divider value.
- */
 void s5p_cec_set_divider(void)
 {
 	u32 div_ratio, reg, div_val;
@@ -56,9 +53,6 @@ void s5p_cec_set_divider(void)
 	writeb(div_val, cec_base + S5P_CES_DIVISOR_0);
 }
 
-/**
- * Enable CEC Rx engine
- */
 void s5p_cec_enable_rx(void)
 {
 	u8 reg;
@@ -67,9 +61,6 @@ void s5p_cec_enable_rx(void)
 	writeb(reg, cec_base + S5P_CES_RX_CTRL);
 }
 
-/**
- * Mask CEC Rx interrupts
- */
 void s5p_cec_mask_rx_interrupts(void)
 {
 	u8 reg;
@@ -79,9 +70,6 @@ void s5p_cec_mask_rx_interrupts(void)
 	writeb(reg, cec_base + S5P_CES_IRQ_MASK);
 }
 
-/**
- * Unmask CEC Rx interrupts
- */
 void s5p_cec_unmask_rx_interrupts(void)
 {
 	u8 reg;
@@ -91,9 +79,6 @@ void s5p_cec_unmask_rx_interrupts(void)
 	writeb(reg, cec_base + S5P_CES_IRQ_MASK);
 }
 
-/**
- * Mask CEC Tx interrupts
- */
 void s5p_cec_mask_tx_interrupts(void)
 {
 	u8 reg;
@@ -104,9 +89,6 @@ void s5p_cec_mask_tx_interrupts(void)
 
 }
 
-/**
- * Unmask CEC Tx interrupts
- */
 void s5p_cec_unmask_tx_interrupts(void)
 {
 	u8 reg;

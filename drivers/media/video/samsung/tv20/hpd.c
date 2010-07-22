@@ -318,26 +318,17 @@ static int __init s5p_hpd_probe(struct platform_device *pdev)
 	return 0;
 }
 
-/*
- *  Remove
- */
 static int s5p_hpd_remove(struct platform_device *pdev)
 {
 	return 0;
 }
 
 #ifdef CONFIG_PM
-/*
- *  Suspend
- */
 int s5p_hpd_suspend(struct platform_device *dev, pm_message_t state)
 {
 	return 0;
 }
 
-/*
- *  Resume
- */
 int s5p_hpd_resume(struct platform_device *dev)
 {
 	return 0;
