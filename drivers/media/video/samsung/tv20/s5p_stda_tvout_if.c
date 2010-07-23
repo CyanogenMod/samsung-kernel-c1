@@ -719,12 +719,6 @@ static bool s5p_tv_if_init_hd_video_reg(void)
 		return false;
 	}
 
-	herr = s5p_hdmi_video_init_csc(cscType);
-
-	if (herr != 0)
-		return false;
-
-
 	herr =  s5p_hdmi_video_init_avi_infoframe(*a_trans_type,
 					*a_check_sum, a_data);
 

@@ -1348,138 +1348,6 @@ void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max)
 	writel(c_min, hdmi_base + S5P_HDMI_CMIN);
 }
 
-int s5p_hdmi_video_init_csc(enum s5p_tv_hdmi_csc_type csc_type)
-{
-	unsigned short us_csc_coeff[10];
-
-	HDMIPRINTK("%d)\n\r", csc_type);
-
-	switch (csc_type) {
-	case HDMI_CSC_YUV601_TO_RGB_LR:
-		us_csc_coeff[0] = 0x23;
-		us_csc_coeff[1] = 256;
-		us_csc_coeff[2] = 938;
-		us_csc_coeff[3] = 846;
-		us_csc_coeff[4] = 256;
-		us_csc_coeff[5] = 443;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 256;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 350;
-		break;
-
-	case HDMI_CSC_YUV601_TO_RGB_FR:
-		us_csc_coeff[0] = 0x03;
-		us_csc_coeff[1] = 298;
-		us_csc_coeff[2] = 924;
-		us_csc_coeff[3] = 816;
-		us_csc_coeff[4] = 298;
-		us_csc_coeff[5] = 516;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 298;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 408;
-		break;
-
-	case HDMI_CSC_YUV709_TO_RGB_LR:
-		us_csc_coeff[0] = 0x23;
-		us_csc_coeff[1] = 256;
-		us_csc_coeff[2] = 978;
-		us_csc_coeff[3] = 907;
-		us_csc_coeff[4] = 256;
-		us_csc_coeff[5] = 464;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 256;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 394;
-		break;
-
-	case HDMI_CSC_YUV709_TO_RGB_FR:
-		us_csc_coeff[0] = 0x03;
-		us_csc_coeff[1] = 298;
-		us_csc_coeff[2] = 970;
-		us_csc_coeff[3] = 888;
-		us_csc_coeff[4] = 298;
-		us_csc_coeff[5] = 540;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 298;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 458;
-		break;
-
-	case HDMI_CSC_YUV601_TO_YUV709:
-		us_csc_coeff[0] = 0x33;
-		us_csc_coeff[1] = 256;
-		us_csc_coeff[2] = 995;
-		us_csc_coeff[3] = 971;
-		us_csc_coeff[4] = 0;
-		us_csc_coeff[5] = 260;
-		us_csc_coeff[6] = 29;
-		us_csc_coeff[7] = 0;
-		us_csc_coeff[8] = 19;
-		us_csc_coeff[9] = 262;
-		break;
-
-	case HDMI_CSC_RGB_FR_TO_RGB_LR:
-		us_csc_coeff[0] = 0x20;
-		us_csc_coeff[1] = 220;
-		us_csc_coeff[2] = 0;
-		us_csc_coeff[3] = 0;
-		us_csc_coeff[4] = 0;
-		us_csc_coeff[5] = 220;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 0;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 220;
-		break;
-
-	case HDMI_CSC_RGB_FR_TO_YUV601:
-		us_csc_coeff[0] = 0x30;
-		us_csc_coeff[1] = 129;
-		us_csc_coeff[2] = 25;
-		us_csc_coeff[3] = 65;
-		us_csc_coeff[4] = 950;
-		us_csc_coeff[5] = 112;
-		us_csc_coeff[6] = 986;
-		us_csc_coeff[7] = 930;
-		us_csc_coeff[8] = 1006;
-		us_csc_coeff[9] = 112;
-		break;
-
-	case HDMI_CSC_RGB_FR_TO_YUV709:
-		us_csc_coeff[0] = 0x30;
-		us_csc_coeff[1] = 157;
-		us_csc_coeff[2] = 16;
-		us_csc_coeff[3] = 47;
-		us_csc_coeff[4] = 937;
-		us_csc_coeff[5] = 112;
-		us_csc_coeff[6] = 999;
-		us_csc_coeff[7] = 922;
-		us_csc_coeff[8] = 1014;
-		us_csc_coeff[9] = 112;
-		break;
-
-	case HDMI_BYPASS:
-		us_csc_coeff[0] = 0x33;
-		us_csc_coeff[1] = 256;
-		us_csc_coeff[2] = 0;
-		us_csc_coeff[3] = 0;
-		us_csc_coeff[4] = 0;
-		us_csc_coeff[5] = 256;
-		us_csc_coeff[6] = 0;
-		us_csc_coeff[7] = 0;
-		us_csc_coeff[8] = 0;
-		us_csc_coeff[9] = 256;
-		break;
-
-	default:
-		HDMIPRINTK("invalid out_mode parameter(%d)\n\r", csc_type);
-		return -1;
-	}
-
-	return 0;
-}
-
 int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,
 					u8 check_sum, u8 *avi_data)
 {
@@ -1639,10 +1507,6 @@ bool s5p_hdmi_start(enum s5p_hdmi_audio_type hdmi_audio_type, bool hdcp_en,
 	writel(readl(hdmi_base + S5P_HDMI_CON_0) | temp_reg,
 	       hdmi_base + S5P_HDMI_CON_0);
 
-	HDMIPRINTK("HPD : 0x%08x, HDMI_CON_0 : 0x%08x\n\r",
-		   readl(hdmi_base + S5P_HDMI_HPD),
-		   readl(hdmi_base + S5P_HDMI_CON_0));
-
 	return true;
 }
 
@@ -1652,11 +1516,6 @@ void s5p_hdmi_stop(void)
 
 	s5p_hdcp_stop();
 
-	/*
-	 * Before stopping hdmi, stop the hdcp first. However,
-	 * if there's no delay between hdcp stop & hdmi stop,
-	 * re-opening would be failed.
-	 */
 	mdelay(100);
 
 	temp = readl(hdmi_base + S5P_HDMI_CON_0);
