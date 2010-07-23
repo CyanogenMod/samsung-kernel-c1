@@ -20,6 +20,7 @@
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/clk.h>
+#include <linux/usb/ch9.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -34,6 +35,7 @@
 #include <plat/regs-serial.h>
 
 #include <plat/s5p6450.h>
+#include <plat/regs-otg.h>
 #include <plat/clock.h>
 #include <mach/regs-clock.h>
 #include <plat/devs.h>
@@ -387,6 +389,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_RTC
 	&s3c_device_rtc,
 #endif
+#ifdef CONFIG_USB_GADGET
+	&s3c_device_usbgadget,
+#endif
 };
 
 static void __init smdk6450_map_io(void)
@@ -428,6 +433,38 @@ static void __init smdk6450_machine_init(void)
 
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
+
+#ifdef CONFIG_USB_SUPPORT
+/* Initializes OTG Phy. */
+void otg_phy_init(void)
+{
+	/*USB PHY0 Enable */
+	writel(readl(S5P_USB_PHY_CONTROL)|(0x1<<17),
+		S5P_USB_PHY_CONTROL);
+	writel((readl(S3C_USBOTG_PHYPWR)&~(0x3<<3)&~(0x1<<0))|(0x1<<5),
+		S3C_USBOTG_PHYPWR);
+	writel((readl(S3C_USBOTG_PHYCLK)&~(0x5<<2))|(0x1<<0),
+		S3C_USBOTG_PHYCLK);
+	writel((readl(S3C_USBOTG_RSTCON)&~(0x3<<1))|(0x1<<0),
+		S3C_USBOTG_RSTCON);
+	udelay(10);
+	writel(readl(S3C_USBOTG_RSTCON)&~(0x7<<0), S3C_USBOTG_RSTCON);
+	udelay(10);
+}
+EXPORT_SYMBOL(otg_phy_init);
+
+/* USB Control request data struct must be located here for DMA transfer */
+struct usb_ctrlrequest usb_ctrl __attribute__((aligned(8)));
+EXPORT_SYMBOL(usb_ctrl);
+
+/* OTG PHY Power Off */
+void otg_phy_off(void)
+{
+	writel(readl(S3C_USBOTG_PHYPWR)|(0x3<<3), S3C_USBOTG_PHYPWR);
+	writel(readl(S5P_USB_PHY_CONTROL)&~(1<<17), S5P_USB_PHY_CONTROL);
+}
+EXPORT_SYMBOL(otg_phy_off);
+#endif
 
 MACHINE_START(SMDK6450, "SMDK6450")
 	.phys_io	= S3C_PA_UART & 0xfff00000,
