@@ -417,6 +417,7 @@ static int s3c_gib_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int s3c_gib_suspend(struct platform_device *pdev, pm_message_t msg)
 {
+#if 0	
 	unsigned int tmp;
 	struct s3c_gib *hw = platform_get_drvdata(pdev);
 
@@ -433,7 +434,7 @@ static int s3c_gib_suspend(struct platform_device *pdev, pm_message_t msg)
 	 	     
 		printk("GPS BB is now in sleep state. \n");
 	 }
-	 
+#endif	 
 	return 0;
 }
 
