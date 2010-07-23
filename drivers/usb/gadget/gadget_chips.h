@@ -148,6 +148,12 @@
 #define gadget_is_s3c_hsudc(g) 0
 #endif
 
+#if CONFIG_USB_GADGET_S3C_OTGD
+#define gadget_is_s3c(g)	!strcmp("s3c-udc", (g)->name)
+#else
+#define gadget_is_s3c(g)	0
+#endif
+
 /**
  * usb_gadget_controller_number - support bcdDevice id convention
  * @gadget: the controller being driven
@@ -207,6 +213,8 @@ static inline int usb_gadget_controller_number(struct usb_gadget *gadget)
 		return 0x26;
 	else if (gadget_is_s3c_hsudc(gadget))
 		return 0x27;
+	else if (gadget_is_s3c(gadget))
+		return 0x28;
 	return -ENOENT;
 }
 
