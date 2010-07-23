@@ -106,7 +106,6 @@ static struct mutex	*mutex_for_fo;
 struct s5p_tv_status 	s5ptv_status;
 struct s5p_tv_vo 	s5ptv_overlay[2];
 
-#ifdef CONFIG_CPU_S5PV210
 int s5p_tv_phy_power(bool on)
 {
 	if (on) {
@@ -211,11 +210,6 @@ static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
 
 	return 0;
 }
-#else
-#define s5p_tv_clk_gate NULL
-#define s5p_tv_phy_power NULL
-#define s5p_tv_clk_get NULL
-#endif
 
 static irqreturn_t s5p_tv_enc_irq(int irq, void *dev_id)
 {
