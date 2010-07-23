@@ -498,3 +498,28 @@ struct platform_device s5p_device_hpd = {
 };
 EXPORT_SYMBOL(s5p_device_hpd);
 #endif
+
+#ifdef CONFIG_USB_SUPPORT
+/* USB Device (Gadget)*/
+static struct resource s3c_usbgadget_resource[] = {
+	[0] = {
+		.start	= S5P_PA_OTG,
+		.end	= S5P_PA_OTG + S5P_SZ_OTG - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_OTG,
+		.end	= IRQ_OTG,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s3c_device_usbgadget = {
+	.name		= "s3c-usbgadget",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s3c_usbgadget_resource),
+	.resource	= s3c_usbgadget_resource,
+};
+EXPORT_SYMBOL(s3c_device_usbgadget);
+#endif
+
