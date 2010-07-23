@@ -271,7 +271,7 @@
 #define S5P_HDMI_HDCP_RX_KSV_0_3		S5P_HDMI_BASE(0x065C)		/* Receiver¡¯s KSV 0 0x00 */
 #define S5P_HDMI_HDCP_RX_KSV_0_4		S5P_HDMI_BASE(0x0660)		/* Receiver¡¯s KSV 1 0x00 */
 			
-#define S5P_HDMI_HDCP_RX_KSV_LIST_CTRL		S5P_HDMI_BASE(0x0664)		/* Receiver¡¯s KSV 1 0x00 */
+#define S5P_HDMI_HDCP_KSV_LIST_CON		S5P_HDMI_BASE(0x0664)		/* Receiver¡¯s KSV 1 0x00 */
 #define S5P_HDMI_HDCP_SHA_RESULT		S5P_HDMI_BASE(0x0670)		/* 2nd authentication status 0x00 */
 #define S5P_HDMI_HDCP_CTRL1			S5P_HDMI_BASE(0x0680)		/* HDCP Control 0x00 */
 #define S5P_HDMI_HDCP_CTRL2			S5P_HDMI_BASE(0x0684)		/* HDCP Control 0x00 */
@@ -564,8 +564,8 @@
 #define S5P_HDMI_PX_LMT_CTRL_RGB		(1 << 5)
 #define S5P_HDMI_PX_LMT_CTRL_YPBPR		(2 << 5)
 #define S5P_HDMI_PX_LMT_CTRL_RESERVED		(3 << 5)
-#define S5P_HDMI_CON_PXL_REP_RATIO_MASK		(1 << 1 | 1 << 0)	/*Not support in S5PV210 */
-#define S5P_HDMI_DOUBLE_PIXEL_REPETITION	(0x01)		/*Not support in S5PV210 */
+#define S5P_HDMI_CON_PXL_REP_RATIO_MASK		(1 << 1 | 1 << 0)		/*Not support in S5PV210 */
+#define S5P_HDMI_DOUBLE_PIXEL_REPETITION	(0x01)				/*Not support in S5PV210 */
 
 /* HDMI_CON_2 */
 #define S5P_HDMI_VID_PREAMBLE_EN		(0 << 5)
@@ -648,15 +648,18 @@
 #define S5P_HDMI_SET_CMIN(x)			((x) & 0xFF)
 
 /* H_BLANK_0/1 */
-#define S5P_HDMI_H_BLANK_MASK			(0x3FF)
+#define S5P_HDMI_SET_H_BLANK_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_H_BLANK_1(x)		(((x) >> 8) & 0x3FF)
 
 /* V_BLANK_0/1/2 */
-#define S5P_HDMI_V1_BLANK_MASK			(0x7FF << 11)
-#define S5P_HDMI_V2_BLANK_MASK			(0x7FF)
+#define S5P_HDMI_SET_V_BLANK_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_V_BLANK_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_V_BLANK_2(x)		(((x) >> 16) & 0xFF)
 
 /* H_V_LINE_0/1/2 */
-#define S5P_HDMI_H_LINE_MASK			(0xFFF << 12)
-#define S5P_HDMI_V_LINE_MASK			(0xFFF)
+#define S5P_HDMI_SET_H_V_LINE_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_H_V_LINE_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_H_V_LINE_2(x)		(((x) >> 16) & 0xFF)
 
 /* VSYNC_POL */
 #define S5P_HDMI_V_SYNC_POL_ACT_LOW		(1)
@@ -667,46 +670,54 @@
 #define S5P_HDMI_PROGRESSIVE_MODE		(0)
 
 /* V_BLANK_F_0/1/2 */
-#define S5P_HDMI_V_BLANK_F_BOT_END_MASK		(0x7FF << 11)
-#define S5P_HDMI_V_BLANK_F_BOT_ST_MASK		(0x7FF)
-#define S5P_HDMI_V_BLANK_F_BOT_END_MASK		(0x7FF << 11)
-#define S5P_HDMI_V_BLANK_F_BOT_ST_MASK		(0x7FF)
-#define S5P_HDMI_V_BLANK_F_BOT_END_MASK		(0x7FF << 11)
-#define S5P_HDMI_V_BLANK_F_BOT_ST_MASK		(0x7FF)
+#define S5P_HDMI_SET_V_BLANK_F_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_V_BLANK_F_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_V_BLANK_F_2(x)		(((x) >> 16) & 0xFF)
+
 
 /* H_SYNC_GEN_0/1/2 */
-#define S5P_HDMI_H_SYNC_POL_ACT_LOW		(1 << 11)
-#define S5P_HDMI_H_SYNC_POL_ACT_HIGH		(0 << 11)
-#define S5P_HDMI_H_SYNC_EDN_MASK		(0x3FF << 10)
-#define S5P_HDMI_H_SYNC_START_MASK		(0x3FF)
+#define S5P_HDMI_SET_H_SYNC_GEN_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_H_SYNC_GEN_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_H_SYNC_GEN_2(x)		(((x) >> 16) & 0xFF)
+
 
 /* V_SYNC_GEN1_0/1/2 */
-#define S5P_HDMI_V_SYNC_T_ST_MASK		(0xFFF << 12)
-#define S5P_HDMI_V_SYNC_T_END_MASK		(0xFFF)
+#define S5P_HDMI_SET_V_SYNC_GEN1_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN1_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN1_2(x)		(((x) >> 16) & 0xFF)
 
 /* V_SYNC_GEN2_0/1/2 */
-#define S5P_HDMI_V_SYNC_B_ST_MASK		(0xFFF << 12)
-#define S5P_HDMI_V_SYNC_B_END_MASK		(0xFFF)
+#define S5P_HDMI_SET_V_SYNC_GEN2_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN2_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN2_2(x)		(((x) >> 16) & 0xFF)
 
 /* V_SYNC_GEN3_0/1/2 */
-#define S5P_HDMI_V_SYNC_H_ST_MASK		(0xFFF << 12)
-#define S5P_HDMI_V_SYNC_H_END_MASK		(0xFFF)
+#define S5P_HDMI_SET_V_SYNC_GEN3_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN3_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_V_SYNC_GEN3_2(x)		(((x) >> 16) & 0xFF)
 
 
 /* Audio Related Packet Register */
 
 /* ASP_CON */
 #define S5P_HDMI_AUD_DST_DOUBLE			(1 << 7)
+#define S5P_HDMI_AUD_NO_DST_DOUBLE		(0 << 7)
 #define S5P_HDMI_AUD_TYPE_SAMPLE		(0 << 5)
 #define S5P_HDMI_AUD_TYPE_ONE_BIT		(1 << 5)
 #define S5P_HDMI_AUD_TYPE_HBR			(2 << 5)
 #define S5P_HDMI_AUD_TYPE_DST			(3 << 5)
 #define S5P_HDMI_AUD_MODE_TWO_CH		(0 << 4)
 #define S5P_HDMI_AUD_MODE_MULTI_CH		(1 << 4)
+#define S5P_HDMI_AUD_SP_AUD3_EN			(1 << 3)
+#define S5P_HDMI_AUD_SP_AUD2_EN			(1 << 2)
+#define S5P_HDMI_AUD_SP_AUD1_EN			(1 << 1)
+#define S5P_HDMI_AUD_SP_AUD0_EN			(1 << 0)
+#define S5P_HDMI_AUD_SP_ALL_DIS			(0 << 0)
+
 #define S5P_HDMI_AUD_SET_SP_PRE(x)		((x) & 0xF)
 
 /* ASP_SP_FLAT */
-#define S5P_HDMI_SET_SP_FLAT(x)			((x) & 0xF)
+#define S5P_HDMI_ASP_SP_FLAT_AUD_SAMPLE		(0)
 
 /* ASP_CHCFG0/1/2/3 */
 #define S5P_HDMI_SPK3R_SEL_I_PCM0L		(0 << 27)
@@ -786,13 +797,20 @@
 #define S5P_HDMI_ACR_TX_MODE_MESURE_CTS		(4)
 
 /* ACR_MCTS0/1/2 */
-#define S5P_HDMI_ACR_MCTS_MAKS			(0xFFFFF)
+#define S5P_HDMI_SET_ACR_MCTS_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_ACR_MCTS_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_ACR_MCTS_2(x)		(((x) >> 16) & 0xFF)
 
 /* ACR_CTS0/1/2 */
-#define S5P_HDMI_ACR_CTS_MASK			(0xFFFFF)
+#define S5P_HDMI_SET_ACR_CTS_0(x)		((x) & 0xFF)
+#define S5P_HDMI_SET_ACR_CTS_1(x)		(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_ACR_CTS_2(x)		(((x) >> 16) & 0xFF)
 
 /* ACR_N0/1/2 */
-#define S5P_HDMI_ACR_N_MASK  			(0xFFFFF)
+#define S5P_HDMI_SET_ACR_N_0(x)			((x) & 0xFF)
+#define S5P_HDMI_SET_ACR_N_1(x)			(((x) >> 8) & 0xFF)
+#define S5P_HDMI_SET_ACR_N_2(x)			(((x) >> 16) & 0xFF)
+
 
 /* ACR_LSB2 */
 #define S5P_HDMI_ACR_LSB2_MASK			(0xFF)
@@ -807,6 +825,9 @@
 #define S5P_HDMI_ACR_CTS_OFFSET_MASK		(0xFF)
 
 /* GCP_CON */
+#define S5P_HDMI_GCP_CON_EN_1ST_VSYNC		(1 << 3)
+#define S5P_HDMI_GCP_CON_EN_2ST_VSYNC		(1 << 2)
+#define S5P_HDMI_GCP_CON_TRANS_EVERY_VSYNC	(2)
 #define S5P_HDMI_GCP_CON_NO_TRAN		(0)
 #define S5P_HDMI_GCP_CON_TRANS_ONCE		(1)
 #define S5P_HDMI_GCP_CON_TRANS_EVERY_VSYNC	(2)
@@ -817,8 +838,8 @@
 /* GCP_BYTE2 */
 #define S5P_HDMI_GCP_BYTE2_PP_MASK		(0xF << 4)
 #define S5P_HDMI_GCP_BYTE2_CD_24BPP		(1 << 2)
-#define S5P_HDMI_GCP_BYTE2_CD_30BPP		(1 << 0 | 1 << 2)	/*Not support in S5PV210 */ 
-#define S5P_HDMI_GCP_BYTE2_CD_36BPP		(1 << 1 | 1 << 2)	/*Not support in S5PV210 */
+#define S5P_HDMI_GCP_BYTE2_CD_30BPP		(1 << 0 | 1 << 2)		/*Not support in S5PV210 */ 
+#define S5P_HDMI_GCP_BYTE2_CD_36BPP		(1 << 1 | 1 << 2)		/*Not support in S5PV210 */
 #define S5P_HDMI_GCP_BYTE2_CD_48BPP		(1 << 0 | 1 << 1 | 1 << 2)	/*Not support in S5PV210 */
 
 
@@ -927,11 +948,13 @@
 /* HDCP_SHA1_00~19 */
 #define S5P_HDMI_SET_HDCP_SHA1(x)		((x) & 0xFF)
 
-/* HDCP_SHA_RESULT */
-#define S5P_HDMI_HDCP_SHA_VALID_NO_RD		(0 << 1)
-#define S5P_HDMI_HDCP_SHA_VALID_RD		(1 << 1)
-#define S5P_HDMI_HDCP_SHA_VALID			(0)
-#define S5P_HDMI_HDCP_SHA_NO_VALID		(1)
+/* HDCP_KSV_LIST_0~4 */
+
+/* HDCP_KSV_LIST_CON */
+#define S5P_HDMI_HDCP_KSV_WRITE_DONE		(0x1 << 3)
+#define S5P_HDMI_HDCP_KSV_LIST_EMPTY		(0x1 << 2)
+#define S5P_HDMI_HDCP_KSV_END			(0x1 << 1)
+#define S5P_HDMI_HDCP_KSV_READ			(0x1 << 0)
 
 /* HDCP_CTRL1 */
 #define S5P_HDMI_HDCP_EN_PJ_EN			(1 << 4)
@@ -997,8 +1020,16 @@
 
 
 /* SPDIF Register */
+
 /* SPDIFIN_CLK_CTRL */
+#define S5P_HDMI_SPDIFIN_READY_CLK_DOWN		(1 << 1)
+#define S5P_HDMI_SPDIFIN_CLK_ON			(1)
+
 /* SPDIFIN_OP_CTRL */
+#define S5P_HDMI_SPDIFIN_SW_RESET		(0)
+#define S5P_HDMI_SPDIFIN_STATUS_CHECK_MODE	(1)
+#define S5P_HDMI_SPDIFIN_STATUS_CHK_OP_MODE	(3)
+
 /* SPDIFIN_IRQ_MASK */
 
 /* SPDIFIN_IRQ_STATUS */
@@ -1028,6 +1059,8 @@
 #define S5P_HDMI_SPDIFIN_CFG_DATA_ALIGN_32BIT			(1 << 0)
 
 /* SPDIFIN_CONFIG_2 */
+#define S5P_HDMI_SPDIFIN_CFG2_NO_CLK_DIV			(0)
+
 /* SPDIFIN_USER_VALUE_1 */
 /* SPDIFIN_USER_VALUE_2 */
 /* SPDIFIN_USER_VALUE_3 */
@@ -1073,10 +1106,13 @@
 #define S5P_HDMI_I2S_BIT_CH_RESERVED		(2 << 4)
 #define S5P_HDMI_I2S_SDATA_16BIT		(1 << 2)
 #define S5P_HDMI_I2S_SDATA_20BIT		(2 << 2)
-#define S5P_HDMI_I2S_SDATA_24BIT		(3 << 1)
+#define S5P_HDMI_I2S_SDATA_24BIT		(3 << 2)
 #define S5P_HDMI_I2S_BASIC_FORMAT		(0)
 #define S5P_HDMI_I2S_L_JUST_FORMAT		(2)
 #define S5P_HDMI_I2S_R_JUST_FORMAT		(3)
+#define S5P_HDMI_I2S_CON_2_CLR			~(0xFF)
+#define S5P_HDMI_I2S_SET_BIT_CH(x)		(((x) & 0x7) << 4)
+#define S5P_HDMI_I2S_SET_SDATA_BIT(x)		(((x) & 0x7) << 2)
 
 /* I2S_PIN_SEL_0 */
 #define S5P_HDMI_I2S_SEL_SCLK(x)		(((x) & 0x7) << 4)
@@ -1121,9 +1157,11 @@
 #define S5P_HDMI_I2S_CUV_I2S_ENABLE		(1 << 1)
 #define S5P_HDMI_I2S_MUX_DISABLE		(0)
 #define S5P_HDMI_I2S_MUX_ENABLE			(1)
+#define S5P_HDMI_I2S_MUX_CON_CLR		~(0xFF)
 
 /* I2S_CH_ST_CON */
 #define S5P_HDMI_I2S_CH_STATUS_RELOAD		(1)
+#define S5P_HDMI_I2S_CH_ST_CON_CLR		~(1)
 
 /* I2S_CH_ST_0 / I2S_CH_ST_SH_0 */
 #define S5P_HDMI_I2S_CH_STATUS_MODE_0		(0 << 6)
@@ -1136,6 +1174,7 @@
 #define S5P_HDMI_I2S_NO_LINEAR_PCM		(1 << 1)
 #define S5P_HDMI_I2S_CONSUMER_FORMAT		(0)
 #define S5P_HDMI_I2S_PROF_FORMAT		(1)
+#define S5P_HDMI_I2S_CH_ST_0_CLR		~(0xFF)
 
 /* I2S_CH_ST_1 / I2S_CH_ST_SH_1 */
 #define S5P_HDMI_I2S_CD_PLAYER			(0x00)
@@ -1146,6 +1185,8 @@
 /* I2S_CH_ST_2 / I2S_CH_ST_SH_2 */
 #define S5P_HDMI_I2S_CHANNEL_NUM_MASK		(0xF << 4)
 #define S5P_HDMI_I2S_SOURCE_NUM_MASK		(0xF)
+#define S5P_HDMI_I2S_SET_CHANNEL_NUM(x)		((x) & (0xF) << 4)
+#define S5P_HDMI_I2S_SET_SOURCE_NUM(x)		((x) & (0xF))
 
 /* I2S_CH_ST_3 / I2S_CH_ST_SH_3 */
 #define S5P_HDMI_I2S_CLK_ACCUR_LEVEL_1		(1 << 4)
@@ -1155,6 +1196,7 @@
 #define S5P_HDMI_I2S_SAMPLING_FREQ_48		(0x2)
 #define S5P_HDMI_I2S_SAMPLING_FREQ_32		(0x3)
 #define S5P_HDMI_I2S_SAMPLING_FREQ_96		(0xA)
+#define S5P_HDMI_I2S_SET_SAMPLING_FREQ(x)	((x) & (0xF))
 
 /* I2S_CH_ST_4 / I2S_CH_ST_SH_4 */
 #define S5P_HDMI_I2S_ORG_SAMPLING_FREQ_44_1	(0xF << 4)
@@ -1182,16 +1224,23 @@
 /* I2S_MUX_CH */
 #define S5P_HDMI_I2S_CH3_R_EN			(1 << 7)
 #define S5P_HDMI_I2S_CH3_L_EN			(1 << 6)
+#define S5P_HDMI_I2S_CH3_EN			(3 << 6)
 #define S5P_HDMI_I2S_CH2_R_EN			(1 << 5)
 #define S5P_HDMI_I2S_CH2_L_EN			(1 << 4)
+#define S5P_HDMI_I2S_CH2_EN			(3 << 4)
 #define S5P_HDMI_I2S_CH1_R_EN			(1 << 3)
 #define S5P_HDMI_I2S_CH1_L_EN			(1 << 2)
+#define S5P_HDMI_I2S_CH1_EN			(3 << 2)
 #define S5P_HDMI_I2S_CH0_R_EN			(1 << 1)
 #define S5P_HDMI_I2S_CH0_L_EN			(1)
+#define S5P_HDMI_I2S_CH0_EN			(3)
+#define S5P_HDMI_I2S_CH_ALL_EN			(0xFF)
+#define S5P_HDMI_I2S_MUX_CH_CLR			~S5P_HDMI_I2S_CH_ALL_EN
 
 /* I2S_MUX_CUV */
 #define S5P_HDMI_I2S_CUV_R_EN			(1 << 1)
 #define S5P_HDMI_I2S_CUV_L_EN			(1)
+#define S5P_HDMI_I2S_CUV_RL_EN			(0x03)
 
 /* I2S_IRQ_MASK */
 #define S5P_HDMI_I2S_INT2_DIS			(0 << 1)
@@ -1263,13 +1312,13 @@
 #define S5P_HDMI_SET_TG_HACT_ST_L(x)		((x) & 0xFF)
 
 /* TG_HACT_ST_H */
-#define S5P_HDMI_SET_TG_HACT_ST_H(x)		(((x) >> 8) & 0x1F)
+#define S5P_HDMI_SET_TG_HACT_ST_H(x)		(((x) >> 8) & 0xF)
 
 /* TG_HACT_SZ_L */
 #define S5P_HDMI_SET_TG_HACT_SZ_L(x)		((x) & 0xFF)
 
 /* TG_HACT_SZ_H */
-#define S5P_HDMI_SET_TG_HACT_SZ_H(x)		(((x) >> 8) & 0x1F)
+#define S5P_HDMI_SET_TG_HACT_SZ_H(x)		(((x) >> 8) & 0xF)
 
 /* TG_V_FSZ_L */
 #define S5P_HDMI_SET_TG_V_FSZ_L(x)		((x) & 0xFF)
@@ -1394,9 +1443,14 @@
 /* EFUSE_SDOUT_OFFSET */
 /* EFUSE_READ_OFFSET */
 
+/* HDCP_SHA_RESULT */								/* Not support in s5pv210 */
+#define S5P_HDMI_HDCP_SHA_VALID_NO_RD		(0 << 1)			/* Not support in s5pv210 */
+#define S5P_HDMI_HDCP_SHA_VALID_RD		(1 << 1)			/* Not support in s5pv210 */
+#define S5P_HDMI_HDCP_SHA_VALID			(1)				/* Not support in s5pv210 */
+#define S5P_HDMI_HDCP_SHA_NO_VALID		(0)				/* Not support in s5pv210 */
 
 /* DC_CONTRAL */
-#define S5P_HDMI_DC_CTL_12			(1 << 1)	/*Not support in S5PV210 */
-#define S5P_HDMI_DC_CTL_8 			(0)		/*Not support in S5PV210 */
-#define S5P_HDMI_DC_CTL_10			(1)		/*Not support in S5PV210 */
+#define S5P_HDMI_DC_CTL_12			(1 << 1)			/*Not support in S5PV210 */
+#define S5P_HDMI_DC_CTL_8 			(0)				/*Not support in S5PV210 */
+#define S5P_HDMI_DC_CTL_10			(1)				/*Not support in S5PV210 */
 #endif // __ASM_ARCH_REGS_HDMI_H

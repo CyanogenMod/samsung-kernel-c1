@@ -126,5 +126,3 @@ MODULE_LICENSE("GPL");
 
 module_init(s5p_ddc_init);
 module_exit(s5p_ddc_exit);
-
-

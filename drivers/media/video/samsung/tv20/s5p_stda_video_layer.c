@@ -20,6 +20,7 @@
 #include <linux/uaccess.h>
 
 #include "s5p_tv.h"
+#include "s5p_stda_video_layer.h"
 
 #ifdef COFIG_TVOUT_DBG
 #define S5P_VLAYER_DEBUG  1
@@ -32,7 +33,8 @@
 #define VLAYERPRINTK(fmt, args...)
 #endif
 
-u8 s5p_vlayer_check_input_mode(enum s5p_vp_src_color color)
+
+static u8 s5p_vlayer_check_input_mode(enum s5p_vp_src_color color)
 {
 	u8 ret = PROGRESSIVE;
 
@@ -46,7 +48,7 @@ u8 s5p_vlayer_check_input_mode(enum s5p_vp_src_color color)
 	return ret;
 }
 
-u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
+static u8 s5p_vlayer_check_output_mode(enum s5p_tv_disp_mode display,
 				enum s5p_tv_o_mode out)
 {
 	u8 ret = PROGRESSIVE;
@@ -334,25 +336,6 @@ bool s5p_vlayer_set_alpha(unsigned long buf_in)
 	return true;
 }
 
-bool s5p_vlayer_set_field_id(unsigned long buf_in)
-{
-	int verr;
-
-	s5ptv_status.field_id = (enum s5p_vp_field)(buf_in);
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	s5p_vp_set_field_id(s5ptv_status.field_id);
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	return true;
-}
-
 bool s5p_vlayer_set_top_address(unsigned long buf_in)
 {
 	u32 t_y_addr = 0;
@@ -385,57 +368,6 @@ bool s5p_vlayer_set_top_address(unsigned long buf_in)
 	if (s5p_vlayer_check_input_mode(s5ptv_status.src_color) == INTERLACED) {
 		s5p_vp_set_field_id(s5ptv_status.field_id);
 		verr = s5p_vp_set_bottom_field_address(b_y_addr, b_c_addr);
-
-		if (verr != 0)
-			return false;
-	}
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	return true;
-}
-
-bool s5p_vlayer_set_bottom_address(unsigned long buf_in)
-{
-	u32 t_y_addr = 0;
-	u32 t_c_addr = 0;
-	u32 b_y_addr = 0;
-	u32 b_c_addr = 0;
-
-	u32 img_width = s5ptv_status.vl_basic_param.img_width;
-
-	struct s5p_video_img_address *addr =
-		(struct s5p_video_img_address *)buf_in;
-	int verr;
-	enum s5p_vp_src_color s_color = s5ptv_status.src_color;
-
-	if (s_color == VPROC_SRC_COLOR_NV12IW) {
-		s5ptv_status.vl_basic_param.top_y_address =
-			addr->y_address - img_width;
-		s5ptv_status.vl_basic_param.top_c_address =
-			addr->c_address - img_width;
-	}
-
-	s5p_vlayer_calc_inner_values();
-
-	t_y_addr = s5ptv_status.vl_top_y_address;
-	t_c_addr = s5ptv_status.vl_top_c_address;
-	b_y_addr = s5ptv_status.vl_bottom_y_address;
-	b_c_addr = s5ptv_status.vl_bottom_c_address;
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	verr = s5p_vp_set_bottom_field_address(b_y_addr, b_c_addr);
-
-	if (verr != 0)
-		return false;
-
-	if (s5ptv_status.src_color == VPROC_SRC_COLOR_NV12IW) {
-		verr = s5p_vp_set_top_field_address(t_y_addr, t_c_addr);
 
 		if (verr != 0)
 			return false;
@@ -589,162 +521,6 @@ bool s5p_vlayer_set_dest_size(unsigned long buf_in)
 
 	if (verr != 0)
 		return false;
-
-	return true;
-}
-
-bool s5p_vlayer_set_brightness(unsigned long buf_in)
-{
-	int verr;
-
-	s5ptv_status.us_vl_brightness = (unsigned short)buf_in;
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	s5p_vp_set_brightness(s5ptv_status.us_vl_brightness);
-
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	return true;
-}
-
-bool s5p_vlayer_set_contrast(unsigned long buf_in)
-{
-	int verr;
-
-	s5ptv_status.vl_contrast = (unsigned char)buf_in;
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	s5p_vp_set_contrast(s5ptv_status.vl_contrast);
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	return true;
-}
-
-void s5p_vlayer_get_priority(unsigned long buf_out)
-{
-	unsigned int *id = (unsigned int *)buf_out;
-
-	*id = s5ptv_status.vl_basic_param.priority;
-}
-
-bool s5p_vlayer_set_brightness_contrast_control(unsigned long buf_in)
-{
-	u32 intc;
-	u32 slope;
-
-	enum s5p_vp_line_eq eq_num;
-	int verr;
-	struct s5p_vl_bright_contrast_ctrl *ctrl =
-		(struct s5p_vl_bright_contrast_ctrl *)buf_in;
-
-	if (ctrl->eq_num > VProc_LINE_EQ_7 ||
-		ctrl->eq_num < VProc_LINE_EQ_0) {
-		VLAYERPRINTK("(ERR) : invalid eq_num(%d)\n\r", ctrl->eq_num);
-
-		return false;
-	}
-
-	memcpy((void *)&(s5ptv_status.vl_bc_control[ctrl->eq_num]),
-		(const void *)ctrl, sizeof(struct s5p_vl_csc_ctrl));
-
-	eq_num 	= s5ptv_status.vl_bc_control[ctrl->eq_num].eq_num;
-	intc 	= s5ptv_status.vl_bc_control[ctrl->eq_num].intc;
-	slope 	= s5ptv_status.vl_bc_control[ctrl->eq_num].slope;
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-
-	verr = s5p_vp_set_brightness_contrast_control(eq_num, intc, slope);
-
-	if (verr != 0)
-		return false;
-
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	return true;
-}
-
-bool s5p_vlayer_set_poly_filter_coef(unsigned long buf_in)
-{
-	struct s5p_video_poly_filter_coef *coef =
-		(struct s5p_video_poly_filter_coef *)buf_in;
-	int verr;
-
-	if (coef->poly_coeff < VPROC_POLY8_Y0_LL ||
-		(coef->poly_coeff > VPROC_POLY8_Y3_HH &&
-		coef->poly_coeff < VPROC_POLY4_Y0_LL) ||
-		coef->poly_coeff > VPROC_POLY4_C1_HH) {
-		VLAYERPRINTK("(ERR) : invalid poly_coeff(%d)\n\r",
-			coef->poly_coeff);
-
-		return false;
-	}
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	verr = s5p_vp_set_poly_filter_coef(coef->poly_coeff,
-					coef->ch0, coef->ch1,
-					coef->ch2, coef->ch3);
-
-	if (verr != 0)
-		return false;
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	s5ptv_status.vl_poly_filter_default = false;
-
-	return true;
-}
-
-bool s5p_vlayer_set_csc_coef(unsigned long buf_in)
-{
-	struct s5p_video_csc_coef *coef = (struct s5p_video_csc_coef *)buf_in;
-	int verr;
-
-	if (coef->csc_coeff < VPROC_CSC_Y2Y_COEF ||
-		coef->csc_coeff > VPROC_CSC_CR2CR_COEF) {
-		VLAYERPRINTK("(ERR) : invalid csc_coeff(%d)\n\r",
-			coef->csc_coeff);
-
-		return false;
-	}
-
-	if (s5p_vp_get_update_status())
-		return false;
-
-	verr = s5p_vp_init_csc_coef(coef->csc_coeff, coef->coeff);
-
-	if (verr != 0)
-		return false;
-
-
-	verr = s5p_vp_update();
-
-	if (verr != 0)
-		return false;
-
-	s5ptv_status.vl_csc_coef_default = false;
 
 	return true;
 }

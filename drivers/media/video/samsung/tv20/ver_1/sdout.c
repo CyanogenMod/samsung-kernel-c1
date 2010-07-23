@@ -40,7 +40,7 @@
 static struct resource	*sdout_mem;
 void __iomem		*sdout_base;
 
-void s5p_tv_powerset_dac_onoff(unsigned short on)
+void s5p_tv_power_set_dac_onoff(unsigned short on)
 {
 	if (on)
 		writel(S5P_DAC_ENABLE, S5P_DAC_CONTROL);
@@ -474,7 +474,7 @@ void s5p_sdout_init_brightness_hue_saturation(u32 gain_brightness,
 			sdout_base + S5P_SDO_CB_CR_OFFSET);
 }
 
-void	s5p_sdout_init_rgb_color_compensation(u32 max_rgbcube, u32 min_rgbcube)
+void s5p_sdout_init_rgb_color_compensation(u32 max_rgbcube, u32 min_rgbcube)
 {
 	SDPRINTK("0x%08x, 0x%08x\n\r", max_rgbcube, min_rgbcube);
 
@@ -586,30 +586,6 @@ int s5p_sdout_init_vesa_rgb_sync(enum s5p_sd_vesa_rgb_sync_type sync_type,
 	writel(temp_reg, sdout_base + S5P_SDO_RGBSYNC);
 
 	return 0;
-}
-
-void s5p_sdout_init_oversampling_filter_coeff(u32 size, u32 *coeff,
-						u32 *coeff1, u32 *coeff2)
-{
-	u32 *temp_reg = 0;
-
-	SDPRINTK(" %d, 0x%x, 0x%x, 0x%x\n\r", (u32)size, (u32)coeff,
-		(u32)coeff1, (u32)coeff2);
-
-	if (coeff != NULL) {
-		temp_reg = (u32 *)readl(sdout_base + S5P_SDO_OSFC00_0);
-		memcpy((void *)temp_reg, (const void *)coeff, size*4);
-	}
-
-	if (coeff1 != NULL) {
-		temp_reg = (u32 *)readl(sdout_base + S5P_SDO_OSFC00_1);
-		memcpy((void *)temp_reg, (const void *)coeff1, size*4);
-	}
-
-	if (coeff2 != NULL) {
-		temp_reg = (u32 *)readl(sdout_base + S5P_SDO_OSFC00_2);
-		memcpy((void *)temp_reg, (const void *)coeff2, size*4);
-	}
 }
 
 int s5p_sdout_init_ch_xtalk_cancel_coef(enum s5p_sd_channel_sel channel,

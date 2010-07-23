@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/samsung/tv20/ver_1/vp_coeff.h
+/* linux/drivers/media/video/samsung/tv20/ver_1/vp_coeff.c
  *
  * Copyright (c) 2009 Samsung Electronics
  * 	http://www.samsung.com/
  *
- * Video Processor coefficient header file for Samsung TVOut driver
+ * Video Processor coefficient data file for Samsung TVOut driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

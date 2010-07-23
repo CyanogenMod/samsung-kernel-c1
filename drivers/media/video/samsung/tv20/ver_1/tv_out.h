@@ -9,6 +9,9 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
 */
+#ifndef _LINUX_TV_OUT_H_
+#define _LINUX_TV_OUT_H_
+
 #include <linux/i2c.h>
 /* #define COFIG_TVOUT_RAW_DBG */
 
@@ -25,11 +28,11 @@
 /* HDCP */
 #define INFINITE		0xffffffff
 
-#define AN_SIZE 		8
-#define AKSV_SIZE 		5
-#define BKSV_SIZE 		5
-#define R_VAL_RETRY_CNT   	5
-#define AINFO_SIZE		1
+#define AN_SIZE			8
+#define AKSV_SIZE		5
+#define BKSV_SIZE		5
+#define R_VAL_RETRY_CNT		5
+
 #define BCAPS_SIZE		1
 #define BSTATUS_SIZE		2
 #define SHA_1_HASH_SIZE		20
@@ -53,13 +56,6 @@
 #define REPEATER_ILLEGAL_DEVICE_ERROR	(-3)
 #define REPEATER_TIMEOUT_ERROR		(-4)
 
-#define SET_HDCP_KSV_READ		(0x1 << 0)
-#define SET_HDCP_KSV_END		(0x1 << 1)
-#define SET_HDCP_KSV_LIST_EMPTY 	(0x1 << 2)
-#define SET_HDCP_KSV_WRITE_DONE		(0x1 << 3)
-
-#define SET_HDCP_SHA_VALID		(0x1 << 0)
-#define SET_HDCP_SHA_VALID_READY	(0x1 << 1)
 
 #define MAX_CASCADE_EXCEEDED       	(0x1 << 3)
 #define MAX_DEVS_EXCEEDED          	(0x1 << 7)
@@ -636,20 +632,16 @@ typedef int (*hdmi_isr)(int irq);
 
 void s5p_hdmi_sw_hpd_enable(bool enable);
 void s5p_hdmi_set_hpd_onoff(bool on_off);
-
 int s5p_hdmi_register_isr(hdmi_isr isr, u8 irq_num);
 void s5p_hdmi_enable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
 void s5p_hdmi_disable_interrupts(enum s5p_tv_hdmi_interrrupt intr);
-void s5p_hdmi_hpd_gen(void);
-u8 s5p_hdmi_get_interrupts(void);
 u8 s5p_hdmi_get_enabled_interrupt(void);
 int s5p_hdcp_hdmi_set_dvi(bool en);
 void s5p_hdcp_hdmi_mute_en(bool en);
-
 bool s5p_hdcp_stop(void);
+void  s5p_hdmi_video_set_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);
 
 extern u8 hdcp_protocol_status;
 extern void __iomem *hdmi_base;
 
-
-void  s5p_hdmi_video_set_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);
+#endif /* _LINUX_TV_OUT_H_ */

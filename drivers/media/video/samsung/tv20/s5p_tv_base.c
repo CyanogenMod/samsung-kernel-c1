@@ -41,6 +41,14 @@
 #include <mach/pd.h>
 
 #include "s5p_tv.h"
+#include "s5p_tv_base.h"
+#include "hpd.h"
+#include "s5p_stda_grp.h"
+#include "s5p_stda_tvout_if.h"
+#include "s5p_stda_video_layer.h"
+#include "s5p_tv_fb.h"
+#include "s5p_tv_v4l2.h"
+
 
 #ifdef COFIG_TVOUT_DBG
 #define S5P_TV_BASE_DEBUG 1
@@ -282,23 +290,23 @@ drv_used:
 	return ret;
 }
 
-int s5p_tv_v_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+static int s5p_tv_v_read(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
 	return 0;
 }
 
-int s5p_tv_v_write(struct file *filp, const char *buf, size_t count,
+static int s5p_tv_v_write(struct file *filp, const char *buf, size_t count,
 			loff_t *f_pos)
 {
 	return 0;
 }
 
-int s5p_tv_v_mmap(struct file *filp, struct vm_area_struct *vma)
+static int s5p_tv_v_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	return 0;
 }
 
-int s5p_tv_v_release(struct file *filp)
+static int s5p_tv_v_release(struct file *filp)
 {
 	s5p_vlayer_stop();
 	s5p_tv_if_stop();
@@ -349,7 +357,7 @@ resource_busy:
 	return ret;
 }
 
-int s5p_tv_vo_release(int layer, struct file *filp)
+static int s5p_tv_vo_release(int layer, struct file *filp)
 {
 	s5p_grp_stop(layer);
 
@@ -431,20 +439,7 @@ err_alloc_fb:
 	return ret;
 }
 
-int s5p_tv_fb_free_framebuffer(void)
-{
-#ifndef CONFIG_USER_ALLOC_TVOUT
-	if (s5ptv_status.fb)
-		s5p_tv_fb_unmap_video_memory(s5ptv_status.fb);
-#endif
-
-	if (s5ptv_status.fb)
-		framebuffer_release(s5ptv_status.fb);
-
-	return 0;
-}
-
-int s5p_tv_fb_register_framebuffer(void)
+static int s5p_tv_fb_register_framebuffer(void)
 {
 	int ret;
 
@@ -510,7 +505,7 @@ static struct v4l2_file_operations s5p_tv_vo1_fops = {
 };
 #endif
 
-void s5p_tv_vdev_release(struct video_device *vdev)
+static void s5p_tv_vdev_release(struct video_device *vdev)
 {
 	kfree(vdev);
 }
@@ -708,7 +703,7 @@ static int s5p_tv_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-int s5p_tv_suspend(struct platform_device *dev, pm_message_t state)
+static int s5p_tv_suspend(struct platform_device *dev, pm_message_t state)
 {
 	/* video layer stop */
 	if (s5ptv_status.vp_layer_enable) {
@@ -742,7 +737,7 @@ int s5p_tv_suspend(struct platform_device *dev, pm_message_t state)
 	return 0;
 }
 
-int s5p_tv_resume(struct platform_device *dev)
+static int s5p_tv_resume(struct platform_device *dev)
 {
 	/* tv on */
 	if (s5ptv_status.tvout_output_enable) {
@@ -794,7 +789,7 @@ static struct platform_driver s5p_tv_driver = {
 static char banner[] __initdata =
 	KERN_INFO "S5P TVOUT Driver, (c) 2009 Samsung Electronics\n";
 
-int __init s5p_tv_init(void)
+static int __init s5p_tv_init(void)
 {
 	int ret;
 

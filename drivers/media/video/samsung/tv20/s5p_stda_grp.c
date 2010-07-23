@@ -19,6 +19,7 @@
 #include <linux/uaccess.h>
 
 #include "s5p_tv.h"
+#include "s5p_stda_grp.h"
 
 #ifdef COFIG_TVOUT_DBG
 #define S5P_GRP_DEBUG 1

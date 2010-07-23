@@ -23,6 +23,7 @@
 #include <plat/clock.h>
 
 #include "s5p_tv.h"
+#include "s5p_stda_tvout_if.h"
 
 #ifdef COFIG_TVOUT_DBG
 #define S5P_STDA_TVOUTIF_DEBUG 1
@@ -187,7 +188,7 @@ bool s5p_tv_if_init_param(void)
 	return true;
 }
 
-bool s5p_tv_if_init_vm_reg(void)
+static bool s5p_tv_if_init_vm_reg(void)
 {
 	u8 i = 0;
 	int merr = 0;
@@ -285,7 +286,7 @@ bool s5p_tv_if_init_vm_reg(void)
 	return true;
 }
 
-bool s5p_tv_if_init_sd_reg(void)
+static bool s5p_tv_if_init_sd_reg(void)
 {
 	u8 i = 0;
 	int sderr = 0;
@@ -521,7 +522,7 @@ bool s5p_tv_if_init_sd_reg(void)
 
 	s5p_sdout_start();
 
-	s5p_tv_powerset_dac_onoff(true);
+	s5p_tv_power_set_dac_onoff(true);
 
 	for (i = SDOUT_CHANNEL_0; i <= SDOUT_CHANNEL_2; i++) {
 		bool dac = st->sdout_dac_on[i];
@@ -535,7 +536,7 @@ bool s5p_tv_if_init_sd_reg(void)
 	return true;
 }
 
-unsigned char s5p_tv_if_video_avi_checksum(void)
+static unsigned char s5p_tv_if_video_avi_checksum(void)
 {
 	u8 i;
 	u32 sum = 0;
@@ -547,7 +548,7 @@ unsigned char s5p_tv_if_video_avi_checksum(void)
 	return (u8)(0x100 - ((0x91 + sum) & 0xff));
 }
 
-bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
+static bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 {
 	struct s5p_tv_status *st = &s5ptv_status;
 
@@ -648,7 +649,7 @@ bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 	return true;
 }
 
-bool s5p_tv_if_init_hd_video_reg(void)
+static bool s5p_tv_if_init_hd_video_reg(void)
 {
 	int herr = 0;
 	enum s5p_tv_hdmi_csc_type cscType;
@@ -746,7 +747,7 @@ bool s5p_tv_if_init_hd_video_reg(void)
 	return true;
 }
 
-bool s5p_tv_if_init_hd_reg(void)
+static bool s5p_tv_if_init_hd_reg(void)
 {
 	struct s5p_tv_status *st = &s5ptv_status;
 	bool timing_correction_en = st->hdmi_tg_cmd.timing_correction_en;

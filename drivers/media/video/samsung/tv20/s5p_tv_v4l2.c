@@ -22,6 +22,11 @@
 #include <media/v4l2-ioctl.h>
 
 #include "s5p_tv.h"
+#include "s5p_tv_v4l2.h"
+
+#include "s5p_stda_grp.h"
+#include "s5p_stda_tvout_if.h"
+#include "s5p_stda_video_layer.h"
 
 #ifdef COFIG_TVOUT_DBG
 #define S5P_V4L2_DEBUG 1

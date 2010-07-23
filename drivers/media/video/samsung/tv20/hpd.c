@@ -27,8 +27,9 @@
 #include <mach/gpio-bank.h>
 #include <mach/regs-gpio.h>
 #include <mach/gpio.h>
-#include "s5p_tv.h"
+
 #include "hpd.h"
+#include "s5p_tv_base.h"
 
 /* #define HPDDEBUG */
 
@@ -52,19 +53,19 @@ int s5p_hpd_get_state(void)
        return atomic_read(&hpd_struct.state);
 }
 
-int s5p_hpd_open(struct inode *inode, struct file *file)
+static int s5p_hpd_open(struct inode *inode, struct file *file)
 {
 	atomic_set(&poll_state, 1);
 
 	return 0;
 }
 
-int s5p_hpd_release(struct inode *inode, struct file *file)
+static int s5p_hpd_release(struct inode *inode, struct file *file)
 {
 	return 0;
 }
 
-ssize_t s5p_hpd_read(struct file *file, char __user *buffer, size_t count,
+static ssize_t s5p_hpd_read(struct file *file, char __user *buffer, size_t count,
 			loff_t *ppos)
 {
 	ssize_t retval;
@@ -81,7 +82,7 @@ ssize_t s5p_hpd_read(struct file *file, char __user *buffer, size_t count,
 	return retval;
 }
 
-unsigned int s5p_hpd_poll(struct file *file, poll_table *wait)
+static unsigned int s5p_hpd_poll(struct file *file, poll_table *wait)
 {
 	poll_wait(file, &hpd_struct.waitq, wait);
 
@@ -150,7 +151,7 @@ int s5p_hpd_set_eint(void)
 	return 0;
 }
 
-int s5p_hdp_irq_eint(int irq)
+static int s5p_hdp_irq_eint(int irq)
 {
 	if (gpio_get_value(S5PV210_GPH1(5))) {
 		atomic_set(&hpd_struct.state, HPD_HI);
@@ -180,7 +181,7 @@ int s5p_hdp_irq_eint(int irq)
 
 }
 
-int s5p_hpd_irq_hdmi(int irq)
+static int s5p_hpd_irq_hdmi(int irq)
 {
 	u8 flag;
 	int ret = IRQ_HANDLED;
@@ -251,7 +252,7 @@ out:
  * Handles interrupt requests from HPD hardware.
  * Handler changes value of internal variable and notifies waiting thread.
  */
-irqreturn_t s5p_hpd_irq_handler(int irq)
+static irqreturn_t s5p_hpd_irq_handler(int irq)
 {
 	int ret = IRQ_HANDLED;
 
@@ -324,12 +325,12 @@ static int s5p_hpd_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-int s5p_hpd_suspend(struct platform_device *dev, pm_message_t state)
+static int s5p_hpd_suspend(struct platform_device *dev, pm_message_t state)
 {
 	return 0;
 }
 
-int s5p_hpd_resume(struct platform_device *dev)
+static int s5p_hpd_resume(struct platform_device *dev)
 {
 	return 0;
 }
@@ -352,7 +353,7 @@ static struct platform_driver s5p_hpd_driver = {
 static char banner[] __initdata =
 	"S5P HPD Driver, (c) 2009 Samsung Electronics\n";
 
-int __init s5p_hpd_init(void)
+static int __init s5p_hpd_init(void)
 {
 	int ret;
 

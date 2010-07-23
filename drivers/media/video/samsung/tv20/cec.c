@@ -20,13 +20,13 @@
 #include <linux/poll.h>
 #include <linux/io.h>
 #include <linux/uaccess.h>
-
+#include <linux/slab.h>
 #include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
 #include <mach/regs-gpio.h>
 
-#include "s5p_tv.h"
 #include "cec.h"
+#include "s5p_tv_base.h"
 
 #ifdef CECDEBUG
 #define CECIFPRINTK(fmt, args...) \
@@ -40,17 +40,18 @@ static struct cec_tx_struct cec_tx_struct;
 
 static bool hdmi_on;
 
+
 void s5p_cec_set_tx_state(enum cec_state state)
 {
 	atomic_set(&cec_tx_struct.state, state);
 }
 
-void s5p_cec_set_rx_state(enum cec_state state)
+static void s5p_cec_set_rx_state(enum cec_state state)
 {
 	atomic_set(&cec_rx_struct.state, state);
 }
 
-int s5p_cec_open(struct inode *inode, struct file *file)
+static int s5p_cec_open(struct inode *inode, struct file *file)
 {
 	s5p_tv_clk_gate(true);
 
@@ -71,7 +72,7 @@ int s5p_cec_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-int s5p_cec_release(struct inode *inode, struct file *file)
+static int s5p_cec_release(struct inode *inode, struct file *file)
 {
 	s5p_tv_clk_gate(false);
 
@@ -83,7 +84,7 @@ int s5p_cec_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-ssize_t s5p_cec_read(struct file *file, char __user *buffer,
+static ssize_t s5p_cec_read(struct file *file, char __user *buffer,
 			size_t count, loff_t *ppos)
 {
 	ssize_t retval;
@@ -116,7 +117,7 @@ ssize_t s5p_cec_read(struct file *file, char __user *buffer,
 	return retval;
 }
 
-ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
+static ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 			size_t count, loff_t *ppos)
 {
 	char *data;
@@ -159,7 +160,7 @@ ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
-int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
+static int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
 			unsigned long arg)
 {
 	u32 laddr;
@@ -183,7 +184,7 @@ int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
 	return 0;
 }
 
-u32 s5p_cec_poll(struct file *file, poll_table *wait)
+static u32 s5p_cec_poll(struct file *file, poll_table *wait)
 {
 	poll_wait(file, &cec_rx_struct.waitq, wait);
 
@@ -209,7 +210,7 @@ static struct miscdevice cec_misc_device = {
 	.fops  = &cec_fops,
 };
 
-irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
+static irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 {
 
 	u32 status = 0;
@@ -329,7 +330,7 @@ static int s5p_cec_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
+static int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
 {
 	if (hdmi_on)
 		s5p_tv_clk_gate(false);
@@ -337,7 +338,7 @@ int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
 	return 0;
 }
 
-int s5p_cec_resume(struct platform_device *dev)
+static int s5p_cec_resume(struct platform_device *dev)
 {
 	if (hdmi_on)
 		s5p_tv_clk_gate(true);
@@ -363,7 +364,7 @@ static struct platform_driver s5p_cec_driver = {
 static char banner[] __initdata =
 	"S5P CEC Driver, (c) 2009 Samsung Electronics\n";
 
-int __init s5p_cec_init(void)
+static int __init s5p_cec_init(void)
 {
 	int ret;
 

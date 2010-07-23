@@ -10,9 +10,14 @@
  * published by the Free Software Foundation.
 */
 
-/*#define CECDEBUG	1*/
+#ifndef _LINUX_CEC_IF_H_
+#define _LINUX_CEC_IF_H_
 
 #include <linux/platform_device.h>
+
+#include "ver_1/tvout_ver_1.h"
+
+/*#define CECDEBUG	1*/
 
 #define VERSION   "1.0" /* Driver version number */
 #define CEC_MINOR 242   /* Major 10, Minor 242, /dev/cec */
@@ -66,23 +71,5 @@ struct cec_tx_struct {
 /* CEC Tx buffer size */
 #define CEC_TX_BUFF_SIZE            16
 
-void s5p_cec_set_divider(void);
-void s5p_cec_enable_rx(void);
-void s5p_cec_mask_rx_interrupts(void);
-void s5p_cec_unmask_rx_interrupts(void);
-void s5p_cec_mask_tx_interrupts(void);
-void s5p_cec_unmask_tx_interrupts(void);
 void s5p_cec_set_tx_state(enum cec_state state);
-void s5p_cec_set_rx_state(enum cec_state state);
-void s5p_cec_reset(void);
-void s5p_cec_tx_reset(void);
-void s5p_cec_rx_reset(void);
-void s5p_cec_threshold(void);
-void s5p_cec_copy_packet(char *data, size_t count);
-void s5p_cec_set_addr(u32 addr);
-u32 s5p_cec_get_status(void);
-void s5p_clr_pending_tx(void);
-void s5p_clr_pending_rx(void);
-void s5p_cec_get_rx_buf(u32 size, u8 *buffer);
-void __init s5p_cec_mem_probe(struct platform_device *pdev);
-
+#endif /* _LINUX_CEC_IF_H_ */

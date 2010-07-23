@@ -9,6 +9,10 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
 */
+#ifndef _LINUX_HPD_H_
+#define _LINUX_HPD_H_
+
+#include "ver_1/tvout_ver_1.h"
 
 #define VERSION         "1.2" /* Driver version number */
 #define HPD_MINOR       243 /* Major 10, Minor 243, /dev/hpd */
@@ -25,6 +29,8 @@ struct hpd_struct {
 	atomic_t state;
 };
 
-int s5p_hpd_set_eint(void);
+int s5p_hpd_get_state(void);
 int s5p_hpd_set_hdmiint(void);
+int s5p_hpd_set_eint(void);
 
+#endif /* _LINUX_HPD_H_ */

@@ -24,7 +24,7 @@
 #include "tv_out.h"
 
 #include <mach/regs-vprocessor.h>
-#include "vp_coeff.h"
+#include "vp_coeff.c"
 
 #ifdef COFIG_TVOUT_RAW_DBG
 #define S5P_VP_DEBUG 1
@@ -98,9 +98,8 @@ int s5p_vp_set_img_size(u32 img_width, u32 img_height)
 
 	if (S5P_VP_IMG_SIZE_ILLEGAL(img_width) ||
 			S5P_VP_IMG_SIZE_ILLEGAL(img_height)) {
-		VPPRINTK(" image full size is not double word align =\
-			%d, %d\n\r",
-			img_width, img_height);
+		VPPRINTK(" image full size is not double word align ="
+			"%d, %d\n\r", img_width, img_height);
 
 		return -1;
 	}
@@ -178,7 +177,7 @@ int s5p_vp_set_poly_filter_coef(enum s5p_vp_poly_coeff poly_coeff,
 	return 0;
 }
 
-void s5p_vp_set_poly_filter_coef_default(u32 h_ratio, u32 v_ratio)
+static void s5p_vp_set_poly_filter_coef_default(u32 h_ratio, u32 v_ratio)
 {
 	enum s5p_tv_vp_filter_h_pp e_h_filter;
 	enum s5p_tv_vp_filter_v_pp e_v_filter;
@@ -263,21 +262,6 @@ void s5p_vp_set_poly_filter_coef_default(u32 h_ratio, u32 v_ratio)
 	}
 
 	VPPRINTK("%d, %d\n\r", e_h_filter, e_v_filter);
-}
-
-void s5p_vp_set_src_dest_size_with_default_poly_filter_coef(u32 src_width,
-							u32 src_height,
-							u32 dst_width,
-							u32 dst_height,
-							bool ipc_2d)
-{
-	u32 h_ratio = (src_width << 16) / dst_width;
-	u32 v_ratio = (ipc_2d) ? ((src_height << 17) / dst_height) :
-				  ((src_height << 16) / dst_height);
-
-	s5p_vp_set_src_dest_size(src_width, src_height, dst_width,
-					dst_height, ipc_2d);
-	s5p_vp_set_poly_filter_coef_default(h_ratio, v_ratio);
 }
 
 int s5p_vp_set_brightness_contrast_control(enum s5p_vp_line_eq eq_num,

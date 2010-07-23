@@ -36,9 +36,9 @@
 #define VMPRINTK(fmt, args...)
 #endif
 
-
 static struct resource	*mixer_mem;
 void __iomem		*mixer_base;
+
 
 int s5p_vmx_set_layer_show(enum s5p_tv_vmx_layer layer, bool show)
 {
@@ -474,7 +474,7 @@ int s5p_vmx_init_display_mode(enum s5p_tv_disp_mode mode,
 	return 0;
 }
 
-u32 s5p_vmx_grp_scaling_factor(u32 src, u32 dst, u32 h_v)
+static u32 s5p_vmx_grp_scaling_factor(u32 src, u32 dst, u32 h_v)
 {
 	u32 factor; /* for scaling factor */
 
@@ -754,47 +754,6 @@ void s5p_vmx_init_bg_dither_enable(bool cr_dither_enable,
 
 	writel(temp_reg, mixer_base + S5P_MXR_BG_CFG);
 
-}
-
-int s5p_vmx_init_csc_coef(enum s5p_yuv_fmt_component component,
-				enum s5p_tv_coef_y_mode mode,
-				u32 coeff0, u32 coeff1, u32 coeff2)
-{
-	u32 mxr_cm;
-
-	VMPRINTK("%d, %d, %d, %d, %d\n\r", component, mode, coeff0, coeff1,
-		coeff2);
-
-	switch (component) {
-	case TVOUT_YUV_Y:
-		mxr_cm 	= (mode == VMIXER_COEF_Y_WIDE) ?
-			     S5P_MXR_BG_COLOR_WIDE : S5P_MXR_BG_COLOR_NARROW;
-		mxr_cm |= S5P_MXR_BG_COEFF_0(coeff0) |
-			     S5P_MXR_BG_COEFF_1(coeff1) |
-			     S5P_MXR_BG_COEFF_2(coeff2);
-		writel(mxr_cm, mixer_base + S5P_MXR_CM_COEFF_Y);
-		break;
-
-	case TVOUT_YUV_CB:
-		mxr_cm 	= S5P_MXR_BG_COEFF_0(coeff0) |
-			     S5P_MXR_BG_COEFF_1(coeff1) |
-			     S5P_MXR_BG_COEFF_2(coeff2);
-		writel(mxr_cm, mixer_base + S5P_MXR_CM_COEFF_CB);
-		break;
-
-	case TVOUT_YUV_CR:
-		mxr_cm 	= S5P_MXR_BG_COEFF_0(coeff0) |
-			     S5P_MXR_BG_COEFF_1(coeff1) |
-			     S5P_MXR_BG_COEFF_2(coeff2);
-		writel(mxr_cm, S5P_MXR_CM_COEFF_CR);
-		break;
-
-	default:
-		VMPRINTK("invalid component parameter = %d\n\r", component);
-		return -1;
-	}
-
-	return 0;
 }
 
 void s5p_vmx_init_csc_coef_default(enum s5p_tv_vmx_csc_type csc_type)

@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/samsung/tv20/s5p_stda_grp.c
+/* linux/drivers/media/video/samsung/tv20/s5p_tv_fb.c
  *
  * Copyright (c) 2009 Samsung Electronics
  * 	http://www.samsung.com/
  *
- * Graphic Layer ftn. file for Samsung TVOut driver
+ * frame buffer ftn. file for Samsung TVOut driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,16 +19,15 @@
 #include <linux/uaccess.h>
 
 #include "s5p_tv.h"
+#include "s5p_stda_tvout_if.h"
+#include "s5p_stda_video_layer.h"
+#include "s5p_tv_base.h"
+#include "s5p_tv_v4l2.h"
 
 #define TV_LOGO_W	800
 #define TV_LOGO_H	480
 
-int s5p_tv_fb_set_output(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_set_display_mode(struct s5p_tv_status *ctrl)
+static int s5p_tv_fb_set_display_mode(struct s5p_tv_status *ctrl)
 {
 	enum s5p_tv_vmx_layer layer = VM_GPR0_LAYER;
 	bool premul = false;
@@ -61,7 +60,7 @@ int s5p_tv_fb_display_on(struct s5p_tv_status *ctrl)
 	return 0;
 }
 
-int s5p_tv_fb_display_off(struct s5p_tv_status *ctrl)
+static int s5p_tv_fb_display_off(struct s5p_tv_status *ctrl)
 {
 	s5p_vmx_set_layer_priority(VM_GPR0_LAYER, 10);
 	s5p_vmx_set_layer_show(VM_GPR0_LAYER, false);
@@ -69,56 +68,31 @@ int s5p_tv_fb_display_off(struct s5p_tv_status *ctrl)
 	return 0;
 }
 
-int s5p_tv_fb_frame_off(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_set_clock(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_set_polarity(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_set_timing(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_set_lcd_size(struct s5p_tv_status *ctrl)
-{
-	return 0;
-}
-
-int s5p_tv_fb_window_on(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_window_on(struct s5p_tv_status *ctrl, int id)
 {
 	s5p_vmx_set_layer_show(VM_GPR0_LAYER, true);
 
 	return 0;
 }
 
-int s5p_tv_fb_window_off(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_window_off(struct s5p_tv_status *ctrl, int id)
 {
 	s5p_vmx_set_layer_show(VM_GPR0_LAYER, false);
 
 	return 0;
 }
 
-int s5p_tv_fb_set_window_control(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_window_control(struct s5p_tv_status *ctrl, int id)
 {
 	return 0;
 }
 
-int s5p_tv_fb_set_alpha_blending(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_alpha_blending(struct s5p_tv_status *ctrl, int id)
 {
 	return 0;
 }
 
-int s5p_tv_fb_set_window_position(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_window_position(struct s5p_tv_status *ctrl, int id)
 {
 	u32 off_x, off_y;
 	u32 w_t, h_t;
@@ -190,7 +164,7 @@ int s5p_tv_fb_set_window_position(struct s5p_tv_status *ctrl, int id)
 	return 0;
 }
 
-int s5p_tv_fb_set_window_size(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_window_size(struct s5p_tv_status *ctrl, int id)
 {
 	struct fb_var_screeninfo *var = &ctrl->fb->var;
 	int w, h, xo, yo;
@@ -209,7 +183,7 @@ int s5p_tv_fb_set_window_size(struct s5p_tv_status *ctrl, int id)
 	return 0;
 }
 
-int s5p_tv_fb_set_buffer_address(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_buffer_address(struct s5p_tv_status *ctrl, int id)
 {
 	struct fb_fix_screeninfo *fix = &ctrl->fb->fix;
 	struct fb_var_screeninfo *var = &ctrl->fb->var;
@@ -228,12 +202,12 @@ int s5p_tv_fb_set_buffer_address(struct s5p_tv_status *ctrl, int id)
 	return 0;
 }
 
-int s5p_tv_fb_set_buffer_size(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_buffer_size(struct s5p_tv_status *ctrl, int id)
 {
 	return 0;
 }
 
-int s5p_tv_fb_set_chroma_key(struct s5p_tv_status *ctrl, int id)
+static int s5p_tv_fb_set_chroma_key(struct s5p_tv_status *ctrl, int id)
 {
 	struct s5ptvfb_window *win = ctrl->fb->par;
 	struct s5ptvfb_chroma *chroma = &win->chroma;
@@ -305,23 +279,6 @@ static int s5p_tv_fb_disable_window(int id)
 
 		return 0;
 	}
-}
-
-int s5p_tv_fb_unmap_video_memory(struct fb_info *fb)
-{
-	struct fb_fix_screeninfo *fix = &fb->fix;
-	struct s5ptvfb_window *win = fb->par;
-
-	if (fix->smem_start) {
-		dma_free_writecombine(s5ptv_status.dev_fb, fix->smem_len,
-			fb->screen_base, fix->smem_start);
-		fix->smem_start = 0;
-		fix->smem_len = 0;
-		dev_info(s5ptv_status.dev_fb,
-			"[fb%d] video memory released\n", win->id);
-	}
-
-	return 0;
 }
 
 static int s5p_tv_fb_release_window(struct fb_info *fb)
@@ -751,95 +708,6 @@ struct fb_ops s5ptvfb_ops = {
 	.fb_open = s5p_tv_fb_open,
 	.fb_release = s5p_tv_fb_release,
 };
-
-int s5p_tv_fb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
-{
-	struct fb_info *fb = s5ptv_status.fb;
-	struct fb_fix_screeninfo *fix = &fb->fix;
-	struct s5ptvfb_window *win = fb->par;
-	void *argp = (void *) arg;
-	int ret = 0;
-
-	switch (cmd) {
-	case FBIO_ALLOC:
-		win->path = (enum s5ptvfb_data_path_t) argp;
-		break;
-
-	case FBIOGET_FSCREENINFO:
-		ret = memcpy(argp, &fb->fix, sizeof(fb->fix)) ? 0 : -EFAULT;
-		break;
-
-	case FBIOGET_VSCREENINFO:
-		ret = memcpy(argp, &fb->var, sizeof(fb->var)) ? 0 : -EFAULT;
-		break;
-
-	case FBIOPUT_VSCREENINFO:
-		ret = s5p_tv_fb_check_var((struct fb_var_screeninfo *) argp, fb);
-		if (ret) {
-			dev_err(s5ptv_status.dev_fb, "invalid vscreeninfo\n");
-			break;
-		}
-
-		ret = memcpy(&fb->var, (struct fb_var_screeninfo *) argp,
-				sizeof(fb->var)) ? 0 : -EFAULT;
-		if (ret) {
-			dev_err(s5ptv_status.dev_fb,
-			       "failed to put new vscreeninfo\n");
-			break;
-		}
-
-		ret = s5p_tv_fb_set_par(fb);
-		break;
-
-	case S5PTVFB_SET_WIN_ON:
-#ifdef CONFIG_USER_ALLOC_TVOUT
-		s5p_tv_fb_display_on(&s5ptv_status);
-		s5p_tv_fb_enable_window(0);
-#endif
-		break;
-
-	case S5PTVFB_SET_WIN_OFF:
-#ifdef CONFIG_USER_ALLOC_TVOUT
-		s5p_tv_fb_display_off(&s5ptv_status);
-		s5p_tv_fb_disable_window(0);
-#endif
-		break;
-
-	case S5PTVFB_POWER_ON:
-		s5p_tv_clk_gate(true);
-		s5p_tv_phy_power(true);
-
-		s5p_tv_if_init_param();
-
-		s5p_tv_v4l2_init_param();
-
-		/* s5ptv_status.tvout_param.disp_mode = TVOUT_720P_60; */
-		s5ptv_status.tvout_param.out_mode  = TVOUT_OUTPUT_HDMI;
-
-		s5p_tv_if_set_disp();
-
-		break;
-
-	case S5PTVFB_POWER_OFF:
-		s5p_vlayer_stop();
-		s5p_tv_if_stop();
-
-		s5p_tv_clk_gate(false);
-		s5p_tv_phy_power(false);
-		break;
-
-	case S5PTVFB_WIN_SET_ADDR:
-		fix->smem_start = (unsigned long)argp;
-		s5p_tv_fb_set_buffer_address(&s5ptv_status, win->id);
-		break;
-
-	default:
-		ret = s5p_tv_fb_ioctl(fb, cmd, arg);
-		break;
-	}
-
-	return ret;
-}
 
 int s5p_tv_fb_init_fbinfo(int id)
 {
