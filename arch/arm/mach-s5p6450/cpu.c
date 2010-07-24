@@ -32,6 +32,7 @@
 
 #include <plat/regs-serial.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-power.h>
 
 #include <plat/cpu.h>
 #include <plat/devs.h>
@@ -55,10 +56,10 @@ static void s5p6450_idle(void)
 	unsigned long val;
 
 	if (!need_resched()) {
-		val = __raw_readl(S5P_PWR_CFG);
+		val = __raw_readl(S5P6450_PWR_CFG);
 		val &= ~(0x3<<5);
 		val |= (0x1<<5);
-		__raw_writel(val, S5P_PWR_CFG);
+		__raw_writel(val, S5P6450_PWR_CFG);
 
 		cpu_do_idle();
 	}

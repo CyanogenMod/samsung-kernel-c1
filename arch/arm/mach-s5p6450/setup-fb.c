@@ -28,10 +28,10 @@ void s3cfb_cfg_gpio(struct platform_device *pdev)
 	int i;
 
 	/* select TFT LCD type (RGB I/F) */
-	cfg = readl(S5P6450_SPC_BASE);
-	cfg &= ~S5P6450_SPCON_LCD_SEL_MASK;
-	cfg |= S5P6450_SPCON_LCD_SEL_RGB;
-	writel(cfg, S5P6450_SPC_BASE);
+	cfg = readl(S5P6450_SPCON0);
+	cfg &= ~S5P6450_SPCON0_LCD_SEL_MASK;
+	cfg |= S5P6450_SPCON0_LCD_SEL_RGB;
+	writel(cfg, S5P6450_SPCON0);
 
 	for (i = 0; i < 16; i++)
 		s3c_gpio_cfgpin(S5P6450_GPI(i), S3C_GPIO_SFN(2));

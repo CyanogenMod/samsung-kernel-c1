@@ -22,9 +22,10 @@
 
 #include <mach/hardware.h>
 #include <mach/map.h>
+#include <mach/regs-clock.h>
+#include <mach/regs-sys.h>
 
 #include <plat/cpu-freq.h>
-#include <mach/regs-clock.h>
 #include <plat/clock.h>
 #include <plat/cpu.h>
 #include <plat/clock-clksrc.h>
@@ -407,7 +408,7 @@ static struct clk init_clocks_disable[] = {
 		.parent		= &clk_pclk66.clk,
 		.enable		= s5p6450_pclk_ctrl,
 		.ctrlbit	= S5P_CLKCON_PCLK_WDT,
-	}, 
+	},
 
 };
 
@@ -482,11 +483,11 @@ static struct clk init_clocks[] = {
 		.enable		= s5p6450_pclk_ctrl,
 		.ctrlbit	= S5P_CLKCON_PCLK_PWM,
 	}, {
-                .name           = "adc",
-                .id             = -1,
-                .parent         = &clk_pclk66.clk,
-                .enable         = s5p6450_pclk_ctrl,
-                .ctrlbit        = (1 << 12),
+		.name		= "adc",
+		.id			= -1,
+		.parent		= &clk_pclk66.clk,
+		.enable		= s5p6450_pclk_ctrl,
+		.ctrlbit	 = (1 << 12),
 	}, {
 		.name           = "i2c",
 		.id             = 0,
@@ -769,7 +770,7 @@ void __init_or_cpufreq s5p6450_setup_clocks(void)
 	epll = s5p_get_pll90xx(xtal, __raw_readl(S5P_EPLL_CON),
 				__raw_readl(S5P_EPLL_CON_K));
 	dpll = s5p_get_pll46xx(xtal, __raw_readl(S5P_DPLL_CON),
-				__raw_readl(S5P_DPLL_CON_K),pll_4650c);
+				__raw_readl(S5P_DPLL_CON_K), pll_4650c);
 	mpll = s5p_get_pll45xx(xtal, __raw_readl(S5P_MPLL_CON), pll_4502);
 	apll = s5p_get_pll45xx(xtal, __raw_readl(S5P_APLL_CON), pll_4502);
 

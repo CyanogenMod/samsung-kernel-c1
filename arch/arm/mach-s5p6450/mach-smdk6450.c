@@ -47,6 +47,7 @@
 #include <plat/fb.h>
 #include <plat/sdhci.h>
 #include <plat/gpio-cfg.h>
+#include <plat/pm.h>
 
 #include <linux/mfd/s5m8751/core.h>
 
@@ -398,7 +399,6 @@ static void __init smdk6450_map_io(void)
 {
 	s5p_init_io(NULL, 0, S5P_SYS_ID);
 	s3c24xx_init_clocks(19200000);
-	//s3c24xx_init_clocks(12000000);
 
 	s3c24xx_init_uarts(smdk6450_uartcfgs, ARRAY_SIZE(smdk6450_uartcfgs));
 }
@@ -430,6 +430,10 @@ static void __init smdk6450_machine_init(void)
 	s3c_i2c1_set_platdata(NULL);
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
 	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
+
+#ifdef CONFIG_PM
+	s3c_pm_init();
+#endif
 
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }

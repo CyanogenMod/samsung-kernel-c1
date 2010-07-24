@@ -27,7 +27,6 @@
 #define IRQ_GPS			S5P_IRQ_VIC0(7)
 #define IRQ_ROTATOR		S5P_IRQ_VIC0(8)
 #define IRQ_FIMC0		S5P_IRQ_VIC0(9)
-#define IRQ_MPVD		S5P_IRQ_VIC0(10)
 #define IRQ_2D			S5P_IRQ_VIC0(11)
 #define IRQ_SSS			S5P_IRQ_VIC0(12)
 #define IRQ_PP0_3D		S5P_IRQ_VIC0(16)
@@ -47,8 +46,7 @@
 
 /* VIC1 */
 
-#define IRQ_EINT12_19		S5P_IRQ_VIC1(0)
-#define IRQ_EINT20_27		S5P_IRQ_VIC1(1)
+#define IRQ_EINT12_15		S5P_IRQ_VIC1(0)
 #define IRQ_PCM0		S5P_IRQ_VIC1(2)
 #define IRQ_PCM1		S5P_IRQ_VIC1(3)
 #define IRQ_PCM2		S5P_IRQ_VIC1(4)
@@ -110,7 +108,7 @@
 #define S5P_IRQ_EINT_BASE	(S5P_IRQ_VIC1(31) + 6)
 
 #define S5P_EINT(x)		((x) + S5P_IRQ_EINT_BASE)
-
+#define IRQ_EINT_BIT(x)		((x) - S5P_EINT(0))
 #define S5P_EINT_BASE1		(S5P_IRQ_EINT_BASE)
 /*
  * S5P6450 has 0-15 external interrupts in group 0. Only these can be used
