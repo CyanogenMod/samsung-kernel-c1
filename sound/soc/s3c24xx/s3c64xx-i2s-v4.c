@@ -99,6 +99,7 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 	struct s3c_audio_pdata *i2s_pdata;
 	struct s3c_i2sv2_info *i2s;
 	struct snd_soc_dai *dai;
+	struct resource *res;
 	int ret;
 
 	i2s = &s3c64xx_i2sv4;
@@ -130,10 +131,33 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 	i2s->dma_capture = &s3c64xx_i2sv4_pcm_stereo_in;
 	i2s->dma_playback = &s3c64xx_i2sv4_pcm_stereo_out;
 
-	i2s->dma_capture->channel = DMACH_HSI_I2SV40_RX;
-	i2s->dma_capture->dma_addr = S3C64XX_PA_IISV4 + S3C2412_IISRXD;
-	i2s->dma_playback->channel = DMACH_HSI_I2SV40_TX;
-	i2s->dma_playback->dma_addr = S3C64XX_PA_IISV4 + S3C2412_IISTXD;
+	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+	if (!res) {
+		dev_err(&pdev->dev, "Unable to get I2S-TX dma resource\n");
+		return -ENXIO;
+	}
+	i2s->dma_playback->channel = res->start;
+
+	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+	if (!res) {
+		dev_err(&pdev->dev, "Unable to get I2S-RX dma resource\n");
+		return -ENXIO;
+	}
+	i2s->dma_capture->channel = res->start;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		dev_err(&pdev->dev, "Unable to get I2S SFR address\n");
+		return -ENXIO;
+	}
+
+	if (!request_mem_region(res->start, resource_size(res),
+				"s3c64xx-i2s-v4")) {
+		dev_err(&pdev->dev, "Unable to request SFR region\n");
+		return -EBUSY;
+	}
+	i2s->dma_capture->dma_addr = res->start + S3C2412_IISRXD;
+	i2s->dma_playback->dma_addr = res->start + S3C2412_IISTXD;
 
 	i2s->dma_capture->client = &s3c64xx_dma_client_in;
 	i2s->dma_capture->dma_size = 4;
