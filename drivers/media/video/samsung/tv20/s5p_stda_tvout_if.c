@@ -704,20 +704,20 @@ static bool s5p_tv_if_init_hd_video_reg(void)
 	if (out_mode == TVOUT_OUTPUT_DVI)
 		s_trans_type = HDMI_DO_NOT_TANS;
 
-	herr =  s5p_hdmi_video_init_avi_infoframe(*a_trans_type,
+	herr =  s5p_hdmi_video_init_avi(*a_trans_type,
 					*a_check_sum, a_data);
 
 	if (herr != 0)
 		return false;
 
 
-	herr = s5p_hdmi_video_init_mpg_infoframe(m_trans_type,
+	herr = s5p_hdmi_video_init_mpg(m_trans_type,
 					m_check_sum, m_data);
 
 	if (herr != 0)
 		return false;
 
-	herr = s5p_hdmi_init_spd_infoframe(s_trans_type,
+	herr = s5p_hdmi_init_spd(s_trans_type,
 					spd_header, spd_data);
 
 	if (herr != 0)

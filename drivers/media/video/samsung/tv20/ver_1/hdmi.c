@@ -946,7 +946,7 @@ void s5p_hdmi_video_set_bluescreen(bool en, u8 cb_b, u8 y_g, u8 cr_r)
 	}
 }
 
-int s5p_hdmi_init_spd_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_init_spd(enum s5p_hdmi_transmit trans_type,
 				u8 *spd_header,
 				u8 *spd_data)
 {
@@ -1350,7 +1350,7 @@ void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max)
 	writeb(c_min, hdmi_base + S5P_HDMI_CMIN);
 }
 
-int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_video_init_avi(enum s5p_hdmi_transmit trans_type,
 					u8 check_sum, u8 *avi_data)
 {
 	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type, (u32)check_sum,
@@ -1409,7 +1409,7 @@ int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,
 	return 0;
 }
 
-int s5p_hdmi_video_init_mpg_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_video_init_mpg(enum s5p_hdmi_transmit trans_type,
 					u8 check_sum, u8 *mpg_data)
 {
 	HDMIPRINTK("trans_type : %d, %d, %d\n\r", (u32)trans_type,

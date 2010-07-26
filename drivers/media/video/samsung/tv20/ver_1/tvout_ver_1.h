@@ -395,7 +395,7 @@ int s5p_hdcp_encrypt_stop(bool on);
 /* hdmi.c */
 int s5p_hdmi_phy_power(bool on);
 void s5p_hdmi_video_set_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);
-int s5p_hdmi_init_spd_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_init_spd(enum s5p_hdmi_transmit trans_type,
 				u8 *spd_header, u8 *spd_data);
 int s5p_hdmi_audio_init(enum s5p_tv_audio_codec_type audio_codec,
 			u32 sample_rate, u32 bits, u32 frame_size_code);
@@ -403,9 +403,9 @@ int s5p_hdmi_video_init_display_mode(enum s5p_tv_disp_mode disp_mode,
 			enum s5p_tv_o_mode out_mode, u8 *avidata);
 void s5p_hdmi_video_init_bluescreen(bool en, u8 cb, u8 y_g, u8 cr_r);
 void s5p_hdmi_video_init_color_range(u8 y_min, u8 y_max, u8 c_min, u8 c_max);
-int s5p_hdmi_video_init_avi_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_video_init_avi(enum s5p_hdmi_transmit trans_type,
 			u8 check_sum, u8 *pavi_data);
-int s5p_hdmi_video_init_mpg_infoframe(enum s5p_hdmi_transmit trans_type,
+int s5p_hdmi_video_init_mpg(enum s5p_hdmi_transmit trans_type,
 			u8 check_sum, u8 *pmpg_data);
 void s5p_hdmi_video_init_tg_cmd(bool t_correction_en, bool BT656_sync_en,
 			bool tg_en);

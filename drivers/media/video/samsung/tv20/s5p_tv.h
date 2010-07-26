@@ -307,7 +307,7 @@ struct s5p_hdmi_color_range {
 	u8 c_max;
 };
 
-struct s5p_hdmi_video_infoframe {
+struct s5p_hdmi_infoframe {
 	enum s5p_hdmi_transmit trans_type;
 	u8 check_sum;
 	u8 *data;
@@ -319,7 +319,7 @@ struct s5p_hdmi_tg_cmd {
 	bool tg_en;
 };
 
-struct s5p_hdmi_spd_infoframe {
+struct s5p_hdmi_spd {
 	enum s5p_hdmi_transmit trans_type;
 	u8 *spd_header;
 	u8 *spd_data;
@@ -527,14 +527,14 @@ struct s5p_tv_status {
 	/* HDMI video parameters */
 	struct s5p_hdmi_bluescreen hdmi_video_blue_screen;
 	struct s5p_hdmi_color_range hdmi_color_range;
-	struct s5p_hdmi_video_infoframe hdmi_av_info_frame;
-	struct s5p_hdmi_video_infoframe hdmi_mpg_info_frame;
+	struct s5p_hdmi_infoframe hdmi_av_info_frame;
+	struct s5p_hdmi_infoframe hdmi_mpg_info_frame;
 	struct s5p_hdmi_tg_cmd hdmi_tg_cmd;
 	u8 avi_byte[13];
 	u8 mpg_byte[5];
 
 	/* HDMI parameters */
-	struct s5p_hdmi_spd_infoframe hdmi_spd_info_frame;
+	struct s5p_hdmi_spd hdmi_spd_info_frame;
 	u8 spd_header[3];
 	u8 spd_data[28];
 	bool hdcp_en;
