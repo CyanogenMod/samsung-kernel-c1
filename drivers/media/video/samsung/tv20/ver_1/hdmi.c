@@ -953,27 +953,8 @@ int s5p_hdmi_init_spd(enum s5p_hdmi_transmit trans_type,
 	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type, (u32)spd_header,
 					(u32)spd_data);
 
-	switch (trans_type) {
-	case HDMI_DO_NOT_TANS:
-		writeb(S5P_HDMI_SPD_TX_CON_NO_TRANS,
-			hdmi_base + S5P_HDMI_SPD_CON);
-		break;
-
-	case HDMI_TRANS_ONCE:
-		writeb(S5P_HDMI_SPD_TX_CON_TRANS_ONCE,
-			hdmi_base + S5P_HDMI_SPD_CON);
-		break;
-
-	case HDMI_TRANS_EVERY_SYNC:
-		writeb(S5P_HDMI_SPD_TX_CON_TRANS_EVERY_VSYNC,
-			hdmi_base + S5P_HDMI_SPD_CON);
-		break;
-
-	default:
-		HDMIPRINTK(" invalid out_mode parameter(%d)\n\r", trans_type);
-		return -1;
-	}
-
+	writeb(trans_type, hdmi_base + S5P_HDMI_SPD_CON);
+ 
 	if (spd_data == NULL || spd_header == NULL) {
 		HDMIPRINTK("Set default SPD\n");
 		writeb(S5P_HDMI_SET_SPD_HEADER(0x83),
@@ -1356,26 +1337,7 @@ int s5p_hdmi_video_init_avi(enum s5p_hdmi_transmit trans_type,
 	HDMIPRINTK("%d, %d, %d\n\r", (u32)trans_type, (u32)check_sum,
 		(u32)avi_data);
 
-	switch (trans_type) {
-	case HDMI_DO_NOT_TANS:
-		writeb(S5P_HDMI_AVI_TX_CON_NO_TRANS,
-				hdmi_base + S5P_HDMI_AVI_CON);
-		break;
-
-	case HDMI_TRANS_ONCE:
-		writeb(S5P_HDMI_AVI_TX_CON_TRANS_ONCE,
-				hdmi_base + S5P_HDMI_AVI_CON);
-		break;
-
-	case HDMI_TRANS_EVERY_SYNC:
-		writeb(S5P_HDMI_AVI_TX_CON_TRANS_EVERY_VSYNC,
-				hdmi_base + S5P_HDMI_AVI_CON);
-		break;
-
-	default:
-		HDMIPRINTK(" invalid out_mode parameter(%d)\n\r", trans_type);
-		return -1;
-	}
+	writeb(trans_type, hdmi_base + S5P_HDMI_AVI_CON);
 
 	writeb(S5P_HDMI_SET_AVI_CHECK_SUM(check_sum),
 				hdmi_base + S5P_HDMI_AVI_CHECK_SUM);
@@ -1415,27 +1377,7 @@ int s5p_hdmi_video_init_mpg(enum s5p_hdmi_transmit trans_type,
 	HDMIPRINTK("trans_type : %d, %d, %d\n\r", (u32)trans_type,
 			(u32)check_sum, (u32)mpg_data);
 
-	switch (trans_type) {
-	case HDMI_DO_NOT_TANS:
-		writeb(S5P_HDMI_MPG_TX_CON_NO_TRANS,
-		       hdmi_base + S5P_HDMI_MPG_CON);
-		break;
-
-	case HDMI_TRANS_ONCE:
-		writeb(S5P_HDMI_MPG_TX_CON_TRANS_ONCE,
-		       hdmi_base + S5P_HDMI_MPG_CON);
-		break;
-
-	case HDMI_TRANS_EVERY_SYNC:
-		writeb(S5P_HDMI_MPG_TX_CON_TRANS_EVERY_VSYNC,
-		       hdmi_base + S5P_HDMI_MPG_CON);
-		break;
-
-	default:
-		HDMIPRINTK("invalid out_mode parameter(%d)\n\r",
-			   trans_type);
-		return -1;
-	}
+	writeb(trans_type, hdmi_base + S5P_HDMI_MPG_CON);
 
 	writeb(S5P_HDMI_SET_MPG_CHECK_SUM(check_sum),
 	       hdmi_base + S5P_HDMI_MPG_CHECK_SUM);
