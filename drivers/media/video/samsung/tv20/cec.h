@@ -22,31 +22,6 @@
 #define VERSION   "1.0" /* Driver version number */
 #define CEC_MINOR 242   /* Major 10, Minor 242, /dev/cec */
 
-#define CEC_MESSAGE_BROADCAST_MASK    0x0F
-#define CEC_MESSAGE_BROADCAST         0x0F
-
-#define CEC_FILTER_THRESHOLD          0x15
-
-enum cec_state {
-	STATE_RX,
-	STATE_TX,
-	STATE_DONE,
-	STATE_ERROR
-};
-
-
-struct cec_rx_struct {
-	spinlock_t lock;
-	wait_queue_head_t waitq;
-	atomic_t state;
-	u8 *buffer;
-	unsigned int size;
-};
-
-struct cec_tx_struct {
-	wait_queue_head_t waitq;
-	atomic_t state;
-};
 
 #define CEC_STATUS_TX_RUNNING       (1<<0)
 #define CEC_STATUS_TX_TRANSFERRING  (1<<1)
@@ -61,15 +36,9 @@ struct cec_tx_struct {
 #define CEC_STATUS_RX_BYTES         (0xFF<<24)
 
 
-#define CEC_IOC_MAGIC        'c'
-
-#define CEC_IOC_SETLADDR     _IOW(CEC_IOC_MAGIC, 0, unsigned int)
-
-
 /* CEC Rx buffer size */
 #define CEC_RX_BUFF_SIZE            16
 /* CEC Tx buffer size */
 #define CEC_TX_BUFF_SIZE            16
 
-void s5p_cec_set_tx_state(enum cec_state state);
 #endif /* _LINUX_CEC_IF_H_ */

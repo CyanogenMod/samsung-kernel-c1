@@ -40,7 +40,7 @@
 static struct resource	*sdout_mem;
 void __iomem		*sdout_base;
 
-void s5p_tv_power_set_dac_onoff(unsigned short on)
+void s5p_tv_power_set_dac_onoff(bool on)
 {
 	if (on)
 		writel(S5P_DAC_ENABLE, S5P_DAC_CONTROL);

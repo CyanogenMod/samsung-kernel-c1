@@ -325,7 +325,7 @@ int s5p_vp_update(void)
 	return 0;
 }
 
-unsigned short s5p_vp_get_update_status(void)
+bool s5p_vp_get_update_status(void)
 {
 	return readl(vp_base + S5P_VP_SHADOW_UPDATE) &
 		S5P_VP_SHADOW_UPDATE_ENABLE;

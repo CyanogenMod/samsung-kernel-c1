@@ -25,7 +25,6 @@
 #include <mach/regs-hdmi.h>
 
 #include "tv_out.h"
-
 #include "../hpd.h"
 
 #include "hdmi_data.c"
@@ -40,6 +39,9 @@
 #else
 #define HDMIPRINTK(fmt, args...)
 #endif
+
+#define PHY_I2C_ADDRESS       	0x70
+#define PHY_REG_MODE_SET_DONE 	0x1F
 
 hdmi_isr hdmi_isr_ftn[HDMI_IRQ_TOTAL_NUM];
 

@@ -19,8 +19,7 @@
 #include <mach/regs-clock.h>
 #include <mach/regs-cec.h>
 
-#include "../cec.h"
-#include "cec.h"
+#include "tv_out.h"
 
 #ifdef CECDEBUG
 #define CECPRINTK(fmt, args...) \
@@ -29,8 +28,19 @@
 #define CECPRINTK(fmt, args...)
 #endif
 
+#define S5P_HDMI_FIN	24000000
+#define CEC_DIV_RATIO	187500
+
+#define CEC_MESSAGE_BROADCAST_MASK    0x0F
+#define CEC_MESSAGE_BROADCAST         0x0F
+#define CEC_FILTER_THRESHOLD          0x15
+
 static struct resource	*cec_mem;
 void __iomem		*cec_base;
+
+struct cec_rx_struct cec_rx_struct;
+struct cec_tx_struct cec_tx_struct;
+
 
 void s5p_cec_set_divider(void)
 {
@@ -120,6 +130,16 @@ void s5p_cec_threshold(void)
 {
 	writeb(CEC_FILTER_THRESHOLD, cec_base + S5P_CES_RX_FILTER_TH);
 	writeb(0, cec_base + S5P_CES_RX_FILTER_CTRL);
+}
+
+void s5p_cec_set_tx_state(enum cec_state state)
+{
+	atomic_set(&cec_tx_struct.state, state);
+}
+
+void s5p_cec_set_rx_state(enum cec_state state)
+{
+	atomic_set(&cec_rx_struct.state, state);
 }
 
 void s5p_cec_copy_packet(char *data, size_t count)

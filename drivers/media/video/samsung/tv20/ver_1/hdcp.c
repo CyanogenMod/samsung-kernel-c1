@@ -28,8 +28,8 @@
 #include <mach/gpio.h>
 #include <mach/regs-hdmi.h>
 
-#include "../ddc.h"
 #include "tv_out.h"
+#include "../ddc.h"
 
 /* for Operation check */
 #ifdef COFIG_TVOUT_RAW_DBG

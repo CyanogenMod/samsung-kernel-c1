@@ -35,21 +35,10 @@
 #define CECIFPRINTK(fmt, args...)
 #endif
 
-static struct cec_rx_struct cec_rx_struct;
-static struct cec_tx_struct cec_tx_struct;
 
 static bool hdmi_on;
 
 
-void s5p_cec_set_tx_state(enum cec_state state)
-{
-	atomic_set(&cec_tx_struct.state, state);
-}
-
-static void s5p_cec_set_rx_state(enum cec_state state)
-{
-	atomic_set(&cec_rx_struct.state, state);
-}
 
 static int s5p_cec_open(struct inode *inode, struct file *file)
 {
