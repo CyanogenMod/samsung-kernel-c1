@@ -868,9 +868,7 @@
 #define S5P_HDMI_ISRC_FR_RATE_MASK		(0x1F << 3)
 #define S5P_HDMI_ISRC_EN			(1 << 2)
 #define S5P_HDMI_ISRC_DIS			(0 << 2)
-#define S5P_HDMI_ISRC_TX_CON_NO_TRANS		(0)
-#define S5P_HDMI_ISRC_TX_CON_TRANS_ONCE		(1)
-#define S5P_HDMI_ISRC_TX_CON_TRANS_EVERY_VSYNC	(2)
+
 
 /* ISRC1_HEADER1 */
 #define S5P_HDMI_ISRC1_HEADER_MASK		(0xFF)
@@ -885,10 +883,6 @@
 /* AVI InfoFrame Register */
 
 /* AVI_CON */
-#define S5P_HDMI_AVI_TX_CON_NO_TRANS		(0)
-#define S5P_HDMI_AVI_TX_CON_TRANS_ONCE		(1)
-#define S5P_HDMI_AVI_TX_CON_TRANS_EVERY_VSYNC	(2)
-
 
 /* AVI_CHECK_SUM */
 #define S5P_HDMI_SET_AVI_CHECK_SUM(x)		((x) & 0xFF)
@@ -903,9 +897,6 @@
 /* Audio InfoFrame Register */
 
 /* AUI_CON */
-#define S5P_HDMI_AUI_TX_CON_NO_TRANS		(0)
-#define S5P_HDMI_AUI_TX_CON_TRANS_ONCE		(1)
-#define S5P_HDMI_AUI_TX_CON_TRANS_EVERY_VSYNC	(2)
 
 /* AUI_CHECK_SUM */
 #define S5P_HDMI_SET_AUI_CHECK_SUM(x)		((x) & 0xFF)
@@ -917,9 +908,6 @@
 /* MPEG Source InfoFrame registers */
 
 /* MPG_CON */
-#define S5P_HDMI_MPG_TX_CON_NO_TRANS		(0)
-#define S5P_HDMI_MPG_TX_CON_TRANS_ONCE		(1)
-#define S5P_HDMI_MPG_TX_CON_TRANS_EVERY_VSYNC	(2)
 
 /* HDMI_MPG_CHECK_SUM */
 #define S5P_HDMI_SET_MPG_CHECK_SUM(x)		((x) & 0xFF)
@@ -931,9 +919,6 @@
 /* Source Product Descriptor Infoframe registers */
 
 /* SPD_CON */
-#define S5P_HDMI_SPD_TX_CON_NO_TRANS		(0)
-#define S5P_HDMI_SPD_TX_CON_TRANS_ONCE		(1)
-#define S5P_HDMI_SPD_TX_CON_TRANS_EVERY_VSYNC	(2)
 
 /* SPD_HEADER0/1/2 */
 #define S5P_HDMI_SET_SPD_HEADER(x)		((x) & 0xFF)
