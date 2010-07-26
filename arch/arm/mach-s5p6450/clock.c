@@ -728,6 +728,7 @@ static struct clksrc_clk clksrcs[] = {
 static struct clksrc_clk *sysclks[] = {
 	&clk_mout_apll,
 	&clk_mout_epll,
+	&clk_dout_epll,
 	&clk_mout_mpll,
 	&clk_dout_mpll,
 	&clk_armclk,
