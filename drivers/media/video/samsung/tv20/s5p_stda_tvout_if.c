@@ -652,7 +652,6 @@ static bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 static bool s5p_tv_if_init_hd_video_reg(void)
 {
 	int herr = 0;
-	enum s5p_tv_hdmi_csc_type cscType;
 	struct s5p_tv_status *st = &s5ptv_status;
 
 	u8 cb_b = st->hdmi_video_blue_screen.cb_b;
@@ -702,22 +701,8 @@ static bool s5p_tv_if_init_hd_video_reg(void)
 
 	s5p_hdmi_video_init_color_range(y_min, y_max, c_min, c_max);
 
-	switch (out_mode) {
-	case TVOUT_OUTPUT_HDMI_RGB:
-	case TVOUT_OUTPUT_HDMI:
-		cscType = HDMI_BYPASS;
-		break;
-
-	case TVOUT_OUTPUT_DVI:
-		cscType = HDMI_CSC_YUV601_TO_RGB_LR;
+	if (out_mode == TVOUT_OUTPUT_DVI)
 		s_trans_type = HDMI_DO_NOT_TANS;
-		break;
-
-	default:
-		TVOUTIFPRINTK("invalid out_mode parameter(%d)\n\r",
-				out_mode);
-		return false;
-	}
 
 	herr =  s5p_hdmi_video_init_avi_infoframe(*a_trans_type,
 					*a_check_sum, a_data);
