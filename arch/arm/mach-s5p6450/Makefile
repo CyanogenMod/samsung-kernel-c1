@@ -13,7 +13,7 @@ obj-				:=
 # Core support for S5P6450 system
 
 obj-$(CONFIG_CPU_S5P6450)	+= cpu.o init.o clock.o dma.o
-obj-$(CONFIG_CPU_S5P6450)	+= setup-i2c0.o time.o gpio.o irq-eint.o
+obj-$(CONFIG_CPU_S5P6450)	+= setup-i2c0.o gpio.o irq-eint.o time.o
 obj-$(CONFIG_CPU_S5P6450)	+= bootmem-smdk6450.o
 
 # machine support
@@ -33,5 +33,5 @@ obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
 
 obj-$(CONFIG_PM)        += pm.o
 obj-$(CONFIG_PM)        += sleep.o
-#obj-$(CONFIG_PM)        += irq-pm.o
+obj-$(CONFIG_PM)        += irq-pm.o
 

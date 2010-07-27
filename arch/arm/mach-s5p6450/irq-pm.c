@@ -60,7 +60,7 @@ static int s5p6450_irq_pm_suspend(struct sys_device *dev, pm_message_t state)
 	s3c_pm_do_save(irq_save, ARRAY_SIZE(irq_save));
 
 	for (i = 0; i < CONFIG_SERIAL_SAMSUNG_UARTS; i++)
-		irq_uart_mask[i] = __raw_readl(S5P_VA_UARTx(i) + S5P6450_UINTM);
+		irq_uart_mask[i] = __raw_readl(S5P_VA_UARTx(i) + S3C64XX_UINTM);
 
 	for (i = 0; i < ARRAY_SIZE(eint_grp_save); i++, grp++) {
 		grp->con = __raw_readl(S5P6450_EINT12CON + (i * 4));
@@ -81,7 +81,7 @@ static int s5p6450_irq_pm_resume(struct sys_device *dev)
 	s3c_pm_do_restore(irq_save, ARRAY_SIZE(irq_save));
 
 	for (i = 0; i < CONFIG_SERIAL_SAMSUNG_UARTS; i++)
-		__raw_writel(irq_uart_mask[i], S3C_VA_UARTx(i) + S5P6450_UINTM);
+		__raw_writel(irq_uart_mask[i], S5P_VA_UARTx(i) + S3C64XX_UINTM);
 
 	for (i = 0; i < ARRAY_SIZE(eint_grp_save); i++, grp++) {
 		__raw_writel(grp->con, S5P6450_EINT12CON + (i * 4));
@@ -94,13 +94,8 @@ static int s5p6450_irq_pm_resume(struct sys_device *dev)
 }
 
 static struct sysdev_driver s5p6450_irq_driver = {
-	/*juju33 sleep test */
-	/*
 	.suspend = s5p6450_irq_pm_suspend,
 	.resume	 = s5p6450_irq_pm_resume,
-	*/
-	.suspend = NULL,
-	.resume  = NULL,
 };
 
 static int __init s5p6450_irq_pm_init(void)

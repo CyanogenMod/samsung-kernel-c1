@@ -22,6 +22,7 @@
 
 #include <plat/pm.h>
 #include <plat/wakeup-mask.h>
+#include <plat/regs-timer.h>
 
 #include <mach/regs-sys.h>
 #include <mach/regs-gpio.h>
@@ -81,6 +82,7 @@ static struct sleep_save core_save[] = {
 	SAVE_ITEM(S5P_APLL_CON),
 	SAVE_ITEM(S5P_MPLL_CON),
 #endif
+	SAVE_ITEM(S3C64XX_TINT_CSTAT),
 };
 
 static struct sleep_save misc_save[] = {

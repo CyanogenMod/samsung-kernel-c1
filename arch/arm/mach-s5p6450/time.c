@@ -270,13 +270,20 @@ static void __init s5p6450_timer_resources(void)
 	clk_enable(tin4);
 }
 
-static void __init s5p6450_timer_init(void)
+static void s5p6450_timer_setup(void)
 {
-	s5p6450_timer_resources();
 	s5p6450_clockevent_init();
 	s5p6450_clocksource_init();
 }
 
+static void __init s5p6450_timer_init(void)
+{
+	s5p6450_timer_resources();
+
+	s5p6450_timer_setup();
+}
+
 struct sys_timer s5p6450_timer = {
 	.init		= s5p6450_timer_init,
+	.resume		= s5p6450_timer_setup,
 };
