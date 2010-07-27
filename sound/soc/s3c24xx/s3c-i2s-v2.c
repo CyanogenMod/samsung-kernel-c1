@@ -40,6 +40,10 @@
 #define S3C_IIS_V2_SUPPORTED
 #endif
 
+#ifdef CONFIG_PLAT_SAMSUNG
+#define S3C_IIS_V2_SUPPORTED
+#endif
+
 #ifndef S3C_IIS_V2_SUPPORTED
 #error Unsupported CPU model
 #endif
