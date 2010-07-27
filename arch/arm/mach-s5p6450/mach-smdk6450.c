@@ -38,6 +38,7 @@
 #include <plat/regs-otg.h>
 #include <plat/clock.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-sys.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/iic.h>
@@ -443,8 +444,8 @@ static void __init smdk6450_machine_init(void)
 void otg_phy_init(void)
 {
 	/*USB PHY0 Enable */
-	writel(readl(S5P_USB_PHY_CONTROL)|(0x1<<17),
-		S5P_USB_PHY_CONTROL);
+	writel(readl(S5P_OTHERS)|(0x1<<17),
+		S5P_OTHERS);
 	writel((readl(S3C_USBOTG_PHYPWR)&~(0x3<<3)&~(0x1<<0))|(0x1<<5),
 		S3C_USBOTG_PHYPWR);
 	writel((readl(S3C_USBOTG_PHYCLK)&~(0x5<<2))|(0x1<<0),
@@ -465,7 +466,7 @@ EXPORT_SYMBOL(usb_ctrl);
 void otg_phy_off(void)
 {
 	writel(readl(S3C_USBOTG_PHYPWR)|(0x3<<3), S3C_USBOTG_PHYPWR);
-	writel(readl(S5P_USB_PHY_CONTROL)&~(1<<17), S5P_USB_PHY_CONTROL);
+	writel(readl(S5P_OTHERS)&~(1<<17), S5P_OTHERS);
 }
 EXPORT_SYMBOL(otg_phy_off);
 #endif
