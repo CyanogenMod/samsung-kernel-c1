@@ -394,6 +394,10 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
+#ifdef CONFIG_USB
+	&s3c_device_usb_ehci,
+	&s3c_device_usb_ohci,
+#endif
 };
 
 static void __init smdk6450_map_io(void)
@@ -440,6 +444,38 @@ static void __init smdk6450_machine_init(void)
 }
 
 #ifdef CONFIG_USB_SUPPORT
+void usb_host_phy_init(void)
+{
+	struct clk *otg_clk;
+
+	otg_clk = clk_get(NULL, "usbotg");
+	clk_enable(otg_clk);
+
+	if (readl(S5P_OTHERS) & (0x1<<16))
+		return;
+
+	__raw_writel(__raw_readl(S5P_OTHERS)
+		|(0x1<<16), S5P_OTHERS);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+		&~(0x1<<7)&~(0x1<<6))|(0x1<<8)|(0x1<<5), S3C_USBOTG_PHYPWR);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+		&~(0x1<<7))|(0x1<<0), S3C_USBOTG_PHYCLK);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON))
+		|(0x1<<4)|(0x1<<3), S3C_USBOTG_RSTCON);
+	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x1<<4)&~(0x1<<3), S3C_USBOTG_RSTCON);
+}
+EXPORT_SYMBOL(usb_host_phy_init);
+
+void usb_host_phy_off(void)
+{
+	__raw_writel(__raw_readl(S3C_USBOTG_PHYPWR)
+		|(0x1<<7)|(0x1<<6), S3C_USBOTG_PHYPWR);
+	__raw_writel(__raw_readl(S5P_OTHERS)
+		&~(1<<16), S5P_OTHERS);
+}
+EXPORT_SYMBOL(usb_host_phy_off);
+
 /* Initializes OTG Phy. */
 void otg_phy_init(void)
 {

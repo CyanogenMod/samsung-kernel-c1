@@ -477,6 +477,12 @@ static struct clk init_clocks[] = {
 		.enable		= s5p6450_hclk0_ctrl,
 		.ctrlbit	= S5P_CLKCON_HCLK0_USB,
 	}, {
+		.name		= "usbhost",
+		.id		= -1,
+		.parent		= &clk_hclk133.clk,
+		.enable		= s5p6450_hclk0_ctrl,
+		.ctrlbit	= S5P_CLKCON_HCLK0_HOST,
+	}, {
 		.name		= "timers",
 		.id		= -1,
 		.parent		= &clk_pclk_to_wdt_pwm.clk,
