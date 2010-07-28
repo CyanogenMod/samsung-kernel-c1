@@ -1163,6 +1163,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ehci_hcd_s5pv210_driver
 #endif
 
+#ifdef CONFIG_ARCH_S5P6450
+#include "ehci-s5p6450.c"
+#define PLATFORM_DRIVER		ehci_hcd_s5p6450_driver
+#endif
+
 #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
     !defined(XILINX_OF_PLATFORM_DRIVER)
