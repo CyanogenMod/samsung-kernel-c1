@@ -41,6 +41,7 @@
 #include <plat/fimc.h>
 #include <plat/csis.h>
 #include <plat/media.h>
+#include <plat/sdhci.h>
 #include <plat/regs-otg.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
@@ -169,6 +170,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 #endif
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
+	&s3c_device_hsmmc0,
+	&s3c_device_hsmmc1,
+	&s3c_device_hsmmc2,
+	&s3c_device_hsmmc3,
 	&s3c_device_ts,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,
@@ -215,6 +220,26 @@ static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.oversampling_shift	= 2,
 };
 
+static struct s3c_sdhci_platdata smdkv210_hsmmc0_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH0(7),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc1_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH0(7),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc2_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH3(1),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc3_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH1(0),
+	.has_wp_gpio		= true,
+};
+
 static void __init smdkv210_map_io(void)
 {
 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
@@ -226,6 +251,10 @@ static void __init smdkv210_map_io(void)
 static void __init smdkv210_machine_init(void)
 {
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+	s3c_sdhci0_set_platdata(&smdkv210_hsmmc0_pdata);
+	s3c_sdhci1_set_platdata(&smdkv210_hsmmc1_pdata);
+	s3c_sdhci2_set_platdata(&smdkv210_hsmmc2_pdata);
+	s3c_sdhci3_set_platdata(&smdkv210_hsmmc3_pdata);
 	dm9000_set();
 
 	s3c_i2c0_set_platdata(NULL);

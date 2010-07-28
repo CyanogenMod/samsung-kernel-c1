@@ -86,6 +86,7 @@ void __init s5pv210_map_io(void)
 	s5pv210_default_sdhci0();
 	s5pv210_default_sdhci1();
 	s5pv210_default_sdhci2();
+	s5pv210_default_sdhci3();
 
 	/* the i2c devices are directly compatible with s3c2440 */
 	s3c_i2c0_setname("s3c2440-i2c");

@@ -33,6 +33,8 @@ enum cd_types {
  * @max_width: The maximum number of data bits supported.
  * @host_caps: Standard MMC host capabilities bit field.
  * @cd_type: Type of Card Detection method (see cd_types enum above)
+ * @wp_gpio: The gpio number using for WP.
+ * @has_wp_gpio: Check using wp_gpio or not.
  * @ext_cd_init: Initialize external card detect subsystem. Called on
  *		 sdhci-s3c driver probe when cd_type == S3C_SDHCI_CD_EXTERNAL.
  *		 notify_func argument is a callback to the sdhci-s3c driver
@@ -62,8 +64,10 @@ struct s3c_sdhci_platdata {
 
 	char		**clocks;	/* set of clock sources */
 
+	int		wp_gpio;
 	int		ext_cd_gpio;
 	bool		ext_cd_gpio_invert;
+	bool		has_wp_gpio;
 	int	(*ext_cd_init)(void (*notify_func)(struct platform_device *,
 						   int state));
 	int	(*ext_cd_cleanup)(void (*notify_func)(struct platform_device *,
@@ -87,6 +91,7 @@ struct s3c_sdhci_platdata {
 extern void s3c_sdhci0_set_platdata(struct s3c_sdhci_platdata *pd);
 extern void s3c_sdhci1_set_platdata(struct s3c_sdhci_platdata *pd);
 extern void s3c_sdhci2_set_platdata(struct s3c_sdhci_platdata *pd);
+extern void s3c_sdhci3_set_platdata(struct s3c_sdhci_platdata *pd);
 
 /* Default platform data, exported so that per-cpu initialisation can
  * set the correct one when there are more than one cpu type selected.
@@ -95,6 +100,7 @@ extern void s3c_sdhci2_set_platdata(struct s3c_sdhci_platdata *pd);
 extern struct s3c_sdhci_platdata s3c_hsmmc0_def_platdata;
 extern struct s3c_sdhci_platdata s3c_hsmmc1_def_platdata;
 extern struct s3c_sdhci_platdata s3c_hsmmc2_def_platdata;
+extern struct s3c_sdhci_platdata s3c_hsmmc3_def_platdata;
 
 /* Helper function availablity */
 
@@ -110,6 +116,7 @@ extern void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci1_cfg_gpio(struct platform_device *, int w);
 extern void s5pv210_setup_sdhci2_cfg_gpio(struct platform_device *, int w);
+extern void s5pv210_setup_sdhci3_cfg_gpio(struct platform_device *, int w);
 extern void s3c2416_setup_sdhci0_cfg_gpio(struct platform_device *, int w);
 extern void s3c2416_setup_sdhci1_cfg_gpio(struct platform_device *, int w);
 
@@ -312,7 +319,7 @@ static inline void s5pv210_default_sdhci0(void)
 	s3c_hsmmc0_def_platdata.cfg_card = s5pv210_setup_sdhci_cfg_card;
 }
 #else
-static inline void s5pc100_default_sdhci0(void) { }
+static inline void s5pv210_default_sdhci0(void) { }
 #endif /* CONFIG_S3C_DEV_HSMMC */
 
 #ifdef CONFIG_S3C_DEV_HSMMC1
@@ -337,10 +344,22 @@ static inline void s5pv210_default_sdhci2(void)
 static inline void s5pv210_default_sdhci2(void) { }
 #endif /* CONFIG_S3C_DEV_HSMMC2 */
 
+#ifdef CONFIG_S3C_DEV_HSMMC3
+static inline void s5pv210_default_sdhci3(void)
+{
+	s3c_hsmmc3_def_platdata.clocks = s5pv210_hsmmc_clksrcs;
+	s3c_hsmmc3_def_platdata.cfg_gpio = s5pv210_setup_sdhci3_cfg_gpio;
+	s3c_hsmmc3_def_platdata.cfg_card = s5pv210_setup_sdhci_cfg_card;
+}
+#else
+static inline void s5pv210_default_sdhci3(void) { }
+#endif /* CONFIG_S3C_DEV_HSMMC3 */
+
 #else
 static inline void s5pv210_default_sdhci0(void) { }
 static inline void s5pv210_default_sdhci1(void) { }
 static inline void s5pv210_default_sdhci2(void) { }
+static inline void s5pv210_default_sdhci3(void) { }
 #endif /* CONFIG_S5PC100_SETUP_SDHCI */
 
 /* S3C2416 SDHCI setup */
