@@ -13,9 +13,9 @@
 #ifndef _REGS_FIMV_H
 #define _REGS_FIMV_H
 
-#define S3C_FIMV_REG_SIZE
+#define S3C_FIMV_REG_SIZE \
 				(S3C_FIMV_END_ADDR - S3C_FIMV_START_ADDR)
-#define S3C_FIMV_REG_COUNT
+#define S3C_FIMV_REG_COUNT \
 				((S3C_FIMV_END_ADDR - S3C_FIMV_START_ADDR) / 4)
 
 #define S3C_FIMVREG(x)			(x)
