@@ -211,6 +211,21 @@ static struct clk clk_sclk_usbphy1 = {
 	.id		= -1,
 };
 
+static struct clk clk_i2scdclk0 = {
+	.name		= "i2scdclk",
+	.id		= 0,
+};
+
+static struct clk clk_i2scdclk1 = {
+	.name		= "i2scdclk",
+	.id		= 1,
+};
+
+static struct clk clk_i2scdclk2 = {
+	.name		= "i2scdclk",
+	.id		= 2,
+};
+
 static struct clk clk_pcmcdclk0 = {
 	.name		= "pcmcdclk",
 	.id		= -1,
@@ -1175,6 +1190,9 @@ static struct clk *clks[] __initdata = {
 	&clk_sclk_hdmiphy,
 	&clk_sclk_usbphy0,
 	&clk_sclk_usbphy1,
+	&clk_i2scdclk0,
+	&clk_i2scdclk1,
+	&clk_i2scdclk2,
 	&clk_pcmcdclk0,
 	&clk_pcmcdclk1,
 	&clk_pcmcdclk2,
