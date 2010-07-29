@@ -58,19 +58,12 @@ void s3cfb_cfg_gpio(struct platform_device *pdev)
 
 	/* mDNIe SEL: why we shall write 0x2 ? */
 	writel(0x2, S5P_MDNIE_SEL);
-
-	/* drive strength to max */
-/*	writel(0xffffffff, S5PV210_GPF0_BASE + 0xc);
-	writel(0xffffffff, S5PV210_GPF1_BASE + 0xc);
-	writel(0xffffffff, S5PV210_GPF2_BASE + 0xc);
-	writel(0x000003ff, S5PV210_GPF3_BASE + 0xc);
-*/
 }
 
 int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 {
 	struct clk *sclk = NULL;
-	struct clk *mout_fimd = NULL, *mout_mpll = NULL;
+	struct clk *mout_mpll = NULL;
 	u32 rate = 0;
 	int ret;
 
@@ -86,15 +79,6 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 		goto err_clk1;
 	}
 
-/*	mout_fimd = clk_get(&pdev->dev, "mout_fimd");
-	if (IS_ERR(mout_fimd)) {
-		dev_err(&pdev->dev,
-				"failed to get mout_fimd\n");
-		goto err_clk2;
-	}
-
-	clk_set_parent(mout_fimd, mout_mpll);
-*/
 	clk_set_parent(sclk, mout_mpll);
 
 	rate = clk_round_rate(sclk, 133400000);
@@ -107,7 +91,6 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 	dev_dbg(&pdev->dev, "set fimd sclk rate to %d\n", rate);
 
 	clk_put(mout_mpll);
-//	clk_put(mout_fimd);
 
 	ret = s5pv210_pd_enable("fimd_pd");
 	if (ret < 0) {
