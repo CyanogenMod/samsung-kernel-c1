@@ -135,6 +135,13 @@
 
 #define S5PV210_PA_ADC		(0xE1700000)
 
+/* mfc */
+#define S5PV210_PA_MFC		(0xF1700000)
+#define S5PV210_SZ_MFC		SZ_1M
+#define S5P_PA_MFC		S5PV210_PA_MFC
+#define S5P_SZ_MFC		S5PV210_SZ_MFC
+
+
 /* jpeg */
 #define S5PV210_PA_JPEG		(0xFB600000)
 #define S5PV210_SZ_JPEG		SZ_1M
