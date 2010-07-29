@@ -35,6 +35,7 @@
 #include <plat/adc-core.h>
 #include <plat/iic-core.h>
 #include <plat/sdhci.h>
+#include <mach/regs-audss.h>
 
 /* Initial IO mappings */
 
@@ -58,6 +59,11 @@ static struct map_desc s5pv210_iodesc[] __initdata = {
 		.virtual	= (unsigned long)S5P_VA_SROMC,
 		.pfn		= __phys_to_pfn(S5PV210_PA_SROMC),
 		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_AUDSS,
+		.pfn		= __phys_to_pfn(S5PV210_PA_AUDSS),
+		.length		= SZ_1K,
 		.type		= MT_DEVICE,
 	}
 };
