@@ -151,6 +151,11 @@ static struct s3c_platform_fimc fimc_plat = {
 };
 
 static struct i2c_board_info i2c_devs0[] __initdata = {
+#ifdef CONFIG_SND_SOC_WM8580
+	{
+		I2C_BOARD_INFO("wm8580", 0x1b),
+	},
+#endif
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
