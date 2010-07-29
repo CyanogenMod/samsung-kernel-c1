@@ -34,7 +34,7 @@
 #include <plat/fimc.h>
 #include <plat/csis.h>
 
-#ifdef CONFIG_VIDEO_MFC51
+#if defined(CONFIG_VIDEO_MFC51) || defined(CONFIG_VIDEO_MFC50)
 static struct resource s5p_mfc_resources[] = {
 	[0] = {
 		.start	= S5P_PA_MFC,
@@ -49,12 +49,11 @@ static struct resource s5p_mfc_resources[] = {
 };
 
 struct platform_device s5p_device_mfc = {
-	.name		= "s5p-mfc",
+	.name		= "mfc",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(s5p_mfc_resources),
 	.resource	= s5p_mfc_resources,
 };
-
 #endif
 
 #ifdef CONFIG_FB_S3C
