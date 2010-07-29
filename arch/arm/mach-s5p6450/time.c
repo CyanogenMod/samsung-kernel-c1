@@ -205,6 +205,13 @@ static cycle_t s5p6450_pwm2_read(struct clocksource *cs)
 	return (cycle_t) ~__raw_readl(S3C_TIMERREG(0x2c));
 }
 
+
+static void __init s5p6450_clocksource_pwm_start(void)
+{
+	s5p6450_pwm_init(2, ~0);
+	s5p6450_pwm_start(2, 1);
+}
+
 struct clocksource pwm_clocksource = {
 	.name		= "pwm_timer2",
 	.rating		= 250,
@@ -212,6 +219,7 @@ struct clocksource pwm_clocksource = {
 	.mask		= CLOCKSOURCE_MASK(32),
 	.shift		= 20,
 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS ,
+	.resume		= s5p6450_clocksource_pwm_start, 
 };
 
 static void __init s5p6450_clocksource_init(void)
@@ -232,8 +240,7 @@ static void __init s5p6450_clocksource_init(void)
 	if (clocksource_register(&pwm_clocksource))
 		panic("%s: can't register clocksource\n", pwm_clocksource.name);
 
-	s5p6450_pwm_init(2, ~0);
-	s5p6450_pwm_start(2, 1);
+	s5p6450_clocksource_pwm_start();
 }
 
 static void __init s5p6450_timer_resources(void)
@@ -285,5 +292,4 @@ static void __init s5p6450_timer_init(void)
 
 struct sys_timer s5p6450_timer = {
 	.init		= s5p6450_timer_init,
-	.resume		= s5p6450_timer_setup,
 };
