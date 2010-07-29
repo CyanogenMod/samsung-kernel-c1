@@ -437,6 +437,16 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
 		.ctrlbit	= (1 << 10),
 	}, {
+		.name		= "usb-host",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_fsys_ctrl ,
+		.ctrlbit	= (1 << 12),
+	}, {
+		.name		= "otg",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_fsys_ctrl,
+		.ctrlbit	= (1 << 13),
+	}, {
 		.name		= "spi",
 		.id		= 0,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
@@ -834,7 +844,7 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	printk(KERN_INFO "S5PV310: ARMCLK=%ld, DMC=%ld, ACLK200=%ld\n"
 			 "ACLK100=%ld, ACLK160=%ld, ACLK133=%ld\n",
 			  armclk, sclk_dmc, aclk_200,
-			  aclk_100,aclk_160, aclk_133);
+			  aclk_100, aclk_160, aclk_133);
 
 	clk_f.rate = armclk;
 	clk_h.rate = sclk_dmc;

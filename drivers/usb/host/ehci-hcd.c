@@ -1163,6 +1163,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ehci_hcd_s5pv210_driver
 #endif
 
+#ifdef CONFIG_ARCH_S5PV310
+#include "ehci-s5pv310.c"
+#define PLATFORM_DRIVER		ehci_hcd_s5pv310_driver
+#endif
+
 #ifdef CONFIG_ARCH_S5P6450
 #include "ehci-s5p6450.c"
 #define PLATFORM_DRIVER		ehci_hcd_s5p6450_driver
