@@ -185,6 +185,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_usb_ehci,
 	&s3c_device_usb_ohci,
 #endif
+#ifdef CONFIG_USB_GADGET
+	&s3c_device_usbgadget,
+#endif
+
 };
 
 static void __init sromc_setup(void)
@@ -264,6 +268,38 @@ static void __init smdkv310_machine_init(void)
 }
 
 #ifdef CONFIG_USB_SUPPORT
+/* Initializes OTG Phy. */
+void otg_phy_init(void)
+{
+	__raw_writel(__raw_readl(S5P_USBOTG_PHY_CONTROL)
+		|(0x1<<0), S5P_USBOTG_PHY_CONTROL);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+		&~(0x7<<3)&~(0x1<<0)), S3C_USBOTG_PHYPWR);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+		&~(0x5<<2))|(0x3<<0), S3C_USBOTG_PHYCLK); /* PLL 24Mhz */
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x3<<1))|(0x1<<0), S3C_USBOTG_RSTCON);
+	udelay(10);
+	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x7<<0), S3C_USBOTG_RSTCON);
+	udelay(10);
+}
+EXPORT_SYMBOL(otg_phy_init);
+
+/* USB Control request data struct must be located here for DMA transfer */
+struct usb_ctrlrequest usb_ctrl __attribute__((aligned(8)));
+EXPORT_SYMBOL(usb_ctrl);
+
+/* OTG PHY Power Off */
+void otg_phy_off(void)
+{
+	__raw_writel(__raw_readl(S3C_USBOTG_PHYPWR)
+		|(0x3<<3), S3C_USBOTG_PHYPWR);
+	__raw_writel(__raw_readl(S5P_USBOTG_PHY_CONTROL)
+		&~(1<<0), S5P_USBOTG_PHY_CONTROL);
+}
+EXPORT_SYMBOL(otg_phy_off);
+
 void usb_host_phy_init(void)
 {
 	struct clk *otg_clk;
