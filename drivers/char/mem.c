@@ -34,6 +34,10 @@
 # include <linux/efi.h>
 #endif
 
+#ifdef CONFIG_S5P_VMEM
+# include "s5p_vmem.h"
+#endif
+
 static inline unsigned long size_inside_page(unsigned long start,
 					     unsigned long size)
 {
@@ -817,6 +821,15 @@ static const struct file_operations s3c_mem_fops = {
 };
 #endif
 
+#ifdef CONFIG_S5P_VMEM
+static const struct file_operations s5p_vmem_fops = {
+	.ioctl  = s5p_vmem_ioctl,
+	.mmap   = s5p_vmem_mmap,
+	.open	= s5p_vmem_open,
+	.release = s5p_vmem_release
+};
+#endif
+
 static ssize_t kmsg_write(struct file *file, const char __user *buf,
 			  size_t count, loff_t *ppos)
 {
@@ -866,6 +879,11 @@ static const struct memdev {
 #endif
 #ifdef CONFIG_S3C_MEM
 	[13] = {"s3c-mem", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH, &s3c_mem_fops},
+#endif
+#ifdef CONFIG_S5P_VMEM
+	[14] = {"s5p-vmem",
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH,
+		&s5p_vmem_fops},
 #endif
 
 };

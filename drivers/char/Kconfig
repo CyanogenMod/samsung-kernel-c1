@@ -1138,5 +1138,15 @@ config S3C_MEM
 
 	  If unsure, say Y.
 
+config S5P_VMEM
+	bool "Contiguous Virtual Memory Allocator for S5PV310(/dev/s5p-vmem)"
+	default y
+	---help---
+	  Contiguous virtual memory allocator for Sys.MMUs in S5PV310. Say y if
+	  you want to allocate a memory space for a peripheral device with
+	  Sys.MMU.
+
+	  If unsure, say Y.
+
 endmenu
 
