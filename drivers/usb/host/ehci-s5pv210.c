@@ -223,6 +223,10 @@ static int ehci_hcd_s5pv210_drv_probe(struct platform_device *pdev)
 	writel(0x000E0000, hcd->regs + 0x90);
 #endif
 
+#if defined(CONFIG_ARCH_S5PV310)
+	writel(0x03800000, hcd->regs + 0x90);
+#endif
+
 	retval = usb_add_hcd(hcd, pdev->resource[1].start,
 				IRQF_DISABLED | IRQF_SHARED);
 
