@@ -323,6 +323,8 @@ struct platform_device s3c_device_ipc = {
 	.num_resources	= ARRAY_SIZE(s3c_ipc_resource),
 	.resource	= s3c_ipc_resource,
 };
+
+#ifdef CONFIG_VIDEO_FIMC_MIPI
 static struct resource s3c_csis_resource[] = {
 	[0] = {
 		.start	= S5P_PA_CSIS,
@@ -365,6 +367,7 @@ void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
 
 	s3c_device_csis.dev.platform_data = npd;
 }
+#endif
 #endif
 
 #ifdef CONFIG_VIDEO_JPEG_V2
