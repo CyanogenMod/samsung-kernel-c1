@@ -73,6 +73,10 @@ obj-$(CONFIG_VIDEO_OV7670) 	+= ov7670.o
 obj-$(CONFIG_VIDEO_TCM825X) += tcm825x.o
 obj-$(CONFIG_VIDEO_TVEEPROM) += tveeprom.o
 obj-$(CONFIG_VIDEO_MT9V011) += mt9v011.o
+obj-$(CONFIG_VIDEO_S5K3BA)		+= s5k3ba.o
+obj-$(CONFIG_VIDEO_S5K4BA)		+= s5k4ba.o
+obj-$(CONFIG_VIDEO_S5K4EA)		+= s5k4ea.o
+obj-$(CONFIG_VIDEO_S5K6AA)		+= s5k6aa.o
 
 obj-$(CONFIG_SOC_CAMERA_MT9M001)	+= mt9m001.o
 obj-$(CONFIG_SOC_CAMERA_MT9M111)	+= mt9m111.o
