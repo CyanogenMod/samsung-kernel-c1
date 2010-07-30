@@ -6,6 +6,13 @@ config VIDEO_SAMSUNG
 	help
 	  This is a representative video4linux configuration for Samsung multimedia devices.
 
+config VIDEO_SAMSUNG_V4L2
+	bool "V4L2 API for digital camera to be contributed by samsung"
+	depends on VIDEO_DEV && VIDEO_SAMSUNG
+	default n
+	help
+	  This feature is for new V4L2 APIs all about digital camera
+
 if CPU_S5PV210
 source "drivers/media/video/samsung/fimc/Kconfig"
 source "drivers/media/video/samsung/jpeg_v2/Kconfig"
