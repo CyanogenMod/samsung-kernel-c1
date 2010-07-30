@@ -524,6 +524,12 @@ static struct clk init_clocks[] = {
 		.parent         = &clk_hclk133.clk,
 		.enable         = s5p6450_hclk0_ctrl,
 		.ctrlbit        = S5P_CLKCON_HCLK0_HSMMC2,
+	}, {
+		.name           = "dma",
+		.id             = -1,
+		.parent         = &clk_hclk133.clk,
+		.enable         = s5p6450_hclk0_ctrl,
+		.ctrlbit        = S5P_CLKCON_HCLK0_DMA0,
 	},
 };
 
