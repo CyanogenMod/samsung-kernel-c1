@@ -1190,19 +1190,10 @@ MODULE_LICENSE ("GPL");
 #define	PLATFORM_DRIVER		ehci_atmel_driver
 #endif
 
-#ifdef CONFIG_ARCH_S5PV210
+#if defined(CONFIG_ARCH_S5PV210) || defined(CONFIG_ARCH_S5P6450) || \
+    defined(CONFIG_ARCH_S5PV310)
 #include "ehci-s5pv210.c"
 #define PLATFORM_DRIVER		ehci_hcd_s5pv210_driver
-#endif
-
-#ifdef CONFIG_ARCH_S5PV310
-#include "ehci-s5pv310.c"
-#define PLATFORM_DRIVER		ehci_hcd_s5pv310_driver
-#endif
-
-#ifdef CONFIG_ARCH_S5P6450
-#include "ehci-s5p6450.c"
-#define PLATFORM_DRIVER		ehci_hcd_s5p6450_driver
 #endif
 
 #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \

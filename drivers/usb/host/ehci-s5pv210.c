@@ -219,13 +219,6 @@ static int ehci_hcd_s5pv210_drv_probe(struct platform_device *pdev)
 	/* cache this readonly data; minimize chip reads */
 	ehci->hcs_params = readl(&ehci->caps->hcs_params);
 
-#ifdef CONFIG_CPU_S5PV210_EVT1
-	writel(0x000E0000, hcd->regs + 0x90);
-	writel(0x00400040, hcd->regs + 0x94);
-#else
-	writel(0x00600040, hcd->regs + 0x94);
-#endif
-
 	retval = usb_add_hcd(hcd, pdev->resource[1].start,
 				IRQF_DISABLED | IRQF_SHARED);
 
