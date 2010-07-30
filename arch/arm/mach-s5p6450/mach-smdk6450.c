@@ -351,6 +351,9 @@ static struct s5m8751_platform_data __initdata smdk6450_s5m8751_pdata = {
 
 static struct i2c_board_info i2c_devs0[] __initdata = {
 	{ I2C_BOARD_INFO("24c08", 0x50), },/* Samsung KS24C080C EEPROM */
+#ifdef CONFIG_SND_SOC_WM8580
+	{ I2C_BOARD_INFO("wm8580", 0x1b), },
+#endif
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
@@ -397,6 +400,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_USB
 	&s3c_device_usb_ehci,
 	&s3c_device_usb_ohci,
+#endif
+#ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
+	&s5p6450_device_iis0,
 #endif
 };
 
