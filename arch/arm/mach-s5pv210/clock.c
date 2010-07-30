@@ -904,6 +904,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_cam",
 			.id		= 0,
+			.enable		= s5pv210_clk_mask0_ctrl,
+			.ctrlbit	= (1 << 3),
 		},
 		.sources = &clkset_group2,
 		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 12, .size = 4 },
@@ -912,6 +914,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_cam",
 			.id		= 1,
+			.enable		= s5pv210_clk_mask0_ctrl,
+			.ctrlbit	= (1 << 4),
 		},
 		.sources = &clkset_group2,
 		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 16, .size = 4 },
@@ -1003,8 +1007,6 @@ static struct clksrc_clk clksrcs[] = {
 			.enable		= s5pv210_clk_ip0_ctrl,
 			.ctrlbit	= (1 << 31),
 		},
-		.sources = &clkset_group2,
-		.reg_src = { .reg = S5P_CLK_SRC1, .shift = 24, .size = 4 },
 		.reg_div = { .reg = S5P_CLK_DIV1, .shift = 28, .size = 4 },
 	}, {
 		.clk		= {
@@ -1049,6 +1051,18 @@ static struct clksrc_clk clksrcs[] = {
 	},
 };
 
+/* MOUT CSIS */
+static struct clksrc_clk clk_mout_csis = {
+	.clk		= {
+		.name		= "mout_csis",
+		.id		= -1,
+		.enable		= s5pv210_clk_mask0_ctrl,
+		.ctrlbit	= (1 << 6),
+	},
+	.sources	= &clkset_group1,
+	.reg_src	= { .reg = S5P_CLK_SRC1, .shift = 24, .size = 4 },
+};
+
 /* Clock initialisation code */
 static struct clksrc_clk *sysclks[] = {
 	&clk_mout_apll,
@@ -1067,6 +1081,7 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_sclk_dac,
 	&clk_sclk_pixel,
 	&clk_sclk_hdmi,
+	&clk_mout_csis,
 };
 
 static int s5pv210_epll_enable(struct clk *clk, int enable)
