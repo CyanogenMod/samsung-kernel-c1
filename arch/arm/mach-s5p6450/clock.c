@@ -463,7 +463,7 @@ static struct clk init_clocks[] = {
 		.id             = -1,
 		.parent         = &clk_pclk83.clk,
 		.enable         = s5p6450_pclk_ctrl,
-		.ctrlbit        = (1 << 30),
+		.ctrlbit        = S5P_CLKCON_PCLK_DMC0,
 	}, {
 		.name		= "intc",
 		.id		= -1,
@@ -477,6 +477,12 @@ static struct clk init_clocks[] = {
 		.enable		= s5p6450_hclk0_ctrl,
 		.ctrlbit	= S5P_CLKCON_HCLK0_USB,
 	}, {
+		.name		= "usbhost",
+		.id		= -1,
+		.parent		= &clk_hclk133.clk,
+		.enable		= s5p6450_hclk0_ctrl,
+		.ctrlbit	= S5P_CLKCON_HCLK0_HOST,
+	}, {
 		.name		= "timers",
 		.id		= -1,
 		.parent		= &clk_pclk_to_wdt_pwm.clk,
@@ -484,10 +490,10 @@ static struct clk init_clocks[] = {
 		.ctrlbit	= S5P_CLKCON_PCLK_PWM,
 	}, {
 		.name		= "adc",
-		.id			= -1,
+		.id		= -1,
 		.parent		= &clk_pclk66.clk,
 		.enable		= s5p6450_pclk_ctrl,
-		.ctrlbit	 = (1 << 12),
+		.ctrlbit	= S5P_CLKCON_PCLK_TSADC,
 	}, {
 		.name           = "i2c",
 		.id             = 0,
@@ -518,6 +524,18 @@ static struct clk init_clocks[] = {
 		.parent         = &clk_hclk133.clk,
 		.enable         = s5p6450_hclk0_ctrl,
 		.ctrlbit        = S5P_CLKCON_HCLK0_HSMMC2,
+	}, {
+		.name           = "dma",
+		.id             = -1,
+		.parent         = &clk_hclk133.clk,
+		.enable         = s5p6450_hclk0_ctrl,
+		.ctrlbit        = S5P_CLKCON_HCLK0_DMA0,
+	}, {
+		.name           = "iis",
+		.id             = -1,
+		.parent         = &clk_pclk66.clk,
+		.enable         = s5p6450_pclk_ctrl,
+		.ctrlbit        = S5P_CLKCON_PCLK_I2S0,
 	},
 };
 
@@ -587,6 +605,32 @@ static struct clk *clkset_hsmmc44_list[] = {
 static struct clksrc_sources clkset_hsmmc44 = {
 	.sources	= clkset_hsmmc44_list,
 	.nr_sources	= ARRAY_SIZE(clkset_hsmmc44_list),
+};
+
+static struct clk *clkset_sclk_audio0_list[] = {
+	[0] = &clk_dout_epll.clk,
+	[1] = &clk_dout_mpll.clk,
+	[2] = &clk_ext_xtal_mux,
+	[3] = NULL,
+	[4] = NULL,
+};
+
+static struct clksrc_sources clkset_sclk_audio0 = {
+	.sources	= clkset_sclk_audio0_list,
+	.nr_sources	= ARRAY_SIZE(clkset_sclk_audio0_list),
+};
+
+static struct clksrc_clk clk_sclk_audio0 = {
+	.clk		= {
+		.name		= "audio-bus",
+		.id		= -1,
+		.enable		= s5p6450_sclk_ctrl,
+		.ctrlbit	= S5P_CLKCON_SCLK0_AUDIO0,
+		.parent		= &clk_dout_epll.clk,
+	},
+	.sources = &clkset_sclk_audio0,
+	.reg_src = { .reg = S5P_CLK_SRC1, .shift = 10, .size = 3 },
+	.reg_div = { .reg = S5P_CLK_DIV2, .shift = 8, .size = 4 },
 };
 
 static struct clksrc_clk clksrcs[] = {
@@ -739,6 +783,7 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_pclk83,
 	&clk_hclk133,
 	&clk_pclk66,
+	&clk_sclk_audio0,
 };
 
 void __init_or_cpufreq s5p6450_setup_clocks(void)

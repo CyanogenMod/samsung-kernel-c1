@@ -34,7 +34,7 @@
 #include <plat/fimc.h>
 #include <plat/csis.h>
 
-#ifdef CONFIG_VIDEO_MFC51
+#if defined(CONFIG_VIDEO_MFC51) || defined(CONFIG_VIDEO_MFC50)
 static struct resource s5p_mfc_resources[] = {
 	[0] = {
 		.start	= S5P_PA_MFC,
@@ -49,12 +49,11 @@ static struct resource s5p_mfc_resources[] = {
 };
 
 struct platform_device s5p_device_mfc = {
-	.name		= "s5p-mfc",
+	.name		= "mfc",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(s5p_mfc_resources),
 	.resource	= s5p_mfc_resources,
 };
-
 #endif
 
 #ifdef CONFIG_FB_S3C
@@ -324,6 +323,8 @@ struct platform_device s3c_device_ipc = {
 	.num_resources	= ARRAY_SIZE(s3c_ipc_resource),
 	.resource	= s3c_ipc_resource,
 };
+
+#ifdef CONFIG_VIDEO_FIMC_MIPI
 static struct resource s3c_csis_resource[] = {
 	[0] = {
 		.start	= S5P_PA_CSIS,
@@ -366,6 +367,7 @@ void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
 
 	s3c_device_csis.dev.platform_data = npd;
 }
+#endif
 #endif
 
 #ifdef CONFIG_VIDEO_JPEG_V2
@@ -500,6 +502,66 @@ EXPORT_SYMBOL(s5p_device_hpd);
 #endif
 
 #ifdef CONFIG_USB_SUPPORT
+#ifdef CONFIG_USB_ARCH_HAS_EHCI
+ /* USB Host Controlle EHCI registrations */
+static struct resource s3c_usb__ehci_resource[] = {
+	[0] = {
+		.start = S5P_PA_USB_EHCI,
+		.end   = S5P_PA_USB_EHCI  + S5P_SZ_USB_EHCI - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_UHOST,
+		.end   = IRQ_UHOST,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+static u64 s3c_device_usb_ehci_dmamask = 0xffffffffUL;
+
+struct platform_device s3c_device_usb_ehci = {
+	.name		= "s5p-ehci",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s3c_usb__ehci_resource),
+	.resource	= s3c_usb__ehci_resource,
+	.dev		= {
+		.dma_mask = &s3c_device_usb_ehci_dmamask,
+		.coherent_dma_mask = 0xffffffffUL
+	}
+};
+EXPORT_SYMBOL(s3c_device_usb_ehci);
+#endif /* CONFIG_USB_ARCH_HAS_EHCI */
+
+#ifdef CONFIG_USB_ARCH_HAS_OHCI
+/* USB Host Controlle OHCI registrations */
+static struct resource s3c_usb__ohci_resource[] = {
+	[0] = {
+		.start = S5P_PA_USB_OHCI,
+		.end   = S5P_PA_USB_OHCI  + S5P_SZ_USB_OHCI - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_UHOST,
+		.end   = IRQ_UHOST,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+static u64 s3c_device_usb_ohci_dmamask = 0xffffffffUL;
+
+struct platform_device s3c_device_usb_ohci = {
+	.name		= "s5p-ohci",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s3c_usb__ohci_resource),
+	.resource	= s3c_usb__ohci_resource,
+	.dev		= {
+		.dma_mask = &s3c_device_usb_ohci_dmamask,
+		.coherent_dma_mask = 0xffffffffUL
+	}
+};
+EXPORT_SYMBOL(s3c_device_usb_ohci);
+#endif /* CONFIG_USB_ARCH_HAS_EHCI */
+
 /* USB Device (Gadget)*/
 static struct resource s3c_usbgadget_resource[] = {
 	[0] = {

@@ -410,6 +410,32 @@ config VIDEO_VPX3220
 	  To compile this driver as a module, choose M here: the
 	  module will be called vpx3220.
 
+config VIDEO_S5K3BA
+	tristate "S5K3BA supporting camera driver"
+	depends on I2C && VIDEO_V4L2
+	---help---
+	  This driver supports s5k3ba SoC camera module
+
+config VIDEO_S5K4BA
+	tristate "S5K4BA supporting camera driver"
+	depends on I2C && VIDEO_V4L2
+	---help---
+	  This driver supports s5k4ba SoC camera module
+
+config VIDEO_S5K4EA
+	tristate "S5K4EA MIPI CSI-2 supporting camera driver"
+	depends on I2C && VIDEO_V4L2 && VIDEO_FIMC_MIPI
+	---help---
+	  This driver supports s5k4ea SoC camera module with
+	  MIPI CSI-2 as well
+
+config VIDEO_S5K6AA
+	tristate "S5K6AA MIPI CSI-2 supporting camera driver"
+	depends on I2C && VIDEO_V4L2 && VIDEO_FIMC_MIPI
+	---help---
+	  This driver supports s5k6aa SoC camera module with
+	  MIPI CSI-2 as well
+
 comment "Video and audio decoders"
 
 source "drivers/media/video/cx25840/Kconfig"

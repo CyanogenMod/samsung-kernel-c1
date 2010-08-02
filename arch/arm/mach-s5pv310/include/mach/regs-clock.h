@@ -94,4 +94,12 @@
 
 #define S5P_CLKGATE_SCLKCPU		S5P_CLKREG(0x14800)
 
+/* Registers related to power management */
+#define S5P_PMREG(x)			(S3C_VA_SYS + (x))
+
+#define S5P_USBOTG_PHY_CONTROL		S5P_PMREG(0x0704)
+#define S5P_USBHOST_PHY_CONTROL		S5P_PMREG(0x0708)
+
+
+
 #endif /* __ASM_ARCH_REGS_CLOCK_H */

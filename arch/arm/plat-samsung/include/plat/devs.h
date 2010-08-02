@@ -46,6 +46,8 @@ extern struct platform_device s3c_device_fimc2;
 extern struct platform_device s3c_device_csis;
 extern struct platform_device s3c_device_ipc;
 extern struct platform_device s3c_device_ohci;
+extern struct platform_device s3c_device_usb_ehci;
+extern struct platform_device s3c_device_usb_ohci;
 extern struct platform_device s3c_device_lcd;
 extern struct platform_device s3c_device_wdt;
 extern struct platform_device s3c_device_i2c0;
@@ -65,6 +67,7 @@ extern struct platform_device s3c_device_hwmon;
 extern struct platform_device s3c_device_hsmmc0;
 extern struct platform_device s3c_device_hsmmc1;
 extern struct platform_device s3c_device_hsmmc2;
+extern struct platform_device s3c_device_hsmmc3;
 
 extern struct platform_device s3c_device_spi0;
 extern struct platform_device s3c_device_spi1;
@@ -115,6 +118,9 @@ extern struct platform_device s5pc100_device_pcm1;
 extern struct platform_device s5pc100_device_iis0;
 extern struct platform_device s5pc100_device_iis1;
 extern struct platform_device s5pc100_device_iis2;
+
+
+extern struct platform_device s5p6450_device_iis0;
 
 /* s3c2440 specific devices */
 

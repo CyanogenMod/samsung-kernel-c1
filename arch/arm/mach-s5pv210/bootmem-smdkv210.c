@@ -72,6 +72,35 @@ struct s5p_media_device media_devs[] = {
         },
 #endif
 
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC
+	{
+		.id = S5P_MDEV_MFC,
+		.name = "mfc",
+		.bank = 0,
+		.memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC * SZ_1K,
+		.paddr = 0,
+	},
+#endif
+
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC0
+	{
+		.id = S5P_MDEV_MFC,
+		.name = "mfc",
+		.bank = 0,
+		.memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC0 * SZ_1K,
+		.paddr = 0,
+	},
+#endif
+
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC1
+	{
+		.id = S5P_MDEV_MFC,
+		.name = "mfc",
+		.bank = 1,
+		.memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_MFC1 * SZ_1K,
+		.paddr = 0,
+	},
+#endif
 
 };
 

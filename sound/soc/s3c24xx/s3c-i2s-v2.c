@@ -657,7 +657,7 @@ int s3c_i2sv2_probe(struct platform_device *pdev,
 	dai->private_data = i2s;
 
 	if (!base) {
-		dev_err(dev, "Invalid base address - 0x%x\n", base);
+		dev_err(dev, "Invalid base address\n");
 		return -EINVAL;
 	}
 

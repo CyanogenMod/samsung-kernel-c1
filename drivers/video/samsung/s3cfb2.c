@@ -26,8 +26,8 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 
-#include <asm/io.h>
-#include <asm/memory.h>
+#include <linux/io.h>
+#include <linux/memory.h>
 #include <plat/clock.h>
 
 #include "logo_rgb24.h"
@@ -825,10 +825,10 @@ static int s3cfb_init_fbinfo(int id)
 	var->vmode = FB_VMODE_NONINTERLACED;
 	var->hsync_len = timing->h_sw;
 	var->vsync_len = timing->v_sw;
-	var->left_margin = timing->h_fp;
-	var->right_margin = timing->h_bp;
-	var->upper_margin = timing->v_fp;
-	var->lower_margin = timing->v_bp;
+	var->left_margin = timing->h_bp;
+	var->right_margin = timing->h_fp;
+	var->upper_margin = timing->v_bp;
+	var->lower_margin = timing->v_fp;
 
 	var->pixclock = lcd->freq * (var->left_margin + var->right_margin +
 			var->hsync_len + var->xres) *

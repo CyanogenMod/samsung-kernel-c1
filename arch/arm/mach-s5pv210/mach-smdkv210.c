@@ -15,6 +15,9 @@
 #include <linux/serial_core.h>
 #include <linux/gpio.h>
 #include <linux/dm9000.h>
+#include <linux/clk.h>
+#include <linux/delay.h>
+#include <linux/usb/ch9.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -25,6 +28,11 @@
 #include <mach/regs-clock.h>
 #include <mach/regs-mem.h>
 #include <mach/regs-gpio.h>
+
+#include <media/s5k3ba_platform.h>
+#include <media/s5k4ba_platform.h>
+#include <media/s5k4ea_platform.h>
+#include <media/s5k6aa_platform.h>
 
 #include <plat/regs-serial.h>
 #include <plat/gpio-cfg.h>
@@ -38,6 +46,8 @@
 #include <plat/fimc.h>
 #include <plat/csis.h>
 #include <plat/media.h>
+#include <plat/sdhci.h>
+#include <plat/regs-otg.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define S5PV210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -84,6 +94,397 @@ static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 		.ufcon		= S5PV210_UFCON_DEFAULT,
 	},
 };
+
+#ifdef CONFIG_VIDEO_FIMC
+/*
+ * External camera reset
+ * Because the most of cameras take i2c bus signal, so that
+ * you have to reset at the boot time for other i2c slave devices.
+ * This function also called at fimc_init_camera()
+ * Do optimization for cameras on your platform.
+*/
+static int smdkv210_cam0_power(int onoff)
+{
+	int err;
+	/* Camera A */
+	err = gpio_request(S5PV210_GPH0(2), "GPH0");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPH0 for CAM_2V8\n");
+
+	s3c_gpio_setpull(S5PV210_GPH0(2), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV210_GPH0(2), onoff);
+	gpio_free(S5PV210_GPH0(2));
+
+	return 0;
+}
+
+static int smdkv210_cam1_power(int onoff)
+{
+	int err;
+
+	/* Camera B */
+	err = gpio_request(S5PV210_GPH0(3), "GPH0");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPH0 for CAM_2V8\n");
+
+	s3c_gpio_setpull(S5PV210_GPH0(3), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV210_GPH0(3), onoff);
+	gpio_free(S5PV210_GPH0(3));
+
+	return 0;
+}
+
+/* Set for MIPI-CSI Camera module Power Enable */
+static int smdkv210_mipi_cam_pwr_en(int enabled)
+{
+	int err;
+
+	err = gpio_request(S5PV210_GPH1(2), "GPH1");
+	if (err)
+		printk(KERN_ERR "#### failed to request(GPH1)for CAM_2V8\n");
+
+	s3c_gpio_setpull(S5PV210_GPH1(2), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV210_GPH1(2), enabled);
+	gpio_free(S5PV210_GPH1(2));
+
+	return 0;
+}
+
+/* Set for MIPI-CSI Camera module Reset */
+static int smdkv210_mipi_cam_rstn(int enabled)
+{
+	int err;
+
+	err = gpio_request(S5PV210_GPH0(3), "GPH0");
+	if (err)
+		printk(KERN_ERR "#### failed to reset(GPH0) for MIPI CAM\n");
+
+	s3c_gpio_setpull(S5PV210_GPH0(3), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV210_GPH0(3), enabled);
+	gpio_free(S5PV210_GPH0(3));
+
+	return 0;
+}
+
+/* MIPI-CSI Camera module Power up/down sequence */
+static int smdkv210_mipi_cam_power(int on)
+{
+	if(on) {
+		smdkv210_mipi_cam_pwr_en(1);
+		mdelay(5);
+		smdkv210_mipi_cam_rstn(1);
+	}
+	else {
+		smdkv210_mipi_cam_rstn(0);
+		mdelay(5);
+		smdkv210_mipi_cam_pwr_en(0);
+	}
+	return 0;
+}
+
+/*
+ * Guide for Camera Configuration for smdkv210
+ * ITU channel must be set as A or B
+ * ITU CAM CH A: S5K3BA only
+ * ITU CAM CH B: one of S5K3BA and S5K4BA
+ * MIPI: one of S5K4EA and S5K6AA
+ *
+ * NOTE1: if the S5K4EA is enabled, all other cameras must be disabled
+ * NOTE2: currently, only 1 MIPI camera must be enabled
+ * NOTE3: it is possible to use both one ITU cam and
+ *	one MIPI cam except for S5K4EA case
+ *
+*/
+#undef CAM_ITU_CH_A
+#undef WRITEBACK_ENABLED
+
+#ifdef CONFIG_VIDEO_S5K4EA
+#define S5K4EA_ENABLED
+/* undef : 3BA, 4BA, 6AA */
+#else
+#ifdef CONFIG_VIDEO_S5K6AA
+#define S5K6AA_ENABLED
+/* undef : 4EA */
+#else
+#ifdef CONFIG_VIDEO_S5K3BA
+#define S5K3BA_ENABLED
+/* undef : 4BA */
+#elif CONFIG_VIDEO_S5K4BA
+#define S5K4BA_ENABLED
+/* undef : 3BA */
+#endif
+#endif
+#endif
+
+/* External camera module setting */
+/* 2 ITU Cameras */
+#ifdef S5K3BA_ENABLED
+static struct s5k3ba_platform_data s5k3ba_plat = {
+	.default_width = 640,
+	.default_height = 480,
+	.pixelformat = V4L2_PIX_FMT_VYUY,
+	.freq = 24000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k3ba_i2c_info = {
+	I2C_BOARD_INFO("S5K3BA", 0x2d),
+	.platform_data = &s5k3ba_plat,
+};
+
+static struct s3c_platform_camera s5k3ba = {
+#ifdef CAM_ITU_CH_A
+	.id		= CAMERA_PAR_A,
+#else
+	.id		= CAMERA_PAR_B,
+#endif
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CRYCBY,
+	.i2c_busnum	= 0,
+	.info		= &s5k3ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_VYUY,
+	.srclk_name	= "xusbxti",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	.width		= 640,
+	.height		= 480,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 640,
+		.height	= 480,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+#ifdef CAM_ITU_CH_A
+	.cam_power	= smdkv210_cam0_power,
+#else
+	.cam_power	= smdkv210_cam1_power,
+#endif
+};
+#endif
+
+#ifdef S5K4BA_ENABLED
+static struct s5k4ba_platform_data s5k4ba_plat = {
+	.default_width = 800,
+	.default_height = 600,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 44000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k4ba_i2c_info = {
+	I2C_BOARD_INFO("S5K4BA", 0x2d),
+	.platform_data = &s5k4ba_plat,
+};
+
+static struct s3c_platform_camera s5k4ba = {
+	.id		= CAMERA_PAR_B,
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k4ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 44000000,
+	.line_length	= 1920,
+	.width		= 800,
+	.height		= 600,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 800,
+		.height	= 600,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+#ifdef CAM_ITU_CH_A
+	.cam_power	= smdkv210_cam0_power,
+#else
+	.cam_power	= smdkv210_cam1_power,
+#endif
+};
+#endif
+
+/* 2 MIPI Cameras */
+#ifdef S5K4EA_ENABLED
+static struct s5k4ea_platform_data s5k4ea_plat = {
+	.default_width = 1920,
+	.default_height = 1080,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 1,
+};
+
+static struct i2c_board_info  s5k4ea_i2c_info = {
+	I2C_BOARD_INFO("S5K4EA", 0x2d),
+	.platform_data = &s5k4ea_plat,
+};
+
+static struct s3c_platform_camera s5k4ea = {
+	.id		= CAMERA_CSI_C,
+	.type		= CAM_TYPE_MIPI,
+	.fmt		= MIPI_CSI_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k4ea_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 48000000,
+	.line_length	= 1920,
+	.width		= 1920,
+	.height		= 1080,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 1920,
+		.height	= 1080,
+	},
+
+	.mipi_lanes	= 2,
+	.mipi_settle	= 12,
+	.mipi_align	= 32,
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+	.cam_power	= smdkv210_mipi_cam_power,
+};
+#endif
+
+#ifdef S5K6AA_ENABLED
+static struct s5k6aa_platform_data s5k6aa_plat = {
+	.default_width = 640,
+	.default_height = 480,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 1,
+};
+
+static struct i2c_board_info  s5k6aa_i2c_info = {
+	I2C_BOARD_INFO("S5K6AA", 0x3c),
+	.platform_data = &s5k6aa_plat,
+};
+
+static struct s3c_platform_camera s5k6aa = {
+	.id		= CAMERA_CSI_C,
+	.type		= CAM_TYPE_MIPI,
+	.fmt		= MIPI_CSI_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k6aa_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "xusbxti",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	/* default resol for preview kind of thing */
+	.width		= 640,
+	.height		= 480,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 640,
+		.height	= 480,
+	},
+
+	.mipi_lanes	= 1,
+	.mipi_settle	= 6,
+	.mipi_align	= 32,
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+	.cam_power	= smdkv210_mipi_cam_power,
+};
+#endif
+
+#ifdef WRITEBACK_ENABLED
+static struct i2c_board_info  writeback_i2c_info = {
+	I2C_BOARD_INFO("WriteBack", 0x0),
+};
+
+static struct s3c_platform_camera writeback = {
+	.id		= CAMERA_WB,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &writeback_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_YUV444,
+	.line_length	= 800,
+	.width		= 480,
+	.height		= 800,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 480,
+		.height	= 800,
+	},
+
+	.initialized	= 0,
+};
+#endif
+
+/* Interface setting */
+static struct s3c_platform_fimc fimc_plat = {
+#if defined(S5K4EA_ENABLED) || defined(S5K6AA_ENABLED)
+	.default_cam	= CAMERA_CSI_C,
+#else
+
+#ifdef WRITEBACK_ENABLED
+	.default_cam	= CAMERA_WB,
+#elif CAM_ITU_CH_A
+	.default_cam	= CAMERA_PAR_A,
+#else
+	.default_cam	= CAMERA_PAR_B,
+#endif
+
+#endif
+	.camera		= {
+#ifdef S5K3BA_ENABLED
+		&s5k3ba,
+#endif
+#ifdef S5K4BA_ENABLED
+		&s5k4ba,
+#endif
+#ifdef S5K4EA_ENABLED
+		&s5k4ea,
+#endif
+#ifdef S5K6AA_ENABLED
+		&s5k6aa,
+#endif
+#ifdef WRITEBACK_ENABLED
+		&writeback,
+#endif
+	},
+	.hw_ver		= 0x43,
+};
+#endif
 
 #ifdef CONFIG_DM9000
 static struct resource dm9000_resources[] = {
@@ -141,11 +542,12 @@ static void __init dm9000_set(void)
 static void __init dm9000_set(void) {}
 #endif
 
-static struct s3c_platform_fimc fimc_plat = {
-	.hw_ver		= 0x43,
-};
-
 static struct i2c_board_info i2c_devs0[] __initdata = {
+#ifdef CONFIG_SND_SOC_WM8580
+	{
+		I2C_BOARD_INFO("wm8580", 0x1b),
+	},
+#endif
 };
 
 static struct i2c_board_info i2c_devs1[] __initdata = {
@@ -165,6 +567,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 #endif
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
+	&s3c_device_hsmmc0,
+	&s3c_device_hsmmc1,
+	&s3c_device_hsmmc2,
+	&s3c_device_hsmmc3,
 	&s3c_device_ts,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,
@@ -182,6 +588,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_ipc,
 #endif
 
+#ifdef CONFIG_VIDEO_MFC50
+	&s5p_device_mfc,
+#endif
+
 #ifdef CONFIG_VIDEO_JPEG_V2
 	&s3c_device_jpeg,
 #endif
@@ -190,10 +600,22 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5p_device_rotator,
 #endif
 
+#ifdef CONFIG_USB
+	&s3c_device_usb_ehci,
+	&s3c_device_usb_ohci,
+#endif
+#ifdef CONFIG_USB_GADGET
+	&s3c_device_usbgadget,
+#endif
+
 #ifdef CONFIG_VIDEO_TV20
 	&s5p_device_tvout,
 	&s5p_device_cec,
 	&s5p_device_hpd,
+#endif
+
+#ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
+	&s5pv210_device_iis0,
 #endif
 };
 
@@ -201,6 +623,26 @@ static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.delay			= 10000,
 	.presc			= 49,
 	.oversampling_shift	= 2,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc0_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH0(7),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc1_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH0(7),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc2_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH3(1),
+	.has_wp_gpio		= true,
+};
+
+static struct s3c_sdhci_platdata smdkv210_hsmmc3_pdata __initdata = {
+	.wp_gpio		= S5PV210_GPH1(0),
+	.has_wp_gpio		= true,
 };
 
 static void __init smdkv210_map_io(void)
@@ -214,6 +656,10 @@ static void __init smdkv210_map_io(void)
 static void __init smdkv210_machine_init(void)
 {
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+	s3c_sdhci0_set_platdata(&smdkv210_hsmmc0_pdata);
+	s3c_sdhci1_set_platdata(&smdkv210_hsmmc1_pdata);
+	s3c_sdhci2_set_platdata(&smdkv210_hsmmc2_pdata);
+	s3c_sdhci3_set_platdata(&smdkv210_hsmmc3_pdata);
 	dm9000_set();
 
 	s3c_i2c0_set_platdata(NULL);
@@ -235,6 +681,72 @@ static void __init smdkv210_machine_init(void)
 #endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
+
+#ifdef CONFIG_USB_SUPPORT
+/* Initializes OTG Phy. */
+void otg_phy_init(void)
+{
+	__raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+		|(0x1<<0), S5P_USB_PHY_CONTROL); /*USB PHY0 Enable */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+		&~(0x3<<3)&~(0x1<<0))|(0x1<<5), S3C_USBOTG_PHYPWR);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+		&~(0x5<<2))|(0x3<<0), S3C_USBOTG_PHYCLK);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x3<<1))|(0x1<<0), S3C_USBOTG_RSTCON);
+	udelay(10);
+	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x7<<0), S3C_USBOTG_RSTCON);
+	udelay(10);
+}
+EXPORT_SYMBOL(otg_phy_init);
+
+/* USB Control request data struct must be located here for DMA transfer */
+struct usb_ctrlrequest usb_ctrl __attribute__((aligned(8)));
+EXPORT_SYMBOL(usb_ctrl);
+
+/* OTG PHY Power Off */
+void otg_phy_off(void)
+{
+	__raw_writel(__raw_readl(S3C_USBOTG_PHYPWR)
+		|(0x3<<3), S3C_USBOTG_PHYPWR);
+	__raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+		&~(1<<0), S5P_USB_PHY_CONTROL);
+}
+EXPORT_SYMBOL(otg_phy_off);
+
+void usb_host_phy_init(void)
+{
+	struct clk *otg_clk;
+
+	otg_clk = clk_get(NULL, "otg");
+	clk_enable(otg_clk);
+
+	if (__raw_readl(S5P_USB_PHY_CONTROL) & (0x1<<1))
+		return;
+
+	__raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+		|(0x1<<1), S5P_USB_PHY_CONTROL);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+		&~(0x1<<7)&~(0x1<<6))|(0x1<<8)|(0x1<<5), S3C_USBOTG_PHYPWR);
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+		&~(0x1<<7))|(0x3<<0), S3C_USBOTG_PHYCLK);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON))
+		|(0x1<<4)|(0x1<<3), S3C_USBOTG_RSTCON);
+	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x1<<4)&~(0x1<<3), S3C_USBOTG_RSTCON);
+}
+EXPORT_SYMBOL(usb_host_phy_init);
+
+void usb_host_phy_off(void)
+{
+	__raw_writel(__raw_readl(S3C_USBOTG_PHYPWR)
+		|(0x1<<7)|(0x1<<6), S3C_USBOTG_PHYPWR);
+	__raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+		&~(1<<1), S5P_USB_PHY_CONTROL);
+}
+EXPORT_SYMBOL(usb_host_phy_off);
+#endif
 
 MACHINE_START(SMDKV210, "SMDKV210")
 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
