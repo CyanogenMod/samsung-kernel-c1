@@ -26,8 +26,8 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 
-#include <asm/io.h>
-#include <asm/memory.h>
+#include <linux/io.h>
+#include <linux/memory.h>
 #include <plat/clock.h>
 
 #include "logo_rgb24.h"
