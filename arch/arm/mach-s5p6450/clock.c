@@ -463,7 +463,7 @@ static struct clk init_clocks[] = {
 		.id             = -1,
 		.parent         = &clk_pclk83.clk,
 		.enable         = s5p6450_pclk_ctrl,
-		.ctrlbit        = (1 << 30),
+		.ctrlbit        = S5P_CLKCON_PCLK_DMC0,
 	}, {
 		.name		= "intc",
 		.id		= -1,
@@ -490,10 +490,10 @@ static struct clk init_clocks[] = {
 		.ctrlbit	= S5P_CLKCON_PCLK_PWM,
 	}, {
 		.name		= "adc",
-		.id			= -1,
+		.id		= -1,
 		.parent		= &clk_pclk66.clk,
 		.enable		= s5p6450_pclk_ctrl,
-		.ctrlbit	 = (1 << 12),
+		.ctrlbit	= S5P_CLKCON_PCLK_TSADC,
 	}, {
 		.name           = "i2c",
 		.id             = 0,
