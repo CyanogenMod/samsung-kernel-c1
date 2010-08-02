@@ -463,7 +463,7 @@ static struct clk init_clocks[] = {
 		.id             = -1,
 		.parent         = &clk_pclk83.clk,
 		.enable         = s5p6450_pclk_ctrl,
-		.ctrlbit        = (1 << 30),
+		.ctrlbit        = S5P_CLKCON_PCLK_DMC0,
 	}, {
 		.name		= "intc",
 		.id		= -1,
