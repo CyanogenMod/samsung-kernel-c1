@@ -96,7 +96,8 @@ enum s3c_mfc_wait_done_type {
 	R2H_CMD_WAKEUP_RET = 11,
 	R2H_CMD_INIT_BUFFERS_RET = 15,
 	R2H_CMD_EDFU_INIT_RET = 16,
-	R2H_CMD_ERR_RET = 32
+	R2H_CMD_ERR_RET = 32,
+	R2H_CMD_NONE_RET = 0xFF
 };
 
 enum s3c_mfc_display_status {

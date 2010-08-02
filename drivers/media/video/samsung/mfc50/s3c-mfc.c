@@ -662,7 +662,7 @@ static irqreturn_t s3c_mfc_irq(int irq, void *dev_id)
 		s3c_mfc_clear_int();
 		s3c_mfc_int_type = int_reason;
 		s3c_mfc_err_type = error_reason;
-		wake_up_interruptible(&s3c_mfc_wait_queue);
+		wake_up(&s3c_mfc_wait_queue);
 	}
 
 	s3c_mfc_clear_ch_id(int_reason);
@@ -818,7 +818,7 @@ static int s3c_mfc_probe(struct platform_device *pdev)
 
 	/* Initialize global variable */
 	s3c_mfc_openhandle_count = 0;
-	s3c_mfc_int_type = 0;
+	s3c_mfc_int_type = R2H_CMD_NONE_RET;
 
 	mfc_info("MFC(Multi Function Codec - FIMV v5.0) registered successfully\n");
 

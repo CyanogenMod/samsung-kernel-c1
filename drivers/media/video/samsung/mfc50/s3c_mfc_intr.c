@@ -38,14 +38,17 @@ int s3c_mfc_wait_for_done(enum s3c_mfc_wait_done_type command)
 	case R2H_CMD_CLOSE_INSTANCE_RET:
 	case R2H_CMD_SLEEP_RET:
 	case R2H_CMD_WAKEUP_RET:
-		if (interruptible_sleep_on_timeout(&s3c_mfc_wait_queue,
-						   MFC_TIMEOUT) == 0) {
+		s3c_mfc_int_type = R2H_CMD_NONE_RET;
+		if (wait_event_timeout(s3c_mfc_wait_queue,
+					((s3c_mfc_int_type >= R2H_CMD_EMPTY) && \
+					(s3c_mfc_int_type <= R2H_CMD_ERR_RET)),
+						MFC_TIMEOUT) == 0) {
 			ret_val = 0;
 			mfc_err("Interrupt Time Out(%d)\n", command);
 			break;
 		}
 		ret_val = s3c_mfc_int_type;
-		s3c_mfc_int_type = 0;
+		s3c_mfc_int_type = R2H_CMD_NONE_RET;
 		break;
 
 	default:
