@@ -720,6 +720,7 @@ config ARCH_S5PV310
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select GENERIC_CLOCKEVENTS
+	select S3C_ADC
 	help
 	  Samsung S5PV310 series based systems
 

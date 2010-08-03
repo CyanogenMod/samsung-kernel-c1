@@ -17,7 +17,9 @@
 #include <asm/proc-fns.h>
 
 #include <plat/cpu.h>
+#include <plat/devs.h>
 #include <plat/clock.h>
+#include <plat/adc-core.h>
 #include <plat/s5pv310.h>
 
 #include <mach/regs-irq.h>
@@ -86,6 +88,8 @@ static void s5pv310_idle(void)
 void __init s5pv310_map_io(void)
 {
 	iotable_init(s5pv310_iodesc, ARRAY_SIZE(s5pv310_iodesc));
+
+	s3c_adc_setname("s3c64xx-adc");
 }
 
 void __init s5pv310_init_clocks(int xtal)
