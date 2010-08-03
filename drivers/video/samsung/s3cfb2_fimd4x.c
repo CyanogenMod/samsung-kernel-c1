@@ -13,7 +13,7 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/fb.h>
-#include <asm/io.h>
+#include <linux/io.h>
 #include <mach/map.h>
 #include <plat/clock.h>
 #include <plat/fb.h>

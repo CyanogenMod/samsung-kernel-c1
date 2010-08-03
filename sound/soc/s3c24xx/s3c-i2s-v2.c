@@ -40,6 +40,10 @@
 #define S3C_IIS_V2_SUPPORTED
 #endif
 
+#ifdef CONFIG_PLAT_SAMSUNG
+#define S3C_IIS_V2_SUPPORTED
+#endif
+
 #ifndef S3C_IIS_V2_SUPPORTED
 #error Unsupported CPU model
 #endif
@@ -653,21 +657,8 @@ int s3c_i2sv2_probe(struct platform_device *pdev,
 	dai->private_data = i2s;
 
 	if (!base) {
-		struct resource *res = platform_get_resource(pdev,
-							     IORESOURCE_MEM,
-							     0);
-		if (!res) {
-			dev_err(dev, "Unable to get register resource\n");
-			return -ENXIO;
-		}
-
-		if (!request_mem_region(res->start, resource_size(res),
-					"s3c64xx-i2s-v4")) {
-			dev_err(dev, "Unable to request register region\n");
-			return -EBUSY;
-		}
-
-		base = res->start;
+		dev_err(dev, "Invalid base address\n");
+		return -EINVAL;
 	}
 
 	i2s->regs = ioremap(base, 0x100);

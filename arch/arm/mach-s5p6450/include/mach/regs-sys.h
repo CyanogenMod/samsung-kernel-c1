@@ -18,7 +18,7 @@
 #define S5P_SYSREG(x)		(S3C_VA_SYS + (x))
 
 #define S5P6450_AHB_CON0	S5P_SYSREG(0x100)
-#define S5P_OTHERS			S5P_SYSREG(0x900)
+#define S5P_OTHERS		S5P_SYSREG(0x900)
 
 /* OHTERS Register */
 #define S5P_OTHERS_DISABLE_INT			(1<<31)

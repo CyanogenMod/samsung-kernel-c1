@@ -179,9 +179,13 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 
 	clk_enable(i2s->iis_cclk);
 
-	ret = s3c_i2sv2_probe(pdev, dai, i2s, 0);
+	ret = s3c_i2sv2_probe(pdev, dai, i2s,
+			i2s->dma_playback->dma_addr - S3C2412_IISTXD);
 	if (ret)
 		goto err_clk;
+
+	/* I2S Reset */
+	writel(((1<<0)|(1<<31)), i2s->regs + S3C2412_IISCON);
 
 	ret = s3c_i2sv2_register_dai(dai);
 	if (ret != 0)

@@ -54,6 +54,14 @@ static struct clksrc_clk clk_mout_apll = {
 	},
 	.sources	= &clk_src_apll,
 	.reg_src	= { .reg = S5P_CLKSRC_CPU, .shift = 0, .size = 1 },
+};
+
+static struct clksrc_clk clk_sclk_apll = {
+	.clk	= {
+		.name		= "sclk_apll",
+		.id		= -1,
+		.parent		= &clk_mout_apll.clk,
+	},
 	.reg_div	= { .reg = S5P_CLKDIV_CPU, .shift = 24, .size = 3 },
 };
 
@@ -76,7 +84,7 @@ static struct clksrc_clk clk_mout_mpll = {
 };
 
 static struct clk *clkset_moutcore_list[] = {
-	[0] = &clk_mout_apll.clk,
+	[0] = &clk_sclk_apll.clk,
 	[1] = &clk_mout_mpll.clk,
 };
 
@@ -115,7 +123,7 @@ static struct clksrc_clk clk_armclk = {
 
 static struct clk *clkset_corebus_list[] = {
 	[0] = &clk_mout_mpll.clk,
-	[1] = &clk_mout_apll.clk,
+	[1] = &clk_sclk_apll.clk,
 };
 
 static struct clksrc_sources clkset_mout_corebus = {
@@ -145,7 +153,7 @@ static struct clksrc_clk clk_sclk_dmc = {
 
 static struct clk *clkset_aclk_top_list[] = {
 	[0] = &clk_mout_mpll.clk,
-	[1] = &clk_mout_apll.clk,
+	[1] = &clk_sclk_apll.clk,
 };
 
 static struct clksrc_sources clkset_aclk = {
@@ -441,6 +449,16 @@ static struct clk init_clocks[] = {
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 15),
+	}, {
+		.name		= "usb-host",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_fsys_ctrl ,
+		.ctrlbit	= (1 << 12),
+	}, {
+		.name		= "otg",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_fsys_ctrl,
+		.ctrlbit	= (1 << 13),
 	}, {
 		.name		= "spi",
 		.id		= 0,
@@ -765,6 +783,7 @@ static struct clksrc_clk clksrcs[] = {
 /* Clock initialisation code */
 static struct clksrc_clk *sysclks[] = {
 	&clk_mout_apll,
+	&clk_sclk_apll,
 	&clk_mout_epll,
 	&clk_mout_mpll,
 	&clk_moutcore,
@@ -839,7 +858,7 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	printk(KERN_INFO "S5PV310: ARMCLK=%ld, DMC=%ld, ACLK200=%ld\n"
 			 "ACLK100=%ld, ACLK160=%ld, ACLK133=%ld\n",
 			  armclk, sclk_dmc, aclk_200,
-			  aclk_100,aclk_160, aclk_133);
+			  aclk_100, aclk_160, aclk_133);
 
 	clk_f.rate = armclk;
 	clk_h.rate = sclk_dmc;

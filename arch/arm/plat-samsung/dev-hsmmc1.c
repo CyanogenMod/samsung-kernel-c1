@@ -65,6 +65,8 @@ void s3c_sdhci1_set_platdata(struct s3c_sdhci_platdata *pd)
 	set->ext_cd_cleanup = pd->ext_cd_cleanup;
 	set->ext_cd_gpio = pd->ext_cd_gpio;
 	set->ext_cd_gpio_invert = pd->ext_cd_gpio_invert;
+	set->wp_gpio = pd->wp_gpio;
+	set->has_wp_gpio = pd->has_wp_gpio;
 
 	if (pd->cfg_gpio)
 		set->cfg_gpio = pd->cfg_gpio;

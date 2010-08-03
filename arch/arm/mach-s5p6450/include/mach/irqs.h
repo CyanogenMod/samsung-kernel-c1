@@ -77,6 +77,8 @@
 #define IRQ_TC			IRQ_PENDN
 #define IRQ_ADC			S5P_IRQ_VIC1(31)
 
+#define IRQ_UHOST		IRQ_HOST
+
 /* UART interrupts, each UART has 4 intterupts per channel so
  * use the space between the ISA and S3C main interrupts. Note, these
  * are not in the same order as the S3C24XX series! */

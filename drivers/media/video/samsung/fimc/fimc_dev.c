@@ -1070,7 +1070,7 @@ static int fimc_init_global(struct platform_device *pdev)
 	struct fimc_control *ctrl;
 	struct s3c_platform_fimc *pdata;
 	struct s3c_platform_camera *cam;
-	struct clk *srclk, *mout_cam;
+	struct clk *srclk;
 	int id, i;
 
 	pdata = to_fimc_plat(&pdev->dev);
@@ -1089,15 +1089,12 @@ static int fimc_init_global(struct platform_device *pdev)
 			break;
 		}
 
-		/* mout_epll */
+		/* source clk for MCLK*/
 		srclk = clk_get(&pdev->dev, cam->srclk_name);
 		if (IS_ERR(srclk)) {
 			fimc_err("%s: failed to get srclk source\n", __func__);
 			return -EINVAL;
 		}
-
-		/* mout_cam */
-		mout_cam = clk_get(&pdev->dev, "mout_cam");
 
 		/* mclk */
 		cam->clk = clk_get(&pdev->dev, cam->clk_name);
@@ -1106,13 +1103,7 @@ static int fimc_init_global(struct platform_device *pdev)
 			return -EINVAL;
 		}
 
-		/* set parent for sclk_cam */
-		if (!clk_get_parent(mout_cam)) {
-			fimc_err("%s: failed to get mout_cam clk \n", __func__);
-			return -EINVAL;
-		}
-		cam->clk->parent = mout_cam;
-		clk_set_parent(mout_cam, srclk);
+		clk_set_parent(cam->clk, srclk);
 
 		/* Assign camera device to fimc */
 		fimc_dev->camera[cam->id] = cam;

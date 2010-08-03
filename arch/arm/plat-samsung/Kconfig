@@ -160,6 +160,11 @@ config S3C_DEV_HSMMC2
 	help
 	  Compile in platform device definitions for HSMMC channel 2
 
+config S3C_DEV_HSMMC3
+	bool
+	help
+	  Compile in platform device definitions for HSMMC channel 3
+
 config S3C_DEV_HWMON
 	bool
 	help
@@ -249,6 +254,7 @@ config SAMSUNG_DEV_ADC
 
 config S3C64XX_DEV_SPI
 	bool
+	default y if SPI_S3C64XX
 	help
 	  Compile in platform device definitions for S3C64XX's type
 	  SPI controllers.
