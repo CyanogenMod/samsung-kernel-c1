@@ -23,6 +23,7 @@ obj-$(CONFIG_MACH_SMDK6450)	+= mach-smdk6450.o button-smdk6450.o
 # device support
 
 obj-$(CONFIG_FB_S3C_V2)			+= dev-fb.o
+obj-$(CONFIG_S3C64XX_DEV_SPI)		+= dev-spi.o
 
 obj-$(CONFIG_S5P6450_SETUP_FB_S3C)	+= setup-fb.o
 obj-$(CONFIG_S5P6450_SETUP_I2C1)	+= setup-i2c1.o
