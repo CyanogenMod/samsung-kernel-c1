@@ -501,6 +501,18 @@ static struct clk init_clocks[] = {
 		.enable         = s5p6450_pclk_ctrl,
 		.ctrlbit        = S5P_CLKCON_PCLK_IIC0,
 	}, {
+		.name           = "spi",
+		.id             = 0,
+		.parent         = &clk_pclk66.clk,
+		.enable         = s5p6450_pclk_ctrl,
+		.ctrlbit        = S5P_CLKCON_PCLK_SPI0,
+	}, {
+		.name           = "spi",
+		.id             = 1,
+		.parent         = &clk_pclk66.clk,
+		.enable         = s5p6450_pclk_ctrl,
+		.ctrlbit        = S5P_CLKCON_PCLK_SPI1,
+	}, {
 		.name           = "i2c",
 		.id             = 1,
 		.parent         = &clk_pclk66.clk,

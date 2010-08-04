@@ -21,10 +21,12 @@
 #include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/usb/ch9.h>
+#include <linux/spi/spi.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 
+#include <mach/spi-clocks.h>
 #include <mach/hardware.h>
 #include <mach/map.h>
 #include <mach/gpio.h>
@@ -32,6 +34,7 @@
 #include <asm/irq.h>
 #include <asm/mach-types.h>
 
+#include <plat/s3c64xx-spi.h>
 #include <plat/regs-serial.h>
 
 #include <plat/s5p6450.h>
@@ -367,6 +370,32 @@ static struct i2c_board_info i2c_devs1[] __initdata = {
 #endif
 };
 
+#ifdef CONFIG_S3C64XX_DEV_SPI
+
+#define SMDK_MMCSPI_CS 0
+
+static struct s3c64xx_spi_csinfo smdk_spi0_csi[] = {
+	[SMDK_MMCSPI_CS] = {
+		.line = S5P6450_GPC(3),
+		.set_level = gpio_set_value,
+		.fb_delay = 0x0,
+	},
+};
+
+static struct spi_board_info s3c_spi_devs[] __initdata = {
+	{
+		.modalias	 = "mmc_spi", /* MMC SPI */
+		.mode		 = SPI_MODE_0,	/* CPOL=0, CPHA=0 */
+		.max_speed_hz    = 10000000,
+		/* Connected to SPI-0 as 1st Slave */
+		.bus_num	 = 0,
+		.chip_select	 = 0,
+		.controller_data = &smdk_spi0_csi[SMDK_MMCSPI_CS],
+	},
+};
+
+#endif
+
 static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
@@ -403,6 +432,12 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #endif
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
 	&s5p6450_device_iis0,
+#endif
+#ifdef CONFIG_S3C_DEV_GIB
+	&s3c_device_gib, 
+#endif
+#ifdef	CONFIG_S3C64XX_DEV_SPI
+	&s5p6450_device_spi0,
 #endif
 };
 
@@ -441,6 +476,18 @@ static void __init smdk6450_machine_init(void)
 	s3c_i2c1_set_platdata(NULL);
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
 	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
+
+	/* spi */
+#ifdef CONFIG_S3C64XX_DEV_SPI
+	if (!gpio_request(S5P6450_GPC(3), "SPI_CS0")) {
+		gpio_direction_output(S5P6450_GPC(3), 1);
+		s3c_gpio_cfgpin(S5P6450_GPC(3), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5P6450_GPC(3), S3C_GPIO_PULL_UP);
+		s5p6450_spi_set_info(0, S5P6450_SPI_SRCCLK_PCLK,
+			 ARRAY_SIZE(smdk_spi0_csi));
+		spi_register_board_info(s3c_spi_devs, ARRAY_SIZE(s3c_spi_devs));
+	}
+#endif
 
 #ifdef CONFIG_PM
 	s3c_pm_init();

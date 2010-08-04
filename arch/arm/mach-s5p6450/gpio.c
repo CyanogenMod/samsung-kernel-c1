@@ -360,4 +360,4 @@ static int __init s5p6450_gpiolib_init(void)
 
 	return 0;
 }
-arch_initcall(s5p6450_gpiolib_init);
+core_initcall(s5p6450_gpiolib_init);

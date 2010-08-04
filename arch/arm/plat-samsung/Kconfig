@@ -247,6 +247,11 @@ config S3C_DEV_RTC
 	help
 	  Complie in platform device definition for RTC
 
+config S3C_DEV_GIB
+	bool
+	help
+	  Complie in platform device definition for GIB
+
 config SAMSUNG_DEV_ADC
 	bool
 	help
