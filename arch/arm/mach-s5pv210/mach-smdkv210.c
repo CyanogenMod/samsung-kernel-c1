@@ -19,6 +19,7 @@
 #include <linux/delay.h>
 #include <linux/usb/ch9.h>
 #include <linux/spi/spi.h>
+#include <linux/regulator/consumer.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -30,6 +31,7 @@
 #include <mach/regs-mem.h>
 #include <mach/regs-gpio.h>
 #include <mach/spi-clocks.h>
+#include <mach/power-domain.h>
 
 #include <media/s5k3ba_platform.h>
 #include <media/s5k4ba_platform.h>
@@ -649,6 +651,15 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5pv210_device_spi0,
+#endif
+
+#ifdef CONFIG_REGULATOR_SAMSUNG_POWER_DOMAIN
+	&s5pv210_pd_audio,
+	&s5pv210_pd_cam,
+	&s5pv210_pd_tv,
+	&s5pv210_pd_lcd,
+	&s5pv210_pd_g3d,
+	&s5pv210_pd_mfc,
 #endif
 };
 
