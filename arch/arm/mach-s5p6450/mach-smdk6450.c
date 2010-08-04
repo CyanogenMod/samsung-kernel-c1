@@ -404,6 +404,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
 	&s5p6450_device_iis0,
 #endif
+#ifdef CONFIG_S3C_DEV_GIB
+	&s3c_device_gib, 
+#endif
 };
 
 static void __init smdk6450_map_io(void)
