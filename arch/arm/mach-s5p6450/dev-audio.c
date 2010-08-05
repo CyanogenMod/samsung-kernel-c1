@@ -24,14 +24,14 @@ static int s5p6450_cfg_i2s(struct platform_device *pdev)
 	/* configure GPIO for i2s port */
 	switch (pdev->id) {
 	case -1:
-		s3c_gpio_cfgpin(S5P6450_GPB(4), 0x5<<16);
-		s3c_gpio_cfgpin(S5P6450_GPR(4), 0x5<<16);
-		s3c_gpio_cfgpin(S5P6450_GPR(5), 0x5<<20);
-		s3c_gpio_cfgpin(S5P6450_GPR(6), 0x5<<28);
-		s3c_gpio_cfgpin(S5P6450_GPR(7), 0x5<<0);
-		s3c_gpio_cfgpin(S5P6450_GPR(8), 0x5<<4);
-		s3c_gpio_cfgpin(S5P6450_GPR(13), 0x5<<24);
-		s3c_gpio_cfgpin(S5P6450_GPR(14), 0x5<<28);
+		s3c_gpio_cfgpin(S5P6450_GPB(4), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(4), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(5), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(6), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(7), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(8), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(13), S3C_GPIO_SFN(5));
+		s3c_gpio_cfgpin(S5P6450_GPR(14), S3C_GPIO_SFN(5));
 		break;
 
 	default:
