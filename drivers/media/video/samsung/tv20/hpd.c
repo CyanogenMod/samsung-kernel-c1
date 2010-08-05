@@ -154,23 +154,26 @@ int s5p_hpd_set_eint(void)
 static int s5p_hdp_irq_eint(int irq)
 {
 	if (gpio_get_value(S5PV210_GPH1(5))) {
+		set_irq_type(IRQ_EINT13, IRQ_TYPE_LEVEL_LOW);
+		if (atomic_read(&hpd_struct.state) == HPD_HI)
+			return;
+
 		atomic_set(&hpd_struct.state, HPD_HI);
 		atomic_set(&poll_state, 1);
 
 		last_hpd_state = HPD_HI;
 		wake_up_interruptible(&hpd_struct.waitq);
 	} else {
+		set_irq_type(IRQ_EINT13, IRQ_TYPE_LEVEL_HIGH);
+		if (atomic_read(&hpd_struct.state) == HPD_LO)
+			return;
+
 		atomic_set(&hpd_struct.state, HPD_LO);
 		atomic_set(&poll_state, 1);
 
 		last_hpd_state = HPD_LO;
 		wake_up_interruptible(&hpd_struct.waitq);
 	}
-
-	if (atomic_read(&hpd_struct.state))
-		set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_FALLING);
-	else
-		set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_RISING);
 
 	schedule_work(&hpd_work);
 
@@ -190,12 +193,12 @@ static int s5p_hpd_irq_hdmi(int irq)
 	flag = s5p_hdmi_get_interrupts();
 
 	if (s5p_hdmi_get_hpd_status())
-		s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
+		s5p_hdmi_clear_pending(HDMI_IRQ_HPD_PLUG);
 	else
-		s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_PLUG);
+		s5p_hdmi_clear_pending(HDMI_IRQ_HPD_UNPLUG);
 
-	s5p_hdmi_clear_pending(HDMI_IRQ_HPD_PLUG);
-	s5p_hdmi_clear_pending(HDMI_IRQ_HPD_UNPLUG);
+	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
+	s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_PLUG);
 
 	/* is this our interrupt? */
 	if (!(flag & (1 << HDMI_IRQ_HPD_PLUG | 1 << HDMI_IRQ_HPD_UNPLUG))) {
