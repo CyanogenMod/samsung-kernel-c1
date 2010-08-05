@@ -15,7 +15,6 @@
 
 #include <plat/map-base.h>
 
-/* */
 #define S3C_UART_OFFSET			(0x10000)
 
 #include <plat/map-s5p.h>
@@ -52,8 +51,8 @@
 #define S5PV310_PA_GPIO2		(0x11000000)
 #define S5PV310_VA_GPIO2		S3C_ADDR(0x00930000)
 
-#define S5PV310_PA_GPIO3		(0x11000000)
-#define S5PV310_VA_GPIO3		S3C_ADDR(0x00935000)
+#define S5PV310_PA_GPIO3		(0x03860000)
+#define S5PV310_VA_GPIO3		S3C_ADDR(0x00932000)
 
 #define S5PV310_PA_SROMC		(0x12570000)
 
