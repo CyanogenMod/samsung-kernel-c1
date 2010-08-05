@@ -107,7 +107,7 @@
  * after the pair of VICs.
  */
 
-#define S5P_IRQ_EINT_BASE	(S5P_IRQ_VIC1(31) + 6)
+#define S5P_IRQ_EINT_BASE	(S5P_IRQ_VIC1(31) + 10)
 
 #define S5P_EINT(x)		((x) + S5P_IRQ_EINT_BASE)
 #define IRQ_EINT_BIT(x)		((x) - S5P_EINT(0))

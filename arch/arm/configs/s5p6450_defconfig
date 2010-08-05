@@ -764,9 +764,9 @@ CONFIG_RTC_LIB=y
 #
 # GIB support
 #
-CONFIG_GIB=
-CONFIG_GIB_DEBUG=
-CONFIG_GIB_S5P64XX=
+CONFIG_GIB is not set
+CONFIG_GIB_DEBUG is not set
+CONFIG_GIB_S5P64XX is not set
 #
 # File systems
 #

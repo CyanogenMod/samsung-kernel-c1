@@ -53,7 +53,7 @@
 #define debug
 #ifdef debug
 #define DBG(x...)       printk(x)
-#define GIB_DBG		printk("$$$$$$$$$$$$$%s :: %d\n",__FUNCTION__,__LINE__)
+#define GIB_DBG		printk("%s :: %d\n",__FUNCTION__,__LINE__)
 #else
 #define GIB_DBG
 #define DBG(x...)       do { } while (0)
@@ -92,7 +92,7 @@ struct bit_data {
 
 static void s3c_gibgpio_init(struct bit_data *gpio)
 {
-	unsigned int tmp;
+//	unsigned int tmp;
 
 	GIB_DBG;
 
@@ -206,17 +206,17 @@ static void s3c_gibgpio_init(struct bit_data *gpio)
 	gpio_set_value(gpio->gps_slpn, 1);
 #endif
 
-	//Set MUX
-	//UART5 forwarding to GPS UART
-	//0: Connect debug, 1: Connect BB
-	//CLOCK Controller:SYS_OTHERS: 0xE010_011C
+
+#if 0
 	tmp = __raw_readl(S5P_SYS_OTHERS);
-	//printk("S5P_SYS_OTHERS VA: %x\n", S5P_SYS_OTHERS);  //-> 0xf410011c
-	//printk("S5P_SYS_OTHERS was:%x\n",tmp);
-	tmp &= ~(0x1<<3);
-	tmp |= (0x1<<3);
-	__raw_writel(tmp, S5P_SYS_OTHERS);
-	printk("Connected: BB_UART1-->AP_UART5\n");
+	printk("0xE010_011C was:%x - S5P_SYS_OTHERS\n",tmp);
+	tmp = __raw_readl(S5P6450_GPS_GPSIO);
+	printk("0xEC90_0040 was:%x - S5P6450_GPS_GPSIO\n",tmp);
+	tmp = __raw_readl(S5P6450_GPS_RAWINTSOURCE);
+	printk("0xEC90_0044 was:%x - S5P6450_GPS_RAWINTSOURCE\n",tmp);
+	tmp = __raw_readl(S5P6450_GPS_INTMASK);
+	printk("0xEC90_0048 was:%x - S5P6450_GPS_INTMASK\n",tmp);
+#endif
 
 
 #if 0
@@ -270,35 +270,56 @@ PM CODE - Not used
         tmp |= (0x1<<3);
         __raw_writel(tmp, S5P64XX_GPNCON);
 #endif	
+	
+}
 
-//	s3c_gib_core_reset(bit);
-//	s3c_gib_timer_reset(bit);
+//Set MUX
+//UART5 forwarding to GPS UART
+//0: Connect debug, 1: Connect BB
+//CLOCK Controller:SYS_OTHERS: 0xE010_011C
+static void s3c_gib_ubp_debug( unsigned int flag)
+{
+	unsigned int  tmp;
+	GIB_DBG;
 
-//	printk("#############s3c_gibgpio_init - done\n");
+	tmp = __raw_readl(S5P_SYS_OTHERS);
+	if (flag) {
+		tmp &= ~(0x1<<3);
+		printk("Changed to UBP Debug Mode\n");
+	}else {
+		tmp |= (0x1<<3);
+		printk("Connected: BB_UART1-->AP_UART5\n");
+	}
+	__raw_writel(tmp, S5P_SYS_OTHERS);
 	
 }
 
 
 //GPS RF + BB SW Reset
 //Clock Controller:SWRESET: 0xE010_0114
-static void s3c_gib_core_reset(struct bit_data *bits)
+static void s3c_gib_core_reset(unsigned int flag)
 {
 	unsigned int  tmp;
 	GIB_DBG;
 	
 	tmp = __raw_readl(S5P_SWRESET);
-	printk("S5P_SWRESET VA: %x\n", S5P_SWRESET);  //-->0xf4100114
-	printk("S5P_SWRESET was:%x\n",tmp);
-	tmp &= ~(0x1<<16);
-	tmp |= (0x1<<16);
-	msleep(1);
-	tmp &= ~(0x1<<16);
-	__raw_writel(tmp, S5P_SWRESET);
+
+	if(flag == 0) {
+		tmp |= (0x1<<16);
+		__raw_writel(tmp, S5P_SWRESET);
+//		printk("low\n",tmp);
+	} else if (flag == 1) {
+		tmp &= ~(0x1<<16);
+		__raw_writel(tmp, S5P_SWRESET);
+//		printk("high\n",tmp);
+	}
+
 }
 
+#if 0
 //Enable RTC
 //RTC Controller:RTCCON: 0xEA10_0040
-static void s3c_gib_timer_reset(struct bit_data *bits)
+static void s3c_gib_timer_reset(unsigned int flag)
 {
 	unsigned int  tmp;
 	GIB_DBG;
@@ -309,29 +330,37 @@ static void s3c_gib_timer_reset(struct bit_data *bits)
 	tmp |= (S3C64XX_RTCCON_TICEN);
 	__raw_writel(tmp, S3C2410_RTCCON);
 }
+#endif
 
-
+#if 0
 static int s3c_gib_close(struct gib_dev *gib_dev)
 {
 	GIB_DBG;
 
 	return 0;
 }
-
+#endif
 
 static struct gib_reset s3c_gib_reset = {
 	.core_reset		= s3c_gib_core_reset,
+};
+
+static struct gib_udp_debug s3c_gib_udp_debug = {
+	.ubp_debug           = s3c_gib_ubp_debug,
 };
 
 static struct s3c_gib s3c_gib[2] = {
 	[0] = {
 		.gibdev	= {
 			.g_reset			= &s3c_gib_reset,
+			.g_udp_debug		= &s3c_gib_udp_debug,
+
 		}
 	},
 	[1] = {
 		.gibdev	= {
 			.g_reset			= &s3c_gib_reset,
+			.g_udp_debug		= &s3c_gib_udp_debug,
 		}
 	},
 };
@@ -390,6 +419,7 @@ static int s3c_gib_probe(struct platform_device *pdev)
 
 	s3c_gibgpio_init(g_gpio);
 
+	s3c_gib_ubp_debug(0);
 
 out:
 
@@ -417,30 +447,38 @@ static int s3c_gib_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int s3c_gib_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-#if 0	
 	unsigned int tmp;
-	struct s3c_gib *hw = platform_get_drvdata(pdev);
+//	struct s3c_gib *hw = platform_get_drvdata(pdev);
 
-	printk("S5P6450_GPS_GPSIO: %x\n", S5P6450_GPS_GPSIO);
 	tmp = __raw_readl(S5P6450_GPS_GPSIO);
-       if ( !(tmp|(0x1<<18)) ) {
-	   	//success
+
+       if ( tmp|(0x1<<18) ) {
+		//printk("GPS BB is now in sleep state. \n");
 	 }else {
 	 	printk("GPS BB has not been in sleep state. Please wait. \n");
 
 	 	do {
-
-	 	     } while ( !(tmp|(0x1<<18)) )
+			tmp = __raw_readl(S5P6450_GPS_GPSIO);
+	 	} while ( (tmp|(0x1<<18)) );
 	 	     
 		printk("GPS BB is now in sleep state. \n");
 	 }
-#endif	 
+	 
 	return 0;
 }
 
 static int s3c_gib_resume(struct platform_device *pdev)
 {
-	struct s3c_gib *hw = platform_get_drvdata(pdev);
+//	struct s3c_gib *hw = platform_get_drvdata(pdev);
+
+	unsigned int tmp;
+
+	//UART5 forwarding to GPS UART
+	tmp = __raw_readl(S5P_SYS_OTHERS);
+	tmp &= ~(0xF<<0);
+	tmp |= (0x8<<0);
+	__raw_writel(tmp, S5P_SYS_OTHERS);
+	
 	return 0;
 }
 #else
@@ -466,15 +504,6 @@ static struct platform_driver s3c_gib_driver = {
 static int __init s3c_gib_driver_init(void)
 {
 	GIB_DBG;
-#if 1 
-	unsigned int tmp;
-
-	//UART5 forwarding to GPS UART
-	tmp = __raw_readl(S5P_SYS_OTHERS);
-	tmp &= ~(0xF<<0);
-	tmp |= (0x8<<0);
-	__raw_writel(tmp, S5P_SYS_OTHERS);
-#endif
 
 	return platform_driver_register(&s3c_gib_driver);
 }

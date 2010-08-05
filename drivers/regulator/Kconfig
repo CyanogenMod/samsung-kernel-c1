@@ -45,6 +45,11 @@ config REGULATOR_FIXED_VOLTAGE
 	  useful for systems which use a combination of software
 	  managed regulators and simple non-configurable regulators.
 
+config REGULATOR_SAMSUNG_POWER_DOMAIN
+	tristate "Samsung power domain support"
+	help
+	  This driver provides support for samsung power domain.
+
 config REGULATOR_VIRTUAL_CONSUMER
 	tristate "Virtual regulator consumer support"
 	help

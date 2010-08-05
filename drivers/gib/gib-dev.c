@@ -27,10 +27,10 @@
 #include "gib-dev.h"
 #include <linux/uaccess.h>
 
-//#undef debug
+#undef debug
 #define debug
 #ifdef debug
-#define CRDEBUG	printk("#############%s :: %d\n",__FUNCTION__,__LINE__)
+#define CRDEBUG	printk("%s :: %d\n",__FUNCTION__,__LINE__)
 #else
 #define CRDEBUG
 #endif
@@ -90,7 +90,7 @@ struct gib_dev *gib_dev_get_by_minor(unsigned index)
 {
 	struct gib_dev *gib_dev;
 
-	CRDEBUG;
+//	CRDEBUG;
 	gib_dev = gib_dev_array[index];
 
 	return gib_dev;
@@ -104,15 +104,26 @@ int gibdev_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 	struct gib_dev *gib_dev = (struct gib_dev *)file->private_data;
 
 	CRDEBUG;
-	dev_dbg(&gib_dev->dev, "gib-%d ioctl, cmd: 0x%x, arg: %lx.\n",
-		iminor(inode),cmd, arg);
+	dev_dbg(&gib_dev->dev, "gib-%d ioctl, cmd: 0x%x, arg: %lx.\n",	iminor(inode),cmd, arg);
 
 	switch ( cmd ) {
-		case SET_BB_RESET:
-			gib_dev->g_reset->core_reset();
+		case SET_BB_RESET_LOW:
+			gib_dev->g_reset->core_reset(0);
+			break;
+		case SET_BB_RESET_HIGH:
+			gib_dev->g_reset->core_reset(1);
+			break;
+		case SET_UBP_DEBUG_MODE:
+			gib_dev->ubp_debug_flag = 1;
+			gib_dev->g_udp_debug->ubp_debug(gib_dev->ubp_debug_flag);
+			break;
+		case SET_UBP_NO_DEBUG_MODE:
+			gib_dev->ubp_debug_flag =  0;
+			gib_dev->g_udp_debug->ubp_debug(gib_dev->ubp_debug_flag);
 			break;
 		default:
 			printk("Invalid ioctl option\n");
+			break;
 	}
 	return 0;
 }
@@ -165,7 +176,7 @@ static int gib_dev_init(void)
 	int res;
 
 	CRDEBUG;
-	//printk("GPS Interface Block(GIB) entries driver\n");
+	printk("GPS Interface Block(GIB) entries driver\n");
 
 	res = register_chrdev(GIB_MAJOR, "gib", &gibdev_fops);
 	if (res)

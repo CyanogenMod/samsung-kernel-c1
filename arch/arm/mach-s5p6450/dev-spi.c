@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-s5pv210/dev-spi.c
+/* linux/arch/arm/mach-s5p6450/dev-spi.c
  *
  * Copyright (C) 2010 Samsung Electronics Co. Ltd.
  *	Jaswinder Singh <jassi.brar@samsung.com>
@@ -11,18 +11,19 @@
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 
+#include <mach/irqs.h>
 #include <mach/dma.h>
 #include <mach/map.h>
-#include <mach/irqs.h>
 #include <mach/gpio.h>
 #include <mach/spi-clocks.h>
 
 #include <plat/s3c64xx-spi.h>
 #include <plat/gpio-cfg.h>
+#include <plat/irqs.h>
 
 static char *spi_src_clks[] = {
-	[S5PV210_SPI_SRCCLK_PCLK] = "pclk",
-	[S5PV210_SPI_SRCCLK_SCLK] = "sclk_spi",
+	[S5P6450_SPI_SRCCLK_PCLK] = "pclk",
+	[S5P6450_SPI_SRCCLK_SCLK] = "sclk_spi",
 };
 
 /* SPI Controller platform_devices */
@@ -33,25 +34,25 @@ static char *spi_src_clks[] = {
  * chip in between ... or some yet another way.
  * We simply do not assume anything about CS.
  */
-static int s5pv210_spi_cfg_gpio(struct platform_device *pdev)
+static int s5p6450_spi_cfg_gpio(struct platform_device *pdev)
 {
 	switch (pdev->id) {
 	case 0:
-		s3c_gpio_cfgpin(S5PV210_GPB(0), S3C_GPIO_SFN(2));
-		s3c_gpio_cfgpin(S5PV210_GPB(2), S3C_GPIO_SFN(2));
-		s3c_gpio_cfgpin(S5PV210_GPB(3), S3C_GPIO_SFN(2));
-		s3c_gpio_setpull(S5PV210_GPB(0), S3C_GPIO_PULL_UP);
-		s3c_gpio_setpull(S5PV210_GPB(2), S3C_GPIO_PULL_UP);
-		s3c_gpio_setpull(S5PV210_GPB(3), S3C_GPIO_PULL_UP);
+		s3c_gpio_cfgpin(S5P6450_GPC(0), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPC(1), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPC(2), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5P6450_GPC(0), S3C_GPIO_PULL_UP);
+		s3c_gpio_setpull(S5P6450_GPC(1), S3C_GPIO_PULL_UP);
+		s3c_gpio_setpull(S5P6450_GPC(2), S3C_GPIO_PULL_UP);
 		break;
 
 	case 1:
-		s3c_gpio_cfgpin(S5PV210_GPB(4), S3C_GPIO_SFN(2));
-		s3c_gpio_cfgpin(S5PV210_GPB(6), S3C_GPIO_SFN(2));
-		s3c_gpio_cfgpin(S5PV210_GPB(7), S3C_GPIO_SFN(2));
-		s3c_gpio_setpull(S5PV210_GPB(4), S3C_GPIO_PULL_UP);
-		s3c_gpio_setpull(S5PV210_GPB(6), S3C_GPIO_PULL_UP);
-		s3c_gpio_setpull(S5PV210_GPB(7), S3C_GPIO_PULL_UP);
+		s3c_gpio_cfgpin(S5P6450_GPC(4), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPC(5), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPC(6), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5P6450_GPC(4), S3C_GPIO_PULL_UP);
+		s3c_gpio_setpull(S5P6450_GPC(5), S3C_GPIO_PULL_UP);
+		s3c_gpio_setpull(S5P6450_GPC(6), S3C_GPIO_PULL_UP);
 		break;
 
 	default:
@@ -62,10 +63,10 @@ static int s5pv210_spi_cfg_gpio(struct platform_device *pdev)
 	return 0;
 }
 
-static struct resource s5pv210_spi0_resource[] = {
+static struct resource s5p6450_spi0_resource[] = {
 	[0] = {
-		.start = S5PV210_PA_SPI0,
-		.end   = S5PV210_PA_SPI0 + 0x100 - 1,
+		.start = S5P6450_PA_SPI0,
+		.end   = S5P6450_PA_SPI0 + 0x100 - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -85,31 +86,30 @@ static struct resource s5pv210_spi0_resource[] = {
 	},
 };
 
-static struct s3c64xx_spi_info s5pv210_spi0_pdata = {
-	.cfg_gpio = s5pv210_spi_cfg_gpio,
+static struct s3c64xx_spi_info s5p6450_spi0_pdata = {
+	.cfg_gpio = s5p6450_spi_cfg_gpio,
 	.fifo_lvl_mask = 0x1ff,
 	.rx_lvl_offset = 15,
-	.high_speed = 1,
 };
 
 static u64 spi_dmamask = DMA_BIT_MASK(32);
 
-struct platform_device s5pv210_device_spi0 = {
+struct platform_device s5p6450_device_spi0 = {
 	.name		  = "s3c64xx-spi",
 	.id		  = 0,
-	.num_resources	  = ARRAY_SIZE(s5pv210_spi0_resource),
-	.resource	  = s5pv210_spi0_resource,
+	.num_resources	  = ARRAY_SIZE(s5p6450_spi0_resource),
+	.resource	  = s5p6450_spi0_resource,
 	.dev = {
 		.dma_mask		= &spi_dmamask,
 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-		.platform_data = &s5pv210_spi0_pdata,
+		.platform_data = &s5p6450_spi0_pdata,
 	},
 };
 
-static struct resource s5pv210_spi1_resource[] = {
+static struct resource s5p6450_spi1_resource[] = {
 	[0] = {
-		.start = S5PV210_PA_SPI1,
-		.end   = S5PV210_PA_SPI1 + 0x100 - 1,
+		.start = S5P6450_PA_SPI1,
+		.end   = S5P6450_PA_SPI1 + 0x100 - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -129,42 +129,41 @@ static struct resource s5pv210_spi1_resource[] = {
 	},
 };
 
-static struct s3c64xx_spi_info s5pv210_spi1_pdata = {
-	.cfg_gpio = s5pv210_spi_cfg_gpio,
+static struct s3c64xx_spi_info s5p6450_spi1_pdata = {
+	.cfg_gpio = s5p6450_spi_cfg_gpio,
 	.fifo_lvl_mask = 0x7f,
 	.rx_lvl_offset = 15,
-	.high_speed = 1,
 };
 
-struct platform_device s5pv210_device_spi1 = {
+struct platform_device s5p6450_device_spi1 = {
 	.name		  = "s3c64xx-spi",
 	.id		  = 1,
-	.num_resources	  = ARRAY_SIZE(s5pv210_spi1_resource),
-	.resource	  = s5pv210_spi1_resource,
+	.num_resources	  = ARRAY_SIZE(s5p6450_spi1_resource),
+	.resource	  = s5p6450_spi1_resource,
 	.dev = {
 		.dma_mask		= &spi_dmamask,
 		.coherent_dma_mask	= DMA_BIT_MASK(32),
-		.platform_data = &s5pv210_spi1_pdata,
+		.platform_data = &s5p6450_spi1_pdata,
 	},
 };
 
-void __init s5pv210_spi_set_info(int cntrlr, int src_clk_nr, int num_cs)
+void __init s5p6450_spi_set_info(int cntrlr, int src_clk_nr, int num_cs)
 {
 	struct s3c64xx_spi_info *pd;
 
 	/* Reject invalid configuration */
 	if (!num_cs || src_clk_nr < 0
-			|| src_clk_nr > S5PV210_SPI_SRCCLK_SCLK) {
+			|| src_clk_nr > S5P6450_SPI_SRCCLK_SCLK) {
 		printk(KERN_ERR "%s: Invalid SPI configuration\n", __func__);
 		return;
 	}
 
 	switch (cntrlr) {
 	case 0:
-		pd = &s5pv210_spi0_pdata;
+		pd = &s5p6450_spi0_pdata;
 		break;
 	case 1:
-		pd = &s5pv210_spi1_pdata;
+		pd = &s5p6450_spi1_pdata;
 		break;
 	default:
 		printk(KERN_ERR "%s: Invalid SPI controller(%d)\n",

@@ -18,6 +18,8 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/usb/ch9.h>
+#include <linux/spi/spi.h>
+#include <linux/regulator/consumer.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -28,12 +30,15 @@
 #include <mach/regs-clock.h>
 #include <mach/regs-mem.h>
 #include <mach/regs-gpio.h>
+#include <mach/spi-clocks.h>
+#include <mach/power-domain.h>
 
 #include <media/s5k3ba_platform.h>
 #include <media/s5k4ba_platform.h>
 #include <media/s5k4ea_platform.h>
 #include <media/s5k6aa_platform.h>
 
+#include <plat/s3c64xx-spi.h>
 #include <plat/regs-serial.h>
 #include <plat/gpio-cfg.h>
 #include <plat/s5pv210.h>
@@ -561,6 +566,32 @@ static struct i2c_board_info i2c_devs1[] __initdata = {
 static struct i2c_board_info i2c_devs2[] __initdata = {
 };
 
+#ifdef CONFIG_S3C64XX_DEV_SPI
+
+#define SMDK_MMCSPI_CS 0
+
+static struct s3c64xx_spi_csinfo smdk_spi0_csi[] = {
+	[SMDK_MMCSPI_CS] = {
+		.line = S5PV210_GPB(1),
+		.set_level = gpio_set_value,
+		.fb_delay = 0x0,
+	},
+};
+
+static struct spi_board_info s3c_spi_devs[] __initdata = {
+	{
+		.modalias	 = "mmc_spi", /* MMC SPI */
+		.mode		 = SPI_MODE_0,	/* CPOL=0, CPHA=0 */
+		.max_speed_hz    = 10000000,
+		/* Connected to SPI-0 as 1st Slave */
+		.bus_num	 = 0,
+		.chip_select	 = 0,
+		.controller_data = &smdk_spi0_csi[SMDK_MMCSPI_CS],
+	},
+};
+
+#endif
+
 static struct platform_device *smdkv210_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -616,6 +647,19 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
 	&s5pv210_device_iis0,
+#endif
+
+#ifdef	CONFIG_S3C64XX_DEV_SPI
+	&s5pv210_device_spi0,
+#endif
+
+#ifdef CONFIG_REGULATOR_SAMSUNG_POWER_DOMAIN
+	&s5pv210_pd_audio,
+	&s5pv210_pd_cam,
+	&s5pv210_pd_tv,
+	&s5pv210_pd_lcd,
+	&s5pv210_pd_g3d,
+	&s5pv210_pd_mfc,
 #endif
 };
 
@@ -679,6 +723,18 @@ static void __init smdkv210_machine_init(void)
 	s3c_fimc2_set_platdata(&fimc_plat);
 	s3c_csis_set_platdata(NULL);
 #endif
+	/* spi */
+#ifdef CONFIG_S3C64XX_DEV_SPI
+	if (!gpio_request(S5PV210_GPB(1), "SPI_CS0")) {
+		gpio_direction_output(S5PV210_GPB(1), 1);
+		s3c_gpio_cfgpin(S5PV210_GPB(1), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV210_GPB(1), S3C_GPIO_PULL_UP);
+		s5pv210_spi_set_info(0, S5PV210_SPI_SRCCLK_PCLK,
+			 ARRAY_SIZE(smdk_spi0_csi));
+		spi_register_board_info(s3c_spi_devs, ARRAY_SIZE(s3c_spi_devs));
+	}
+#endif
+
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 

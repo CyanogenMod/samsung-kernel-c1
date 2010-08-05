@@ -79,6 +79,8 @@ extern struct platform_device s5pv210_device_spi0;
 extern struct platform_device s5pv210_device_spi1;
 extern struct platform_device s5p6440_device_spi0;
 extern struct platform_device s5p6440_device_spi1;
+extern struct platform_device s5p6450_device_spi0;
+extern struct platform_device s5p6450_device_spi1;
 
 extern struct platform_device s3c_device_hwmon;
 
@@ -121,6 +123,7 @@ extern struct platform_device s5pc100_device_iis2;
 
 
 extern struct platform_device s5p6450_device_iis0;
+extern struct platform_device s3c_device_gib;
 
 /* s3c2440 specific devices */
 

@@ -2,27 +2,12 @@
 # GIB driver configuration
 #
 
-menu "GIB support"
-
+menuconfig GPS
+        tristate "GPS support"
+        depends on MACH_SMDK6450
+if GPS
 config GIB
 	bool "GIB support"
-	help
-	  The "Serial Peripheral Interface" is a low level synchronous
-	  protocol.  Chips that support GIB can have data transfer rates
-	  up to several tens of Mbit/sec.  Chips are addressed with a
-	  controller and a chipselect.  Most GIB slaves don't support
-	  dynamic device discovery; some are even write-only or read-only.
-
-	  GIB is widely used by microcontrollers to talk with sensors,
-	  eeprom and flash memory, codecs and various other controller
-	  chips, analog to digital (and d-to-a) converters, and more.
-	  MMC and SD cards can be accessed using GIB protocol; and for
-	  DataFlash cards used in MMC sockets, GIB must always be used.
-
-	  GIB is one of a family of similar protocols using a four wire
-	  interface (select, clock, data in, data out) including Microwire
-	  (half duplex), SSP, SSI, and PSP.  This driver framework should
-	  work with most such devices and controllers.
 
 config GIB_DEBUG
 	boolean "Debug support for GIB drivers"
@@ -41,5 +26,5 @@ config GIB_S5P64XX
           Say Y here to include support for GIB controller in the
           Samsung S5P6450 based System-on-Chip devices.
 
-endmenu # "GIB support"
+endif
 

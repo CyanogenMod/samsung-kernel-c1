@@ -28,6 +28,9 @@
 #include <plat/cpu.h>
 #include <plat/devs.h>
 #include <plat/iic.h>
+#include <plat/adc.h>
+#include <plat/ts.h>
+
 #include <plat/regs-otg.h>
 
 #include <mach/irqs.h>
@@ -181,6 +184,14 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_rtc,
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
+	&s3c_device_ts,
+#endif
+
+#ifdef CONFIG_S3C_ADC
+	&s3c_device_adc,
+#endif
+
 #ifdef CONFIG_USB
 	&s3c_device_usb_ehci,
 	&s3c_device_usb_ohci,
@@ -188,7 +199,6 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
-
 };
 
 static void __init sromc_setup(void)
@@ -225,6 +235,12 @@ static void __init smdkv310_map_io(void)
 	/* s5pv310_reserve_bootmem(); */
 }
 
+static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
+	.delay			= 10000,
+	.presc			= 49,
+	.oversampling_shift	= 2,
+};
+
 static void __init smdkv310_machine_init(void)
 {
 #ifdef CONFIG_I2C_S3C2410
@@ -258,6 +274,10 @@ static void __init smdkv310_machine_init(void)
 	s3c_i2c7_set_platdata(NULL);
 	i2c_register_board_info(7, i2c_devs7, ARRAY_SIZE(i2c_devs7));
 #endif
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
+	s3c24xx_ts_set_platdata(&s3c_ts_platform);
 #endif
 
 	sromc_setup();

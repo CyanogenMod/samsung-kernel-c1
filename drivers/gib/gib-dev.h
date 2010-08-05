@@ -40,20 +40,28 @@ struct gib_dev;
 
 struct gib_dev {
 	int 			minor;
+	int 			ubp_debug_flag;
 	struct gib_reset 	*g_reset;
+	struct gib_udp_debug 	*g_udp_debug;
 	struct device		dev;		/* the adapter device 			*/
 };
 
 struct gib_reset {
-	int (*core_reset)();
+	int (*core_reset)(unsigned int);
 };
 
+struct gib_udp_debug {
+	int (*ubp_debug)( unsigned int);
+};
 
 extern int gib_attach_gibdev(struct gib_dev *);
 extern int gib_detach_gibdev(struct gib_dev *);
 
 
-#define SET_BB_RESET	0x99  
+#define SET_BB_RESET_LOW	0x0
+#define SET_BB_RESET_HIGH	0x1
+#define SET_UBP_DEBUG_MODE 0x80
+#define SET_UBP_NO_DEBUG_MODE 0x81
 
 #define GIB_MAJOR	210		/* Device major number		*/
 

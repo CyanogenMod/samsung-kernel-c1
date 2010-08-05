@@ -425,6 +425,10 @@ static struct clk tmp_clocks[] = {
 		.name		= "i2c",
 		.id		= 7,
 		.rate		= 10000000,
+	}, {
+		.name		= "adc",
+		.id		= -1,
+		.rate		= 10000000,
 	},
 };
 #endif

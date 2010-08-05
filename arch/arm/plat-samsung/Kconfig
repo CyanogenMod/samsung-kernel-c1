@@ -247,6 +247,11 @@ config S3C_DEV_RTC
 	help
 	  Complie in platform device definition for RTC
 
+config S3C_DEV_GIB
+	bool
+	help
+	  Complie in platform device definition for GIB
+
 config SAMSUNG_DEV_ADC
 	bool
 	help
@@ -254,6 +259,7 @@ config SAMSUNG_DEV_ADC
 
 config S3C64XX_DEV_SPI
 	bool
+	default y if SPI_S3C64XX
 	help
 	  Compile in platform device definitions for S3C64XX's type
 	  SPI controllers.
