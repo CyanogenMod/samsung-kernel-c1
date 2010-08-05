@@ -37,6 +37,7 @@ static struct s3c_gpio_cfg gpio_cfg_noint = {
  */
 #define S5PV310_BANK_BASE1(bank_nr)	(S5P_VA_GPIO + ((bank_nr) * 0x20))
 #define S5PV310_BANK_BASE2(bank_nr)	(S5PV310_VA_GPIO2 + ((bank_nr) * 0x20))
+#define S5PV310_BANK_BASE3(bank_nr)	(S5PV310_VA_GPIO3 + ((bank_nr) * 0x20))
 
 /*
  * Following are the gpio banks in v310.
@@ -253,6 +254,15 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 	},
 };
 
+static struct s3c_gpio_chip s5pv310_gpio_part3_4bit[] = {
+	{
+		.chip	= {
+			.base	= S5PV310_GPZ(0),
+			.ngpio	= S5PV310_GPIO_Z_NR,
+			.label	= "GPZ",
+		},
+	},
+};
 
 static __init int s5pv310_gpiolib_init(void)
 {
@@ -267,7 +277,7 @@ static __init int s5pv310_gpiolib_init(void)
 		if (chip->config == NULL)
 			chip->config = &gpio_cfg;
 		if (chip->base == NULL)
-			chip->base = S5PV310_BANK_BASE2(i);
+			chip->base = S5PV310_BANK_BASE1(i);
 	}
 
 	samsung_gpiolib_add_4bit_chips(s5pv310_gpio_part1_4bit, nr_chips);
@@ -279,10 +289,22 @@ static __init int s5pv310_gpiolib_init(void)
 		if (chip->config == NULL)
 			chip->config = &gpio_cfg;
 		if (chip->base == NULL)
-				chip->base = S5PV310_BANK_BASE1(i);
+				chip->base = S5PV310_BANK_BASE2(i);
 	}
 
 	samsung_gpiolib_add_4bit_chips(s5pv310_gpio_part2_4bit, nr_chips);
+
+	chip = s5pv310_gpio_part3_4bit;
+	nr_chips = ARRAY_SIZE(s5pv310_gpio_part3_4bit);
+
+	for (i = 0; i < nr_chips; i++, chip++) {
+		if (chip->config == NULL)
+			chip->config = &gpio_cfg;
+		if (chip->base == NULL)
+				chip->base = S5PV310_BANK_BASE3(i);
+	}
+
+	samsung_gpiolib_add_4bit_chips(s5pv310_gpio_part3_4bit, nr_chips);
 
 	return 0;
 }
