@@ -37,7 +37,7 @@
 #define IRQ_PCIE		IRQ_SPI(50)
 #define IRQ_SYSTEM_TIMER	IRQ_SPI(51)
 #define IRQ_MFC			IRQ_SPI(52)
-#define IRQ_WTD			IRQ_SPI(53)
+#define IRQ_WDT			IRQ_SPI(53)
 #define IRQ_AUDIO_SS		IRQ_SPI(54)
 #define IRQ_AC97		IRQ_SPI(55)
 #define IRQ_SPDIF		IRQ_SPI(56)

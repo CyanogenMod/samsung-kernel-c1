@@ -184,6 +184,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_rtc,
 #endif
 
+#ifdef CONFIG_S3C2410_WATCHDOG
+	&s3c_device_wdt,
+#endif
+
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
 	&s3c_device_ts,
 #endif
