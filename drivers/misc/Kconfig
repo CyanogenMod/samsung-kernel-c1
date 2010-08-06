@@ -13,6 +13,18 @@ menuconfig MISC_DEVICES
 
 if MISC_DEVICES
 
+config S5P_SAMSUNG_PMEM
+        bool "Samsung PMEM allocator"
+	help
+	  This option enables pmem driver support for physically linear memory allocation
+
+config S5P_PMEM_MEMSIZE_PMEM
+        int "Memory size in kbytes for PMEM"
+        depends on S5P_SAMSUNG_PMEM
+        default "32768"
+	help
+	  This option set default reserved physical memory to be used by pmem driver
+
 config AD525X_DPOT
 	tristate "Analog Devices Digital Potentiometers"
 	depends on (I2C || SPI) && SYSFS
