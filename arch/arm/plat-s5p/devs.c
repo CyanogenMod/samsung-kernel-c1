@@ -33,6 +33,7 @@
 #include <plat/fb.h>
 #include <plat/fimc.h>
 #include <plat/csis.h>
+#include <plat/fimg2d.h>
 
 #if defined(CONFIG_VIDEO_MFC51) || defined(CONFIG_VIDEO_MFC50)
 static struct resource s5p_mfc_resources[] = {
@@ -585,3 +586,46 @@ struct platform_device s3c_device_usbgadget = {
 EXPORT_SYMBOL(s3c_device_usbgadget);
 #endif
 
+#ifdef CONFIG_VIDEO_FIMG2D
+static struct resource s5p_fimg2d_resource[] = {
+	[0] = {
+		.start	= S5P_PA_FIMG2D,
+		.end	= S5P_PA_FIMG2D + S5P_SZ_FIMG2D - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_FIMG2D,
+		.end	= IRQ_FIMG2D,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+struct platform_device s5p_device_fimg2d = {
+	.name		= "s5p-fimg2d",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s5p_fimg2d_resource),
+	.resource	= s5p_fimg2d_resource
+};
+EXPORT_SYMBOL(s5p_device_fimg2d);
+
+static struct fimg2d_platdata default_fimg2d_data __initdata = {
+	.parent_clkname = "mout_mpll",
+	.clkname = "sclk_fimg2d",
+	.gate_clkname = "fimg2d",
+	.clkrate = 250 * 1000000,
+};
+
+void __init s5p_fimg2d_set_platdata(struct fimg2d_platdata *pd)
+{
+        struct fimg2d_platdata *npd;
+
+	if (!pd)
+		pd = &default_fimg2d_data;
+
+	npd = kmemdup(pd, sizeof(*pd), GFP_KERNEL);
+        if (!npd)
+		printk(KERN_ERR "no memory for fimg2d platform data\n");
+	else
+		s5p_device_fimg2d.dev.platform_data = npd;
+}
+#endif

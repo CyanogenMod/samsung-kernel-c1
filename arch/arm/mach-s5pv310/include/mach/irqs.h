@@ -33,7 +33,7 @@
 #define IRQ_MODEM_IF		IRQ_SPI(46)
 #define IRQ_ROTATOR		IRQ_SPI(47)
 #define IRQ_JPEG		IRQ_SPI(48)
-#define IRQ_2D			IRQ_SPI(49)
+#define IRQ_FIMG2D		IRQ_SPI(49)
 #define IRQ_PCIE		IRQ_SPI(50)
 #define IRQ_SYSTEM_TIMER	IRQ_SPI(51)
 #define IRQ_MFC			IRQ_SPI(52)

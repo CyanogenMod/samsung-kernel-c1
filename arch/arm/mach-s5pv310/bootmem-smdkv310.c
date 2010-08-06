@@ -21,6 +21,15 @@
 
 struct s5p_media_device media_devs[] = {
 	/* Will be populated later */
+#ifdef CONFIG_S5P_PMEM_MEMSIZE_PMEM
+	{
+		.id = S5P_MDEV_PMEM,
+		.name = "pmem",
+		.bank = 1,
+		.memsize = CONFIG_S5P_PMEM_MEMSIZE_PMEM * SZ_1K,
+		.paddr = 0,
+	},
+#endif
 };
 
 int nr_media_devs = (sizeof(media_devs) / sizeof(media_devs[0]));

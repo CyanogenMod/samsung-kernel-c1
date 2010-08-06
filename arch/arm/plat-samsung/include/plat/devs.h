@@ -96,6 +96,7 @@ extern struct platform_device s3c_device_usb_hsudc;
 extern struct platform_device s5p_device_mfc;
 extern struct platform_device s3c_device_jpeg;
 extern struct platform_device s5p_device_rotator;
+extern struct platform_device s5p_device_fimg2d;
 
 extern struct platform_device s5pv210_device_ac97;
 extern struct platform_device s5pv210_device_pcm0;

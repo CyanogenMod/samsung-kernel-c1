@@ -32,6 +32,7 @@
 #include <mach/regs-gpio.h>
 #include <mach/spi-clocks.h>
 #include <mach/power-domain.h>
+#include <mach/media.h>
 
 #include <media/s5k3ba_platform.h>
 #include <media/s5k4ba_platform.h>
@@ -53,6 +54,11 @@
 #include <plat/media.h>
 #include <plat/sdhci.h>
 #include <plat/regs-otg.h>
+#include <plat/fimg2d.h>
+
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+#include <linux/android_pmem.h>
+#endif
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define S5PV210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -592,6 +598,33 @@ static struct spi_board_info s3c_spi_devs[] __initdata = {
 
 #endif
 
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+static struct android_pmem_platform_data pmem_pdata = {
+	.name = "s5p-pmem",
+	.no_allocator = 0,
+	.cached = 0,
+	.buffered = 0,
+	.start = 0, /* will be set during proving pmem driver */
+	.size = 0 /* will be set during proving pmem driver */
+};
+
+static struct platform_device s5p_pmem_device = {
+	.name = "s5p-pmem",
+	.id = 0,
+	.dev = { .platform_data = &pmem_pdata },
+};
+#endif
+
+#ifdef CONFIG_VIDEO_FIMG2D
+static struct fimg2d_platdata fimg2d_data __initdata = {
+	.hw_ver = 30,
+	.parent_clkname = "mout_mpll",
+	.clkname = "sclk_fimg2d",
+	.gate_clkname = "fimg2d",
+	.clkrate = 250 * 1000000,
+};
+#endif
+
 static struct platform_device *smdkv210_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -661,6 +694,13 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5pv210_pd_g3d,
 	&s5pv210_pd_mfc,
 #endif
+
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+	&s5p_pmem_device,
+#endif
+#ifdef CONFIG_VIDEO_FIMG2D
+	&s5p_device_fimg2d,
+#endif
 };
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
@@ -696,6 +736,14 @@ static void __init smdkv210_map_io(void)
 	s3c24xx_init_uarts(smdkv210_uartcfgs, ARRAY_SIZE(smdkv210_uartcfgs));
 	s5p_reserve_bootmem();
 }
+
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+static void __init s5p_pmem_set_platdata(void)
+{
+	pmem_pdata.start = s5p_get_media_memory_bank(S5P_MDEV_PMEM, 1);
+	pmem_pdata.size = s5p_get_media_memsize_bank(S5P_MDEV_PMEM, 1);
+}
+#endif
 
 static void __init smdkv210_machine_init(void)
 {
@@ -735,6 +783,12 @@ static void __init smdkv210_machine_init(void)
 	}
 #endif
 
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+	s5p_pmem_set_platdata();
+#endif
+#ifdef CONFIG_VIDEO_FIMG2D
+	s5p_fimg2d_set_platdata(&fimg2d_data);
+#endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 

@@ -154,6 +154,11 @@
 #define S5P_PA_ROTATOR		S5PV210_PA_ROTATOR
 #define S5P_SZ_ROTATOR		SZ_1M
 
+/* fimg2d */
+#define S5PV210_PA_FIMG2D	(0xFA000000)
+#define S5P_PA_FIMG2D		S5PV210_PA_FIMG2D
+#define S5P_SZ_FIMG2D		SZ_1M
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5PV210_PA_UART
 #define S3C_PA_HSMMC0		S5PV210_PA_HSMMC(0)

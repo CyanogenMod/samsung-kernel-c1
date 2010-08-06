@@ -19,6 +19,7 @@
 #define	S5P_MDEV_FIMC0		3
 #define S5P_MDEV_FIMC1          4
 #define S5P_MDEV_FIMC2          5
+#define S5P_MDEV_PMEM		6
 
 #endif
 

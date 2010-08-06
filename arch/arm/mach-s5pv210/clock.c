@@ -512,8 +512,13 @@ static struct clk init_clocks_disable[] = {
 		.parent		= &clk_hclk_dsys.clk,
 		.enable		= s5pv210_clk_ip0_ctrl,
 		.ctrlbit	= (1 << 29),
+	}, {
+		.name		= "fimg2d",
+		.id		= -1,
+		.parent		= &clk_hclk_dsys.clk,
+		.enable		= s5pv210_clk_ip0_ctrl,
+		.ctrlbit	= (1 << 12),
 	},
-
 };
 
 static struct clk init_clocks[] = {
@@ -994,7 +999,7 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLK_DIV2, .shift = 4, .size = 4 },
 	}, {
 		.clk		= {
-			.name		= "sclk_g2d",
+			.name		= "sclk_fimg2d",
 			.id		= -1,
 			.enable		= s5pv210_clk_ip0_ctrl,
 			.ctrlbit	= (1 << 12),
