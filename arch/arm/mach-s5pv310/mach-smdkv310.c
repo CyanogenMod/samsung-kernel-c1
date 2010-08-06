@@ -30,6 +30,7 @@
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
+#include <plat/fimg2d.h>
 
 #include <plat/regs-otg.h>
 
@@ -149,6 +150,16 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 #endif
 #endif
 
+#ifdef CONFIG_VIDEO_FIMG2D
+static struct fimg2d_platdata fimg2d_data __initdata = {
+	.hw_ver = 30,
+	.parent_clkname = "mout_mpll",
+	.clkname = "sclk_fimg2d",
+	.gate_clkname = "fimg2d",
+	.clkrate = 250 * 1000000,
+};
+#endif
+
 static struct platform_device *smdkv310_devices[] __initdata = {
 	&smdkv310_smsc911x,
 #ifdef CONFIG_I2C_S3C2410
@@ -198,6 +209,9 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #endif
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
+#endif
+#ifdef CONFIG_VIDEO_FIMG2D
+	&s5p_device_fimg2d,
 #endif
 };
 
@@ -278,6 +292,9 @@ static void __init smdkv310_machine_init(void)
 
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+#endif
+#ifdef CONFIG_VIDEO_FIMG2D
+	s5p_fimg2d_set_platdata(&fimg2d_data);
 #endif
 
 	sromc_setup();

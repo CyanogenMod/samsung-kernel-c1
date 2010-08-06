@@ -103,6 +103,10 @@
 #define S5PV310_PA_SDRAM		(0x40000000)
 #define S5P_PA_SDRAM			S5PV310_PA_SDRAM
 
+#define S5PV310_PA_FIMG2D		(0x12800000)
+#define S5P_PA_FIMG2D			S5PV310_PA_FIMG2D
+#define S5P_SZ_FIMG2D			SZ_1M
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART			S5PV310_PA_UART
 #define S3C_PA_IIC			S5PV310_PA_IIC0
