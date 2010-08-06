@@ -31,6 +31,7 @@
 #include <plat/adc.h>
 #include <plat/ts.h>
 #include <plat/fimg2d.h>
+#include <plat/media.h>
 
 #include <plat/regs-otg.h>
 
@@ -38,6 +39,11 @@
 #include <mach/map.h>
 #include <mach/regs-mem.h>
 #include <mach/regs-clock.h>
+#include <mach/media.h>
+
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+#include <linux/android_pmem.h>
+#endif
 
 extern struct sys_timer s5pv310_timer;
 
@@ -150,6 +156,23 @@ static struct i2c_board_info i2c_devs7[] __initdata = {
 #endif
 #endif
 
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+static struct android_pmem_platform_data pmem_pdata = {
+	.name = "s5p-pmem",
+	.no_allocator = 0,
+	.cached = 0,
+	.buffered = 0,
+	.start = 0, /* will be set during proving pmem driver */
+	.size = 0 /* will be set during proving pmem driver */
+};
+
+static struct platform_device s5p_pmem_device = {
+	.name = "s5p-pmem",
+	.id = 0,
+	.dev = { .platform_data = &pmem_pdata },
+};
+#endif
+
 #ifdef CONFIG_VIDEO_FIMG2D
 static struct fimg2d_platdata fimg2d_data __initdata = {
 	.hw_ver = 30,
@@ -210,6 +233,9 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+	&s5p_pmem_device,
+#endif
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
 #endif
@@ -255,6 +281,14 @@ static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.oversampling_shift	= 2,
 };
 
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+static void __init s5p_pmem_set_platdata(void)
+{
+	pmem_pdata.start = s5p_get_media_memory_bank(S5P_MDEV_PMEM, 1);
+	pmem_pdata.size = s5p_get_media_memsize_bank(S5P_MDEV_PMEM, 1);
+}
+#endif
+
 static void __init smdkv310_machine_init(void)
 {
 #ifdef CONFIG_I2C_S3C2410
@@ -295,6 +329,9 @@ static void __init smdkv310_machine_init(void)
 #endif
 #ifdef CONFIG_VIDEO_FIMG2D
 	s5p_fimg2d_set_platdata(&fimg2d_data);
+#endif
+#ifdef CONFIG_S5P_SAMSUNG_PMEM
+	s5p_pmem_set_platdata();
 #endif
 
 	sromc_setup();
