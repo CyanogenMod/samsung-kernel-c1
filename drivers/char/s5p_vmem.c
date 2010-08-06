@@ -167,7 +167,7 @@ static int freekvm(unsigned int cookie)
 
 	rmarea = kvmarea->next;
 	kvmarea->next = rmarea->next;
-	vfree(kvmarea->start_addr);
+	vfree(rmarea->start_addr);
 	kfree(rmarea);
 
 	mutex_unlock(&s5p_vmem_lock);
