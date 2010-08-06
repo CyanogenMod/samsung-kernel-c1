@@ -19,9 +19,11 @@ source "drivers/media/video/samsung/jpeg_v2/Kconfig"
 source "drivers/media/video/samsung/tv20/Kconfig"
 source "drivers/media/video/samsung/rotator/Kconfig"
 source "drivers/media/video/samsung/mfc50/Kconfig"
-source "drivers/media/video/samsung/fimg2d/Kconfig"
 endif
 
+if CPU_S5PV210 || CPU_S5PV310
+source "drivers/media/video/samsung/fimg2d/Kconfig"
+endif
 
 if VIDEO_SAMSUNG
 comment "Reserved memory configurations"

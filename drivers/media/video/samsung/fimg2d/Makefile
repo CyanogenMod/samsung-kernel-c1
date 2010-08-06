@@ -12,3 +12,4 @@ obj-				:=
 
 obj-$(CONFIG_VIDEO_FIMG2D) += fimg2d_drv.o fimg2d_ctx.o
 obj-$(CONFIG_CPU_S5PV210) += fimg2d3x_blt.o fimg2d3x_hw.o
+obj-$(CONFIG_CPU_S5PV310) += fimg2d3x_blt.o fimg2d3x_hw.o
