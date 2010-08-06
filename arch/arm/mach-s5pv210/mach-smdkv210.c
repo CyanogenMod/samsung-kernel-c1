@@ -53,6 +53,7 @@
 #include <plat/media.h>
 #include <plat/sdhci.h>
 #include <plat/regs-otg.h>
+#include <plat/fimg2d.h>
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
 #define S5PV210_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
@@ -592,6 +593,16 @@ static struct spi_board_info s3c_spi_devs[] __initdata = {
 
 #endif
 
+#ifdef CONFIG_VIDEO_FIMG2D
+static struct fimg2d_platdata fimg2d_data __initdata = {
+	.hw_ver = 30,
+	.parent_clkname = "mout_mpll",
+	.clkname = "sclk_fimg2d",
+	.gate_clkname = "fimg2d",
+	.clkrate = 250 * 1000000,
+};
+#endif
+
 static struct platform_device *smdkv210_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -660,6 +671,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5pv210_pd_lcd,
 	&s5pv210_pd_g3d,
 	&s5pv210_pd_mfc,
+#endif
+
+#ifdef CONFIG_VIDEO_FIMG2D
+	&s5p_device_fimg2d,
 #endif
 };
 
@@ -735,6 +750,9 @@ static void __init smdkv210_machine_init(void)
 	}
 #endif
 
+#ifdef CONFIG_VIDEO_FIMG2D
+	s5p_fimg2d_set_platdata(&fimg2d_data);
+#endif
 	platform_add_devices(smdkv210_devices, ARRAY_SIZE(smdkv210_devices));
 }
 
