@@ -29,6 +29,10 @@ config SND_S3C64XX_SOC_I2S_V4
 	select SND_S3C_I2SV2_SOC
 	select S3C64XX_DMA
 
+config SND_SAMSUNG_SOC_I2S_V5
+	tristate
+	select SND_S3C64XX_SOC_I2S_V4
+
 config SND_S3C_SOC_PCM
 	tristate
 

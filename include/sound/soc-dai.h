@@ -225,6 +225,8 @@ struct snd_soc_dai {
 	unsigned int active;
 	unsigned char pop_wait:1;
 
+	unsigned int use_idma;
+
 	/* DAI private data */
 	void *private_data;
 
