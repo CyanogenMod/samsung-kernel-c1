@@ -45,6 +45,106 @@ static struct clk clk_sclk_usbphy1 = {
 	.id		= -1,
 };
 
+static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_CAM, clk, enable);
+}
+
+static int s5pv310_clk_ip_tv_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_TV, clk, enable);
+}
+
+static int s5pv310_clk_ip_mfc_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_MFC, clk, enable);
+}
+
+static int s5pv310_clk_ip_g3d_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_G3D, clk, enable);
+}
+
+static int s5pv310_clk_ip_image_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_IMAGE, clk, enable);
+}
+
+static int s5pv310_clk_ip_lcd0_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_LCD0, clk, enable);
+}
+
+static int s5pv310_clk_ip_lcd1_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_LCD1, clk, enable);
+}
+
+static int s5pv310_clk_ip_fsys_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_FSYS, clk, enable);
+}
+
+static int s5pv310_clk_ip_gps_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_GPS, clk, enable);
+}
+
+static int s5pv310_clk_ip_peril_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_PERIL, clk, enable);
+}
+
+static int s5pv310_clk_ip_perir_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_IP_PERIR, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_top_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_TOP, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_cam_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_CAM, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_tv_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_TV, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_lcd0_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_LCD0, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_lcd1_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_LCD1, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_maudio_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_MAUDIO, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_fsys_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_FSYS, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_peril0_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_PERIL0, clk, enable);
+}
+
+static int s5pv310_clksrc_mask_peril1_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKSRC_MASK_PERIL1, clk, enable);
+}
+
 /* Core list of CMU_CPU side */
 
 static struct clksrc_clk clk_mout_apll = {
@@ -215,6 +315,8 @@ static struct clksrc_clk clk_vpllsrc = {
 	.clk    = {
 		.name           = "vpll_src",
 		.id             = -1,
+		.enable		= s5pv310_clksrc_mask_top_ctrl,
+		.ctrlbit	= (1 << 0),
 	},
 	.sources        = &clkset_vpllsrc,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 0, .size = 1 },
@@ -238,111 +340,6 @@ static struct clksrc_clk clk_sclk_vpll = {
 	.sources        = &clkset_sclk_vpll,
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 8, .size = 1 },
 };
-
-static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_CAM, clk, enable);
-}
-
-static int s5pv310_clk_ip_tv_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_TV, clk, enable);
-}
-
-static int s5pv310_clk_ip_mfc_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_MFC, clk, enable);
-}
-
-static int s5pv310_clk_ip_g3d_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_G3D, clk, enable);
-}
-
-static int s5pv310_clk_ip_image_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_IMAGE, clk, enable);
-}
-
-static int s5pv310_clk_ip_lcd0_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_LCD0, clk, enable);
-}
-
-static int s5pv310_clk_ip_lcd1_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_LCD1, clk, enable);
-}
-
-static int s5pv310_clk_ip_fsys_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_FSYS, clk, enable);
-}
-
-static int s5pv310_clk_ip_gps_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_GPS, clk, enable);
-}
-
-static int s5pv310_clk_ip_peril_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_PERIL, clk, enable);
-}
-
-static int s5pv310_clk_ip_perir_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_IP_PERIR, clk, enable);
-}
-
-static int s5pv310_clk_sclk_cam_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_CAM, clk, enable);
-}
-
-static int s5pv310_clk_sclk_tv_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_TV, clk, enable);
-}
-
-static int s5pv310_clk_sclk_mfc_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_MFC, clk, enable);
-}
-
-static int s5pv310_clk_sclk_g3d_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_G3D, clk, enable);
-}
-
-static int s5pv310_clk_sclk_image_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_IMAGE, clk, enable);
-}
-
-static int s5pv310_clk_sclk_lcd0_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_LCD0, clk, enable);
-}
-
-static int s5pv310_clk_sclk_lcd1_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_LCD1, clk, enable);
-}
-
-static int s5pv310_clk_sclk_maudio_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_MAUDIO, clk, enable);
-}
-
-static int s5pv310_clk_sclk_fsys_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_FSYS, clk, enable);
-}
-
-static int s5pv310_clk_sclk_peril_ctrl(struct clk *clk, int enable)
-{
-	return s5p_gatectrl(S5P_CLKGATE_SCLK_PERIL, clk, enable);
-}
 
 static struct clk init_clocks_disable[] = {
 	/* Nothing here yet */
@@ -474,7 +471,18 @@ static struct clk init_clocks[] = {
 		.id		= 2,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 18),
+	}, {
+		.name		= "g2d",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_image_ctrl,
+		.ctrlbit	= (1 << 0),
+	}, {
+		.name		= "gps",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_gps_ctrl,
+		.ctrlbit	= (1 << 0),
 	},
+
 };
 
 static struct clk *clkset_group_list[] = {
@@ -518,13 +526,61 @@ static struct clksrc_clk clk_sclk_mipidphy2l = {
 	.reg_div	= { .reg = S5P_CLKDIV_LCD1, .shift = 16, .size = 4 },
 };
 
+static struct clk *clkset_mout_g2d0_list[] = {
+	[0] = &clk_mout_mpll.clk,
+	[1] = &clk_sclk_apll.clk,
+};
+
+static struct clksrc_sources clkset_mout_g2d0 = {
+	.sources	= clkset_mout_g2d0_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_g2d0_list),
+};
+
+static struct clksrc_clk clk_mout_g2d0 = {
+	.clk	= {
+		.name		= "mout_g2d0",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_g2d0,
+	.reg_src	= { .reg = S5P_CLKSRC_IMAGE, .shift = 0, .size = 1 },
+};
+
+static struct clk *clkset_mout_g2d1_list[] = {
+	[0] = &clk_mout_epll.clk,
+	[1] = &clk_sclk_vpll.clk,
+};
+
+static struct clksrc_sources clkset_mout_g2d1 = {
+	.sources	= clkset_mout_g2d1_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_g2d1_list),
+};
+
+static struct clksrc_clk clk_mout_g2d1 = {
+	.clk	= {
+		.name		= "mout_g2d1",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_g2d1,
+	.reg_src	= { .reg = S5P_CLKSRC_IMAGE, .shift = 4, .size = 1 },
+};
+
+static struct clk *clkset_mout_g2d_list[] = {
+	[0] = &clk_mout_g2d0.clk,
+	[1] = &clk_mout_g2d1.clk,
+};
+
+static struct clksrc_sources clkset_mout_g2d = {
+	.sources	= clkset_mout_g2d_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_g2d_list),
+};
+
 static struct clksrc_clk clksrcs[] = {
 	{
 		.clk	= {
 			.name		= "uclk1",
 			.id		= 0,
 			.ctrlbit	= (1 << 0),
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 0, .size = 4 },
@@ -533,8 +589,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "uclk1",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 1),
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
+			.ctrlbit	= (1 << 4),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 4, .size = 4 },
@@ -543,8 +599,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "uclk1",
 			.id		= 2,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 2),
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
+			.ctrlbit	= (1 << 8),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 8, .size = 4 },
@@ -553,8 +609,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "uclk1",
 			.id		= 3,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 3),
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
+			.ctrlbit	= (1 << 12),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 12, .size = 4 },
@@ -563,8 +619,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_pwm",
 			.id		= -1,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 12),
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
+			.ctrlbit	= (1 << 24),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 24, .size = 4 },
@@ -573,8 +629,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_csis",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 4),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 24),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 24, .size = 4 },
@@ -583,8 +639,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_csis",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 5),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 28),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 28, .size = 4 },
@@ -593,8 +649,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_cam",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 4),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 16),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 16, .size = 4 },
@@ -603,8 +659,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_cam",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 5),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 20),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 20, .size = 4 },
@@ -613,7 +669,7 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimc",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
 			.ctrlbit	= (1 << 0),
 		},
 		.sources = &clkset_group,
@@ -623,8 +679,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimc",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 1),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 4),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 4, .size = 4 },
@@ -633,8 +689,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimc",
 			.id		= 2,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 2),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 8),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 8, .size = 4 },
@@ -643,8 +699,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimc",
 			.id		= 3,
-			.enable		= s5pv310_clk_sclk_cam_ctrl,
-			.ctrlbit	= (1 << 3),
+			.enable		= s5pv310_clksrc_mask_cam_ctrl,
+			.ctrlbit	= (1 << 12),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_CAM, .shift = 12, .size = 4 },
@@ -653,7 +709,7 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimd",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_lcd0_ctrl,
+			.enable		= s5pv310_clksrc_mask_lcd0_ctrl,
 			.ctrlbit	= (1 << 0),
 		},
 		.sources = &clkset_group,
@@ -663,7 +719,7 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_fimd",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_lcd1_ctrl,
+			.enable		= s5pv310_clksrc_mask_lcd1_ctrl,
 			.ctrlbit	= (1 << 0),
 		},
 		.sources = &clkset_group,
@@ -674,8 +730,8 @@ static struct clksrc_clk clksrcs[] = {
 			.name		= "sclk_mipi",
 			.id		= 0,
 			.parent		= &clk_sclk_mipidphy4l.clk,
-			.enable		= s5pv310_clk_sclk_lcd0_ctrl,
-			.ctrlbit	= (1 << 3),
+			.enable		= s5pv310_clksrc_mask_lcd0_ctrl,
+			.ctrlbit	= (1 << 12),
 		},
 		.reg_div = { .reg = S5P_CLKDIV_LCD0, .shift = 20, .size = 4 },
 	}, {
@@ -683,15 +739,15 @@ static struct clksrc_clk clksrcs[] = {
 			.name		= "sclk_mipi",
 			.id		= 1,
 			.parent		= &clk_sclk_mipidphy2l.clk,
-			.enable		= s5pv310_clk_sclk_lcd1_ctrl,
-			.ctrlbit	= (1 << 3),
+			.enable		= s5pv310_clksrc_mask_lcd1_ctrl,
+			.ctrlbit	= (1 << 12),
 		},
-		.reg_div = { .reg = S5P_CLKDIV_LCD0, .shift = 20, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_LCD1, .shift = 20, .size = 4 },
 	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 0),
 		},
 		.sources = &clkset_group,
@@ -701,8 +757,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
-			.ctrlbit	= (1 << 1),
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
+			.ctrlbit	= (1 << 4),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 4, .size = 4 },
@@ -711,8 +767,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 2,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
-			.ctrlbit	= (1 << 2),
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
+			.ctrlbit	= (1 << 8),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 8, .size = 4 },
@@ -721,8 +777,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 3,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
-			.ctrlbit	= (1 << 3),
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
+			.ctrlbit	= (1 << 12),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 12, .size = 4 },
@@ -731,8 +787,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 4,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
-			.ctrlbit	= (1 << 4),
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
+			.ctrlbit	= (1 << 16),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 16, .size = 4 },
@@ -741,8 +797,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_sata",
 			.id		= -1,
-			.enable		= s5pv310_clk_sclk_fsys_ctrl,
-			.ctrlbit	= (1 << 8),
+			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
+			.ctrlbit	= (1 << 24),
 		},
 		.sources = &clkset_mout_corebus,
 		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 24, .size = 1 },
@@ -751,8 +807,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_spi",
 			.id		= 0,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 6),
+			.enable		= s5pv310_clksrc_mask_peril1_ctrl,
+			.ctrlbit	= (1 << 16),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL1, .shift = 16, .size = 4 },
@@ -761,8 +817,8 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_spi",
 			.id		= 1,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 7),
+			.enable		= s5pv310_clksrc_mask_peril1_ctrl,
+			.ctrlbit	= (1 << 20),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL1, .shift = 20, .size = 4 },
@@ -771,12 +827,20 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_spi",
 			.id		= 2,
-			.enable		= s5pv310_clk_sclk_peril_ctrl,
-			.ctrlbit	= (1 << 8),
+			.enable		= s5pv310_clksrc_mask_peril1_ctrl,
+			.ctrlbit	= (1 << 24),
 		},
 		.sources = &clkset_group,
 		.reg_src = { .reg = S5P_CLKSRC_PERIL1, .shift = 24, .size = 4 },
 		.reg_div = { .reg = S5P_CLKDIV_PERIL2, .shift = 0, .size = 4 },
+	}, {
+		.clk		= {
+			.name		= "sclk_g2d",
+			.id		= -1,
+		},
+		.sources = &clkset_mout_g2d,
+		.reg_src = { .reg = S5P_CLKSRC_IMAGE, .shift = 8, .size = 1 },
+		.reg_div = { .reg = S5P_CLKDIV_IMAGE, .shift = 0, .size = 4 },
 	},
 };
 
