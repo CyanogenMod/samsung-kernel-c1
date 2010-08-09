@@ -35,6 +35,11 @@ snd-soc-s3c24xx-simtec-objs := s3c24xx_simtec.o
 snd-soc-s3c24xx-simtec-hermes-objs := s3c24xx_simtec_hermes.o
 snd-soc-s3c24xx-simtec-tlv320aic23-objs := s3c24xx_simtec_tlv320aic23.o
 snd-soc-smdk64xx-wm8580-objs := smdk64xx_wm8580.o
+ifeq ($(CONFIG_WM8580_MASTER),y)
+snd-soc-smdkv2xx-wm8580-objs := smdkv2xx_wm8580mst.o
+else
+snd-soc-smdkv2xx-wm8580-objs := smdkv2xx_wm8580slv.o
+endif
 snd-soc-smdk-wm9713-objs := smdk_wm9713.o
 
 obj-$(CONFIG_SND_S3C24XX_SOC_JIVE_WM8750) += snd-soc-jive-wm8750.o
@@ -49,3 +54,4 @@ obj-$(CONFIG_SND_S3C24XX_SOC_SIMTEC_HERMES) += snd-soc-s3c24xx-simtec-hermes.o
 obj-$(CONFIG_SND_S3C24XX_SOC_SIMTEC_TLV320AIC23) += snd-soc-s3c24xx-simtec-tlv320aic23.o
 obj-$(CONFIG_SND_S3C64XX_SOC_WM8580) += snd-soc-smdk64xx-wm8580.o
 obj-$(CONFIG_SND_SOC_SMDK_WM9713) += snd-soc-smdk-wm9713.o
+obj-$(CONFIG_SND_S5PV2XX_SOC_WM8580) += snd-soc-smdkv2xx-wm8580.o

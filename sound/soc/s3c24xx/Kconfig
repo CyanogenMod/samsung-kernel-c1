@@ -1,6 +1,6 @@
 config SND_S3C24XX_SOC
 	tristate "SoC Audio for the Samsung S3CXXXX chips"
-	depends on ARCH_S3C2410 || ARCH_S3C64XX || ARCH_S5P6450
+	depends on ARCH_S3C2410 || ARCH_S3C64XX || ARCH_S5P6450 || ARCH_S5PV210
 	select S3C64XX_DMA if ARCH_S3C64XX
 	help
 	  Say Y or M if you want to add support for codecs attached to
@@ -82,6 +82,21 @@ config SND_S3C64XX_SOC_WM8580
 	select SND_S3C64XX_SOC_I2S_V4
 	help
 	  Say Y if you want to add support for SoC audio on the SMDK6410.
+
+config SND_S5PV2XX_SOC_WM8580
+	tristate "SoC I2S Audio support for WM8580 on SMDKV2XX"
+	depends on SND_S3C24XX_SOC && MACH_SMDKV210
+	select SND_SOC_WM8580
+	select SND_SAMSUNG_SOC_I2S_V5
+	help
+	  Say Y if you want to add support for SoC audio on the SMDKV210.
+
+config WM8580_MASTER
+	bool "WM8580 Codec is I2S Master"
+	depends on SND_S5PV2XX_SOC_WM8580
+	default y
+	help
+	  Say Y if you want to run WM8580 Codec as a I2S-Master.
 
 config SND_S3C24XX_SOC_SMDK2443_WM9710
 	tristate "SoC AC97 Audio support for SMDK2443 - WM9710"
