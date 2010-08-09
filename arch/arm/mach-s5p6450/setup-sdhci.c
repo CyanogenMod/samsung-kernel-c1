@@ -30,6 +30,10 @@ char *s5p6450_hsmmc_clksrcs[4] = {
 	/*[4] = reserved */
 };
 
+char *s5p6450_mshc_clksrcs[4] = {
+	[0] = "sclk_hsmmc44",	/* mmc_bus */
+};
+
 void s5p6450_setup_sdhci_cfg_card(struct platform_device *dev,
 				    void __iomem *r,
 				    struct mmc_ios *ios,

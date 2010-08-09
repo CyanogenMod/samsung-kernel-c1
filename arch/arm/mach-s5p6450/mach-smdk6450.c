@@ -49,6 +49,7 @@
 #include <plat/adc.h>
 #include <plat/ts.h>
 #include <plat/fb.h>
+#include <plat/mshci.h>
 #include <plat/sdhci.h>
 #include <plat/gpio-cfg.h>
 #include <plat/pm.h>
@@ -418,6 +419,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	&s3c_device_hsmmc2,
 #endif
+#ifdef CONFIG_S3C_DEV_MSHC
+	&s3c_device_mshci,
+#endif
 	&s3c_device_i2c0,
 	&s3c_device_i2c1,
 #ifdef CONFIG_S3C_DEV_RTC
@@ -467,6 +471,9 @@ static void __init smdk6450_machine_init(void)
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	s5p6450_default_sdhci2();
+#endif
+#ifdef CONFIG_S3C_DEV_MSHC
+	s5p6450_default_mshci();
 #endif
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
