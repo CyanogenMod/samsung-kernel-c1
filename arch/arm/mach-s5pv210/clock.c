@@ -1128,6 +1128,7 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_sclk_pixel,
 	&clk_sclk_hdmi,
 	&clk_mout_csis,
+	&clk_sclk_audio0,
 };
 
 static int s5pv210_epll_enable(struct clk *clk, int enable)
@@ -1292,6 +1293,8 @@ void __init_or_cpufreq s5pv210_setup_clocks(void)
 
 	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
 		s3c_set_clksrc(&clksrcs[ptr], true);
+
+	clk_set_parent(&clk_sclk_audio0.clk, &clk_mout_epll.clk);
 }
 
 static struct clk *clks[] __initdata = {
