@@ -16,10 +16,6 @@
 /*
  * Register part
 */ 
-#define S3C_CIOYSA(__x) 	(0x18 + (__x) * 4)
-#define S3C_CIOCBSA(__x) 	(0x28 + (__x) * 4)
-#define S3C_CIOCRSA(__x)  	(0x38 + (__x) * 4)
-
 #define S3C_CISRCFMT		(0x00)	/* Input source format */
 #define S3C_CIWDOFST		(0x04)	/* Window offset */
 #define S3C_CIGCTRL		(0x08)	/* Global control */
@@ -43,6 +39,7 @@
 #define S3C_CISCCTRL		(0x58)	/* Main scaler control */
 #define S3C_CITAREA		(0x5c)	/* Target area */
 #define S3C_CISTATUS		(0x64)	/* Status */
+#define S3C_CISTATUS2		(0x64)	/* Status2 */
 #define S3C_CIIMGCPT		(0xc0)	/* Image capture enable command */
 #define S3C_CICPTSEQ		(0xc4)	/* Capture sequence */
 #define S3C_CIIMGEFF		(0xd0)	/* Image effects */
@@ -67,9 +64,105 @@
 #define S3C_CSIIMGFMT		(0x194)	/* MIPI CSI image format */
 #define S3C_MISC_FIMC		(0x198)	/* FIMC Clock Source Select */
 
+/* Add for FIMC v5.1 */
+#define S3C_CIFCNTSEQ		(0x1fc) /* Output Frame Buffer Sequence */
+#define S3C_CIOYSA5		(0x200)	/* Y 5th frame start address for output DMA */
+#define S3C_CIOYSA6		(0x204)	/* Y 6th frame start address for output DMA */
+#define S3C_CIOYSA7		(0x208)	/* Y 7th frame start address for output DMA */
+#define S3C_CIOYSA8		(0x20c) /* Y 8th frame start address for output DMA */
+#define S3C_CIOYSA9		(0x210)	/* Y 9th frame start address for output DMA */
+#define S3C_CIOYSA10		(0x214)	/* Y 10th frame start address for output DMA */
+#define S3C_CIOYSA11		(0x218)	/* Y 11th frame start address for output DMA */
+#define S3C_CIOYSA12		(0x21c)	/* Y 12th frame start address for output DMA */
+#define S3C_CIOYSA13		(0x220)	/* Y 13th frame start address for output DMA */
+#define S3C_CIOYSA14		(0x224)	/* Y 14th frame start address for output DMA */
+#define S3C_CIOYSA15		(0x228)	/* Y 15th frame start address for output DMA */
+#define S3C_CIOYSA16		(0x22c)	/* Y 16th frame start address for output DMA */
+#define S3C_CIOYSA17		(0x230)	/* Y 17th frame start address for output DMA */
+#define S3C_CIOYSA18		(0x234)	/* Y 18th frame start address for output DMA */
+#define S3C_CIOYSA19		(0x238)	/* Y 19th frame start address for output DMA */
+#define S3C_CIOYSA20		(0x23c)	/* Y 20th frame start address for output DMA */
+#define S3C_CIOYSA21		(0x240)	/* Y 21th frame start address for output DMA */
+#define S3C_CIOYSA22		(0x244)	/* Y 22th frame start address for output DMA */
+#define S3C_CIOYSA23		(0x248)	/* Y 23th frame start address for output DMA */
+#define S3C_CIOYSA24		(0x24c)	/* Y 24th frame start address for output DMA */
+#define S3C_CIOYSA25		(0x250)	/* Y 25th frame start address for output DMA */
+#define S3C_CIOYSA26		(0x254)	/* Y 26th frame start address for output DMA */
+#define S3C_CIOYSA27		(0x258)	/* Y 27th frame start address for output DMA */
+#define S3C_CIOYSA28		(0x25c)	/* Y 28th frame start address for output DMA */
+#define S3C_CIOYSA29		(0x260)	/* Y 29th frame start address for output DMA */
+#define S3C_CIOYSA30		(0x264)	/* Y 30th frame start address for output DMA */
+#define S3C_CIOYSA31		(0x268)	/* Y 31th frame start address for output DMA */
+#define S3C_CIOYSA32		(0x26c)	/* Y 32th frame start address for output DMA */
+
+#define S3C_CIOCBSA5		(0x270)	/* CB 5th frame start address for output DMA */
+#define S3C_CIOCBSA6		(0x274)	/* CB 6th frame start address for output DMA */
+#define S3C_CIOCBSA7		(0x278)	/* CB 7th frame start address for output DMA */
+#define S3C_CIOCBSA8		(0x27c) /* CB 8th frame start address for output DMA */
+#define S3C_CIOCBSA9		(0x280)	/* CB 9th frame start address for output DMA */
+#define S3C_CIOCBSA10		(0x284)	/* CB 10th frame start address for output DMA */
+#define S3C_CIOCBSA11		(0x288)	/* CB 11th frame start address for output DMA */
+#define S3C_CIOCBSA12		(0x28c)	/* CB 12th frame start address for output DMA */
+#define S3C_CIOCBSA13		(0x290)	/* CB 13th frame start address for output DMA */
+#define S3C_CIOCBSA14		(0x294)	/* CB 14th frame start address for output DMA */
+#define S3C_CIOCBSA15		(0x298)	/* CB 15th frame start address for output DMA */
+#define S3C_CIOCBSA16		(0x29c)	/* CB 16th frame start address for output DMA */
+#define S3C_CIOCBSA17		(0x2a0)	/* CB 17th frame start address for output DMA */
+#define S3C_CIOCBSA18		(0x2a4)	/* CB 18th frame start address for output DMA */
+#define S3C_CIOCBSA19		(0x2a8)	/* CB 19th frame start address for output DMA */
+#define S3C_CIOCBSA20		(0x2ac)	/* CB 20th frame start address for output DMA */
+#define S3C_CIOCBSA21		(0x2b0)	/* CB 21th frame start address for output DMA */
+#define S3C_CIOCBSA22		(0x2b4)	/* CB 22th frame start address for output DMA */
+#define S3C_CIOCBSA23		(0x2b8)	/* CB 23th frame start address for output DMA */
+#define S3C_CIOCBSA24		(0x2bc)	/* CB 24th frame start address for output DMA */
+#define S3C_CIOCBSA25		(0x2c0)	/* CB 25th frame start address for output DMA */
+#define S3C_CIOCBSA26		(0x2c4)	/* CB 26th frame start address for output DMA */
+#define S3C_CIOCBSA27		(0x2c8)	/* CB 27th frame start address for output DMA */
+#define S3C_CIOCBSA28		(0x2cc)	/* CB 28th frame start address for output DMA */
+#define S3C_CIOCBSA29		(0x2d0)	/* CB 29th frame start address for output DMA */
+#define S3C_CIOCBSA30		(0x2d4)	/* CB 30th frame start address for output DMA */
+#define S3C_CIOCBSA31		(0x2d8)	/* CB 31th frame start address for output DMA */
+#define S3C_CIOCBSA32		(0x2dc)	/* CB 32th frame start address for output DMA */
+
+#define S3C_CIOCRSA5		(0x2e0)	/* CR 5th frame start address for output DMA */
+#define S3C_CIOCRSA6		(0x2e4)	/* CR 6th frame start address for output DMA */
+#define S3C_CIOCRSA7		(0x2e8)	/* CR 7th frame start address for output DMA */
+#define S3C_CIOCRSA8		(0x2ec) /* CR 8th frame start address for output DMA */
+#define S3C_CIOCRSA9		(0x2f0)	/* CR 9th frame start address for output DMA */
+#define S3C_CIOCRSA10		(0x2f4)	/* CR 10th frame start address for output DMA */
+#define S3C_CIOCRSA11		(0x2f8)	/* CR 11th frame start address for output DMA */
+#define S3C_CIOCRSA12		(0x2fc)	/* CR 12th frame start address for output DMA */
+#define S3C_CIOCRSA13		(0x300)	/* CR 13th frame start address for output DMA */
+#define S3C_CIOCRSA14		(0x304)	/* CR 14th frame start address for output DMA */
+#define S3C_CIOCRSA15		(0x308)	/* CR 15th frame start address for output DMA */
+#define S3C_CIOCRSA16		(0x30c)	/* CR 16th frame start address for output DMA */
+#define S3C_CIOCRSA17		(0x310)	/* CR 17th frame start address for output DMA */
+#define S3C_CIOCRSA18		(0x314)	/* CR 18th frame start address for output DMA */
+#define S3C_CIOCRSA19		(0x318)	/* CR 19th frame start address for output DMA */
+#define S3C_CIOCRSA20		(0x31c)	/* CR 20th frame start address for output DMA */
+#define S3C_CIOCRSA21		(0x320)	/* CR 21th frame start address for output DMA */
+#define S3C_CIOCRSA22		(0x324)	/* CR 22th frame start address for output DMA */
+#define S3C_CIOCRSA23		(0x328)	/* CR 23th frame start address for output DMA */
+#define S3C_CIOCRSA24		(0x32c)	/* CR 24th frame start address for output DMA */
+#define S3C_CIOCRSA25		(0x330)	/* CR 25th frame start address for output DMA */
+#define S3C_CIOCRSA26		(0x334)	/* CR 26th frame start address for output DMA */
+#define S3C_CIOCRSA27		(0x338)	/* CR 27th frame start address for output DMA */
+#define S3C_CIOCRSA28		(0x33c)	/* CR 28th frame start address for output DMA */
+#define S3C_CIOCRSA29		(0x340)	/* CR 29th frame start address for output DMA */
+#define S3C_CIOCRSA30		(0x344)	/* CR 30th frame start address for output DMA */
+#define S3C_CIOCRSA31		(0x348)	/* CR 31th frame start address for output DMA */
+#define S3C_CIOCRSA32		(0x34c)	/* CR 32th frame start address for output DMA */
 /*
  * Macro part
 */
+/* frame start address 1~32 */
+#define S3C_CIOYSA(__x)			\
+	(__x < 5)?(0x18 + (__x) * 4):(0x200 + (__x) * 4)
+#define S3C_CIOCBSA(__x)		\
+	(__x < 5)?(0x28 + (__x) * 4):(0x270 + (__x) * 4)
+#define S3C_CIOCRSA(__x)		\
+	(__x < 5)?(0x38 + (__x) * 4):(0x2e0 + (__x) * 4)
+
 #define S3C_CISRCFMT_SOURCEHSIZE(x)		((x) << 16)
 #define S3C_CISRCFMT_SOURCEVSIZE(x)		((x) << 0)
 
