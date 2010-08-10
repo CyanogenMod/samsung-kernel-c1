@@ -682,6 +682,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5pv210_device_iis0,
 #endif
 
+#ifdef CONFIG_SND_S3C_SOC_PCM
+	&s5pv210_device_pcm0,
+#endif
+
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5pv210_device_spi0,
 #endif
