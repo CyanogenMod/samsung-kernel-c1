@@ -539,6 +539,9 @@ extern int fimc_hw_wait_winoff(struct fimc_control *ctrl);
 extern int fimc_hw_wait_stop_input_dma(struct fimc_control *ctrl);
 extern int fimc_hwset_input_lineskip(struct fimc_control *ctrl);
 extern int fimc_hw_reset_camera(struct fimc_control *ctrl);
+extern int fimc_hwset_output_buf_sequence(struct fimc_control *ctrl, u32 shift, u32 enable);
+extern int fimc_hwget_before_frame_count(struct fimc_control *ctrl);
+extern int fimc_hwget_present_frame_count(struct fimc_control *ctrl);
 
 /* IPC related file */
 extern void ipc_start(void);

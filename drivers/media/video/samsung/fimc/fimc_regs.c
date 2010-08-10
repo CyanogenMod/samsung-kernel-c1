@@ -1600,3 +1600,31 @@ int fimc_hw_reset_camera(struct fimc_control *ctrl)
 {
 	return 0;
 }
+
+/* Above FIMC v5.1 */
+int fimc_hwset_output_buf_sequence(struct fimc_control *ctrl, u32 shift, u32 enable)
+{
+	u32 cfg = readl(ctrl->regs + S3C_CIFCNTSEQ);
+	u32 mask = 0x00000001 << shift;
+
+	cfg &= ~mask;
+	cfg |= enable << shift;
+	writel(cfg, ctrl->regs + S3C_CIFCNTSEQ);
+	return 0;
+}
+
+/* Above FIMC v5.1 */
+int fimc_hwget_before_frame_count(struct fimc_control *ctrl)
+{
+	u32 before = readl(ctrl->regs + S3C_CISTATUS2);
+	before &= 0x00001f80; /* [12:7] FrameCnt_before */
+	return before >> 7;
+}
+
+/* Above FIMC v5.1 */
+int fimc_hwget_present_frame_count(struct fimc_control *ctrl)
+{
+	u32 present = readl(ctrl->regs + S3C_CISTATUS2);
+	present &= 0x0000003f; /* [5:0] FrameCnt_present */
+	return present >> 0;
+}
