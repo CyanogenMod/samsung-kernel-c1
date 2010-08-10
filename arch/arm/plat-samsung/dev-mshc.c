@@ -18,22 +18,20 @@
 #include <linux/mmc/host.h>
 
 #include <mach/map.h>
-//#include <plat/sdhci.h>
 #include <plat/mshci.h>
 #include <plat/devs.h>
-//#include <plat/cpu.h>
 
-#define S5P6450_SZ_HSMMC	(0x1000)
+#define S5P_SZ_MSHC	(0x1000)
 
 static struct resource s3c_mshci_resource[] = {
 	[0] = {
-		.start = S5P6450_PA_SDMMC44,
-		.end   = S5P6450_PA_SDMMC44 + S5P6450_SZ_HSMMC - 1,
+		.start = S5P_PA_MSHC,
+		.end   = S5P_PA_MSHC + S5P_SZ_MSHC - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = IRQ_SDMMC44,
-		.end   = IRQ_SDMMC44,
+		.start = IRQ_MSHC,
+		.end   = IRQ_MSHC,
 		.flags = IORESOURCE_IRQ,
 	}
 };
