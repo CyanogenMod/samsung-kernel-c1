@@ -99,35 +99,3 @@ void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 	}
         /* not support MMC2 CDn */
 }
-
-void s5p6450_setup_mshci_cfg_gpio(struct platform_device *dev, int width)
-{
-	unsigned int gpio;
-
-        printk(KERN_ERR "6450_setup_sdhci3_cfg_gpio\n");
-		
-	/* Set all the necessary GPG[7:8] pins to special-function 2 */
-	for (gpio = S5P6450_GPG(7); gpio < S5P6450_GPG(9); gpio++) {
-		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-	}
-
-        switch(width) {
-        case 8:
-		/* Data pin GPQ[6:9] to special-function 3 */
-		for (gpio = S5P6450_GPQ(6); gpio <= S5P6450_GPQ(9); gpio++) {
-			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
-			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-		}
-        case 4:
-		/* Data pin GPG[9:12] to special-function 2 */
-		for (gpio = S5P6450_GPG(9); gpio <= S5P6450_GPG(12); gpio++) {
-			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-		}
-	}
-
-        /* GPG[13] special-funtion 2 : MMC3 CDn */
-	s3c_gpio_cfgpin(S5P6450_GPG(13), S3C_GPIO_SFN(2));
-	s3c_gpio_setpull(S5P6450_GPG(13), S3C_GPIO_PULL_UP);
-}

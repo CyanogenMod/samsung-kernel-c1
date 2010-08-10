@@ -103,11 +103,17 @@ extern void s5p6450_setup_mshci_cfg_gpio(struct platform_device *, int w);
 /* S5P6450 SDHCI setup */
 extern char *s5p6450_mshc_clksrcs[4];
 
+extern void s5p6450_setup_mshci_cfg_card(struct platform_device *dev,
+					   void __iomem *r,
+					   struct mmc_ios *ios,
+					   struct mmc_card *card);
+
 static inline void s5p6450_default_mshci(void)
 {
 #ifdef CONFIG_S3C_DEV_MSHC
 	s3c_mshci_def_platdata.clocks = s5p6450_mshc_clksrcs;
 	s3c_mshci_def_platdata.cfg_gpio = s5p6450_setup_mshci_cfg_gpio;
+	s3c_mshci_def_platdata.cfg_card = s5p6450_setup_mshci_cfg_card;
 #endif /* CONFIG_S3C_DEV_MSHC */
 }
 
