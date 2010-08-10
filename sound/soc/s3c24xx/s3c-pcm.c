@@ -341,10 +341,6 @@ static int s3c_pcm_set_sysclk(struct snd_soc_dai *cpu_dai,
 
 	case S3C_PCM_CLKSRC_MUX:
 		clkctl &= ~S3C_PCM_CLKCTL_SERCLKSEL_PCLK;
-
-		if (clk_get_rate(pcm->cclk) != freq)
-			clk_set_rate(pcm->cclk, freq);
-
 		break;
 
 	default:
