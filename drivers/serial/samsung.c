@@ -530,7 +530,7 @@ static int s3c24xx_serial_calcbaud(struct baud_calc *calc,
 
 	calc->clksrc = clksrc;
 
-	if ((ourport->info->has_divslot) || (ourport->info->has_fracval)) {
+	if (ourport->info->has_divslot) {
 		unsigned long div = rate / baud;
 
 		/* The UDIVSLOT register on the newer UARTs allows us to
@@ -705,11 +705,13 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	if (ourport->info->has_divslot) {
 		unsigned int div = ourport->baudclk_rate / baud;
 
-		udivslot = udivslot_table[div & 15];
-		dbg("udivslot = %04x (div %d)\n", udivslot, div & 15);
-	} else if (ourport->info->has_fracval) {
-		udivslot = (ourport->baudclk_rate / baud) & 15;
-		dbg("fracval = %04x\n", udivslot);
+		if (cfg->has_fracval) {
+			udivslot = (div & 15);
+			dbg("fracval = %04x\n", udivslot);
+		} else {
+			udivslot = udivslot_table[div & 15];
+			dbg("udivslot = %04x (div %d)\n", udivslot, div & 15);
+		}
 	}
 
 	switch (termios->c_cflag & CSIZE) {
@@ -758,7 +760,7 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	wr_regl(port, S3C2410_UBRDIV, quot);
 	wr_regl(port, S3C2410_UMCON, umcon);
 
-	if ((ourport->info->has_divslot) || (ourport->info->has_fracval))
+	if (ourport->info->has_divslot)
 		wr_regl(port, S3C2443_DIVSLOT, udivslot);
 
 	dbg("uart: ulcon = 0x%08x, ucon = 0x%08x, ufcon = 0x%08x\n",
