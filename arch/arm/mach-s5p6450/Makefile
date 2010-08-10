@@ -29,6 +29,8 @@ obj-$(CONFIG_S5P6450_SETUP_FB_S3C)	+= setup-fb.o
 obj-$(CONFIG_S5P6450_SETUP_I2C1)	+= setup-i2c1.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI)	+= setup-sdhci.o
 obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
+obj-$(CONFIG_S5P6450_SETUP_MSHCI)	+= setup-mshci.o
+obj-$(CONFIG_S5P6450_SETUP_MSHCI_GPIO)	+= setup-mshci-gpio.o
 
 # PM
 
