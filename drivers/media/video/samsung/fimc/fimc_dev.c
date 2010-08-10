@@ -497,7 +497,6 @@ static int fimc_unregister_controller(struct platform_device *pdev)
 	free_irq(ctrl->irq, ctrl);
 	mutex_destroy(&ctrl->lock);
 	mutex_destroy(&ctrl->v4l2_lock);
-	kfree(&ctrl->wq);
 
 	if (pdata->clk_off)
 		pdata->clk_off(pdev, &ctrl->clk);
