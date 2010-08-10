@@ -472,7 +472,7 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 18),
 	}, {
-		.name		= "g2d",
+		.name		= "fimg2d",
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_image_ctrl,
 		.ctrlbit	= (1 << 0),
@@ -835,7 +835,7 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLKDIV_PERIL2, .shift = 0, .size = 4 },
 	}, {
 		.clk		= {
-			.name		= "sclk_g2d",
+			.name		= "sclk_fimg2d",
 			.id		= -1,
 		},
 		.sources = &clkset_mout_g2d,
