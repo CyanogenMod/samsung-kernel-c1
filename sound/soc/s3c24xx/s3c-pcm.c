@@ -255,7 +255,7 @@ static int s3c_pcm_set_fmt(struct snd_soc_dai *cpu_dai,
 	ctl = readl(regs + S3C_PCM_CTL);
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
-	case SND_SOC_DAIFMT_NB_NF:
+	case SND_SOC_DAIFMT_IB_NF:
 		/* Nothing to do, NB_NF by default */
 		break;
 	default:
