@@ -120,4 +120,6 @@ struct s3c_pcm_info {
 	struct s3c_dma_params	*dma_capture;
 };
 
+extern struct snd_soc_dai s3c_pcm_dai[];
+
 #endif /* __S3C_PCM_H */
