@@ -305,8 +305,13 @@ static int fimc_capture_scaler_info(struct fimc_control *ctrl)
 	sc->pre_dst_width = sx / sc->pre_hratio;
 	sc->pre_dst_height = sy / sc->pre_vratio;
 
-	sc->main_hratio = (sx << 8) / (tx << sc->hfactor);
-	sc->main_vratio = (sy << 8) / (ty << sc->vfactor);
+	if (pdata->hw_ver >= 0x50) {
+		sc->main_hratio = (sx << 14) / (tx << sc->hfactor);
+		sc->main_vratio = (sy << 14) / (ty << sc->vfactor);
+	} else {
+		sc->main_hratio = (sx << 8) / (tx << sc->hfactor);
+		sc->main_vratio = (sy << 8) / (ty << sc->vfactor);
+	}
 
 	sc->scaleup_h = (tx >= sx) ? 1 : 0;
 	sc->scaleup_v = (ty >= sy) ? 1 : 0;
