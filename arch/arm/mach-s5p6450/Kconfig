@@ -17,11 +17,13 @@ config CPU_S5P6450
 config MACH_SMDK6450
 	bool "SMDK6450"
 	select CPU_S5P6450
+	select S3C_DEV_MSHC
 	select S3C_DEV_HSMMC
 	select S3C_DEV_HSMMC1
-	select S3C_DEV_HSMMC2
 	select S5P6450_SETUP_SDHCI
 	select S5P6450_SETUP_SDHCI_GPIO
+	select S5P6450_SETUP_MSHCI
+	select S5P6450_SETUP_MSHCI_GPIO
 	select SAMSUNG_DEV_ADC
 	select SAMSUNG_DEV_TS
         select S3C_DEV_GIB
@@ -46,6 +48,18 @@ config S5P6450_SETUP_SDHCI_GPIO
 	bool
 	help
 	  Common setup code for SDHCI gpio.
+
+config S5P6450_SETUP_MSHCI
+	bool
+	select S5P6450_SETUP_MSHCI_GPIO
+	help
+	  Internal helper functions for S5P6450 based MSHCI systems.
+
+config S5P6450_SETUP_MSHCI_GPIO
+	bool
+	help
+	  Common setup code for MSHCI gpio.
+
 
 config S5P6450_SETUP_I2C1
 	bool

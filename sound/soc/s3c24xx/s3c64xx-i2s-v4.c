@@ -25,6 +25,9 @@
 #include "regs-i2s-v2.h"
 #include "s3c64xx-i2s.h"
 
+extern struct snd_soc_dai i2s_sec_fifo_dai;
+extern void s5p_i2s_sec_init(void *, dma_addr_t);
+
 static struct s3c2410_dma_client s3c64xx_dma_client_out = {
 	.name		= "I2Sv4 PCM Stereo out"
 };
@@ -190,6 +193,20 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 	ret = s3c_i2sv2_register_dai(dai);
 	if (ret != 0)
 		goto err_i2sv2;
+
+	/* Secondary Stream DAI */
+	i2s_sec_fifo_dai.dev = &pdev->dev;
+	i2s_sec_fifo_dai.playback.rates = S3C64XX_I2S_RATES;
+	i2s_sec_fifo_dai.playback.formats = S3C64XX_I2S_FMTS;
+	i2s_sec_fifo_dai.playback.channels_min = 2;
+	i2s_sec_fifo_dai.playback.channels_max = 2;
+	s5p_i2s_sec_init(i2s->regs,
+		i2s->dma_playback->dma_addr - S3C2412_IISTXD);
+	ret = snd_soc_register_dai(&i2s_sec_fifo_dai);
+	if (ret) {
+		snd_soc_unregister_dai(dai);
+		goto err_i2sv2;
+	}
 
 	return 0;
 

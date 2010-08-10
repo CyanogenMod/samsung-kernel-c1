@@ -97,6 +97,5 @@ void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
-
         /* not support MMC2 CDn */
 }

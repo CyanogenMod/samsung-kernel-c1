@@ -42,10 +42,11 @@ void __init s5pv310_common_init_uarts(struct s3c2410_uartcfg *cfg, int no)
 
 	for (ucnt = 0; ucnt < no; ucnt++, tcfg++) {
 		if (!tcfg->clocks) {
+			tcfg->has_fracval = 1;
 			tcfg->clocks = s5pv310_serial_clocks;
 			tcfg->clocks_size = ARRAY_SIZE(s5pv310_serial_clocks);
 		}
 	}
 
-	s3c24xx_init_uartdevs("s5pv310-uart", s5p_uart_resources, cfg, no);
+	s3c24xx_init_uartdevs("s5pv210-uart", s5p_uart_resources, cfg, no);
 }

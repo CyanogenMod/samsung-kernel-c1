@@ -187,7 +187,7 @@ static struct samsung_wakeup_mask wake_irqs[] = {
 	{ .irq = IRQ_PENDN,		.bit = S5P6450_PWRCFG_TS_DISABLE, },
 	{ .irq = IRQ_HSMMC0,	.bit = S5P6450_PWRCFG_MMC0_DISABLE, },
 	{ .irq = IRQ_HSMMC1,	.bit = S5P6450_PWRCFG_MMC1_DISABLE, },
-	{ .irq = IRQ_SDMMC44,	.bit = S5P6450_PWRCFG_MMC3_DISABLE, },
+	{ .irq = IRQ_MSHC,	.bit = S5P6450_PWRCFG_MMC3_DISABLE, },
 };
 
 static void s5p6450_pm_prepare(void)
