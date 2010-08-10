@@ -148,7 +148,7 @@ config SND_S3C24XX_SOC_SIMTEC_HERMES
 
 config SND_SOC_SMDK_WM9713
 	tristate "SoC AC97 Audio support for SMDK with WM9713"
-	depends on SND_S3C24XX_SOC && MACH_SMDK6410
+	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDKV210)
 	select SND_SOC_WM9713
 	select SND_S3C_SOC_AC97
 	help
