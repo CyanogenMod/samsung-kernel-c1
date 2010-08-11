@@ -880,6 +880,7 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	unsigned long aclk_160;
 	unsigned long aclk_133;
 	unsigned int ptr;
+	unsigned long vpllsrc;
 
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
 
