@@ -280,6 +280,7 @@ static int fimc_capture_scaler_info(struct fimc_control *ctrl)
 	struct fimc_scaler *sc = &ctrl->sc;
 	struct v4l2_rect *window = &ctrl->cam->window;
 	int tx, ty, sx, sy;
+	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
 
 	sx = window->width;
 	sy = window->height;
@@ -1206,9 +1207,8 @@ int fimc_streamoff_capture(void *fh)
 	ctrl->status = FIMC_READY_OFF;
 	fimc_stop_capture(ctrl);
 
-	/* PINGPONG_2ADDR_MODE Only */
-	for (i = 0; i < FIMC_PINGPONG; i++)
-		fimc_add_inqueue(ctrl, cap->outq[i]);
+	INIT_LIST_HEAD(&cap->inq);
+	ctrl->cam->initialized = 0;
 	ctrl->status = FIMC_STREAMOFF;
 
 	return 0;
