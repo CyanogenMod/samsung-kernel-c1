@@ -646,6 +646,9 @@ static bool s5p_tv_if_init_avi_frame(struct tvout_output_if *tvout_if)
 		return false;
 	}
 
+	st->avi_byte[1] |= AVI_SAME_WITH_PICTURE_AR;
+
+	TVOUTIFPRINTK("()\n\r");
 	return true;
 }
 

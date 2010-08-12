@@ -39,6 +39,8 @@
 
 #define USE_VMIXER_INTERRUPT		1
 
+#define AVI_SAME_WITH_PICTURE_AR	(0x1<<3)
+
 #define AVI_RGB_IF			(0x0<<5)
 #define AVI_YCBCR444_IF			(0x2<<5)
 
