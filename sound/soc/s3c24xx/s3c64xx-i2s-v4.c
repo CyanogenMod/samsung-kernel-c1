@@ -25,8 +25,10 @@
 #include "regs-i2s-v2.h"
 #include "s3c64xx-i2s.h"
 
+#ifdef CONFIG_SND_SAMSUNG_SOC_I2S_V5
 extern struct snd_soc_dai i2s_sec_fifo_dai;
 extern void s5p_i2s_sec_init(void *, dma_addr_t);
+#endif
 
 static struct s3c2410_dma_client s3c64xx_dma_client_out = {
 	.name		= "I2Sv4 PCM Stereo out"
@@ -194,6 +196,7 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 	if (ret != 0)
 		goto err_i2sv2;
 
+#ifdef CONFIG_SND_SAMSUNG_SOC_I2S_V5
 	/* Secondary Stream DAI */
 	i2s_sec_fifo_dai.dev = &pdev->dev;
 	i2s_sec_fifo_dai.playback.rates = S3C64XX_I2S_RATES;
@@ -207,6 +210,7 @@ static __devinit int s3c64xx_i2sv4_dev_probe(struct platform_device *pdev)
 		snd_soc_unregister_dai(dai);
 		goto err_i2sv2;
 	}
+#endif
 
 	return 0;
 
