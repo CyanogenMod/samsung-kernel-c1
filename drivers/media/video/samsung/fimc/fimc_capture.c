@@ -811,6 +811,21 @@ int fimc_reqbufs_capture(void *fh, struct v4l2_requestbuffers *b)
 
 	mutex_lock(&ctrl->v4l2_lock);
 
+	/*  A count value of zero frees all buffers */
+	if (b->count == 0) {
+		/* aborting or finishing any DMA in progress */
+		if (ctrl->status == FIMC_STREAMON)
+			fimc_streamoff_capture(fh);
+		for (i = 0; i < FIMC_CAPBUFS; i++) {
+			fimc_dma_free(ctrl, &ctrl->cap->bufs[i], 0);
+			fimc_dma_free(ctrl, &ctrl->cap->bufs[i], 1);
+			fimc_dma_free(ctrl, &ctrl->cap->bufs[i], 2);
+		}
+
+		mutex_unlock(&ctrl->v4l2_lock);
+		return 0;
+	}
+
 	/* PINGPONG_2ADDR_MODE Only */
 	if (b->count < 3) {
 		fimc_err("%s: invalid buffer count\n", __func__);
@@ -866,11 +881,6 @@ int fimc_reqbufs_capture(void *fh, struct v4l2_requestbuffers *b)
 		fimc_err("%s: no memory for capture buffer\n", __func__);
 		mutex_unlock(&ctrl->v4l2_lock);
 		return -ENOMEM;
-	}
-
-	for (i = cap->nr_bufs; i < FIMC_PHYBUFS; i++) {
-		memcpy(&cap->bufs[i],
-			&cap->bufs[i - cap->nr_bufs], sizeof(cap->bufs[i]));
 	}
 
 	mutex_unlock(&ctrl->v4l2_lock);
