@@ -64,6 +64,7 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 {
 	struct clk *sclk = NULL;
 	struct clk *mout_mpll = NULL;
+	struct clk *lcd = NULL;
 	u32 rate = 0;
 	int ret;
 
@@ -76,6 +77,12 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 	mout_mpll = clk_get(&pdev->dev, "mout_mpll");
 	if (IS_ERR(mout_mpll)) {
 		dev_err(&pdev->dev, "failed to get mout_mpll\n");
+		goto err_clk1;
+	}
+
+	lcd = clk_get(&pdev->dev, "lcd");
+	if (IS_ERR(lcd)) {
+		dev_err(&pdev->dev, "failed to get lcd\n");
 		goto err_clk1;
 	}
 
@@ -98,6 +105,9 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 		goto err_clk2;
 	}
 
+
+	clk_enable(lcd);	
+
 	clk_enable(sclk);
 
 	*s3cfb_clk = sclk;
@@ -109,6 +119,8 @@ err_clk2:
 
 err_clk1:
 	clk_put(sclk);
+
+	clk_put(lcd);
 
 	return -EINVAL;
 }
