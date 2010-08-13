@@ -27,6 +27,7 @@
 #include <plat/s5pv310.h>
 #include <plat/cpu.h>
 #include <plat/devs.h>
+#include <plat/fb.h>
 #include <plat/iic.h>
 #include <plat/adc.h>
 #include <plat/ts.h>
@@ -184,6 +185,9 @@ static struct fimg2d_platdata fimg2d_data __initdata = {
 #endif
 
 static struct platform_device *smdkv310_devices[] __initdata = {
+#ifdef CONFIG_FB_S3C
+	&s3c_device_fb,
+#endif
 	&smdkv310_smsc911x,
 #ifdef CONFIG_I2C_S3C2410
 	&s3c_device_i2c0,
@@ -326,6 +330,10 @@ static void __init smdkv310_machine_init(void)
 	s3c_i2c7_set_platdata(NULL);
 	i2c_register_board_info(7, i2c_devs7, ARRAY_SIZE(i2c_devs7));
 #endif
+#endif
+
+#ifdef CONFIG_FB_S3C
+	s3cfb_set_platdata(NULL);
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
