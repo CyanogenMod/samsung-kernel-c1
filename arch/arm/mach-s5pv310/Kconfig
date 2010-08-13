@@ -23,6 +23,12 @@ config S5PV310_SETUP_I2C1
 	help
 	  Common setup code for i2c bus 1.
 
+config S5PV310_SETUP_FB_S3C
+	bool
+	default y
+	help
+	  Setup code for S5PV310 FIMD
+
 config S5PV310_SETUP_I2C2
 	bool
 	default y

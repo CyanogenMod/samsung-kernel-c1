@@ -23,6 +23,7 @@ obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
 obj-$(CONFIG_MACH_SMDKV310)		+= mach-smdkv310.o
 
 # device support
+obj-$(CONFIG_S5PV310_SETUP_FB_S3C)	+= setup-fb.o
 obj-$(CONFIG_S5PV310_SETUP_I2C1)	+= setup-i2c1.o
 obj-$(CONFIG_S5PV310_SETUP_I2C2)	+= setup-i2c2.o
 obj-$(CONFIG_S5PV310_SETUP_I2C3)	+= setup-i2c3.o
