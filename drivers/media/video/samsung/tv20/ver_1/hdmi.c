@@ -902,16 +902,16 @@ static void s5p_hdmi_audio_set_aui(enum s5p_tv_audio_codec_type audio_codec,
 			(sample_rate == 176400) ? 6 :
 			(sample_rate == 192000) ? 7 : 0;
 
-	u32 bpsType = (bps == 16) ? 1 :
+	u32 bps_type = (bps == 16) ? 1 :
 			(bps == 20) ? 2 :
 			(bps == 24) ? 3 : 0;
 #endif
-	bpsType = (audio_codec == PCM) ? bpsType : 0;
+	bps_type = (audio_codec == PCM) ? bps_type : 0;
 
 	sum_of_bits = (0x84 + 0x1 + 10);
 
 	bytes1 = (u8)((type << 4) | ch);
-	bytes2 = (u8)((sample << 2) | bpsType);
+	bytes2 = (u8)((sample << 2) | bps_type);
 	bit_rate = 256;
 	bytes3 = (audio_codec == PCM) ? (u8)0 : (u8)(bit_rate / 8);
 
