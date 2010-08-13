@@ -262,17 +262,28 @@ struct _mmc_csd {
  * EXT_CSD field definitions
  */
 
+#define EXT_CSD_REV_1_0		0	/* Revision 1.0 for MMC v4.0 */
+#define EXT_CSD_REV_1_1		1	/* Revision 1.1 for MMC v4.1 */
+#define EXT_CSD_REV_1_2		2	/* Revision 1.2 for MMC v4.2 */
+#define EXT_CSD_REV_1_3		3	/* Revision 1.3 for MMC v4.3 */
+#define EXT_CSD_REV_1_4		4	/* Revision 1.4 (Obsolete) */
+#define EXT_CSD_REV_1_5		5	/* Revision 1.5 for MMC v4.41 */
+
 #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
 #define EXT_CSD_CMD_SET_SECURE		(1<<1)
 #define EXT_CSD_CMD_SET_CPSECURE	(1<<2)
 
-#define EXT_CSD_CARD_TYPE_26	(1<<0)	/* Card can run at 26MHz */
-#define EXT_CSD_CARD_TYPE_52	(1<<1)	/* Card can run at 52MHz */
-#define EXT_CSD_CARD_TYPE_MASK	0x3	/* Mask out reserved and DDR bits */
+#define EXT_CSD_CARD_TYPE_26		(1<<0)	/* Card can run at 26MHz */
+#define EXT_CSD_CARD_TYPE_52		(1<<1)	/* Card can run at 52MHz */
+#define EXT_CSD_CARD_TYPE_DDR_1_8V	(1<<2)	/* Card can run at 52MHz with DDR 1.8V or 3V */
+#define EXT_CSD_CARD_TYPE_DDR_1_2V	(1<<3)	/* Card can run at 52MHz with DDR 1.2V */
+#define EXT_CSD_CARD_TYPE_MASK	0xF	/* Mask out reserved and DDR bits */
 
 #define EXT_CSD_BUS_WIDTH_1	0	/* Card is in 1 bit mode */
 #define EXT_CSD_BUS_WIDTH_4	1	/* Card is in 4 bit mode */
 #define EXT_CSD_BUS_WIDTH_8	2	/* Card is in 8 bit mode */
+#define EXT_CSD_BUS_WIDTH_4_DDR	5	/* Card is in 4 bit mode with DDR*/
+#define EXT_CSD_BUS_WIDTH_8_DDR	6	/* Card is in 8 bit mode with DDR*/
 
 /*
  * MMC_SWITCH access modes

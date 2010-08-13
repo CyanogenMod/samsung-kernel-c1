@@ -46,52 +46,78 @@ static void mshci_dumpregs(struct mshci_host *host)
 {
 	printk(KERN_DEBUG DRIVER_NAME ": ============== REGISTER DUMP ==============\n");
 
-	printk(KERN_DEBUG DRIVER_NAME ": Sys addr: 0x%08x \n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CTRL:      0x%08x \n",
 		mshci_readl(host, MSHCI_CTRL));
-	printk(KERN_DEBUG DRIVER_NAME ": Blk size: 0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_PWREN:     0x%08x\n",
 		mshci_readl(host, MSHCI_PWREN));
-	printk(KERN_DEBUG DRIVER_NAME ": Argument: 0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CLKDIV:    0x%08x\n",
 		mshci_readl(host, MSHCI_CLKDIV));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CLKSRC:    0x%08x\n",
 		mshci_readl(host, MSHCI_CLKSRC));
- 	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
-		mshci_readl(host, MSHCI_CLKSRC));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CLKENA:    0x%08x\n",
 		mshci_readl(host, MSHCI_CLKENA));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_TMOUT:     0x%08x\n",
 		mshci_readl(host, MSHCI_TMOUT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CTYPE:     0x%08x\n",
 		mshci_readl(host, MSHCI_CTYPE));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_BLKSIZ:    0x%08x\n",
 		mshci_readl(host, MSHCI_BLKSIZ));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_BYTCNT:    0x%08x\n",
 		mshci_readl(host, MSHCI_BYTCNT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_INTMSK:    0x%08x\n",
 		mshci_readl(host, MSHCI_INTMSK));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CMDARG:    0x%08x\n",
 		mshci_readl(host, MSHCI_CMDARG));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CMD:       0x%08x\n",
 		mshci_readl(host, MSHCI_CMD));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_MINTSTS:   0x%08x\n",
 		mshci_readl(host, MSHCI_MINTSTS));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_RINTSTS:   0x%08x\n",
 		mshci_readl(host, MSHCI_RINTSTS));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_STATUS:    0x%08x\n",
 		mshci_readl(host, MSHCI_STATUS));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_FIFOTH:    0x%08x\n",
 		mshci_readl(host, MSHCI_FIFOTH));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CDETECT:   0x%08x\n",
 		mshci_readl(host, MSHCI_CDETECT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_WRTPRT:    0x%08x\n",
 		mshci_readl(host, MSHCI_WRTPRT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_GPIO:      0x%08x\n",
 		mshci_readl(host, MSHCI_GPIO));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_TCBCNT:    0x%08x\n",
 		mshci_readl(host, MSHCI_TCBCNT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_TBBCNT:    0x%08x\n",
 		mshci_readl(host, MSHCI_TBBCNT));
-	printk(KERN_DEBUG DRIVER_NAME ": Present:  0x%08x\n",
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_DEBNCE:    0x%08x\n",
+		mshci_readl(host, MSHCI_DEBNCE));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_USRID:     0x%08x\n",
+		mshci_readl(host, MSHCI_USRID));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_VERID:     0x%08x\n",
+		mshci_readl(host, MSHCI_VERID));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_HCON:      0x%08x\n",
 		mshci_readl(host, MSHCI_HCON));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_UHS_REG:   0x%08x\n",
+		mshci_readl(host, MSHCI_UHS_REG));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_BMOD:      0x%08x\n",
+		mshci_readl(host, MSHCI_BMOD));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_PLDDMND:   0x%08x\n",
+		mshci_readl(host, MSHCI_PLDDMND));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_DBADDR:    0x%08x\n",
+		mshci_readl(host, MSHCI_DBADDR));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_IDSTS:     0x%08x\n",
+		mshci_readl(host, MSHCI_IDSTS));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_IDINTEN:   0x%08x\n",
+		mshci_readl(host, MSHCI_IDINTEN));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_DSCADDR:   0x%08x\n",
+		mshci_readl(host, MSHCI_DSCADDR));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_BUFADDR:   0x%08x\n",
+		mshci_readl(host, MSHCI_BUFADDR));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_WAKEUPCON: 0x%08x\n",
+		mshci_readl(host, MSHCI_WAKEUPCON));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_CLOCKCON:  0x%08x\n",
+		mshci_readl(host, MSHCI_CLOCKCON));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_FIFODAT:   0x%08x\n",
+		mshci_readl(host, MSHCI_FIFODAT));
 
  	printk(KERN_DEBUG DRIVER_NAME ": ===========================================\n");
 }
@@ -209,35 +235,16 @@ static void mshci_reset_dma(struct mshci_host *host)
 	}
 }
 
-static void mshci_reset(struct mshci_host *host, u8 mask)
+static void mshci_reset_all(struct mshci_host *host)
 {
-	u32 uninitialized_var(ier);
-
-	if (host->quirks & SDHCI_QUIRK_NO_CARD_NO_RESET) {
-		if (!(mshci_readl(host, MSHCI_CDETECT) &
-			CARD_PRESENT))
-			return;
-	}
-
-/* This SHOUDBE removed. 
-	if (host->quirks & SDHCI_QUIRK_RESTORE_IRQS_AFTER_RESET)
-		ier = mshci_readl(host, SDHCI_INT_ENABLE);
-*/
 	mshci_reset_ciu(host);
 	mshci_reset_fifo(host);
-
-	if (mask & MSHCI_RESET_ALL)
-		mshci_reset_dma(host);
-
-/* This SHOUDBE removed. 
-	if (host->quirks & SDHCI_QUIRK_RESTORE_IRQS_AFTER_RESET)
-		mshci_clear_set_irqs(host, SDHCI_INT_ALL_MASK, ier);
-*/
+	mshci_reset_dma(host);
 }
 
 static void mshci_init(struct mshci_host *host)
 {
-	mshci_reset(host, MSHCI_RESET_ALL);
+	mshci_reset_all(host);
 
 	/* clear interrupt status */
 	mshci_writel(host, INTMSK_ALL, MSHCI_RINTSTS); 
@@ -250,6 +257,7 @@ static void mshci_init(struct mshci_host *host)
 		INTMSK_HTO | INTMSK_FRUN | INTMSK_HLE |
 		INTMSK_SBE | INTMSK_EBE 
 		/* | INTMSK_DMA it SHOULDBE supported */);
+		
 }
 
 static void mshci_reinit(struct mshci_host *host)
@@ -670,7 +678,13 @@ static void mshci_set_transfer_irqs(struct mshci_host *host)
 		mshci_clear_set_irqs(host, pio_irqs, dma_irqs);
 	else
 */
-	mshci_clear_set_irqs(host, 0, pio_irqs);
+	/* Next codes are the W/A for DDR */
+	if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16)) {
+		pio_irqs &= ~INTMSK_DCRC;
+		mshci_clear_set_irqs(host, INTMSK_DCRC, pio_irqs);
+	} else {
+		mshci_clear_set_irqs(host, 0, pio_irqs);
+	}
 }
 
 static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
@@ -693,7 +707,7 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 	count = mshci_calc_timeout(host, data);
 	mshci_writel(host, count, MSHCI_TMOUT);
 
-	mshci_reset_fifo(host);
+	mshci_reset_fifo(host);
 	
 	if (host->flags & (MSHCI_USE_SDMA | MSHCI_USE_MDMA))
 		host->flags |= MSHCI_REQ_USE_DMA;
@@ -877,7 +891,10 @@ static void mshci_finish_data(struct mshci_host *host)
 		 * upon error conditions.
 		 */
 		if (data->error) {
-			mshci_reset(host, MSHCI_RESET_ALL);
+			/* 
+			 * ####### It should be defined
+			 * mshci_reset_all(host);
+			 */
 		}
 
 		mshci_send_command(host, data->stop);
@@ -1137,13 +1154,19 @@ static void mshci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	else 
 		mshci_set_power(host, ios->vdd);
 
-	if (ios->bus_width == MMC_BUS_WIDTH_8) 
+	if (ios->bus_width == MMC_BUS_WIDTH_8) { 
 		mshci_writel(host, (0x1<<16), MSHCI_CTYPE);
-	else if (ios->bus_width == MMC_BUS_WIDTH_4)
+	} else if (ios->bus_width == MMC_BUS_WIDTH_4) {
 		mshci_writel(host, (0x1<<0), MSHCI_CTYPE);
-	else
+	} else if (ios->bus_width == MMC_BUS_WIDTH_8_DDR) {
+		mshci_writel(host, (0x1<<16), MSHCI_CTYPE);
+		mshci_writel(host, (0x1<<16), MSHCI_UHS_REG);
+	} else if (ios->bus_width == MMC_BUS_WIDTH_4_DDR) {
+		mshci_writel(host, (0x1<<0), MSHCI_CTYPE);
+		mshci_writel(host, (0x1<<16), MSHCI_UHS_REG);
+	} else {
 		mshci_writel(host, (0x0<<0), MSHCI_CTYPE);
-
+	}
 out:
 	mmiowb();
 	spin_unlock_irqrestore(&host->lock, flags);
@@ -1220,8 +1243,6 @@ static void mshci_tasklet_card(unsigned long param)
 			printk(KERN_ERR "%s: Resetting controller.\n",
 				mmc_hostname(host->mmc));
 
-			mshci_reset(host, MSHCI_RESET_ALL);
-
 			host->mrq->cmd->error = -ENOMEDIUM;
 			tasklet_schedule(&host->finish_tasklet);
 		}
@@ -1268,7 +1289,7 @@ static void mshci_tasklet_finish(unsigned long param)
 
 		/* Spec says we should do both at the same time, but Ricoh
 		   controllers do not like that. */
-		mshci_reset(host, MSHCI_RESET_ALL);
+		mshci_reset_fifo(host);
 	}
 
 	host->mrq = NULL;
@@ -1411,6 +1432,10 @@ static void mshci_data_irq(struct mshci_host *host, u32 intmask)
 		printk(KERN_ERR "%s: Data read timeout error\n", 
 							mmc_hostname(host->mmc));
 		host->data->error = -ETIMEDOUT;
+	} else if (intmask & INTMSK_SBE) {
+		printk(KERN_ERR "%s: FIFO Start bit error\n", 
+						mmc_hostname(host->mmc));
+		host->data->error = -EIO;
 	} else if (intmask & INTMSK_EBE) {
 		printk(KERN_ERR "%s: FIFO Endbit/Write no CRC error\n", 
 							mmc_hostname(host->mmc));
@@ -1455,6 +1480,7 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 	struct mshci_host* host = dev_id;
 	u32 intmask;
 	int cardint = 0;
+	int timeout = 100;
 
 	spin_lock(&host->lock);
 
@@ -1476,7 +1502,27 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 	intmask &= ~INTMSK_CDETECT;
 
 	if (intmask & CMD_STATUS) {
-		mshci_cmd_irq(host, intmask & CMD_STATUS);
+		if ( intmask & INTMSK_CDONE ) {
+			mshci_cmd_irq(host, intmask & CMD_STATUS);
+		} else {		
+			/*
+			 * when error about command occurs,
+			 * cmd done intr comes together.
+			 * cmd done intr comes later than error intr.
+			 * so, it has to wait for cmd done intr.
+			 */
+			while ( --timeout && 
+				!(mshci_readl(host, MSHCI_MINTSTS) 
+				  & INTMSK_CDONE) )
+			if (!timeout)
+				printk(KERN_ERR"*** %s time out for\
+					CDONE intr\n",
+					mmc_hostname(host->mmc));
+			else
+				mshci_writel(host, INTMSK_CDONE, 
+					MSHCI_RINTSTS);
+			mshci_cmd_irq(host, intmask & CMD_STATUS);
+		}
 	}
 
 	if (intmask & DATA_STATUS) {
@@ -1627,7 +1673,7 @@ int mshci_add_host(struct mshci_host *host)
 	if (debug_quirks)
 		host->quirks = debug_quirks;
 
-	mshci_reset(host, MSHCI_RESET_ALL);
+	mshci_reset_all(host);
 
 	host->version = mshci_readl(host, MSHCI_VERID);
 
@@ -1838,7 +1884,7 @@ void mshci_remove_host(struct mshci_host *host, int dead)
 	mmc_remove_host(host->mmc);
 
 	if (!dead)
-		mshci_reset(host, MSHCI_RESET_ALL);
+		mshci_reset_all(host);
 
 	free_irq(host->irq, host);
 
