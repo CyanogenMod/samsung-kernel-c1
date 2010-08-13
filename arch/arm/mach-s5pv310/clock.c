@@ -373,11 +373,6 @@ static struct clk init_clocks[] = {
 		.ctrlbit	= (1 << 4),
 	}, {
 		.name		= "uart",
-		.id		= 4,
-		.enable		= s5pv310_clk_ip_peril_ctrl,
-		.ctrlbit	= (1 << 4),
-	}, {
-		.name		= "uart",
 		.id		= 5,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 5),
