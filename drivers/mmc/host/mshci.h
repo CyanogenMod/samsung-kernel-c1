@@ -25,7 +25,7 @@
 /*****************************************************/
 /*  SDIOC  Registers    (0xC0000000 ~ 0xC0000100)  */
 /*****************************************************/
-#define MSHCI_CTRL 		0x00	/* Control */
+#define MSHCI_CTRL 	0x00	/* Control */
 #define MSHCI_PWREN 	0x04   	/* Power-enable */
 #define MSHCI_CLKDIV 	0x08   	/* Clock divider */
 #define MSHCI_CLKSRC	0x0C   	/* Clock source */
@@ -36,7 +36,7 @@
 #define MSHCI_BYTCNT 	0x20	/* Byte count */
 #define MSHCI_INTMSK 	0x24	/* Interrupt Mask */
 #define MSHCI_CMDARG 	0x28	/* Command Argument */
-#define MSHCI_CMD 		0x2C	/* Command */
+#define MSHCI_CMD 	0x2C	/* Command */
 #define MSHCI_RESP0 	0x30	/* Response 0 */
 #define MSHCI_RESP1 	0x34	/* Response 1 */
 #define MSHCI_RESP2 	0x38	/* Response 2 */
@@ -47,15 +47,24 @@
 #define MSHCI_FIFOTH 	0x4C	/* FIFO threshold */
 #define MSHCI_CDETECT 	0x50	/* Card detect */
 #define MSHCI_WRTPRT 	0x54	/* Write protect */
-#define MSHCI_GPIO 		0x58	/* General Purpose IO */
+#define MSHCI_GPIO 	0x58	/* General Purpose IO */
 #define MSHCI_TCBCNT 	0x5C	/* Transferred CIU byte count */
 #define MSHCI_TBBCNT 	0x60	/* Transferred host/DMA to/from byte count */
 #define MSHCI_DEBNCE 	0x64	/* Card detect debounce */
 #define MSHCI_USRID 	0x68	/* User ID */
 #define MSHCI_VERID 	0x6C	/* Version ID */
-#define MSHCI_HCON 		0x70	/* Hardware Configuration */
-#define MSHCI_Reserved 	0x74	/* Reserved */
-#define MSHCI_FIFODAT 	0x100	/* FIFO data read write */
+#define MSHCI_HCON 	0x70	/* Hardware Configuration */
+#define MSHCI_UHS_REG 	0x74	/* Specifies the UHS-1 reg */
+#define MSHCI_BMOD 	0x80	/* Specifies the bus mode reg */
+#define MSHCI_PLDDMND 	0x84	/* Specifies the poll demand reg */
+#define MSHCI_DBADDR 	0x88	/* Specifies the descriptor list base address reg */
+#define MSHCI_IDSTS 	0x8C	/* Specifies the internal DMAC status reg */
+#define MSHCI_IDINTEN 	0x90	/* Specifies the internal DMAC interrupt enable reg */
+#define MSHCI_DSCADDR 	0x94	/* Specifies the current host descriptor address reg */
+#define MSHCI_BUFADDR 	0x98	/* Specifies the current buffer descriptor add reg */
+#define MSHCI_WAKEUPCON 0xA0	/* Specifies the wake-up control reg */
+#define MSHCI_CLOCKCON 	0xA4	/* Specifies the clock control reg */
+#define MSHCI_FIFODAT 	0x100	/* FIFO data reg */
 
 /*****************************************************
  *  Control Register  Register
@@ -99,7 +108,8 @@
  *  Clock Enable Register
  *  MSHCI_CLKENA - offset 0x10
  *****************************************************/
-#define CLK_SDMMC_MAX	(48000000) /* 96Mhz. it SHOULDBE optimized */
+//#define CLK_SDMMC_MAX	(96000000) /* 96Mhz. it SHOULDBE optimized */
+#define CLK_SDMMC_MAX	(47657142) /* 47Mhz. it SHOULDBE optimized */
 #define CLK_ENABLE		(0x1<<0)
 #define CLK_DISABLE		(0x0<<0)
 
