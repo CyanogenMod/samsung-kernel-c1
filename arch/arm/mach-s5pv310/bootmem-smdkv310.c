@@ -20,7 +20,17 @@
 #include <mach/media.h>
 
 struct s5p_media_device media_devs[] = {
-	/* Will be populated later */
+
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMD
+        {
+                .id = S5P_MDEV_FIMD,
+                .name = "fimd",
+                .bank = 1,
+                .memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMD * SZ_1K,
+                .paddr = 0,
+        },
+#endif
+
 #ifdef CONFIG_S5P_PMEM_MEMSIZE_PMEM
 	{
 		.id = S5P_MDEV_PMEM,

@@ -14,6 +14,7 @@
 #define _S5PV310_MEDIA_H
 
 #define S5P_MDEV_PMEM		0
+#define S5P_MDEV_FIMD		2
 
 #endif
 
