@@ -469,6 +469,8 @@ int fimc_hwset_output_colorspace(struct fimc_control *ctrl, u32 pixelformat)
 		cfg |= S3C_CITRGFMT_OUTFORMAT_YCBCR422_1PLANE;
 		break;
 
+	case V4L2_PIX_FMT_NV16:		/* fall through */
+	case V4L2_PIX_FMT_NV61:		/* fall through */
 	case V4L2_PIX_FMT_YUV422P:
 		cfg |= S3C_CITRGFMT_OUTFORMAT_YCBCR422;
 		break;
@@ -476,9 +478,7 @@ int fimc_hwset_output_colorspace(struct fimc_control *ctrl, u32 pixelformat)
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
 	case V4L2_PIX_FMT_NV12:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:	/* fall through */
-	case V4L2_PIX_FMT_NV21:		/* fall through */
-	case V4L2_PIX_FMT_NV16:		/* fall through */
-	case V4L2_PIX_FMT_NV61:
+	case V4L2_PIX_FMT_NV21:		
 		cfg |= S3C_CITRGFMT_OUTFORMAT_YCBCR420;
 		break;
 
@@ -613,7 +613,7 @@ int fimc_hwset_output_yuv(struct fimc_control *ctrl, u32 pixelformat)
 
 	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV61:
-		cfg |= S3C_CIOCTRL_ORDER2P_MSB_CRCB;
+		cfg |= S3C_CIOCTRL_ORDER2P_LSB_CRCB;
 		cfg |= S3C_CIOCTRL_YCBCR_2PLANE;
 		break;
 
