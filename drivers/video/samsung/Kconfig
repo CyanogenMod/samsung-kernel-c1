@@ -8,7 +8,7 @@ config FB_S3C
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
 	select FRAMEBUFFER_CONSOLE_DETECT_PRIMARY
-	depends on FB && ARCH_S5PV210
+	depends on FB && (ARCH_S5PV210 || ARCH_S5PV310)
 	default n
 	help
 	  This enables support for Samsung Display Controller (FIMD)
@@ -79,13 +79,13 @@ prompt "Select LCD Type"
 default FB_S3C_LTE480WV
 config FB_S3C_LTE480WV
 	bool "LTE480WV"
-	depends on MACH_SMDKV210 || MACH_SMDKC110
+	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
 	help
 	  This enables support for Samsung LTE480WV 4.8\" WVGA LCD panel
 
 config FB_S3C_HT101HD1
 	bool "HT101HD1"
-	depends on MACH_SMDKV210 || MACH_SMDKC110
+	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
 	help
 	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
 endchoice
