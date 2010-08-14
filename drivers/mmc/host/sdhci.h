@@ -240,9 +240,11 @@ struct sdhci_host {
 #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
 /* Controller cannot support End Attribute in NOP ADMA descriptor */
 #define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26)
+/* Controller has nonstandard clock management */
+#define SDHCI_QUIRK_NONSTANDARD_MINCLOCK		(1<<27)
 /* Controller has no write-protect pin connected with SD card */
-#define SDHCI_QUIRK_NO_WP_BIT                          (1<<27)
-#define SDHCI_QUIRK_NO_HISPD_BIT                          (1<<28)
+#define SDHCI_QUIRK_NO_WP_BIT				(1<<28)
+#define SDHCI_QUIRK_NO_HISPD_BIT			(1<<29)
 
 	int			irq;		/* Device IRQ */
 	void __iomem *		ioaddr;		/* Mapped address */
