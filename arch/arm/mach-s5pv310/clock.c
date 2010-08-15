@@ -688,7 +688,7 @@ static struct clksrc_clk clksrcs[] = {
 	}, {
 		.clk		= {
 			.name		= "uclk1",
-			.id		= 1,
+			.id		= -1,
 			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
 			.ctrlbit	= (1 << 4),
 		},
