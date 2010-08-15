@@ -247,7 +247,7 @@ static void __init s5pv310_timer_resources(void)
 	tcfg = __raw_readl(S5PV310_TCFG);
 	tcfg &= ~S5PV310_TCFG_CLKBASE_MASK;
 	tcfg |= S5PV310_TCFG_CLKBASE_SYS_MAIN;
-	s5pv310_systimer_write(S5PV310_TCFG_CLKBASE_MASK, S5PV310_TCFG);
+	s5pv310_systimer_write(tcfg, S5PV310_TCFG);
 
 	timerclk = clk_get(NULL, "ext_xtal");
 
