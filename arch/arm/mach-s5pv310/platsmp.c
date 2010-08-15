@@ -189,7 +189,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 
 #ifndef CONFIG_S5PV310_FPGA
 		__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
-			(void __iomem *)(S5P_INFORM0));
+			(void __iomem *)(S5P_VA_IRAM + 0x5000));
 #else
         __raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
 			S5P_VA_TEMP + 0x8);

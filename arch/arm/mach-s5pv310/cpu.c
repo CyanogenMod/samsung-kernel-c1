@@ -72,7 +72,13 @@ static struct map_desc s5pv310_iodesc[] __initdata = {
 		.pfn		= __phys_to_pfn(S5PV310_PA_CMU),
 		.length		= SZ_128K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_IRAM,
+		.pfn		= __phys_to_pfn(S5PV310_PA_IRAM),
+		.length		= SZ_128K,
+		.type		= MT_DEVICE,
 	},
+
 #ifdef CONFIG_S5PV310_FPGA
 	{
 		.virtual	= (unsigned long)S5P_VA_TEMP,
