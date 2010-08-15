@@ -287,6 +287,12 @@ config S3C_PL330_DMA
 	help
 	  S3C DMA API Driver for PL330 DMAC.
 
+config DMA_M2M_TEST
+	tristate "S3C DMA API Test client"
+	help
+	  Samsung DMA API test client. Say N unless you're debugging a
+	  DMA Device driver.
+
 comment "Power management"
 
 config SAMSUNG_PM_DEBUG

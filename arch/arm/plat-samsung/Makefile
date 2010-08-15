@@ -63,6 +63,8 @@ obj-$(CONFIG_S3C_DMA)		+= dma.o
 
 obj-$(CONFIG_S3C_PL330_DMA)	+= s3c-pl330.o
 
+obj-$(CONFIG_DMA_M2M_TEST)	+= dma_m2m_test.o
+
 # PM support
 
 obj-$(CONFIG_PM)		+= pm.o
