@@ -623,6 +623,57 @@ static struct clksrc_sources clkset_mout_g2d = {
 	.nr_sources	= ARRAY_SIZE(clkset_mout_g2d_list),
 };
 
+static struct clksrc_clk clk_dout_mmc0 = {
+	.clk		= {
+		.name		= "dout_mmc0",
+		.id		= -1,
+	},
+	.sources = &clkset_group,
+	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 0, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 0, .size = 4 },
+};
+
+static struct clksrc_clk clk_dout_mmc1 = {
+	.clk		= {
+		.name		= "dout_mmc1",
+		.id		= -1,
+	},
+	.sources = &clkset_group,
+	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 4, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 16, .size = 4 },
+};
+
+static struct clksrc_clk clk_dout_mmc2 = {
+	.clk		= {
+		.name		= "dout_mmc2",
+		.id		= -1,
+	},
+	.sources = &clkset_group,
+	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 8, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 0, .size = 4 },
+};
+
+static struct clksrc_clk clk_dout_mmc3 = {
+	.clk		= {
+		.name		= "dout_mmc3",
+		.id		= -1,
+	},
+	.sources = &clkset_group,
+	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 12, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 16, .size = 4 },
+};
+
+static struct clksrc_clk clk_dout_mmc4 = {
+	.clk		= {
+		.name		= "dout_mmc4",
+		.id		= -1,
+	},
+	.sources = &clkset_group,
+	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 16, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_FSYS3, .shift = 0, .size = 4 },
+};
+
+
 static struct clksrc_clk clksrcs[] = {
 	{
 		.clk	= {
@@ -796,52 +847,47 @@ static struct clksrc_clk clksrcs[] = {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 0,
+			.parent		= &clk_dout_mmc0.clk,
 			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 0),
 		},
-		.sources = &clkset_group,
-		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 0, .size = 4 },
-		.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 8, .size = 8 },
 	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 1,
+			.parent         = &clk_dout_mmc1.clk,
 			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 4),
 		},
-		.sources = &clkset_group,
-		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 4, .size = 4 },
-		.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 16, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_FSYS1, .shift = 24, .size = 8 },
 	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 2,
+			.parent         = &clk_dout_mmc2.clk,
 			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 8),
 		},
-		.sources = &clkset_group,
-		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 8, .size = 4 },
-		.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 8, .size = 8 },
 	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 3,
+			.parent         = &clk_dout_mmc3.clk,
 			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 12),
 		},
-		.sources = &clkset_group,
-		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 12, .size = 4 },
-		.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 16, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_FSYS2, .shift = 24, .size = 8 },
 	}, {
 		.clk		= {
 			.name		= "sclk_mmc",
 			.id		= 4,
+			.parent         = &clk_dout_mmc4.clk,
 			.enable		= s5pv310_clksrc_mask_fsys_ctrl,
 			.ctrlbit	= (1 << 16),
 		},
-		.sources = &clkset_group,
-		.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 16, .size = 4 },
-		.reg_div = { .reg = S5P_CLKDIV_FSYS3, .shift = 0, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_FSYS3, .shift = 8, .size = 8 },
 	}, {
 		.clk		= {
 			.name		= "sclk_sata",
@@ -912,6 +958,11 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_aclk_133,
 	&clk_sclk_mipidphy4l,
 	&clk_sclk_mipidphy2l,
+	&clk_dout_mmc0,
+	&clk_dout_mmc1,
+	&clk_dout_mmc2,
+	&clk_dout_mmc3,
+	&clk_dout_mmc4,
 };
 
 void __init_or_cpufreq s5pv310_setup_clocks(void)
