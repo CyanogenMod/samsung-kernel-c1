@@ -65,6 +65,17 @@ config S5PV310_SETUP_I2C7
 	help
 	  Common setup code for i2c bus 7.
 
+config S5PV310_SETUP_SDHCI
+	bool
+	select S5PV310_SETUP_SDHCI_GPIO
+	help
+	  Internal helper functions for S5PV310 based SDHCI systems.
+
+config S5PV310_SETUP_SDHCI_GPIO
+	bool
+	help
+	  Common setup code for SDHCI gpio.
+
 # machine support
 
 config MACH_SMDKV310
@@ -76,6 +87,9 @@ config MACH_SMDKV310
 	select S3C_DEV_WDT
 	select HAVE_S3C2410_WATCHDOG
 	select HAVE_PWM
+	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC2
+	select S5PV310_SETUP_SDHCI
 	help
 	  Machine support for Samsung SMDKV310
 
