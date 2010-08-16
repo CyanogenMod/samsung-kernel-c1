@@ -43,6 +43,9 @@ config SND_S3C_SOC_AC97
 config SND_S5PV2XX_SOC_WM8580_PCM
 	tristate
 
+config SND_S3C64XX_SOC_WM8580_PCM
+	tristate
+
 config SND_S3C24XX_SOC_NEO1973_WM8753
 	tristate "SoC I2S Audio support for NEO1973 - WM8753"
 	depends on SND_S3C24XX_SOC && MACH_NEO1973_GTA01
@@ -161,6 +164,16 @@ config SND_SMDK_WM8580_PCM
 	tristate "SoC PCM Audio support for WM8580 on SMDK"
 	depends on SND_S3C24XX_SOC && MACH_SMDKV210
 	select SND_S5PV2XX_SOC_WM8580_PCM if MACH_SMDKV210
+	select SND_S3C_SOC_PCM
+	select SND_SOC_WM8580
+	help
+	  Say Y if you want to add support for SoC PCM audio on the SMDK.
+
+
+config SND_SMDK64XX_WM8580_PCM
+	tristate "SoC PCM Audio support for WM8580 on SMDK64XX"
+	depends on SND_S3C24XX_SOC &&  MACH_SMDK6450
+	select SND_S3C64XX_SOC_WM8580_PCM if MACH_SMDK6450
 	select SND_S3C_SOC_PCM
 	select SND_SOC_WM8580
 	help
