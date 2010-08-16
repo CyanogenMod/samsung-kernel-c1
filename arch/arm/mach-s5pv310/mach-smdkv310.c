@@ -104,25 +104,15 @@ static struct resource smdkv310_smsc911x_resources[] = {
 	[1] = {
 		.start = EINT_NUMBER(5),
 		.end   = EINT_NUMBER(5),
-		.flags = IORESOURCE_IRQ | IRQ_TYPE_LEVEL_LOW,
+		.flags = IORESOURCE_IRQ,
 	},
-};
-
-struct smsc911x_platform_config platdata_config = {
-        .irq_polarity   = SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
-        .irq_type       = SMSC911X_IRQ_TYPE_OPEN_DRAIN,
-	.flags          = SMSC911X_USE_32BIT | SMSC911X_FORCE_INTERNAL_PHY,
-	.phy_interface  = PHY_INTERFACE_MODE_MII,
 };
 
 static struct platform_device smdkv310_smsc911x = {
-	.name		= "smsc911x",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(smdkv310_smsc911x_resources),
-	.resource	= &smdkv310_smsc911x_resources,
-	.dev		= {
-		.platform_data	= &platdata_config,
-	},
+	.name          = "smc911x",
+	.id            = -1,
+	.num_resources = ARRAY_SIZE(smdkv310_smsc911x_resources),
+	.resource      = &smdkv310_smsc911x_resources,
 };
 
 #ifdef CONFIG_I2C_S3C2410
@@ -265,19 +255,22 @@ static void __init sromc_setup(void)
 	u32 tmp;
 
 	tmp = __raw_readl(S5P_SROM_BW);
-	tmp &= ~ (0xf << 4);
-	tmp |= (0x9 << 4);
+	tmp &= ~ (0xffff);
+	tmp |= (0x9999);
+	printk("#### 0x%0x\n",tmp);
 	__raw_writel(tmp, S5P_SROM_BW);
 
-	tmp = ((0<<28)|(0<<24)|(5<<16)|(0<<12)|(0<<8)|(0<<4)|(0<<0));
-	__raw_writel(tmp, S5P_SROM_BC1);
+	__raw_writel(0xffffffff,S5P_SROM_BC1);
 
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
-	tmp &= ~(0xf << 4);
-	tmp |= (0x2 << 4);
+	tmp &= ~(0xffffff);
+	tmp |= (0x222222);
 	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
 
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1a0));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1c0));
+	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1e0));
 }
 
 static void __init smdkv310_map_io(void)
