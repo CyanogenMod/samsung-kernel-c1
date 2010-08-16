@@ -80,7 +80,11 @@ static u64 fb_dma_mask = 0xffffffffUL;
 
 struct platform_device s3c_device_fb = {
 	.name		= "s3cfb",
+#if defined(CONFIG_ARCH_S5PV310)
+	.id		= 0,
+#else
 	.id		= -1,
+#endif
 	.num_resources	= ARRAY_SIZE(s3cfb_resource),
 	.resource	= s3cfb_resource,
 	.dev		= {
