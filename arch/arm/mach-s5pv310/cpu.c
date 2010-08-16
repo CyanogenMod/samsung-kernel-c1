@@ -21,6 +21,7 @@
 #include <plat/clock.h>
 #include <plat/adc-core.h>
 #include <plat/s5pv310.h>
+#include <plat/sdhci.h>
 
 #include <mach/regs-irq.h>
 
@@ -104,6 +105,20 @@ static void s5pv310_idle(void)
 void __init s5pv310_map_io(void)
 {
 	iotable_init(s5pv310_iodesc, ARRAY_SIZE(s5pv310_iodesc));
+
+	/* initialize device information early */
+#ifdef CONFIG_S3C_DEV_HSMMC
+	s5pv310_default_sdhci0();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	s5pv310_default_sdhci1();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	s5pv310_default_sdhci2();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC3
+	s5pv310_default_sdhci3();
+#endif
 
 	s3c_adc_setname("s3c64xx-adc");
 }
