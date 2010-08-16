@@ -97,8 +97,8 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 
 static struct resource smdkv310_smsc911x_resources[] = {
 	[0] = {
-		.start = S5PV310_PA_SROM3,
-		.end   = S5PV310_PA_SROM3 + SZ_64K - 1,
+		.start = S5PV310_PA_SROM1,
+		.end   = S5PV310_PA_SROM1 + SZ_64K - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -118,11 +118,12 @@ static struct platform_device smdkv310_smsc911x = {
 #ifdef CONFIG_I2C_S3C2410
 /* I2C0 */
 static struct i2c_board_info i2c_devs0[] __initdata = {
+	{ I2C_BOARD_INFO("24c128", 0x50), },	 /* Samsung S524AD0XD1 */
+	{ I2C_BOARD_INFO("24c128", 0x52), },	 /* Samsung S524AD0XD1 */
 };
 #ifdef CONFIG_S3C_DEV_I2C1
 /* I2C1 */
 static struct i2c_board_info i2c_devs1[] __initdata = {
-	{ I2C_BOARD_INFO("24c128", 0x57), },	 /* Samsung S524AD0XD1 */
 };
 #endif
 #ifdef CONFIG_S3C_DEV_I2C2
@@ -254,13 +255,16 @@ static void __init sromc_setup(void)
 	u32 tmp;
 
 	tmp = __raw_readl(S5P_SROM_BW);
-	tmp &= ~ ((0xf) << 12);
-	tmp |= (S5P_SROM_BYTE_EN(3) | S5P_SROM_16WIDTH(3));
+	tmp &= ~ (0xffff);
+	tmp |= (0x9999);
+	printk("#### 0x%0x\n",tmp);
 	__raw_writel(tmp, S5P_SROM_BW);
+
+	__raw_writel(0xffffffff,S5P_SROM_BC1);
 
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
 	tmp &= ~(0xffffff);
-	tmp |= 0x222222;
+	tmp |= (0x222222);
 	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
 
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));

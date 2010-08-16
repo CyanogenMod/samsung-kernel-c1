@@ -584,15 +584,32 @@ static struct s3c64xx_spi_csinfo smdk_spi0_csi[] = {
 	},
 };
 
+static struct s3c64xx_spi_csinfo smdk_spi1_csi[] = {
+	[SMDK_MMCSPI_CS] = {
+		.line = S5PV210_GPB(5),
+		.set_level = gpio_set_value,
+		.fb_delay = 0x0,
+	},
+};
+
 static struct spi_board_info s3c_spi_devs[] __initdata = {
 	{
-		.modalias	 = "mmc_spi", /* MMC SPI */
+		.modalias	 = "spidev", /* MMC SPI */
 		.mode		 = SPI_MODE_0,	/* CPOL=0, CPHA=0 */
 		.max_speed_hz    = 10000000,
 		/* Connected to SPI-0 as 1st Slave */
 		.bus_num	 = 0,
 		.chip_select	 = 0,
 		.controller_data = &smdk_spi0_csi[SMDK_MMCSPI_CS],
+	},
+	{
+		.modalias	 = "spidev", /* MMC SPI */
+		.mode		 = SPI_MODE_0,	/* CPOL=0, CPHA=0 */
+		.max_speed_hz    = 10000000,
+		/* Connected to SPI-0 as 1st Slave */
+		.bus_num	 = 1,
+		.chip_select	 = 0,
+		.controller_data = &smdk_spi1_csi[SMDK_MMCSPI_CS],
 	},
 };
 
@@ -688,6 +705,7 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5pv210_device_spi0,
+	&s5pv210_device_spi1,
 #endif
 
 #ifdef CONFIG_REGULATOR_SAMSUNG_POWER_DOMAIN
@@ -782,9 +800,16 @@ static void __init smdkv210_machine_init(void)
 		s3c_gpio_cfgpin(S5PV210_GPB(1), S3C_GPIO_SFN(1));
 		s3c_gpio_setpull(S5PV210_GPB(1), S3C_GPIO_PULL_UP);
 		s5pv210_spi_set_info(0, S5PV210_SPI_SRCCLK_PCLK,
-			 ARRAY_SIZE(smdk_spi0_csi));
-		spi_register_board_info(s3c_spi_devs, ARRAY_SIZE(s3c_spi_devs));
+			ARRAY_SIZE(smdk_spi0_csi));
 	}
+	if (!gpio_request(S5PV210_GPB(5), "SPI_CS1")) {
+		gpio_direction_output(S5PV210_GPB(5), 1);
+		s3c_gpio_cfgpin(S5PV210_GPB(5), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV210_GPB(5), S3C_GPIO_PULL_UP);
+		s5pv210_spi_set_info(1, S5PV210_SPI_SRCCLK_PCLK,
+			ARRAY_SIZE(smdk_spi1_csi));
+	}
+	spi_register_board_info(s3c_spi_devs, ARRAY_SIZE(s3c_spi_devs));
 #endif
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM

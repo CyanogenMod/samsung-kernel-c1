@@ -220,7 +220,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.label	= "MP02",
 		},
 	}, {
-		.base	= (S5P_VA_GPIO + 0xC00),
+		.base	= (S5PV310_VA_GPIO2 + 0xC00),
 		.config	= &gpio_cfg_noint,
 		.chip	= {
 			.base	= S5PV310_GPX0(0),
@@ -228,7 +228,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.label	= "GPX0",
 		},
 	}, {
-		.base	= (S5P_VA_GPIO + 0xC20),
+		.base	= (S5PV310_VA_GPIO2 + 0xC20),
 		.config	= &gpio_cfg_noint,
 		.chip	= {
 			.base	= S5PV310_GPX1(0),
@@ -236,7 +236,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.label	= "GPX1",
 		},
 	}, {
-		.base	= (S5P_VA_GPIO + 0xC40),
+		.base	= (S5PV310_VA_GPIO2 + 0xC40),
 		.config	= &gpio_cfg_noint,
 		.chip	= {
 			.base	= S5PV310_GPX2(0),
@@ -244,7 +244,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.label	= "GPX2",
 		},
 	}, {
-		.base	= (S5P_VA_GPIO + 0xC60),
+		.base	= (S5PV310_VA_GPIO2 + 0xC60),
 		.config	= &gpio_cfg_noint,
 		.chip	= {
 			.base	= S5PV310_GPX3(0),

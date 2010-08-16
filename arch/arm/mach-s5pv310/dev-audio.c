@@ -1,0 +1,88 @@
+/* linux/arch/arm/mach-s5pv310/dev-audio.c
+ *
+ * Copyright (c) 2010 Samsung Electronics Co. Ltd
+ *	Jaswinder Singh <jassi.brar@samsung.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
+
+#include <plat/gpio-cfg.h>
+#include <plat/audio.h>
+
+#include <mach/gpio.h>
+#include <mach/map.h>
+#include <mach/dma.h>
+#include <mach/irqs.h>
+
+static int s5pv310_cfg_i2s(struct platform_device *pdev)
+{
+	/* configure GPIO for i2s port */
+	switch (pdev->id) {
+	case 1:
+		s3c_gpio_cfgpin(S5PV310_GPC0(0), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC0(1), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC0(2), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC0(3), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC0(4), S3C_GPIO_SFN(2));
+		break;
+	case 2:
+		s3c_gpio_cfgpin(S5PV310_GPC1(0), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC1(1), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC1(2), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC1(3), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPC1(4), S3C_GPIO_SFN(2));
+		break;
+	case -1:
+		s3c_gpio_cfgpin(S5PV310_GPZ(0), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(1), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(2), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(3), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(4), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(5), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPZ(6), S3C_GPIO_SFN(2));
+		break;
+
+	default:
+		printk(KERN_ERR "Invalid Device %d\n", pdev->id);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct s3c_audio_pdata s3c_i2s_pdata = {
+	.cfg_gpio = s5pv310_cfg_i2s,
+};
+
+static struct resource s5pv310_iis0_resource[] = {
+	[0] = {
+	       .start = S5PV310_PA_I2S0,
+	       .end = S5PV310_PA_I2S0 + 0x100 - 1,
+	       .flags = IORESOURCE_MEM,
+	       },
+	[1] = {
+	       .start = DMACH_I2S0_TX,
+	       .end = DMACH_I2S0_TX,
+	       .flags = IORESOURCE_DMA,
+	       },
+	[2] = {
+	       .start = DMACH_I2S0_RX,
+	       .end = DMACH_I2S0_RX,
+	       .flags = IORESOURCE_DMA,
+	       },
+};
+
+struct platform_device s5pv310_device_iis0 = {
+	.name = "s3c64xx-iis-v4",
+	.id = -1,
+	.num_resources = ARRAY_SIZE(s5pv310_iis0_resource),
+	.resource = s5pv310_iis0_resource,
+	.dev = {
+		.platform_data = &s3c_i2s_pdata,
+		},
+};
