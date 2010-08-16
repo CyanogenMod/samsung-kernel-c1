@@ -393,47 +393,6 @@ void __init s3c_disable_clocks(struct clk *clkp, int nr_clks)
 
 #ifdef CONFIG_S5PV310_FPGA
 static struct clk tmp_clocks[] = {
-	{
-		.name		= "i2c",
-		.id		= 0,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 1,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 2,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 3,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 4,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 5,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 6,
-		.rate		= 10000000,
-	}, {
-		.name		= "i2c",
-		.id		= 7,
-		.rate		= 10000000,
-	}, {
-		.name		= "adc",
-		.id		= -1,
-		.rate		= 10000000,
-	}, {
-		.name		= "watchdog",
-		.id		= -1,
-		.rate		= 10000000,
-	},
 };
 #endif
 
