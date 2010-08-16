@@ -284,7 +284,7 @@ static void __init smdkv310_map_io(void)
 #endif
 	s3c24xx_init_uarts(smdkv310_uartcfgs, ARRAY_SIZE(smdkv310_uartcfgs));
 
-	/* s5pv310_reserve_bootmem(); */
+	s5p_reserve_bootmem();
 }
 
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
