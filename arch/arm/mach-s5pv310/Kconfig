@@ -75,6 +75,7 @@ config MACH_SMDKV310
 	select SAMSUNG_DEV_TS
 	select S3C_DEV_WDT
 	select HAVE_S3C2410_WATCHDOG
+	select HAVE_PWM
 	help
 	  Machine support for Samsung SMDKV310
 
