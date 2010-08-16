@@ -97,6 +97,12 @@ static unsigned int sdhci_s3c_get_max_clk(struct sdhci_host *host)
 	unsigned int rate, max;
 	int clk;
 
+	if(host->quirks & SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER) {
+		rate = clk_round_rate(ourhost->clk_bus[ourhost->cur_clk],
+			UINT_MAX);
+		return rate;
+	}
+
 	/* note, a reset will reset the clock source */
 
 	sdhci_s3c_check_sclk(host);
@@ -131,6 +137,11 @@ static unsigned int sdhci_s3c_consider_clock(struct sdhci_s3c *ourhost,
 	if (!clksrc)
 		return UINT_MAX;
 
+	if(ourhost->host->quirks & SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER) {
+		rate = clk_round_rate(clksrc,wanted);
+		return (wanted - rate);
+	}
+	
 	rate = clk_get_rate(clksrc);
 
 	for (div = 1; div < 256; div *= 2) {
@@ -160,6 +171,7 @@ static void sdhci_s3c_set_clock(struct sdhci_host *host, unsigned int clock)
 	int best_src = 0;
 	int src;
 	u32 ctrl;
+	unsigned int timeout;
 
 	/* don't bother if the clock is going off. */
 	if (clock == 0)
@@ -205,6 +217,31 @@ static void sdhci_s3c_set_clock(struct sdhci_host *host, unsigned int clock)
 			(ourhost->pdata->cfg_card)(ourhost->pdev, host->ioaddr,
 						   &ios, NULL);
 	}
+	
+	if(host->quirks & SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER) {
+		writew(0, host->ioaddr + SDHCI_CLOCK_CONTROL);
+		clk_set_rate(ourhost->clk_bus[ourhost->cur_clk], clock);
+
+		writew(SDHCI_CLOCK_INT_EN, host->ioaddr + SDHCI_CLOCK_CONTROL);
+
+		/* Wait max 20 ms */
+		timeout = 20;
+		while (!((sdhci_readw(host, SDHCI_CLOCK_CONTROL))
+			& SDHCI_CLOCK_INT_STABLE)) {
+			if (timeout == 0) {
+				printk(KERN_ERR "%s: Internal clock never "
+					"stabilised.\n", mmc_hostname(host->mmc));
+				return;
+			}
+			timeout--;
+			mdelay(1);
+		}
+
+		writew(SDHCI_CLOCK_INT_EN | SDHCI_CLOCK_CARD_EN,
+				host->ioaddr + SDHCI_CLOCK_CONTROL);
+	
+		host->clock = clock;
+	}
 }
 
 /**
@@ -221,6 +258,10 @@ static unsigned int sdhci_s3c_get_min_clock(struct sdhci_host *host)
 	struct sdhci_s3c *ourhost = to_s3c(host);
 	unsigned int delta, min = UINT_MAX;
 	int src;
+
+	if(host->quirks & SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER)
+		return clk_round_rate(ourhost->clk_bus[ourhost->cur_clk],
+			400000);
 
 	for (src = 0; src < MAX_BUS_CLK; src++) {
 		delta = sdhci_s3c_consider_clock(ourhost, src, 0);
@@ -365,6 +406,7 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 		clks++;
 		sc->clk_bus[ptr] = clk;
 		clk_enable(clk);
+		sc->cur_clk = ptr;
 
 		dev_info(dev, "clock source %d: %s (%ld Hz)\n",
 			 ptr, name, clk_get_rate(clk));
@@ -442,6 +484,7 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 	host->quirks |= SDHCI_QUIRK_NO_HISPD_BIT;
 
 	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+	host->quirks |= SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER;
 	ret = sdhci_add_host(host);
 	if (ret) {
 		dev_err(dev, "sdhci_add_host() failed\n");

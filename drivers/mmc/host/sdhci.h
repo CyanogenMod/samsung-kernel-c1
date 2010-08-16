@@ -245,6 +245,8 @@ struct sdhci_host {
 /* Controller has no write-protect pin connected with SD card */
 #define SDHCI_QUIRK_NO_WP_BIT				(1<<28)
 #define SDHCI_QUIRK_NO_HISPD_BIT			(1<<29)
+/* Controller has no clock divider and uses the divider outside */
+#define SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER		(1<<30)
 
 	int			irq;		/* Device IRQ */
 	void __iomem *		ioaddr;		/* Mapped address */
