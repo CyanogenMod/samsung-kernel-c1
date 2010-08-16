@@ -23,7 +23,6 @@
 /* SPI is Shared Peripheral Interrupt */
 #define IRQ_SPI(x)		S5P_IRQ(x+32)
 
-#define IRQ_EINT16_31		IRQ_SPI(39)
 #define IRQ_EINT0		IRQ_SPI(40)
 #define IRQ_EINT1		IRQ_SPI(41)
 #define IRQ_EINT2		IRQ_SPI(42)
@@ -107,12 +106,14 @@
 #define IRQ_EINT5		COMBINER_IRQ(37,1)
 #define IRQ_EINT4		COMBINER_IRQ(37,0)
 
-#define IRQ_EINT_BASE		IRQ_EINT15 + 1
+#define IRQ_EINT16_31		COMBINER_IRQ(39,0)
+
+#define IRQ_EINT_BASE		IRQ_EINT16_31 + 1
 
 /* Set the default NR_IRQS */
 #define NR_IRQS			(IRQ_EINT_BASE + 32)
 #define EINT_NUMBER(x)		((x) + IRQ_EINT_BASE)
 
-#define MAX_COMBINER_NR		39
+#define MAX_COMBINER_NR		40
 
 #endif /* ASM_ARCH_IRQS_H */
