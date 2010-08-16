@@ -97,8 +97,8 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 
 static struct resource smdkv310_smsc911x_resources[] = {
 	[0] = {
-		.start = S5PV310_PA_SROM3,
-		.end   = S5PV310_PA_SROM3 + SZ_64K - 1,
+		.start = S5PV310_PA_SROM1,
+		.end   = S5PV310_PA_SROM1 + SZ_64K - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -108,21 +108,32 @@ static struct resource smdkv310_smsc911x_resources[] = {
 	},
 };
 
+struct smsc911x_platform_config platdata_config = {
+        .irq_polarity   = SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
+        .irq_type       = SMSC911X_IRQ_TYPE_PUSH_PULL,
+	.flags          = SMSC911X_USE_32BIT,
+	.phy_interface  = PHY_INTERFACE_MODE_MII,
+};
+
 static struct platform_device smdkv310_smsc911x = {
-	.name          = "smc911x",
-	.id            = -1,
-	.num_resources = ARRAY_SIZE(smdkv310_smsc911x_resources),
-	.resource      = &smdkv310_smsc911x_resources,
+	.name		= "smsc911x",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(smdkv310_smsc911x_resources),
+	.resource	= &smdkv310_smsc911x_resources,
+	.dev		= {
+		.platform_data	= &platdata_config,
+	},
 };
 
 #ifdef CONFIG_I2C_S3C2410
 /* I2C0 */
 static struct i2c_board_info i2c_devs0[] __initdata = {
+	{ I2C_BOARD_INFO("24c128", 0x50), },	 /* Samsung S524AD0XD1 */
+	{ I2C_BOARD_INFO("24c128", 0x52), },	 /* Samsung S524AD0XD1 */
 };
 #ifdef CONFIG_S3C_DEV_I2C1
 /* I2C1 */
 static struct i2c_board_info i2c_devs1[] __initdata = {
-	{ I2C_BOARD_INFO("24c128", 0x57), },	 /* Samsung S524AD0XD1 */
 };
 #endif
 #ifdef CONFIG_S3C_DEV_I2C2
@@ -254,8 +265,8 @@ static void __init sromc_setup(void)
 	u32 tmp;
 
 	tmp = __raw_readl(S5P_SROM_BW);
-	tmp &= ~ ((0xf) << 12);
-	tmp |= (S5P_SROM_BYTE_EN(3) | S5P_SROM_16WIDTH(3));
+	tmp &= ~ ((0xf) << 4);
+	tmp |= (S5P_SROM_BYTE_EN(1) | S5P_SROM_16WIDTH(1));
 	__raw_writel(tmp, S5P_SROM_BW);
 
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
