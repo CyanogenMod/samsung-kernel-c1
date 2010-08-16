@@ -548,6 +548,12 @@ static struct clk init_clocks[] = {
 		.parent         = &clk_pclk66.clk,
 		.enable         = s5p6450_pclk_ctrl,
 		.ctrlbit        = S5P_CLKCON_PCLK_I2S0,
+	}, {
+		.name		= "pcm",
+		.id		= 0,
+		.parent         = &clk_pclk66.clk,
+		.enable		= s5p6450_pclk_ctrl,
+		.ctrlbit	= S5P_CLKCON_PCLK_PCM0,
 	},
 };
 
