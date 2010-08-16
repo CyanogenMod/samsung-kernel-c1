@@ -23,6 +23,7 @@
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/regs-audss.h>
 
 static struct clk clk_sclk_hdmi27m = {
 	.name           = "sclk_hdmi27m",
@@ -43,6 +44,21 @@ static struct clk clk_sclk_usbphy0 = {
 static struct clk clk_sclk_usbphy1 = {
 	.name		= "sclk_usbphy1",
 	.id		= -1,
+};
+
+static struct clk clk_audiocdclk0 = {
+	.name		= "audiocdclk",
+	.id		= 0,
+};
+
+static struct clk clk_audiocdclk1 = {
+	.name		= "audiocdclk",
+	.id		= 1,
+};
+
+static struct clk clk_audiocdclk2 = {
+	.name		= "audiocdclk",
+	.id		= 2,
 };
 
 static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
@@ -98,6 +114,11 @@ static int s5pv310_clk_ip_peril_ctrl(struct clk *clk, int enable)
 static int s5pv310_clk_ip_perir_ctrl(struct clk *clk, int enable)
 {
 	return s5p_gatectrl(S5P_CLKGATE_IP_PERIR, clk, enable);
+}
+
+static int s5pv310_clk_audss_ctrl(struct clk *clk, int enable)
+{
+	return s5p_gatectrl(S5P_CLKGATE_AUDSS, clk, enable);
 }
 
 static int s5pv310_clksrc_mask_top_ctrl(struct clk *clk, int enable)
@@ -447,6 +468,21 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
 		.ctrlbit	= (1 << 9),
 	}, {
+                .name           = "iis",
+                .id             = 2,
+                .enable         = s5pv310_clk_ip_peril_ctrl,
+                .ctrlbit        = (1 << 21),
+        }, {
+                .name           = "iis",
+                .id             = 1,
+                .enable         = s5pv310_clk_ip_peril_ctrl,
+                .ctrlbit        = (1 << 20),
+        }, {
+                .name           = "iis",
+                .id             = 0,
+                .enable         = s5pv310_clk_audss_ctrl,
+                .ctrlbit                = S5P_AUDSS_CLKGATE_I2SSPECIAL,
+        }, {
 		.name		= "sata",
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
@@ -532,6 +568,75 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 13),
 	},
+};
+
+static struct clk *clkset_sclk_audio0_list[] = {
+	[0] = &clk_ext_xtal_mux,
+	[1] = &clk_audiocdclk0,
+	[2] = &clk_sclk_hdmi27m,
+	[3] = &clk_sclk_usbphy0,
+	[4] = &clk_mout_mpll.clk,
+	[5] = &clk_mout_epll.clk,
+	[6] = &clk_sclk_vpll.clk,
+};
+
+static struct clksrc_sources clkset_sclk_audio0 = {
+	.sources	= clkset_sclk_audio0_list,
+	.nr_sources	= ARRAY_SIZE(clkset_sclk_audio0_list),
+};
+
+static struct clksrc_clk clk_sclk_audio0 = {
+	.clk		= {
+		.name		= "sclk_audio",
+		.id		= 0,
+		.enable		= s5pv310_clksrc_mask_maudio_ctrl,
+		.ctrlbit	= (1 << 0),
+	},
+	.sources = &clkset_sclk_audio0,
+	.reg_src = { .reg = S5P_CLKSRC_MAUDIO, .shift = 0, .size = 4 },
+	.reg_div = { .reg = S5P_CLKDIV_MAUDIO, .shift = 0, .size = 4 },
+};
+
+static struct clk *clkset_mout_audss_list[] = {
+	NULL,
+	&clk_fout_epll,
+};
+
+static struct clksrc_sources clkset_mout_audss = {
+	.sources	= clkset_mout_audss_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_audss_list),
+};
+
+static struct clksrc_clk clk_mout_audss = {
+	.clk		= {
+		.name		= "mout_audss",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_audss,
+	.reg_src	= { .reg = S5P_CLKSRC_AUDSS, .shift = 0, .size = 1 },
+};
+
+static struct clk *clkset_sclk_audss_list[] = {
+	&clk_mout_audss.clk,
+	&clk_audiocdclk0,
+	&clk_sclk_audio0.clk,
+};
+
+static struct clksrc_sources clkset_sclk_audss = {
+	.sources	= clkset_sclk_audss_list,
+	.nr_sources	= ARRAY_SIZE(clkset_sclk_audss_list),
+};
+
+static struct clksrc_clk clk_sclk_audss = {
+	.clk		= {
+		.name		= "audio-bus",
+		.id		= -1,
+		.enable		= s5pv310_clk_audss_ctrl,
+		.ctrlbit	= S5P_AUDSS_CLKGATE_I2SBUS,
+	},
+	.sources	= &clkset_sclk_audss,
+	.reg_src	= { .reg = S5P_CLKSRC_AUDSS, .shift = 2, .size = 2 },
+	.reg_div	= { .reg = S5P_CLKDIV_AUDSS, .shift = 4, .size = 8 },
 };
 
 static struct clk *clkset_group_list[] = {
@@ -963,6 +1068,7 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_dout_mmc2,
 	&clk_dout_mmc3,
 	&clk_dout_mmc4,
+	&clk_sclk_audss,
 };
 
 void __init_or_cpufreq s5pv310_setup_clocks(void)
