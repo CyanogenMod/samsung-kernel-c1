@@ -64,7 +64,7 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 {
 	struct clk *sclk = NULL;
 	struct clk *mout_mpll = NULL;
-	struct clk *lcd = NULL;
+
 	u32 rate = 0;
 	int ret;
 
@@ -80,12 +80,6 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 		goto err_clk1;
 	}
 
-	lcd = clk_get(&pdev->dev, "lcd");
-	if (IS_ERR(lcd)) {
-		dev_err(&pdev->dev, "failed to get lcd\n");
-		goto err_clk1;
-	}
-
 	clk_set_parent(sclk, mout_mpll);
 
 	rate = clk_round_rate(sclk, 133400000);
@@ -98,15 +92,6 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 	dev_dbg(&pdev->dev, "set fimd sclk rate to %d\n", rate);
 
 	clk_put(mout_mpll);
-/*
-	ret = s5pv310_pd_enable("fimd_pd");
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable fimd power domain\n");
-		goto err_clk2;
-	}
-*/
-
-	clk_enable(lcd);	
 
 	clk_enable(sclk);
 
@@ -119,9 +104,9 @@ err_clk1:
 
 	clk_put(sclk);
 
-	clk_put(lcd);
 
 	return -EINVAL;
+
 }
 
 int s3cfb_clk_off(struct platform_device *pdev, struct clk **clk)
@@ -132,9 +117,7 @@ int s3cfb_clk_off(struct platform_device *pdev, struct clk **clk)
 	clk_put(*clk);
 
 	*clk = NULL;
-/*
-	ret = s5pv310_pd_disable("fimd_pd");
-*/
+
 	if (ret < 0)
 		dev_err(&pdev->dev, "failed to disable fimd power domain\n");
 
@@ -145,7 +128,55 @@ void s3cfb_get_clk_name(char *clk_name)
 {
 	strcpy(clk_name, "sclk_fimd");
 }
-#ifdef CONFIG_FB_S3C_LTE480WV
+
+#ifdef CONFIG_FB_S3C_WA101S
+int s3cfb_backlight_on(struct platform_device *pdev)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPD0(1), "GPD0");
+
+	if (err) {
+		printk(KERN_ERR "failed to request GPD0 for "
+			"lcd backlight control\n");
+		return err;
+	}
+
+	gpio_direction_output(S5PV310_GPD0(1), 1);
+	gpio_free(S5PV310_GPD0(1));
+
+	return 0;
+}
+
+int s3cfb_backlight_off(struct platform_device *pdev)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPD0(1), "GPD0");
+
+	if (err) {
+		printk(KERN_ERR "failed to request GPD0 for "
+				"lcd backlight control\n");
+		return err;
+	}
+
+	gpio_direction_output(S5PV310_GPD0(1), 0);
+	gpio_free(S5PV310_GPD0(1));
+
+	return 0;
+}
+
+int s3cfb_lcd_on(struct platform_device *pdev)
+{
+	return 0;
+}
+
+int s3cfb_lcd_off(struct platform_device *pdev)
+{
+	return 0;
+}
+
+#elif defined(CONFIG_FB_S3C_LTE480WV)
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
 #if !defined(CONFIG_BACKLIGHT_PWM)
