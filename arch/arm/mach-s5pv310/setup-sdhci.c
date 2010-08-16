@@ -39,7 +39,6 @@ void s5pv310_setup_sdhci_cfg_card(struct platform_device *dev,
 {
 	u32 ctrl2, ctrl3;
 
-printk("####### s5pv310_setup_sdhci_cfg_card called\n");	
 	/* don't need to alter anything acording to card-type */
 
 	__raw_writel(S3C64XX_SDHCI_CONTROL4_DRIVE_9mA, r + S3C64XX_SDHCI_CONTROL4);
