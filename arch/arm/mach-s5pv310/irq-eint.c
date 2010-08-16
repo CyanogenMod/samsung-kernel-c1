@@ -140,9 +140,7 @@ static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 		break;
 
 	case IRQ_TYPE_LEVEL_LOW:
-		/* this bug is for ethernet card */
-		//newvalue = S5P_EXTINT_LOWLEV;
-		newvalue = S5P_EXTINT_HILEV;
+		newvalue = S5P_EXTINT_LOWLEV;
 		break;
 
 	case IRQ_TYPE_LEVEL_HIGH:

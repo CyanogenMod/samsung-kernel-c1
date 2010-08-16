@@ -104,14 +104,14 @@ static struct resource smdkv310_smsc911x_resources[] = {
 	[1] = {
 		.start = EINT_NUMBER(5),
 		.end   = EINT_NUMBER(5),
-		.flags = IORESOURCE_IRQ,
+		.flags = IORESOURCE_IRQ | IRQ_TYPE_LEVEL_LOW,
 	},
 };
 
 struct smsc911x_platform_config platdata_config = {
         .irq_polarity   = SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
-        .irq_type       = SMSC911X_IRQ_TYPE_PUSH_PULL,
-	.flags          = SMSC911X_USE_32BIT,
+        .irq_type       = SMSC911X_IRQ_TYPE_OPEN_DRAIN,
+	.flags          = SMSC911X_USE_32BIT | SMSC911X_FORCE_INTERNAL_PHY,
 	.phy_interface  = PHY_INTERFACE_MODE_MII,
 };
 
@@ -265,19 +265,19 @@ static void __init sromc_setup(void)
 	u32 tmp;
 
 	tmp = __raw_readl(S5P_SROM_BW);
-	tmp &= ~ ((0xf) << 4);
-	tmp |= (S5P_SROM_BYTE_EN(1) | S5P_SROM_16WIDTH(1));
+	tmp &= ~ (0xf << 4);
+	tmp |= (0x9 << 4);
 	__raw_writel(tmp, S5P_SROM_BW);
 
+	tmp = ((0<<28)|(0<<24)|(5<<16)|(0<<12)|(0<<8)|(0<<4)|(0<<0));
+	__raw_writel(tmp, S5P_SROM_BC1);
+
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
-	tmp &= ~(0xffffff);
-	tmp |= 0x222222;
+	tmp &= ~(0xf << 4);
+	tmp |= (0x2 << 4);
 	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
 
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));
-	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1a0));
-	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1c0));
-	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1e0));
 }
 
 static void __init smdkv310_map_io(void)
