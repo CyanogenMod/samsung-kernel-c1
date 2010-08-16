@@ -484,7 +484,9 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 	host->quirks |= SDHCI_QUIRK_NO_HISPD_BIT;
 
 	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+#ifdef CONFIG_ARCH_S5PV310
 	host->quirks |= SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER;
+#endif
 	ret = sdhci_add_host(host);
 	if (ret) {
 		dev_err(dev, "sdhci_add_host() failed\n");
