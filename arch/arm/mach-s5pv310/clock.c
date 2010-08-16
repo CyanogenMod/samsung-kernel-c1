@@ -1068,7 +1068,6 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_dout_mmc2,
 	&clk_dout_mmc3,
 	&clk_dout_mmc4,
-	&clk_sclk_audss,
 };
 
 void __init_or_cpufreq s5pv310_setup_clocks(void)
