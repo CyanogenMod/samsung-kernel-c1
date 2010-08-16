@@ -76,7 +76,7 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMD
 choice
 depends on FB_S3C
 prompt "Select LCD Type"
-default FB_S3C_LTE480WV
+default FB_S3C_WA101S
 config FB_S3C_LTE480WV
 	bool "LTE480WV"
 	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
@@ -88,6 +88,12 @@ config FB_S3C_HT101HD1
 	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
 	help
 	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
+
+config FB_S3C_WA101S
+	bool "WA101S"
+	depends on MACH_SMDKV310
+	help
+	  This enables support for 10.1" 1366*768 LCD panel
 endchoice
 
 config FB_S3C_V2
