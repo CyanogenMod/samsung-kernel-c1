@@ -459,26 +459,37 @@ EXPORT_SYMBOL(otg_phy_off);
 
 void usb_host_phy_init(void)
 {
-	struct clk *otg_clk;
-
-	otg_clk = clk_get(NULL, "otg");
-	clk_enable(otg_clk);
-
-	if (__raw_readl(S5P_USBHOST_PHY_CONTROL) & (0x1<<0))
+	if (__raw_readl(S5P_USBHOST_PHY_CONTROL) & (0x1<<0)) {
+		printk("[usb_host_phy_init]Already power on PHY\n");
 		return;
-
+	}
+	
 	__raw_writel(__raw_readl(S5P_USBHOST_PHY_CONTROL)
 		|(0x1<<0), S5P_USBHOST_PHY_CONTROL);
-	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
-		&~(0x7<<6)&~(0x3<<9)&~(0x3<<11)), S3C_USBOTG_PHYPWR);
-	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
-		&~(0x1<<7))|(0x3<<0), S3C_USBOTG_PHYCLK);
-	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON))
-		|(0x1<<9)|(0x1<<8)|(0x1<<7)|(0x1<<5)|(0x1<<4),
+
+	/* floating prevention logic : disable */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHY1CON) | (0x1<<0)),
+		S3C_USBOTG_PHY1CON);
+
+	/* set hsic phy0,1 to normal */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR) & ~(0xf<<9)),
+		S3C_USBOTG_PHYPWR);
+
+	/* phy-power on */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR) & ~(0x7<<6)),
+		S3C_USBOTG_PHYPWR);
+
+	/* set clock source for PLL (24MHz) */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK) | (0x1<<7) | (0x3<<0)),
+		S3C_USBOTG_PHYCLK);
+
+	/* reset all ports of both PHY and Link */
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON) | (0x1<<6) | (0x7<<3)),
 		S3C_USBOTG_RSTCON);
-	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
-		&~(0x1<<9)&~(0x1<<8)&~(0x1<<7)&~(0x1<<5)&~(0x1<<4),
+	udelay(10);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON) & ~(0x1<<6) & ~(0x7<<3)),
 		S3C_USBOTG_RSTCON);
+	udelay(50);
 }
 EXPORT_SYMBOL(usb_host_phy_init);
 
