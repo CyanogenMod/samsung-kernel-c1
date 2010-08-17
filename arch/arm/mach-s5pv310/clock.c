@@ -498,7 +498,7 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 14),
 	}, {
-		.name		= "usb-host",
+		.name		= "usbhost",
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_fsys_ctrl ,
 		.ctrlbit	= (1 << 12),
