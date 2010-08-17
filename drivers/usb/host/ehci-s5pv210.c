@@ -141,6 +141,9 @@ static int ehci_hcd_update_device(struct usb_hcd *hcd, struct usb_device *udev)
 {
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	int rc = 0;
+	
+	/* No working yet -jaewang- */
+	return rc;
 
 	if (!udev->parent) /* udev is root hub itself, impossible */
 		rc = -1;
