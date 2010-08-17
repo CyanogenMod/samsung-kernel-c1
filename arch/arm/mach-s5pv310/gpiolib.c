@@ -118,6 +118,12 @@ static struct s3c_gpio_chip s5pv310_gpio_part1_4bit[] = {
 		},
 	}, {
 		.chip	= {
+			.base	= S5PV310_GPE4(0),
+			.ngpio	= S5PV310_GPIO_E4_NR,
+			.label	= "GPE4",
+		},
+	}, {
+		.chip	= {
 			.base	= S5PV310_GPF0(0),
 			.ngpio	= S5PV310_GPIO_F0_NR,
 			.label	= "GPF0",
