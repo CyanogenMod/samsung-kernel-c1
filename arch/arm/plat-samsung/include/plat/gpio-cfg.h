@@ -115,9 +115,15 @@ extern unsigned s3c_gpio_getcfg(unsigned int pin);
  * up or down settings, and it may be dependant on the chip that is being
  * used to whether the particular mode is available.
  */
+#if defined(CONFIG_ARCH_S5PV310)
+#define S3C_GPIO_PULL_NONE	((__force s3c_gpio_pull_t)0x00)
+#define S3C_GPIO_PULL_DOWN	((__force s3c_gpio_pull_t)0x01)
+#define S3C_GPIO_PULL_UP	((__force s3c_gpio_pull_t)0x03)
+#else
 #define S3C_GPIO_PULL_NONE	((__force s3c_gpio_pull_t)0x00)
 #define S3C_GPIO_PULL_DOWN	((__force s3c_gpio_pull_t)0x01)
 #define S3C_GPIO_PULL_UP	((__force s3c_gpio_pull_t)0x02)
+#endif
 
 /**
  * s3c_gpio_setpull() - set the state of a gpio pin pull resistor
