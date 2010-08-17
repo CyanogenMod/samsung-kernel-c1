@@ -41,8 +41,6 @@ void s5pv310_setup_sdhci_cfg_card(struct platform_device *dev,
 
 	/* don't need to alter anything acording to card-type */
 
-	__raw_writel(S3C64XX_SDHCI_CONTROL4_DRIVE_9mA, r + S3C64XX_SDHCI_CONTROL4);
-
 	ctrl2 = __raw_readl(r + S3C_SDHCI_CONTROL2);
 	ctrl2 &= S3C_SDHCI_CTRL2_SELBASECLK_MASK;
 	ctrl2 |= (S3C64XX_SDHCI_CTRL2_ENSTAASYNCCLR |
