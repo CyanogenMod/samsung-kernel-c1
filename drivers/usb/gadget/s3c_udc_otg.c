@@ -470,7 +470,9 @@ static void reconfig_usbd(void)
 #ifdef DED_TX_FIFO
 	int i;
 #endif
-	unsigned int uTemp = writel(CORE_SOFT_RESET, S3C_UDC_OTG_GRSTCTL);
+	unsigned int uTemp = 0;
+
+	writel(CORE_SOFT_RESET, S3C_UDC_OTG_GRSTCTL);
 
 	writel(0<<15		/* PHY Low Power Clock sel*/
 		|1<<14		/* Non-Periodic TxFIFO Rewind Enable*/
