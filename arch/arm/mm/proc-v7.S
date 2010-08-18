@@ -230,6 +230,21 @@ __v7_setup:
 	mcreq	p15, 1, r10, c9, c0, 2		@ write the L2 cache aux ctrl register
 #endif
 
+#ifdef CONFIG_ARM_ERRATA_742230
+	teq	r0, #0x21
+        mrceq	p15, 0, r10, c15, c0, 1
+	orreq	r10, #1 << 4
+        mcreq	p15, 0, r10, c15, c0, 1
+#endif
+
+#ifdef CONFIG_ARM_ERRATA_742231
+	teq	r0, #0x21
+        mrceq	p15, 0, r10, c15, c0, 1
+	orreq	r10, #1 << 12
+	orreq	r10, #1 << 22
+        mcreq	p15, 0, r10, c15, c0, 1
+#endif
+
 2:	mov	r10, #0
 #ifdef HARVARD_CACHE
 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
