@@ -17,6 +17,8 @@
 #include <linux/delay.h>
 #include <linux/usb/ch9.h>
 #include <linux/gpio.h>
+#include <linux/spi/spi.h>
+#include <linux/spi/spi_gpio.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
@@ -42,6 +44,7 @@
 #include <mach/regs-mem.h>
 #include <mach/regs-clock.h>
 #include <mach/media.h>
+#include <mach/gpio.h>
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM
 #include <linux/android_pmem.h>
@@ -63,7 +66,7 @@ extern struct sys_timer s5pv310_timer;
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
 
-extern void s5pv310_reserve_bootmem(void);
+extern void s5p_reserve_bootmem(void);
 
 static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	[0] = {
@@ -186,6 +189,51 @@ static struct fimg2d_platdata fimg2d_data __initdata = {
 };
 #endif
 
+#ifdef CONFIG_FB_S3C_TL2796
+
+static struct s3c_platform_fb tl2796_data __initdata = {
+	.hw_ver = 0x62,
+	.clk_name = "sclk_lcd",
+	.nr_wins = 5,
+	.default_win = CONFIG_FB_S3C_DEFAULT_WINDOW,
+	.swap = FB_SWAP_HWORD | FB_SWAP_WORD,
+};
+
+#define	LCD_BUS_NUM	3
+
+#define	DISPLAY_CS	S5PV310_GPB(5)
+#define	DISPLAY_CLK	S5PV310_GPB(4)
+#define	DISPLAY_SI	S5PV310_GPB(7)
+
+static struct spi_board_info spi_board_info[] __initdata = {
+	{
+		.modalias	= "tl2796",
+		.platform_data	= NULL,
+		.max_speed_hz	= 1200000,
+		.bus_num	= LCD_BUS_NUM,
+		.chip_select	= 0,
+		.mode		= SPI_MODE_3,
+		.controller_data = (void *)DISPLAY_CS,
+	},
+};
+
+static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
+	.sck	= DISPLAY_CLK,
+	.mosi	= DISPLAY_SI,
+	.miso	= -1,
+	.num_chipselect	= 1,
+};
+
+static struct platform_device s3c_device_spi_gpio = {
+	.name	= "spi_gpio",
+	.id	= LCD_BUS_NUM,
+	.dev	= {
+		.parent		= &s3c_device_fb.dev,
+		.platform_data	= &tl2796_spi_gpio_data,
+	},
+};
+#endif
+
 static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -261,6 +309,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #endif
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
+#endif
+
+#ifdef CONFIG_FB_S3C_TL2796
+	&s3c_device_spi_gpio,
 #endif
 };
 
@@ -409,6 +461,12 @@ static void __init smdkv310_machine_init(void)
 #ifdef CONFIG_CACHE_L2X0
 	l2x0_init(S5P_VA_L2CC, 1 << 28, 0xffffffff);
 #endif
+
+#ifdef CONFIG_FB_S3C_TL2796
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&tl2796_data);
+#endif
+
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv310_hsmmc0_pdata);
 #endif

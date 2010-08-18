@@ -331,6 +331,70 @@ int s3cfb_lcd_off(struct platform_device *pdev)
 {
 	return 0;
 }
+#elif CONFIG_FB_S3C_TL2796
+int s3cfb_backlight_on(struct platform_device *pdev)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPD0(1), "GPD0");
+	if (err) {
+		printk(KERN_ERR "failed to request GPD0 for "
+			"lcd backlight control\n");
+		return err;
+		}
+
+	gpio_direction_output(S5PV310_GPD0(1), 1);
+	gpio_free(S5PV310_GPD0(1));
+
+	return 0;
+}
+
+int s3cfb_backlight_off(struct platform_device *pdev)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPD0(1), "GPD0");
+	if (err) {
+		printk(KERN_ERR "failed to request GPD0 for "
+			"lcd backlight control\n");
+		return err;
+	}
+
+	gpio_direction_output(S5PV310_GPD0(1), 0);
+	gpio_free(S5PV310_GPD0(1));
+	return 0;
+}
+
+int s3cfb_lcd_on(struct platform_device *pdev)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPX0(6), "GPX0");
+	if (err) {
+		printk(KERN_ERR "failed to request GPX0 for "
+			"lcd reset control\n");
+		return err;
+	}
+
+	gpio_direction_output(S5PV310_GPX0(6), 1);
+	mdelay(100);
+
+	gpio_set_value(S5PV310_GPX0(6), 0);
+	mdelay(100);
+
+	gpio_set_value(S5PV310_GPX0(6), 1);
+	mdelay(100);
+
+	gpio_free(S5PV310_GPX0(6));
+
+	return 0;
+}
+
+int s3cfb_lcd_off(struct platform_device *pdev)
+{
+	return 0;
+}
+
 #else
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
