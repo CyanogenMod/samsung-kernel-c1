@@ -94,6 +94,15 @@ config FB_S3C_WA101S
 	depends on MACH_SMDKV310
 	help
 	  This enables support for 10.1" 1366*768 LCD panel
+
+config FB_S3C_TL2796
+	bool "TL2796"
+	depends on MACH_SMDKV310
+	select SPI
+	select SPI_GPIO
+	select SPI_BITBANG
+	help
+	  This enables support for Samsung TL2796 WVGA LCD panel
 endchoice
 
 config FB_S3C_V2
