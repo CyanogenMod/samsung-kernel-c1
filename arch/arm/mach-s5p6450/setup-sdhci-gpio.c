@@ -21,9 +21,11 @@
 #include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
 #include <plat/regs-sdhci.h>
+#include <plat/sdhci.h>
 
 void s5p6450_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 {
+	struct s3c_sdhci_platdata *pdata = dev->dev.platform_data;
 	unsigned int gpio;
 
         early_printk("6450_setup_sdhci0_cfg_gpio\n");
@@ -52,6 +54,7 @@ void s5p6450_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 
 void s5p6450_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
 {
+	struct s3c_sdhci_platdata *pdata = dev->dev.platform_data;
 	unsigned int gpio;
 
         early_printk("6450_setup_sdhci1_cfg_gpio\n");
