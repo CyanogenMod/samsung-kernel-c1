@@ -471,9 +471,7 @@ static struct s3c_sdhci_platdata smdk6450_hsmmc0_pdata __initdata = {
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC1
 static struct s3c_sdhci_platdata smdk6450_hsmmc1_pdata __initdata = {
-	.cd_type		= S3C_SDHCI_CD_GPIO,
-	.ext_cd_gpio		= S5P6450_GPG(6),
-	.ext_cd_gpio_invert	= 1,
+	.cd_type		= S3C_SDHCI_CD_INTERNAL,
 	.max_width		= 4,
 };
 #endif
