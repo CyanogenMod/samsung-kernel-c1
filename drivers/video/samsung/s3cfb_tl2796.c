@@ -39,10 +39,9 @@
 
 #ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
 
-//define dbg printk
 #define dbg(fmt...)
 
-static int locked = 0;
+static int locked;
 struct s5p_lcd{
 	struct spi_device *g_spi;
 	struct lcd_device *lcd_dev;
@@ -51,7 +50,7 @@ struct s5p_lcd{
 static struct s5p_lcd lcd;
 #else
 static struct spi_device *g_spi;
-#endif //CONFIG_BACKLIGHT_TL2796_AMOLED
+#endif
 
 const unsigned short SEQ_DISPLAY_ON[] = {
 	0x14, 0x03,
@@ -61,7 +60,6 @@ const unsigned short SEQ_DISPLAY_ON[] = {
 
 const unsigned short SEQ_DISPLAY_OFF[] = {
 	0x14, 0x00,
-
 	ENDDEF, 0x0000
 };
 
@@ -94,35 +92,35 @@ const unsigned short SEQ_SETTING[] = {
 	DATA_ONLY, 0xe8,
 
 	0x39, 0x44,
-	0x40, 0x00, 
-	0x41, 0x3f, 
-	0x42, 0x2b, 
-	0x43, 0x1f, 
-	0x44, 0x24, 
-	0x45, 0x1b, 
-	0x46, 0x29, 
-	0x50, 0x00, 
-	0x51, 0x00, 
-	0x52, 0x00, 
-	0x53, 0x1b, 
-	0x54, 0x22, 
-	0x55, 0x1b, 
-	0x56, 0x2a, 
-	0x60, 0x00, 
-	0x61, 0x3f, 
-	0x62, 0x25, 
-	0x63, 0x1c, 
-	0x64, 0x21, 
-	0x65, 0x18, 
-	0x66, 0x3e, 
+	0x40, 0x00,
+	0x41, 0x3f,
+	0x42, 0x2b,
+	0x43, 0x1f,
+	0x44, 0x24,
+	0x45, 0x1b,
+	0x46, 0x29,
+	0x50, 0x00,
+	0x51, 0x00,
+	0x52, 0x00,
+	0x53, 0x1b,
+	0x54, 0x22,
+	0x55, 0x1b,
+	0x56, 0x2a,
+	0x60, 0x00,
+	0x61, 0x3f,
+	0x62, 0x25,
+	0x63, 0x1c,
+	0x64, 0x21,
+	0x65, 0x18,
+	0x66, 0x3e,
 
-	0x17, 0x22,	//Boosting Freq
-	0x18, 0x33,	//power AMP Medium
-	0x19, 0x03,	//Gamma Amp Medium
-	0x1a, 0x01,	//Power Boosting 
-	0x22, 0xa4,	//Vinternal = 0.65*VCI
-	0x23, 0x00,	//VLOUT1 Setting = 0.98*VCI
-	0x26, 0xa0,	//Display Condition LTPS signal generation : Reference= DOTCLK
+	0x17, 0x22, /* Boosting Freq */
+	0x18, 0x33, /* Power AMP Medium */
+	0x19, 0x03, /* Gamma Amp Medium	*/
+	0x1a, 0x01, /* Power Boosting */
+	0x22, 0xa4, /* Vinternal = 0.65*VCI */
+	0x23, 0x00, /* VLOUT1 Setting = 0.98*VCI */
+	0x26, 0xa0, /* Display Condition LTPS signal generation: DOTCLK */
 
 	0x1d, 0xa0,
 	SLEEPMSEC, 300,
@@ -201,7 +199,7 @@ static struct s3cfb_lcd tl2796 = {
 		.v_bpe = 1,
 		.v_sw = 2,
 	},
-#else	
+#else
 	/* universal */
 	.freq = 60,
 	.timing = {
@@ -222,7 +220,6 @@ static struct s3cfb_lcd tl2796 = {
 		.inv_vden = 1,
 	},
 };
-
 
 static int tl2796_spi_write_driver(int addr, int data)
 {
@@ -248,9 +245,8 @@ static int tl2796_spi_write_driver(int addr, int data)
 	return ret ;
 #else
 	return spi_sync(g_spi, &msg);
-#endif //CONFIG_BACKLIGHT_TL2796_AMOLED
+#endif
 }
-
 
 static void tl2796_spi_write(unsigned char address, unsigned char command)
 {
@@ -269,7 +265,7 @@ static void tl2796_panel_send_sequence(const unsigned short *wbuf)
 			tl2796_spi_write(wbuf[i], wbuf[i+1]);
 		else
 			msleep(wbuf[i+1]);
-			//mdelay(wbuf[i+1]);
+			/* mdelay(wbuf[i+1]); */
 		i += 2;
 	}
 }
@@ -283,17 +279,14 @@ void tl2796_ldi_init(void)
 void tl2796_ldi_enable(void)
 {
 	tl2796_panel_send_sequence(SEQ_DISPLAY_ON);
-	/* Added by james */
 	tl2796_panel_send_sequence(SEQ_STANDBY_OFF);
-	
 }
 
 void tl2796_ldi_disable(void)
 {
 	tl2796_panel_send_sequence(SEQ_DISPLAY_OFF);
-	/* Added by james for fixing LCD suspend problem */
+	/* For fixing LCD suspend problem */
 	tl2796_panel_send_sequence(SEQ_STANDBY_ON);
-	
 }
 
 void s3cfb_set_lcd_info(struct s3cfb_global *ctrl)
@@ -302,87 +295,89 @@ void s3cfb_set_lcd_info(struct s3cfb_global *ctrl)
 	ctrl->lcd = &tl2796;
 }
 
-//backlight operations and functions
+/* backlight operations and functions */
 #ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
-static int s5p_bl_update_status(struct backlight_device* bd)
+static int s5p_bl_update_status(struct backlight_device *bd)
 {
 	int bl = bd->props.brightness;
-	dbg("\nUpdate brightness=%d\n",bd->props.brightness);
-	int level = 0;	
-	
-	if(!locked)
-        {
-		if((bl >= 0) && (bl <= 80))
-                        level = 1;
-                else if((bl > 80) && (bl <= 100))
-                        level = 2;
-                else if((bl > 100) && (bl <= 150))
-                        level = 3;
-                else if((bl > 150) && (bl <= 180))
-			level = 4;
-                else if((bl > 180) && (bl <= 200))
-                        level = 5;
-                else if((bl > 200) && (bl <= 255))
-                        level = 6;
-		
-		if(level){
-			tl2796_spi_write(0x39,((bl/64 +1)<<4)&(bl/64+1));	
+	dbg("\nUpdate brightness=%d\n", bd->props.brightness);
+	int level = 0;
 
-			switch (level){
-				/*If bl is not halved, variation in brightness is observed as a curve with 
- 		 		the middle region being brightest and the sides being darker. It is required
-				that brightness increases gradually from left to right.*/
-				case 1:			
-					tl2796_spi_write(0x46, (bl/2)+6); //R
-        		        	tl2796_spi_write(0x56, (bl/2)+4); //G
-                			tl2796_spi_write(0x66, (bl/2)+30); //B
-					break;
-				case 2:			
-					tl2796_spi_write(0x46, (bl/2)+4); //R
-        		        	tl2796_spi_write(0x56, (bl/2)+2); //G
-                			tl2796_spi_write(0x66, (bl/2)+28); //B
-					break;
-				case 3:			
-					tl2796_spi_write(0x46, (bl/2)+6); //R
-        		        	tl2796_spi_write(0x56, (bl/2)+1); //G
-                			tl2796_spi_write(0x66, (bl/2)+32); //B
-					break;
-				case 4:			
-					tl2796_spi_write(0x46, (bl/2)+6); //R
-        		        	tl2796_spi_write(0x56, (bl/2)+1); //G
-                			tl2796_spi_write(0x66, (bl/2)+38); //B
-					break;
-				case 5:
-					tl2796_spi_write(0x46, (bl/2)+7); //R
-        	        		tl2796_spi_write(0x56, (bl/2)); //G
-                			tl2796_spi_write(0x66, (bl/2)+40); //B
-					break;
-				case 6:
-					tl2796_spi_write(0x46, (bl/2)+10); //R
-        	        		tl2796_spi_write(0x56, (bl/2)); //G
-                			tl2796_spi_write(0x66, (bl/2)+48); //B
-					break;
-				default:
-					break;
+	if (!locked) {
+		if ((bl >= 0) && (bl <= 80))
+			level = 1;
+		else if ((bl > 80) && (bl <= 100))
+			level = 2;
+		else if ((bl > 100) && (bl <= 150))
+			level = 3;
+		else if ((bl > 150) && (bl <= 180))
+			level = 4;
+		else if ((bl > 180) && (bl <= 200))
+			level = 5;
+		else if ((bl > 200) && (bl <= 255))
+			level = 6;
+
+		if (level) {
+			tl2796_spi_write(0x39, ((bl/64 + 1)<<4)&(bl/64+1));
+
+			switch (level) {
+			/* If bl is not halved, variation in brightness is
+			 * observed as a curve with the middle region being
+			 * brightest and the sides being darker. It is
+			 * required that brightness increases gradually
+			 * from left to right.*/
+			case 1:
+				tl2796_spi_write(0x46, (bl/2)+6);
+				tl2796_spi_write(0x56, (bl/2)+4);
+				tl2796_spi_write(0x66, (bl/2)+30);
+				break;
+			case 2:
+				tl2796_spi_write(0x46, (bl/2)+4);
+				tl2796_spi_write(0x56, (bl/2)+2);
+				tl2796_spi_write(0x66, (bl/2)+28);
+				break;
+			case 3:
+				tl2796_spi_write(0x46, (bl/2)+6);
+				tl2796_spi_write(0x56, (bl/2)+1);
+				tl2796_spi_write(0x66, (bl/2)+32);
+				break;
+			case 4:
+				tl2796_spi_write(0x46, (bl/2)+6);
+				tl2796_spi_write(0x56, (bl/2)+1);
+				tl2796_spi_write(0x66, (bl/2)+38);
+				break;
+			case 5:
+				tl2796_spi_write(0x46, (bl/2)+7);
+				tl2796_spi_write(0x56, (bl/2));
+				tl2796_spi_write(0x66, (bl/2)+40);
+				break;
+			case 6:
+				tl2796_spi_write(0x46, (bl/2)+10);
+				tl2796_spi_write(0x56, (bl/2));
+				tl2796_spi_write(0x66, (bl/2)+48);
+				break;
+			default:
+				break;
 			}
-		}//level check over
-	}else{
-		dbg("\nLOCKED!!!Brightness cannot be changed now! locked=%d", locked);
+		} /* level check over */
+	} else {
+		dbg("\nLOCKED!!!Brightness cannot be changed now!locked=%d",
+			locked);
 	}
 	return 0;
 }
 
-static int s5p_bl_get_brightness(struct backlilght_device* bd)
+static int s5p_bl_get_brightness(struct backlilght_device *bd)
 {
-	dbg("\n reading brightness \n");
+	dbg("\n reading brightness\n");
 	return 0;
 }
 
-static struct backlight_ops s5p_bl_ops = {
+static const struct backlight_ops s5p_bl_ops = {
 	.update_status = s5p_bl_update_status,
-	.get_brightness = s5p_bl_get_brightness,	
+	.get_brightness = s5p_bl_get_brightness,
 };
-#endif //CONFIG_BACKLIGHT_TL2796_AMOLED
+#endif
 
 static int __init tl2796_probe(struct spi_device *spi)
 {
@@ -393,15 +388,18 @@ static int __init tl2796_probe(struct spi_device *spi)
 #ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
 	lcd.g_spi = spi;
 
-	/* The node is named as pwm-backlight even though PWM control is not being done
- 	since Eclair interface is looking for "pwm-backlight" for backlight brightness control*/
-	lcd.bl_dev = backlight_device_register("pwm-backlight",&spi->dev,&lcd,&s5p_bl_ops);
+	/* The node is named as pwm-backlight even though PWM
+	 * control is not being done since Eclair interface is
+	 * looking for "pwm-backlight" for backlight brightness
+	 * control*/
+	lcd.bl_dev = backlight_device_register("pwm-backlight",
+					&spi->dev, &lcd, &s5p_bl_ops);
 	lcd.bl_dev->props.max_brightness = 255;
 
-	dev_set_drvdata(&spi->dev,&lcd);
+	dev_set_drvdata(&spi->dev, &lcd);
 #else
 	g_spi = spi;
-#endif //CONFIG_BACKLIGHT_TL2796_AMOLED
+#endif
 
 	tl2796_ldi_init();
 	tl2796_ldi_enable();
@@ -411,17 +409,15 @@ static int __init tl2796_probe(struct spi_device *spi)
 
 	return ret;
 }
-#ifdef CONFIG_PM // add by ksoo (2009.09.07)
+#ifdef CONFIG_PM
 int tl2796_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	printk("++++++++[ksoo] tl2796_suspend\n");
 	tl2796_ldi_disable();
 	return 0;
 }
 
 int tl2796_resume(struct platform_device *pdev, pm_message_t state)
 {
-	printk("++++++++[ksoo] tl2796_resume\n");
 	tl2796_ldi_init();
 	tl2796_ldi_enable();
 
