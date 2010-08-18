@@ -77,8 +77,8 @@ void s5p6450_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
         }
 
         /* GPG[6] special-funtion 3 : MMC1 CDn */
-	//s3c_gpio_setpull(S5PV210_GPG0(6), S3C_GPIO_PULL_UP);
-	//s3c_gpio_cfgpin(S5PV210_GPG0(6), S3C_GPIO_SFN(3));
+	s3c_gpio_setpull(S5P6450_GPG(6), S3C_GPIO_PULL_UP);
+	s3c_gpio_cfgpin(S5P6450_GPG(6), S3C_GPIO_SFN(3));
 }
 
 void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)

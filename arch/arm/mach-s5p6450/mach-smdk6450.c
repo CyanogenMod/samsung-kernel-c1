@@ -463,6 +463,27 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #endif
 };
 
+#ifdef CONFIG_S3C_DEV_HSMMC
+static struct s3c_sdhci_platdata smdk6450_hsmmc0_pdata __initdata = {
+	.cd_type		= S3C_SDHCI_CD_NONE,
+	.max_width		= 4,
+};
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+static struct s3c_sdhci_platdata smdk6450_hsmmc1_pdata __initdata = {
+	.cd_type		= S3C_SDHCI_CD_GPIO,
+	.ext_cd_gpio		= S5P6450_GPG(6),
+	.ext_cd_gpio_invert	= 1,
+	.max_width		= 4,
+};
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+static struct s3c_sdhci_platdata smdk6450_hsmmc2_pdata __initdata = {
+	.cd_type		= S3C_SDHCI_CD_NONE,
+	.max_width		= 4,
+};
+#endif
+
 static void __init smdk6450_map_io(void)
 {
 	s5p_init_io(NULL, 0, S5P_SYS_ID);
@@ -480,15 +501,6 @@ static void __init smdk6450_machine_init(void)
 {
 #ifdef CONFIG_FB_S3C_V2
 	s3cfb_set_platdata(NULL);
-#endif
-#ifdef CONFIG_S3C_DEV_HSMMC
-	s5p6450_default_sdhci0();
-#endif
-#ifdef CONFIG_S3C_DEV_HSMMC1
-	s5p6450_default_sdhci1();
-#endif
-#ifdef CONFIG_S3C_DEV_HSMMC2
-	s5p6450_default_sdhci2();
 #endif
 #ifdef CONFIG_S3C_DEV_MSHC
 	s5p6450_default_mshci();
@@ -523,6 +535,15 @@ static void __init smdk6450_machine_init(void)
 
 #ifdef CONFIG_PM
 	s3c_pm_init();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC
+	s3c_sdhci0_set_platdata(&smdk6450_hsmmc0_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	s3c_sdhci1_set_platdata(&smdk6450_hsmmc1_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	s3c_sdhci2_set_platdata(&smdk6450_hsmmc2_pdata);
 #endif
 
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));

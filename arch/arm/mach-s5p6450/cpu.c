@@ -39,6 +39,7 @@
 #include <plat/clock.h>
 #include <plat/adc-core.h>
 #include <plat/s5p6450.h>
+#include <plat/sdhci.h>
 
 /* Initial IO mappings */
 
@@ -81,6 +82,15 @@ void __init s5p6450_map_io(void)
 {
 	iotable_init(s5p6450_iodesc, ARRAY_SIZE(s5p6450_iodesc));
 	/* initialize any device information early */
+#ifdef CONFIG_S3C_DEV_HSMMC
+	s5p6450_default_sdhci0();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
+	s5p6450_default_sdhci1();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
+	s5p6450_default_sdhci2();
+#endif
 	s3c_adc_setname("s3c64xx-adc");
 }
 
