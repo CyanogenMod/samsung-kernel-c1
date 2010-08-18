@@ -31,6 +31,7 @@ struct platform_device; /* don't need the contents */
 void s3cfb_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
+	u32 reg;
 
 	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPF0(i), S3C_GPIO_SFN(2));
@@ -56,8 +57,10 @@ void s3cfb_cfg_gpio(struct platform_device *pdev)
 		s5p_gpio_set_drvstr(S5PV310_GPF3(i), S5P_GPIO_DRVSTR_LV4);
 	}
 
-	/* mDNIe SEL: why we shall write 0x2 ? */
-	/* writel(0x2, S5P_MDNIE_SEL); */
+	/* Set FIMD0 bypass */
+	reg = __raw_readl(S3C_VA_SYS + 0x0210);
+	reg |= (1<<1);
+	__raw_writel(reg, S3C_VA_SYS + 0x0210);
 }
 
 int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
