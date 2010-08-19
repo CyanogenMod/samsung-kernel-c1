@@ -164,6 +164,8 @@ static struct s3c_platform_fimc default_fimc0_data __initdata = {
 	.default_cam	= CAMERA_PAR_A,
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 	.hw_ver	= 0x45,
+#elif defined(CONFIG_CPU_S5P6450)
+	.hw_ver = 0x50,
 #else
 	.hw_ver	= 0x43,
 #endif
@@ -190,6 +192,8 @@ void __init s3c_fimc0_set_platdata(struct s3c_platform_fimc *pd)
 			npd->clk_off = s3c_fimc_clk_off;
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 		npd->hw_ver = 0x45;
+#elif defined(CONFIG_CPU_S5P6450)
+		npd->hw_ver = 0x50;
 #else
 		npd->hw_ver = 0x43;
 #endif
@@ -198,6 +202,7 @@ void __init s3c_fimc0_set_platdata(struct s3c_platform_fimc *pd)
 	}
 }
 
+#if !defined(CONFIG_CPU_S5P6450)
 static struct resource s3c_fimc1_resource[] = {
 	[0] = {
 		.start	= S5P_PA_FIMC1,
@@ -328,6 +333,7 @@ struct platform_device s3c_device_ipc = {
 	.num_resources	= ARRAY_SIZE(s3c_ipc_resource),
 	.resource	= s3c_ipc_resource,
 };
+#endif
 
 #ifdef CONFIG_VIDEO_FIMC_MIPI
 static struct resource s3c_csis_resource[] = {
