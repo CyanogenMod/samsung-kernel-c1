@@ -32,6 +32,7 @@ obj-$(CONFIG_S5P6450_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
 obj-$(CONFIG_S5P6450_SETUP_MSHCI)	+= setup-mshci.o
 obj-$(CONFIG_S5P6450_SETUP_MSHCI_GPIO)	+= setup-mshci-gpio.o
 
+obj-$(CONFIG_S5P6450_SETUP_FIMC0)	+= setup-fimc0.o
 # PM
 
 obj-$(CONFIG_PM)        += pm.o

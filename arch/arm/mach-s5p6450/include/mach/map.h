@@ -106,6 +106,11 @@
 #define S5P6450_PA_LCD	   	(0xEE000000)
 #define S5P6450_SZ_LCD		SZ_1M
 
+/* FIMC */
+#define S5P6450_PA_FIMC0	(0xEE100000)
+#define S5P_PA_FIMC0		S5P6450_PA_FIMC0
+#define S5P_SZ_FIMC0		SZ_1M
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5P6450_PA_UART
 #define S3C_PA_HSMMC0		S5P6450_PA_HSMMC0

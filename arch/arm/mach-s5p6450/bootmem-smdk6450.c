@@ -20,7 +20,15 @@
 #include <mach/media.h>
 
 struct s5p_media_device media_devs[] = {
-	/* Will be populated later */
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMC0
+	{
+		.id = S5P_MDEV_FIMC0,
+		.name = "fimc0",
+		.bank = 1,
+		.memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_FIMC0 * SZ_1K,
+		.paddr = 0,
+	},
+#endif
 };
 
 int nr_media_devs = (sizeof(media_devs) / sizeof(media_devs[0]));

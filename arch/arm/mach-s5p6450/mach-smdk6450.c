@@ -53,9 +53,15 @@
 #include <plat/sdhci.h>
 #include <plat/gpio-cfg.h>
 #include <plat/pm.h>
+#include <plat/fimc.h>
+
+#include <media/s5k3ba_platform.h>
+#include <media/s5k4ba_platform.h>
+#include <media/s5k4ea_platform.h>
+#include <media/s5k6aa_platform.h>
 
 #include <linux/mfd/s5m8751/core.h>
-
+#include <plat/media.h>
 extern struct sys_timer s5p6450_timer;
 
 #define S5P6450_UCON_DEFAULT    (S3C2410_UCON_TXILEVEL |	\
@@ -451,6 +457,9 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 	&s3c_device_usb_ehci,
 	&s3c_device_usb_ohci,
 #endif
+#ifdef CONFIG_VIDEO_FIMC
+	&s3c_device_fimc0,
+#endif
 #ifdef CONFIG_SND_S3C64XX_SOC_I2S_V4
 	&s5p6450_device_iis0,
 #endif
@@ -493,7 +502,151 @@ static void __init smdk6450_map_io(void)
 	s3c24xx_init_clocks(19200000);
 
 	s3c24xx_init_uarts(smdk6450_uartcfgs, ARRAY_SIZE(smdk6450_uartcfgs));
+	s5p_reserve_bootmem();
 }
+
+#ifdef CONFIG_VIDEO_FIMC
+
+/*
+ * Guide for Camera Configuration for smdkv210
+ * ITU channel must be set as A or B
+ * ITU CAM CH A: S5K3BA only
+ * ITU CAM CH B: one of S5K3BA and S5K4BA
+ * MIPI: one of S5K4EA and S5K6AA
+ *
+ * NOTE1: if the S5K4EA is enabled, all other cameras must be disabled
+ * NOTE2: currently, only 1 MIPI camera must be enabled
+ * NOTE3: it is possible to use both one ITU cam and
+ * 	  one MIPI cam except for S5K4EA case
+ *
+*/
+#undef CAM_ITU_CH_A
+#undef WRITEBACK_ENABLED
+
+#ifdef CONFIG_VIDEO_S5K4EA
+#define S5K4EA_ENABLED
+/* undef : 3BA, 4BA, 6AA */
+#else
+#ifdef CONFIG_VIDEO_S5K6AA
+#define S5K6AA_ENABLED
+/* undef : 4EA */
+#else
+#ifdef CONFIG_VIDEO_S5K3BA
+#define S5K3BA_ENABLED
+/* undef : 4BA */
+#elif CONFIG_VIDEO_S5K4BA
+#define S5K4BA_ENABLED
+/* undef : 3BA */
+#endif
+#endif
+#endif
+
+/* External camera module setting */
+/* 2 ITU Cameras */
+#ifdef S5K3BA_ENABLED
+static struct s5k3ba_platform_data s5k3ba_plat = {
+	.default_width = 640,
+	.default_height = 480,
+	.pixelformat = V4L2_PIX_FMT_VYUY,
+	.freq = 24000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k3ba_i2c_info = {
+	I2C_BOARD_INFO("S5K3BA", 0x2d),
+	.platform_data = &s5k3ba_plat,
+};
+
+static struct s3c_platform_camera s5k3ba = {
+	.id		= CAMERA_PAR_A,
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CRYCBY,
+	.i2c_busnum	= 0,
+	.info		= &s5k3ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_VYUY,
+	.srclk_name	= "mout_epll",
+	.clk_name	= "sclk_camif",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	.width		= 640,
+	.height		= 480,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 640,
+		.height	= 480,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+};
+#endif
+
+#ifdef S5K4BA_ENABLED
+static struct s5k4ba_platform_data s5k4ba_plat = {
+	.default_width = 1600,
+	.default_height = 1200,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k4ba_i2c_info = {
+	I2C_BOARD_INFO("S5K4BA", 0x2d),
+	.platform_data = &s5k4ba_plat,
+};
+
+static struct s3c_platform_camera s5k4ba = {
+	.id		= CAMERA_PAR_A,
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k4ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "dout_epll",
+	.clk_name	= "sclk_camif",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	.width		= 1600,
+	.height		= 1200,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 1600,
+		.height	= 1200,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+};
+#endif
+
+/* Interface setting */
+static struct s3c_platform_fimc fimc_plat = {
+	.default_cam	= CAMERA_PAR_A,
+	.camera		= {
+#ifdef S5K3BA_ENABLED
+		&s5k3ba,
+#endif
+#ifdef S5K4BA_ENABLED
+		&s5k4ba,
+#endif
+	},
+};
+#endif
+
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.delay			= 10000,
 	.presc			= 49,
@@ -549,6 +702,10 @@ static void __init smdk6450_machine_init(void)
 	s3c_sdhci2_set_platdata(&smdk6450_hsmmc2_pdata);
 #endif
 
+#ifdef CONFIG_VIDEO_FIMC
+	/* fimc */
+	s3c_fimc0_set_platdata(&fimc_plat);
+#endif
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 
