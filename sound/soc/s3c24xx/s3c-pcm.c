@@ -439,7 +439,7 @@ static __devinit int s3c_pcm_dev_probe(struct platform_device *pdev)
 	/* Default is 128fs */
 	pcm->sclk_per_fs = 128;
 
-	pcm->cclk = clk_get(&pdev->dev, "sclk_audio");
+	pcm->cclk = clk_get(&pdev->dev, "audio-bus");
 	if (IS_ERR(pcm->cclk)) {
 		dev_err(&pdev->dev, "failed to get pcm src_clock\n");
 		ret = PTR_ERR(pcm->cclk);
