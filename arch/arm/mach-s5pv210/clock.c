@@ -1129,6 +1129,8 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_sclk_hdmi,
 	&clk_mout_csis,
 	&clk_sclk_audio0,
+	&clk_mout_audss,
+	&clk_sclk_audss,
 };
 
 static int s5pv210_epll_enable(struct clk *clk, int enable)
@@ -1308,8 +1310,6 @@ static struct clk *clks[] __initdata = {
 	&clk_pcmcdclk0,
 	&clk_pcmcdclk1,
 	&clk_pcmcdclk2,
-	&clk_sclk_audss.clk,
-	&clk_mout_audss.clk,
 };
 
 void __init s5pv210_register_clocks(void)
