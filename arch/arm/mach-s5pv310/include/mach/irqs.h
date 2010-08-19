@@ -59,8 +59,8 @@
 #define IRQ_PEN0		COMBINER_IRQ(19, 1)
 #define IRQ_ADC1		COMBINER_IRQ(19, 2)
 #define IRQ_PEN1		COMBINER_IRQ(19, 3)
-#define IRQ_ADC			IRQ_ADC0
-#define IRQ_TC			IRQ_PEN0
+#define IRQ_ADC			IRQ_ADC1
+#define IRQ_TC			IRQ_PEN1
 
 #define IRQ_MDMA0		COMBINER_IRQ(20, 0)
 #define IRQ_MDMA1		COMBINER_IRQ(20, 1)

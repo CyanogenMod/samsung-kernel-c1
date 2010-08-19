@@ -66,4 +66,10 @@ config S5P6450_SETUP_I2C1
 	default y
 	help
 	  Common setup code for i2c bus 1.
+
+config S5P6450_SETUP_FIMC0
+	bool
+	default y
+	help
+	  Common setup code for FIMC0 conntroller.
 endif

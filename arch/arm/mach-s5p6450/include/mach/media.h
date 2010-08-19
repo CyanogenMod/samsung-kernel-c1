@@ -13,5 +13,10 @@
 #ifndef _S5P6450_MEDIA_H
 #define _S5P6450_MEDIA_H
 
+#define S5P_MDEV_JPEG		0
+#define S5P_MDEV_MFC		1
+#define S5P_MDEV_FIMD		2
+#define	S5P_MDEV_FIMC0		3
+
 #endif
 

@@ -129,7 +129,6 @@ int fimc_hwset_enable_irq(struct fimc_control *ctrl, int overflow, int level)
 
 	if (level)
 		cfg |= S3C_CIGCTRL_IRQ_LEVEL;
-
 	writel(cfg, ctrl->regs + S3C_CIGCTRL);
 
 	return 0;
@@ -1598,6 +1597,17 @@ int fimc_hwset_input_lineskip(struct fimc_control *ctrl)
 
 int fimc_hw_reset_camera(struct fimc_control *ctrl)
 {
+	u32 cfg = 0;
+	cfg = readl(ctrl->regs + S3C_CIGCTRL);
+	cfg &= ~S3C_CIGCTRL_CAMRST_A;
+
+	writel(cfg, ctrl->regs + S3C_CIGCTRL);
+
+	cfg = readl(ctrl->regs + S3C_CIGCTRL);
+	cfg |= S3C_CIGCTRL_CAMRST_A;
+
+	writel(cfg, ctrl->regs + S3C_CIGCTRL);
+
 	return 0;
 }
 
