@@ -1297,6 +1297,7 @@ void __init_or_cpufreq s5pv210_setup_clocks(void)
 		s3c_set_clksrc(&clksrcs[ptr], true);
 
 	clk_set_parent(&clk_sclk_audio0.clk, &clk_mout_epll.clk);
+	clk_set_parent(&clk_sclk_audss.clk, &clk_sclk_audio0.clk);
 }
 
 static struct clk *clks[] __initdata = {
