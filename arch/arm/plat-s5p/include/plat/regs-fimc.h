@@ -39,7 +39,7 @@
 #define S3C_CISCCTRL		(0x58)	/* Main scaler control */
 #define S3C_CITAREA		(0x5c)	/* Target area */
 #define S3C_CISTATUS		(0x64)	/* Status */
-#define S3C_CISTATUS2		(0x64)	/* Status2 */
+#define S3C_CISTATUS2		(0x68)	/* Status2 */
 #define S3C_CIIMGCPT		(0xc0)	/* Image capture enable command */
 #define S3C_CICPTSEQ		(0xc4)	/* Capture sequence */
 #define S3C_CIIMGEFF		(0xd0)	/* Image effects */
@@ -157,11 +157,11 @@
 */
 /* frame start address 1~32 */
 #define S3C_CIOYSA(__x)			\
-	(__x < 5)?(0x18 + (__x) * 4):(0x200 + (__x) * 4)
+	((__x < 5)?(0x18 + (__x) * 4):(0x200 + (__x) * 4))
 #define S3C_CIOCBSA(__x)		\
-	(__x < 5)?(0x28 + (__x) * 4):(0x270 + (__x) * 4)
+	((__x < 5)?(0x28 + (__x) * 4):(0x270 + (__x) * 4))
 #define S3C_CIOCRSA(__x)		\
-	(__x < 5)?(0x38 + (__x) * 4):(0x2e0 + (__x) * 4)
+	((__x < 5)?(0x38 + (__x) * 4):(0x2e0 + (__x) * 4))
 
 #define S3C_CISRCFMT_SOURCEHSIZE(x)		((x) << 16)
 #define S3C_CISRCFMT_SOURCEVSIZE(x)		((x) << 0)
