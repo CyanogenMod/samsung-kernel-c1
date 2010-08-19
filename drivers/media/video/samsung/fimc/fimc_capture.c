@@ -1148,6 +1148,8 @@ int fimc_streamon_capture(void *fh)
 	if (ctrl->cam->cam_power)
 		ctrl->cam->cam_power(1);
 
+	fimc_hw_reset_camera(ctrl);
+
 	ctrl->status = FIMC_READY_ON;
 	cap->irq = 0;
 
