@@ -36,25 +36,25 @@ void s3cfb_cfg_gpio(struct platform_device *pdev)
 	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPF0(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPF0(i), S3C_GPIO_PULL_NONE);
-		s5p_gpio_set_drvstr(S5PV310_GPF0(i), S5P_GPIO_DRVSTR_LV4);
+		s5p_gpio_set_drvstr(S5PV310_GPF0(i), S5P_GPIO_DRVSTR_LV1);
 	}
 
 	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPF1(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPF1(i), S3C_GPIO_PULL_NONE);
-		s5p_gpio_set_drvstr(S5PV310_GPF1(i), S5P_GPIO_DRVSTR_LV4);
+		s5p_gpio_set_drvstr(S5PV310_GPF1(i), S5P_GPIO_DRVSTR_LV1);
 	}
 
 	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPF2(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPF2(i), S3C_GPIO_PULL_NONE);
-		s5p_gpio_set_drvstr(S5PV310_GPF2(i), S5P_GPIO_DRVSTR_LV4);
+		s5p_gpio_set_drvstr(S5PV310_GPF2(i), S5P_GPIO_DRVSTR_LV1);
 	}
 
 	for (i = 0; i < 4; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPF3(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPF3(i), S3C_GPIO_PULL_NONE);
-		s5p_gpio_set_drvstr(S5PV310_GPF3(i), S5P_GPIO_DRVSTR_LV4);
+		s5p_gpio_set_drvstr(S5PV310_GPF3(i), S5P_GPIO_DRVSTR_LV1);
 	}
 
 	/* Set FIMD0 bypass */
