@@ -160,33 +160,12 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	maxclk = 86 * 1000000;
 
 	cfg = readl(ctrl->regs + S3C_VIDCON0);
+	cfg &= ~( S3C_VIDCON0_CLKVALUP_MASK |
+		S3C_VIDCON0_VCLKEN_MASK);
+	cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL );
 
-	if (pdata->hw_ver == 0x70) {
-		cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
-			S3C_VIDCON0_VCLKEN_MASK);
-		cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS |
-			S3C_VIDCON0_VCLKEN_NORMAL);
-	} else {
-		cfg &= ~(S3C_VIDCON0_CLKSEL_MASK | S3C_VIDCON0_CLKVALUP_MASK |
-			S3C_VIDCON0_VCLKEN_MASK | S3C_VIDCON0_CLKDIR_MASK);
-		cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL |
-			S3C_VIDCON0_CLKDIR_DIVIDED);
-	}
-
-	if (pdata->hw_ver == 0x70) {
-		src_clk = clk_get_rate(ctrl->clock);
-		printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
-	} else {
-		if (strcmp(pdata->clk_name, "sclk_fimd") == 0) {
-			cfg |= S3C_VIDCON0_CLKSEL_SCLK;
-			src_clk = clk_get_rate(ctrl->clock);
-			printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
-		} else {
-			cfg |= S3C_VIDCON0_CLKSEL_HCLK;
-			src_clk = ctrl->clock->parent->rate;
-			printk(KERN_INFO "FIMD src hclk = %d\n", src_clk);
-		}
-	}
+	src_clk = clk_get_rate(ctrl->clock);
+	printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
 
 	vclk = PICOS2KHZ(ctrl->fb[pdata->default_win]->var.pixclock) * 1000;
 
