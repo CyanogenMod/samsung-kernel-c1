@@ -94,7 +94,11 @@ struct platform_device s3c_device_fb = {
 };
 
 static struct s3c_platform_fb default_fb_data __initdata = {
+#if defined(CONFIG_ARCH_S5PV310)
+	.hw_ver = 0x70,
+#else
 	.hw_ver	= 0x62,
+#endif
 	.nr_wins	= 5,
 #if defined(CONFIG_FB_S3C_DEFAULT_WINDOW)
 	.default_win	= CONFIG_FB_S3C_DEFAULT_WINDOW,
