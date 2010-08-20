@@ -1049,6 +1049,25 @@ config PL310_ERRATA_588369
 	   is not correctly implemented in PL310 as clean lines are not
 	   invalidated as a result of these operations. Note that this errata
 	   uses Texas Instrument's secure monitor api.
+
+config ARM_ERRATA_742230
+	bool "ARM errata: DMB behaviour may be faulty"
+	depends on CPU_V7
+	help
+	   DMB instruction between 2 write operations may not ensure the correct
+	   visibility ordering of the 2 writes.
+	   This option Set Diagnostic register[4] to make DMB to behave as a DSB.
+
+config ARM_ERRATA_742231
+	bool "ARM errata: Bad eviction hazards reset"
+	depends on CPU_V7
+	help
+	   2 or more coherent agents in SMP mode, accessing some data located in
+	   the same cache line, may get corrupted data due to bad handling of the
+	   address hazard when the line gets replaced from one of the CPU at the same
+	   time as the 2nd CPU is accessing it.
+	   This option set Diagnostic register[12] and [22] to disable the
+	   outstanding access capabilities of Cortex-A9 MPCore.
 endmenu
 
 source "arch/arm/common/Kconfig"

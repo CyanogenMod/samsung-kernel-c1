@@ -88,10 +88,12 @@ static unsigned long s5p6450_epll_get_rate(struct clk *clk)
 	return clk->rate;
 }
 
-static u32 epll_div[][5] = {
-	{ 133000000,	27307,	55, 2, 2 },
-	{ 100000000,	43691,	41, 2, 2 },
-	{ 480000000,	0,	80, 2, 0 },
+static u32 epll_div[][6] = {
+/*         FOUT      V, M,  P, S    K    if  FIN :19200000 */
+	{  45158400, 0, 37, 2, 3, 41397 },
+	{  49152000, 0, 40, 2, 3, 62915 },
+	{  67738000, 1, 56, 2, 3, 29382 },
+
 };
 
 static int s5p6450_epll_set_rate(struct clk *clk, unsigned long rate)
@@ -105,15 +107,18 @@ static int s5p6450_epll_set_rate(struct clk *clk, unsigned long rate)
 	epll_con = __raw_readl(S5P_EPLL_CON);
 	epll_con_k = __raw_readl(S5P_EPLL_CON_K);
 
-	epll_con_k &= ~(PLL90XX_KDIV_MASK);
-	epll_con &= ~(PLL90XX_MDIV_MASK | PLL90XX_PDIV_MASK | PLL90XX_SDIV_MASK);
+	epll_con_k &= ~(0xff) |	(PLL90XX_VDIV_MASK << 16);
+	epll_con &= ~(0xff << PLL90XX_MDIV_SHIFT |   \
+			PLL90XX_PDIV_MASK << PLL90XX_PDIV_SHIFT | \
+			PLL90XX_SDIV_MASK << PLL90XX_SDIV_SHIFT);
 
 	for (i = 0; i < ARRAY_SIZE(epll_div); i++) {
 		 if (epll_div[i][0] == rate) {
-			epll_con_k |= (epll_div[i][1] << PLL90XX_KDIV_SHIFT);
-			epll_con |= (epll_div[i][2] << PLL90XX_MDIV_SHIFT) |
-				    (epll_div[i][3] << PLL90XX_PDIV_SHIFT) |
-				    (epll_div[i][4] << PLL90XX_SDIV_SHIFT);
+			epll_con_k |= epll_div[i][1] << 16; /*VSEL */
+			epll_con |= epll_div[i][2] << 16;   /* M */
+			epll_con |= epll_div[i][3] << 8;    /* P */
+			epll_con |= epll_div[i][4] << 0;    /* S */
+			epll_con_k |= epll_div[i][5] << 0;  /* K */
 			break;
 		}
 	}
@@ -537,6 +542,12 @@ static struct clk init_clocks[] = {
 		.enable         = s5p6450_hclk0_ctrl,
 		.ctrlbit        = S5P_CLKCON_HCLK0_HSMMC2,
 	}, {
+		.name		= "fimc",
+		.id		= -1,
+		.parent		= &clk_hclk133.clk,
+		.enable         = s5p6450_hclk0_ctrl,
+		.ctrlbit	= S5P_CLKCON_HCLK0_FIMC,
+	}, {
 		.name           = "dma",
 		.id             = -1,
 		.parent         = &clk_hclk133.clk,
@@ -548,6 +559,12 @@ static struct clk init_clocks[] = {
 		.parent         = &clk_pclk66.clk,
 		.enable         = s5p6450_pclk_ctrl,
 		.ctrlbit        = S5P_CLKCON_PCLK_I2S0,
+	}, {
+		.name		= "pcm",
+		.id		= 0,
+		.parent         = &clk_pclk66.clk,
+		.enable		= s5p6450_pclk_ctrl,
+		.ctrlbit	= S5P_CLKCON_PCLK_PCM0,
 	},
 };
 

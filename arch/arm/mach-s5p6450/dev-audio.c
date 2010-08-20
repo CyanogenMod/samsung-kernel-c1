@@ -73,3 +73,55 @@ struct platform_device s5p6450_device_iis0 = {
 		.platform_data = &s3c_i2s_pdata,
 	},
 };
+
+/* PCM Controller platform_devices */
+
+static int s5p6450_pcm_cfg_gpio(struct platform_device *pdev)
+{
+	switch (pdev->id) {
+	case 0:
+		s3c_gpio_cfgpin(S5P6450_GPR(4), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPR(7), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPR(8), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPR(13), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5P6450_GPR(14), S3C_GPIO_SFN(2));
+		break;
+	default:
+		printk(KERN_DEBUG "Invalid PCM Controller number!");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct s3c_audio_pdata s3c_pcm_pdata = {
+		.cfg_gpio = s5p6450_pcm_cfg_gpio,
+};
+
+static struct resource s5p6450_pcm0_resource[] = {
+		[0] = {
+			.start = S5P6450_PA_PCM,
+			.end   = S5P6450_PA_PCM + 0x100 - 1,
+			.flags = IORESOURCE_MEM,
+		},
+		[1] = {
+			.start = DMACH_PCM0_TX,
+			.end   = DMACH_PCM0_TX,
+			.flags = IORESOURCE_DMA,
+		},
+		[2] = {
+			.start = DMACH_PCM0_RX,
+			.end   = DMACH_PCM0_RX,
+			.flags = IORESOURCE_DMA,
+		},
+};
+
+struct platform_device s5p6450_device_pcm0 = {
+		.name		  = "samsung-pcm",
+		.id		  = 0,
+		.num_resources	  = ARRAY_SIZE(s5p6450_pcm0_resource),
+		.resource	  = s5p6450_pcm0_resource,
+		.dev = {
+			.platform_data = &s3c_pcm_pdata,
+		},
+};

@@ -157,7 +157,7 @@ static void s5pv310_systimer_set_mode(enum clock_event_mode mode,
 static struct clock_event_device sys_tick_event_device = {
 	.name		= "sys_tick",
 	.features       = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-	.rating		= 360,
+	.rating		= 250,
 	.shift		= 32,
 	.set_next_event	= s5pv310_systimer_set_next_event,
 	.set_mode	= s5pv310_systimer_set_mode,

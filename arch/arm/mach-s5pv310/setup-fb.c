@@ -69,7 +69,6 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 	struct clk *mout_mpll = NULL;
 
 	u32 rate = 0;
-	int ret;
 
 	sclk = clk_get(&pdev->dev, "sclk_fimd");
 	if (IS_ERR(sclk)) {
@@ -104,9 +103,7 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 
 err_clk1:
 	clk_put(mout_mpll);
-
 	clk_put(sclk);
-
 
 	return -EINVAL;
 
@@ -114,15 +111,10 @@ err_clk1:
 
 int s3cfb_clk_off(struct platform_device *pdev, struct clk **clk)
 {
-	int ret;
-
 	clk_disable(*clk);
 	clk_put(*clk);
 
 	*clk = NULL;
-
-	if (ret < 0)
-		dev_err(&pdev->dev, "failed to disable fimd power domain\n");
 
 	return 0;
 }
@@ -135,10 +127,10 @@ void s3cfb_get_clk_name(char *clk_name)
 #ifdef CONFIG_FB_S3C_WA101S
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
+#if !defined(CONFIG_BACKLIGHT_PWM)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
-
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
 			"lcd backlight control\n");
@@ -147,25 +139,25 @@ int s3cfb_backlight_on(struct platform_device *pdev)
 
 	gpio_direction_output(S5PV310_GPD0(1), 1);
 	gpio_free(S5PV310_GPD0(1));
-
+#endif
 	return 0;
 }
 
 int s3cfb_backlight_off(struct platform_device *pdev)
 {
+#if !defined(CONFIG_BACKLIGHT_PWM)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
-
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
-				"lcd backlight control\n");
+			"lcd backlight control\n");
 		return err;
 	}
 
 	gpio_direction_output(S5PV310_GPD0(1), 0);
 	gpio_free(S5PV310_GPD0(1));
-
+#endif
 	return 0;
 }
 
@@ -186,7 +178,6 @@ int s3cfb_backlight_on(struct platform_device *pdev)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
-
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
 			"lcd backlight control\n");
@@ -205,10 +196,9 @@ int s3cfb_backlight_off(struct platform_device *pdev)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
-
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
-				"lcd backlight control\n");
+			"lcd backlight control\n");
 		return err;
 	}
 
@@ -250,29 +240,29 @@ int s3cfb_lcd_off(struct platform_device *pdev)
 #elif defined(CONFIG_FB_S3C_HT101HD1)
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
+#if !defined(CONFIG_BACKLIGHT_PWM)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(0), "GPD0");
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
-				"lcd backlight control\n");
+			"lcd backlight control\n");
 		return err;
 	}
 
 	err = gpio_request(S5PV310_GPB(2), "GPB");
 	if (err) {
 		printk(KERN_ERR "failed to request GPB for "
-				"lcd LED_EN control\n");
+			"lcd LED_EN control\n");
 		return err;
 	}
 
 	gpio_direction_output(S5PV310_GPD0(0), 1); /* BL pwm High */
-
 	gpio_direction_output(S5PV310_GPB(2), 1); /* LED_EN (SPI1_MOSI) */
 
 	gpio_free(S5PV310_GPD0(0));
 	gpio_free(S5PV310_GPB(2));
-
+#endif
 	return 0;
 }
 
@@ -282,17 +272,16 @@ int s3cfb_backlight_off(struct platform_device *pdev)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(0), "GPD0");
-
 	if (err) {
 		printk(KERN_ERR "failed to request GPD0 for "
-				"lcd backlight control\n");
+			"lcd backlight control\n");
 		return err;
 	}
 
 	err = gpio_request(S5PV310_GPB(2), "GPB");
 	if (err) {
 		printk(KERN_ERR "failed to request GPB for "
-				"lcd LED_EN control\n");
+			"lcd LED_EN control\n");
 		return err;
 	}
 
@@ -319,7 +308,6 @@ int s3cfb_lcd_on(struct platform_device *pdev)
 	gpio_direction_output(S5PV310_GPH0(1), 1);
 
 	gpio_set_value(S5PV310_GPH0(1), 0);
-
 	gpio_set_value(S5PV310_GPH0(1), 1);
 
 	gpio_free(S5PV310_GPH0(1));
@@ -331,9 +319,10 @@ int s3cfb_lcd_off(struct platform_device *pdev)
 {
 	return 0;
 }
-#elif CONFIG_FB_S3C_TL2796
+#elif defined(CONFIG_FB_S3C_TL2796)
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
+#if !defined(CONFIG_BACKLIGHT_PWM)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
@@ -341,16 +330,17 @@ int s3cfb_backlight_on(struct platform_device *pdev)
 		printk(KERN_ERR "failed to request GPD0 for "
 			"lcd backlight control\n");
 		return err;
-		}
+	}
 
 	gpio_direction_output(S5PV310_GPD0(1), 1);
 	gpio_free(S5PV310_GPD0(1));
-
+#endif
 	return 0;
 }
 
 int s3cfb_backlight_off(struct platform_device *pdev)
 {
+#if !defined(CONFIG_BACKLIGHT_PWM)
 	int err;
 
 	err = gpio_request(S5PV310_GPD0(1), "GPD0");
@@ -362,6 +352,7 @@ int s3cfb_backlight_off(struct platform_device *pdev)
 
 	gpio_direction_output(S5PV310_GPD0(1), 0);
 	gpio_free(S5PV310_GPD0(1));
+#endif
 	return 0;
 }
 
