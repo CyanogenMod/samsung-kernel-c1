@@ -125,6 +125,9 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 #ifdef CONFIG_S3C_DEV_I2C1
 /* I2C1 */
 static struct i2c_board_info i2c_devs1[] __initdata = {
+#if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
+	{ I2C_BOARD_INFO("wm8994", 0x1a), },
+#endif
 };
 #endif
 #ifdef CONFIG_S3C_DEV_I2C2
@@ -214,6 +217,9 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #if defined(CONFIG_S3C_DEV_I2C7)
 	&s3c_device_i2c7,
 #endif
+#endif
+#if defined(CONFIG_SND_S3C64XX_SOC_I2S_V4)
+	&s5pv310_device_iis0,
 #endif
 
 #ifdef CONFIG_VIDEO_MFC51
@@ -419,7 +425,6 @@ static void __init smdkv310_machine_init(void)
 	s5p_l2x0_cache_init();
 #endif
 
-#endif
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv310_hsmmc0_pdata);
 #endif

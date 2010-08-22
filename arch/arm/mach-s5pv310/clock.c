@@ -470,17 +470,17 @@ static struct clk init_clocks[] = {
 		.ctrlbit	= (1 << 9),
 	}, {
                 .name           = "iis",
-                .id             = 2,
+                .id             = 1,
                 .enable         = s5pv310_clk_ip_peril_ctrl,
                 .ctrlbit        = (1 << 21),
         }, {
                 .name           = "iis",
-                .id             = 1,
+                .id             = 0,
                 .enable         = s5pv310_clk_ip_peril_ctrl,
                 .ctrlbit        = (1 << 20),
         }, {
                 .name           = "iis",
-                .id             = 0,
+                .id             = -1,
                 .enable         = s5pv310_clk_audss_ctrl,
                 .ctrlbit                = S5P_AUDSS_CLKGATE_I2SSPECIAL,
         }, {
@@ -536,41 +536,49 @@ static struct clk init_clocks[] = {
 	}, {
 		.name		= "i2c",
 		.id		= 0,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 6),
 	}, {
 		.name		= "i2c",
 		.id		= 1,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 7),
 	}, {
 		.name		= "i2c",
 		.id		= 2,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 8),
 	}, {
 		.name		= "i2c",
 		.id		= 3,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 9),
 	}, {
 		.name		= "i2c",
 		.id		= 4,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 10),
 	}, {
 		.name		= "i2c",
 		.id		= 5,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 11),
 	}, {
 		.name		= "i2c",
 		.id		= 6,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 12),
 	}, {
 		.name		= "i2c",
 		.id		= 7,
+		.parent 		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 13),
 	},
@@ -1074,6 +1082,99 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_dout_mmc2,
 	&clk_dout_mmc3,
 	&clk_dout_mmc4,
+	&clk_mout_audss,
+	&clk_sclk_audss,
+};
+
+static int s5pv310_epll_enable(struct clk *clk, int enable)
+{
+	unsigned int ctrlbit = clk->ctrlbit;
+	unsigned int epll_con = __raw_readl(S5P_EPLL_CON0) & ~ctrlbit;
+
+	if (enable)
+		__raw_writel(epll_con | ctrlbit, S5P_EPLL_CON0);
+	else
+		__raw_writel(epll_con, S5P_EPLL_CON0);
+
+	return 0;
+}
+
+static unsigned long s5pv310_epll_get_rate(struct clk *clk)
+{
+	return clk->rate;
+}
+
+static u32 epll_div[][6] = {
+	{  48000000, 0, 48, 3, 3, 0 },
+	{  96000000, 0, 48, 3, 2, 0 },
+	{ 144000000, 1, 72, 3, 2, 0 },
+	{ 192000000, 0, 48, 3, 1, 0 },
+	{ 288000000, 1, 72, 3, 1, 0 },
+	{  84000000, 0, 42, 3, 2, 0 },
+	{  50000000, 0, 50, 3, 3, 0 },
+	{  80000000, 1, 80, 3, 3, 0 },
+	{  32750000, 1, 65, 3, 4, 35127 },
+	{  32768000, 1, 65, 3, 4, 35127 },
+	{  49152000, 0, 49, 3, 3, 9961 },
+	{  67737600, 1, 67, 3, 3, 48366 },
+	{  73728000, 1, 73, 3, 3, 47710 },
+	{  45158400, 0, 45, 3, 3, 10381 },
+	{  45000000, 0, 45, 3, 3, 10355 },
+	{  45158000, 0, 45, 3, 3, 10355 },
+	{  49125000, 0, 49, 3, 3, 9961 },
+	{  67738000, 1, 67, 3, 3, 48366 },
+	{  73800000, 1, 73, 3, 3, 47710 },
+	{  36000000, 1, 32, 3, 4, 0 },
+	{  60000000, 1, 60, 3, 3, 0 },
+	{  72000000, 1, 72, 3, 3, 0 },
+};
+
+static int s5pv310_epll_set_rate(struct clk *clk, unsigned long rate)
+{
+	unsigned int epll_con, epll_con_k;
+	unsigned int i;
+
+	/* Return if nothing changed */
+	if (clk->rate == rate)
+		return 0;
+
+	epll_con = __raw_readl(S5P_EPLL_CON0);
+	epll_con_k = __raw_readl(S5P_EPLL_CON1);
+
+	epll_con_k &= ~(PLL90XX_KDIV_MASK);
+	epll_con &= ~(PLL90XX_VDIV_MASK << 27 | \
+			PLL90XX_MDIV_MASK << PLL90XX_MDIV_SHIFT |   \
+			PLL90XX_PDIV_MASK << PLL90XX_PDIV_SHIFT | \
+			PLL90XX_SDIV_MASK << PLL90XX_SDIV_SHIFT);
+
+	for (i = 0; i < ARRAY_SIZE(epll_div); i++) {
+		if (epll_div[i][0] == rate) {
+			epll_con_k |= epll_div[i][5] << 0;
+			epll_con |= epll_div[i][1] << 27;
+			epll_con |= epll_div[i][2] << PLL90XX_MDIV_SHIFT;
+			epll_con |= epll_div[i][3] << PLL90XX_PDIV_SHIFT;
+			epll_con |= epll_div[i][4] << PLL90XX_SDIV_SHIFT;
+			break;
+		}
+	}
+
+	if (i == ARRAY_SIZE(epll_div)) {
+		printk(KERN_ERR "%s: Invalid Clock EPLL Frequency\n",
+				__func__);
+		return -EINVAL;
+	}
+
+	__raw_writel(epll_con, S5P_EPLL_CON0);
+	__raw_writel(epll_con_k, S5P_EPLL_CON1);
+
+	clk->rate = rate;
+
+	return 0;
+}
+
+static struct clk_ops s5pv310_epll_ops = {
+	.get_rate = s5pv310_epll_get_rate,
+	.set_rate = s5pv310_epll_set_rate,
 };
 
 void __init_or_cpufreq s5pv310_setup_clocks(void)
@@ -1142,6 +1243,13 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 
 	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
 		s3c_set_clksrc(&clksrcs[ptr], true);
+
+	clk_fout_epll.enable = s5pv310_epll_enable;
+	clk_fout_epll.ops = &s5pv310_epll_ops;
+
+	clk_set_parent(&clk_sclk_audio0.clk, &clk_mout_epll.clk);
+	clk_set_parent(&clk_sclk_audss.clk, &clk_mout_audss.clk);
+	clk_set_parent(&clk_mout_audss.clk, &clk_fout_epll);
 }
 
 static struct clk *clks[] __initdata = {
