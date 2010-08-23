@@ -40,16 +40,15 @@ static int smdk_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		return ret;
 
-	ret = snd_soc_dai_set_sysclk(codec_dai, WM8994_SYSCLK_MCLK1,
-				SMDK_WM8994_OSC_FREQ,
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8994_SYSCLK_FLL1,
+				params_rate(params)*256,
 				SND_SOC_CLOCK_IN);
 	if (ret < 0)
 		return ret;
 
 	ret = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1,
 				WM8994_FLL_SRC_MCLK1,
-				SMDK_WM8994_OSC_FREQ,
-				params_rate(params)*256);
+				SMDK_WM8994_OSC_FREQ,	params_rate(params)*256);
 	if (ret < 0)
 		return ret;
 

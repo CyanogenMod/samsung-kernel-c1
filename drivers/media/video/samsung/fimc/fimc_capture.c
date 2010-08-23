@@ -1208,7 +1208,6 @@ int fimc_streamoff_capture(void *fh)
 {
 	struct fimc_control *ctrl = fh;
 	struct fimc_capinfo *cap = ctrl->cap;
-	int i;
 
 	fimc_dbg("%s\n", __func__);
 
