@@ -22,7 +22,6 @@
 #include <plat/map-s5p.h>
 #include <mach/regs-gpio.h>
 #include <mach/map.h>
-//#include <mach/pd.h>
 
 struct platform_device; /* don't need the contents */
 
@@ -41,19 +40,9 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 {
 	struct clk *sclk_fimc = NULL;
 	struct clk *dout_mpll = NULL;
-	struct clk *mout_mpll = NULL;
 	struct clk *hclk_low = NULL;
 	
-	struct clk *sclk_camif = NULL;
-	struct clk *dout_epll = NULL;
-	struct clk *mout_epll = NULL;
-
 	/* fimc core clock(166Mhz) */
-	mout_mpll = clk_get(&pdev->dev, "mout_mpll");
-	if (IS_ERR(mout_mpll)) {
-		dev_err(&pdev->dev, "failed to get mout_mpll\n");
-		goto err_clk1;
-	}
 
 	dout_mpll = clk_get(&pdev->dev, "dout_mpll");
 	if (IS_ERR(dout_mpll)) {
@@ -67,15 +56,10 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 		goto err_clk3;
 	}
 
-	mout_epll = clk_get(&pdev->dev, "mout_epll");
-	dout_epll = clk_get(&pdev->dev, "dout_epll");
-	//clk_set_parent(dout_mpll, mout_mpll);
-	//clk_set_parent(sclk_fimc, dout_mpll);
-/*	clk_set_rate(dout_mpll, 400000000);*/
+	clk_set_parent(sclk_fimc, dout_mpll);
 	clk_set_rate(sclk_fimc, 200000000);
 
-	//clk_enable(sclk_fimc);
-	clk_disable(sclk_fimc);
+	clk_enable(sclk_fimc);
 	/* bus clock(133Mhz) */
 	hclk_low = clk_get(&pdev->dev, "fimc");
 	if (IS_ERR(hclk_low)) {
@@ -85,21 +69,6 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 	
 	clk_enable(hclk_low);
 	
-//	mout_epll = clk_get(&pdev->dev, "mout_epll");
-//	dout_epll = clk_get(&pdev->dev, "dout_epll");
-//	sclk_camif = clk_get(&pdev->dev, "sclk_camif");
-/*
-	clk_put(mout_mpll);
-	clk_put(dout_mpll);
-	clk_put(sclk_fimc);
-	clk_put(hclk_low);
-*/
-	printk(KERN_INFO "mout_mpll : %ld\n", clk_get_rate(mout_mpll));
-	printk(KERN_INFO "dout_mpll : %ld\n", clk_get_rate(dout_mpll));
-	printk(KERN_INFO "sclk_fimc : %ld\n", clk_get_rate(sclk_fimc));
-	printk(KERN_INFO "mout_epll : %ld\n", clk_get_rate(mout_epll));
-	printk(KERN_INFO "dout_epll : %ld\n", clk_get_rate(dout_epll));
-	printk(KERN_INFO "hclk_low : %ld\n", clk_get_rate(hclk_low));
 	return 0;
 
 err_clk4:
@@ -107,8 +76,6 @@ err_clk4:
 err_clk3:
 	clk_put(sclk_fimc);
 err_clk2:
-	clk_put(dout_mpll);
-err_clk1:
 	return -EINVAL;
 }
 
