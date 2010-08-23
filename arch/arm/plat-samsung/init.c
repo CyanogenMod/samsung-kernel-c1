@@ -119,9 +119,6 @@ void __init s3c24xx_init_uartdevs(char *name,
 
 		s3c24xx_uart_devs[uart] = platdev;
 
-		platdev->dev.bus = &platform_bus_type;
-		platdev->id = uart;
-
 		platdev->name = name;
 		platdev->resource = resp->resources;
 		platdev->num_resources = resp->nr_resources;
