@@ -31,6 +31,28 @@ static struct s3c_gpio_cfg gpio_cfg_noint = {
 	.get_pull	= s3c_gpio_getpull_updown,
 };
 
+int s5pv310_gpio2int(struct gpio_chip *chip, unsigned pin)
+{
+	int ret;
+	int base = chip->base;
+
+	switch (base) {
+		case S5PV310_GPX0(0):
+			ret = IRQ_EINT(0) + pin;
+			break;
+		case S5PV310_GPX1(0):
+			ret = IRQ_EINT(8) + pin;
+			break;
+		case S5PV310_GPX2(0):
+			ret = IRQ_EINT(16) + pin;
+			break;
+		case S5PV310_GPX3(0):
+			ret = IRQ_EINT(24) + pin;
+			break;
+	}
+
+	return ret;
+}
 
 /* GPIO bank's base address given the index of the bank in the
  * list of all gpio banks.
@@ -232,6 +254,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.base	= S5PV310_GPX0(0),
 			.ngpio	= S5PV310_GPIO_X0_NR,
 			.label	= "GPX0",
+			.to_irq	= s5pv310_gpio2int,
 		},
 	}, {
 		.base	= (S5PV310_VA_GPIO2 + 0xC20),
@@ -240,6 +263,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.base	= S5PV310_GPX1(0),
 			.ngpio	= S5PV310_GPIO_X1_NR,
 			.label	= "GPX1",
+			.to_irq	= s5pv310_gpio2int,
 		},
 	}, {
 		.base	= (S5PV310_VA_GPIO2 + 0xC40),
@@ -248,6 +272,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.base	= S5PV310_GPX2(0),
 			.ngpio	= S5PV310_GPIO_X2_NR,
 			.label	= "GPX2",
+			.to_irq	= s5pv310_gpio2int,
 		},
 	}, {
 		.base	= (S5PV310_VA_GPIO2 + 0xC60),
@@ -256,6 +281,7 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.base	= S5PV310_GPX3(0),
 			.ngpio	= S5PV310_GPIO_X3_NR,
 			.label	= "GPX3",
+			.to_irq	= s5pv310_gpio2int,
 		},
 	},
 };

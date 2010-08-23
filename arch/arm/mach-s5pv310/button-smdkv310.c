@@ -77,13 +77,13 @@ static int __init s3c_button_init(void)
 		return 0;
 	}
 
-	set_irq_type(IRQ_EINT(0), IRQF_TRIGGER_FALLING);
-	set_irq_wake(IRQ_EINT(0), 1);
-	setup_irq(IRQ_EINT(0), &s3c_button_irq);
+	set_irq_type(gpio_to_irq(S5PV310_GPX0(0)), IRQF_TRIGGER_FALLING);
+	set_irq_wake(gpio_to_irq(S5PV310_GPX0(0)), 1);
+	setup_irq(gpio_to_irq(S5PV310_GPX0(0)), &s3c_button_irq);
 
-	set_irq_type(IRQ_EINT(31), IRQ_TYPE_EDGE_FALLING);
-	set_irq_wake(IRQ_EINT(31), 1);
-	setup_irq(IRQ_EINT(31), &s3c_button_irq);
+	set_irq_type(gpio_to_irq(S5PV310_GPX3(7)), IRQ_TYPE_EDGE_FALLING);
+	set_irq_wake(gpio_to_irq(S5PV310_GPX3(7)), 1);
+	setup_irq(gpio_to_irq(S5PV310_GPX3(7)), &s3c_button_irq);
 
 	return 0;
 }
