@@ -51,16 +51,6 @@ static struct clk clk_audiocdclk0 = {
 	.id		= 0,
 };
 
-static struct clk clk_audiocdclk1 = {
-	.name		= "audiocdclk",
-	.id		= 1,
-};
-
-static struct clk clk_audiocdclk2 = {
-	.name		= "audiocdclk",
-	.id		= 2,
-};
-
 static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
 {
 	return s5p_gatectrl(S5P_CLKGATE_IP_CAM, clk, enable);
