@@ -106,8 +106,8 @@ static struct resource smdkv310_smsc911x_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = EINT_NUMBER(5),
-		.end   = EINT_NUMBER(5),
+		.start = IRQ_EINT(5),
+		.end   = IRQ_EINT(5),
 		.flags = IORESOURCE_IRQ,
 	},
 };

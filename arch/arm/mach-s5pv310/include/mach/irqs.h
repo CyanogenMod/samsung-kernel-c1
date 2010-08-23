@@ -119,6 +119,9 @@
 #define NR_IRQS			(IRQ_EINT_BASE + 32)
 #define EINT_NUMBER(x)		((x) + IRQ_EINT_BASE)
 
+#define S5P_EINT_BASE1		EINT_NUMBER(0)
+#define S5P_EINT_BASE2		EINT_NUMBER(16)
+
 #define MAX_COMBINER_NR		40
 
 #endif /* ASM_ARCH_IRQS_H */

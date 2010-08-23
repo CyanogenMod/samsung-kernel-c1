@@ -29,9 +29,9 @@
 static irqreturn_t
 s3c_button_interrupt(int irq, void *dev_id)
 {
-	if (irq == EINT_NUMBER(0))
+	if (irq == IRQ_EINT(0))
 		printk(KERN_INFO "XEINT 0 Button Interrupt occure\n");
-	else if (irq == EINT_NUMBER(31))
+	else if (irq == IRQ_EINT(31))
 		printk(KERN_INFO "XEINT 31 Button Interrupt occure\n");
 	else
 		printk(KERN_INFO "%d Button Interrupt occure\n", irq);
@@ -77,13 +77,13 @@ static int __init s3c_button_init(void)
 		return 0;
 	}
 
-	set_irq_type(EINT_NUMBER(0), IRQF_TRIGGER_FALLING);
-	set_irq_wake(EINT_NUMBER(0), 1);
-	setup_irq(EINT_NUMBER(0), &s3c_button_irq);
+	set_irq_type(IRQ_EINT(0), IRQF_TRIGGER_FALLING);
+	set_irq_wake(IRQ_EINT(0), 1);
+	setup_irq(IRQ_EINT(0), &s3c_button_irq);
 
-	set_irq_type(EINT_NUMBER(31), IRQ_TYPE_EDGE_FALLING);
-	set_irq_wake(EINT_NUMBER(31), 1);
-	setup_irq(EINT_NUMBER(31), &s3c_button_irq);
+	set_irq_type(IRQ_EINT(31), IRQ_TYPE_EDGE_FALLING);
+	set_irq_wake(IRQ_EINT(31), 1);
+	setup_irq(IRQ_EINT(31), &s3c_button_irq);
 
 	return 0;
 }

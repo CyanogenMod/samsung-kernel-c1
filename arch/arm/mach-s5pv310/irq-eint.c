@@ -140,7 +140,7 @@ static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 		break;
 
 	case IRQ_TYPE_LEVEL_LOW:
-		if (irq == EINT_NUMBER(5))
+		if (irq == IRQ_EINT(5))
 			newvalue = S5P_EXTINT_HILEV;
 		else
 			newvalue = S5P_EXTINT_LOWLEV;
@@ -222,8 +222,8 @@ static inline void s5pv310_irq_demux_eint(unsigned int start)
 
 static void s5pv310_irq_demux_eint16_31(unsigned int irq, struct irq_desc *desc)
 {
-	s5pv310_irq_demux_eint(EINT_NUMBER(16));
-	s5pv310_irq_demux_eint(EINT_NUMBER(24));
+	s5pv310_irq_demux_eint(IRQ_EINT(16));
+	s5pv310_irq_demux_eint(IRQ_EINT(24));
 }
 
 static void s5pv310_irq_eint0_15(unsigned int irq, struct irq_desc *desc)
@@ -238,7 +238,7 @@ static void s5pv310_irq_eint0_15(unsigned int irq, struct irq_desc *desc)
 
 	for ( i = 0 ; i <= 15 ; i++){
 		if ( irq == s5pv310_get_irq_nr(i)) {
-			generic_handle_irq(EINT_NUMBER(i));
+			generic_handle_irq(IRQ_EINT(i));
 			break;
 		}
 	}
@@ -251,9 +251,9 @@ int __init s5pv310_init_irq_eint(void)
 	int irq;
 
 	for( irq = 0 ; irq <= 31 ; irq++) {
-		set_irq_chip(EINT_NUMBER(irq), &s5pv310_irq_eint);
-		set_irq_handler(EINT_NUMBER(irq), handle_level_irq);
-		set_irq_flags(EINT_NUMBER(irq), IRQF_VALID);
+		set_irq_chip(IRQ_EINT(irq), &s5pv310_irq_eint);
+		set_irq_handler(IRQ_EINT(irq), handle_level_irq);
+		set_irq_flags(IRQ_EINT(irq), IRQF_VALID);
 	}
 
 	set_irq_chained_handler(IRQ_EINT16_31, s5pv310_irq_demux_eint16_31);
