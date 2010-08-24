@@ -22,6 +22,7 @@
 #include <linux/clk.h>
 #include <linux/usb/ch9.h>
 #include <linux/spi/spi.h>
+#include <linux/pwm_backlight.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -420,6 +421,23 @@ static struct spi_board_info s3c_spi_devs[] __initdata = {
 
 #endif
 
+#if defined(CONFIG_HAVE_PWM)
+static struct platform_pwm_backlight_data smdk6450_backlight_data = {
+	.pwm_id         = 1,
+	.max_brightness = 255,
+	.dft_brightness = 255,
+	.pwm_period_ns  = 78770,
+};
+
+static struct platform_device smdk6450_backlight_device = {
+	.name           = "pwm-backlight",
+	.dev            = {
+		.parent = &s3c_device_timer[1].dev,
+		.platform_data = &smdk6450_backlight_data,
+	},
+};
+#endif
+
 static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
@@ -474,6 +492,11 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5p6450_device_spi0,
 	&s5p6450_device_spi1,
+#endif
+
+#ifdef CONFIG_HAVE_PWM
+	&s3c_device_timer[1],
+	&smdk6450_backlight_device,
 #endif
 };
 
@@ -706,6 +729,11 @@ static void __init smdk6450_machine_init(void)
 	/* fimc */
 	s3c_fimc0_set_platdata(&fimc_plat);
 #endif
+
+#if defined(CONFIG_HAVE_PWM)
+	s3c_gpio_cfgpin(S5P6450_GPF(15), (0x2 << 30));
+#endif
+
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 
