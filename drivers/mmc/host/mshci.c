@@ -1,5 +1,5 @@
 /*
- *  linux/drivers/mmc/host/sdhci.c - Secure Digital Host Controller Interface driver
+ *  linux/drivers/mmc/host/mshci.c - Secure Digital Host Controller Interface driver
  *
  *  Copyright (C) 2005-2008 Pierre Ossman, All Rights Reserved.
  *
@@ -100,8 +100,8 @@ static void mshci_dumpregs(struct mshci_host *host)
 		mshci_readl(host, MSHCI_UHS_REG));
 	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_BMOD:      0x%08x\n",
 		mshci_readl(host, MSHCI_BMOD));
-	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_PLDDMND:   0x%08x\n",
-		mshci_readl(host, MSHCI_PLDDMND));
+	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_PLDMND:   0x%08x\n",
+		mshci_readl(host, MSHCI_PLDMND));
 	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_DBADDR:    0x%08x\n",
 		mshci_readl(host, MSHCI_DBADDR));
 	printk(KERN_DEBUG DRIVER_NAME ": MSHCI_IDSTS:     0x%08x\n",
@@ -152,9 +152,6 @@ static void mshci_mask_irqs(struct mshci_host *host, u32 irqs)
 static void mshci_set_card_detection(struct mshci_host *host, bool enable)
 {
 	u32 irqs = INTMSK_CDETECT;
-
-	if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-		return;
 
 	if (enable)
 		mshci_unmask_irqs(host, irqs);
@@ -251,13 +248,10 @@ static void mshci_init(struct mshci_host *host)
 
 	mshci_clear_set_irqs(host, INTMSK_ALL,
 		INTMSK_CDETECT | INTMSK_RE |
-		INTMSK_CDONE | INTMSK_DTO | INTMSK_TXDR |
-		INTMSK_RXDR | INTMSK_RCRC | INTMSK_DCRC |
-		INTMSK_RTO | INTMSK_DRTO | INTMSK_HTO |
-		INTMSK_HTO | INTMSK_FRUN | INTMSK_HLE |
-		INTMSK_SBE | INTMSK_EBE 
-		/* | INTMSK_DMA it SHOULDBE supported */);
-		
+		INTMSK_CDONE | INTMSK_DTO | INTMSK_TXDR | INTMSK_RXDR | 
+		INTMSK_RCRC | INTMSK_DCRC | INTMSK_RTO | INTMSK_DRTO | 
+		INTMSK_HTO | INTMSK_FRUN | INTMSK_HLE | INTMSK_SBE | 
+		INTMSK_EBE);
 }
 
 static void mshci_reinit(struct mshci_host *host)
@@ -338,17 +332,16 @@ static void mshci_write_block_pio(struct mshci_host *host)
 	while (fifo_cnt) {
 		if (!sg_miter_next(&host->sg_miter)) {
 
-			/* there is a bug. 
-			 * Even though transfer is complete, 
+			/* Even though transfer is complete, 
 			 * TXDR interrupt occurs again.
 			 * So, it has to check that it has really 
 			 * no next sg buffer or just DTO interrupt 
-			 * has not occur yet.
+			 * has not occured yet.
 			 */
 			 
 			if (( host->data->blocks * host->data->blksz ) ==
 					host->data_transfered )
-				break; /* transfer done but DTO no yet */
+				break; /* transfer done but DTO not yet */
 			BUG();			
 		}
 		len = min(host->sg_miter.length, fifo_cnt);
@@ -396,220 +389,107 @@ static void mshci_transfer_pio(struct mshci_host *host)
 	DBG("PIO transfer complete.\n");
 }
 
-static char *mshci_kmap_atomic(struct scatterlist *sg, unsigned long *flags)
+static void mshci_set_mdma_desc(u8 *desc_vir, u8 *desc_phy, 
+				u32 des0, u32 des1, u32 des2)
 {
-	local_irq_save(*flags);
-	return kmap_atomic(sg_page(sg), KM_BIO_SRC_IRQ) + sg->offset;
+	((struct mshci_idmac *)(desc_vir))->des0 = des0;
+	((struct mshci_idmac *)(desc_vir))->des1 = des1;
+	((struct mshci_idmac *)(desc_vir))->des2 = des2;
+	((struct mshci_idmac *)(desc_vir))->des3 = (u32)desc_phy +
+					sizeof(struct mshci_idmac);
 }
 
-static void mshci_kunmap_atomic(void *buffer, unsigned long *flags)
-{
-	kunmap_atomic(buffer, KM_BIO_SRC_IRQ);
-	local_irq_restore(*flags);
-}
-
-static int mshci_adma_table_pre(struct mshci_host *host,
+static int mshci_mdma_table_pre(struct mshci_host *host,
 	struct mmc_data *data)
 {
 	int direction;
 
-	u8 *desc;
-	u8 *align;
+	u8 *desc_vir, *desc_phy;
 	dma_addr_t addr;
-	dma_addr_t align_addr;
-	int len, offset;
+	int len;
 
 	struct scatterlist *sg;
 	int i;
-	char *buffer;
-	unsigned long flags;
-
-	/*
-	 * The spec does not specify endianness of descriptor table.
-	 * We currently guess that it is LE.
-	 */
+	u32 des_flag;
+	u32 size_idmac = sizeof(struct mshci_idmac);
 
 	if (data->flags & MMC_DATA_READ)
 		direction = DMA_FROM_DEVICE;
 	else
 		direction = DMA_TO_DEVICE;
 
-	/*
-	 * The ADMA descriptor table is mapped further down as we
-	 * need to fill it with data first.
-	 */
-
-	host->align_addr = dma_map_single(mmc_dev(host->mmc),
-		host->align_buffer, 128 * 4, direction);
-	if (dma_mapping_error(mmc_dev(host->mmc), host->align_addr))
-		goto fail;
-	BUG_ON(host->align_addr & 0x3);
-
 	host->sg_count = dma_map_sg(mmc_dev(host->mmc),
 		data->sg, data->sg_len, direction);
 	if (host->sg_count == 0)
-		goto unmap_align;
+		goto fail;
 
-	desc = host->adma_desc;
-	align = host->align_buffer;
+	desc_vir = host->idma_desc;
 
-	align_addr = host->align_addr;
+	/* to know phy address */
+	host->idma_addr = dma_map_single(mmc_dev(host->mmc),
+				host->idma_desc, 
+				128 * size_idmac, 
+				DMA_TO_DEVICE);
+	if (dma_mapping_error(mmc_dev(host->mmc), host->idma_addr))
+		goto unmap_entries;
+	BUG_ON(host->idma_addr & 0x3);
+
+	desc_phy = (u8 *)host->idma_addr;
 
 	for_each_sg(data->sg, sg, host->sg_count, i) {
 		addr = sg_dma_address(sg);
 		len = sg_dma_len(sg);
 
-		/*
-		 * The SDHCI specification states that ADMA
-		 * addresses must be 32-bit aligned. If they
-		 * aren't, then we use a bounce buffer for
-		 * the (up to three) bytes that screw up the
-		 * alignment.
-		 */
-		offset = (4 - (addr & 0x3)) & 0x3;
-		if (offset) {
-			if (data->flags & MMC_DATA_WRITE) {
-				buffer = mshci_kmap_atomic(sg, &flags);
-				WARN_ON(((long)buffer & PAGE_MASK) > (PAGE_SIZE - 3));
-				memcpy(align, buffer, offset);
-				mshci_kunmap_atomic(buffer, &flags);
-			}
+		/* tran, valid */
+		des_flag = (MSHCI_IDMAC_OWN|MSHCI_IDMAC_CH);
+		des_flag |= (i==0) ? MSHCI_IDMAC_FS:0;
 
-			desc[7] = (align_addr >> 24) & 0xff;
-			desc[6] = (align_addr >> 16) & 0xff;
-			desc[5] = (align_addr >> 8) & 0xff;
-			desc[4] = (align_addr >> 0) & 0xff;
-
-			BUG_ON(offset > 65536);
-
-			desc[3] = (offset >> 8) & 0xff;
-			desc[2] = (offset >> 0) & 0xff;
-
-			desc[1] = 0x00;
-			desc[0] = 0x21; /* tran, valid */
-
-			align += 4;
-			align_addr += 4;
-
-			desc += 8;
-
-			addr += offset;
-			len -= offset;
-		}
-
-		desc[7] = (addr >> 24) & 0xff;
-		desc[6] = (addr >> 16) & 0xff;
-		desc[5] = (addr >> 8) & 0xff;
-		desc[4] = (addr >> 0) & 0xff;
-
-		BUG_ON(len > 65536);
-
-		desc[3] = (len >> 8) & 0xff;
-		desc[2] = (len >> 0) & 0xff;
-
-		desc[1] = 0x00;
-		desc[0] = 0x21; /* tran, valid */
-
-		desc += 8;
+		mshci_set_mdma_desc(desc_vir, desc_phy, des_flag, len, addr);
+		desc_vir += size_idmac;
+		desc_phy += size_idmac;
 
 		/*
 		 * If this triggers then we have a calculation bug
 		 * somewhere. :/
 		 */
-		WARN_ON((desc - host->adma_desc) > (128 * 2 + 1) * 4);
-	}
-
-	if (host->quirks & SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC) {
-		/*
-		* Mark the last descriptor as the terminating descriptor
-		*/
-		if (desc != host->adma_desc) {
-			desc -= 8;
-			desc[0] |= 0x2; /* end */
-		}
-	} else {
-	/*
-	 * Add a terminating entry.
-	 */
-	desc[7] = 0;
-	desc[6] = 0;
-	desc[5] = 0;
-	desc[4] = 0;
-
-	desc[3] = 0;
-	desc[2] = 0;
-
-	desc[1] = 0x00;
-	desc[0] = 0x03; /* nop, end, valid */
+		WARN_ON((desc_vir - host->idma_desc) > 128 * size_idmac);
 	}
 
 	/*
-	 * Resync align buffer as we might have changed it.
+	* Add a terminating flag.
 	 */
-	if (data->flags & MMC_DATA_WRITE) {
-		dma_sync_single_for_device(mmc_dev(host->mmc),
-			host->align_addr, 128 * 4, direction);
-	}
+	((struct mshci_idmac *)(desc_vir-size_idmac))->des0 |= MSHCI_IDMAC_LD;
 
-	host->adma_addr = dma_map_single(mmc_dev(host->mmc),
-		host->adma_desc, (128 * 2 + 1) * 4, DMA_TO_DEVICE);
-	if (dma_mapping_error(mmc_dev(host->mmc), host->adma_addr))
+	/* it has to dma map again to resync vir data to phy data  */
+	host->idma_addr = dma_map_single(mmc_dev(host->mmc),
+				host->idma_desc, 
+				128 * size_idmac, 
+				DMA_TO_DEVICE);
+	if (dma_mapping_error(mmc_dev(host->mmc), host->idma_addr))
 		goto unmap_entries;
-	BUG_ON(host->adma_addr & 0x3);
+	BUG_ON(host->idma_addr & 0x3);
 
 	return 0;
 
 unmap_entries:
 	dma_unmap_sg(mmc_dev(host->mmc), data->sg,
 		data->sg_len, direction);
-unmap_align:
-	dma_unmap_single(mmc_dev(host->mmc), host->align_addr,
-		128 * 4, direction);
 fail:
 	return -EINVAL;
 }
 
-static void mshci_adma_table_post(struct mshci_host *host,
+static void mshci_idma_table_post(struct mshci_host *host,
 	struct mmc_data *data)
 {
 	int direction;
-
-	struct scatterlist *sg;
-	int i, size;
-	u8 *align;
-	char *buffer;
-	unsigned long flags;
 
 	if (data->flags & MMC_DATA_READ)
 		direction = DMA_FROM_DEVICE;
 	else
 		direction = DMA_TO_DEVICE;
 
-	dma_unmap_single(mmc_dev(host->mmc), host->adma_addr,
-		(128 * 2 + 1) * 4, DMA_TO_DEVICE);
-
-	dma_unmap_single(mmc_dev(host->mmc), host->align_addr,
-		128 * 4, direction);
-
-	if (data->flags & MMC_DATA_READ) {
-		dma_sync_sg_for_cpu(mmc_dev(host->mmc), data->sg,
-			data->sg_len, direction);
-
-		align = host->align_buffer;
-
-		for_each_sg(data->sg, sg, host->sg_count, i) {
-			if (sg_dma_address(sg) & 0x3) {
-				size = 4 - (sg_dma_address(sg) & 0x3);
-
-				buffer = mshci_kmap_atomic(sg, &flags);
-				WARN_ON(((long)buffer & PAGE_MASK) > (PAGE_SIZE - 3));
-				memcpy(buffer, align, size);
-				mshci_kunmap_atomic(buffer, &flags);
-
-				align += 4;
-			}
-		}
-	}
+	dma_unmap_single(mmc_dev(host->mmc), host->idma_addr,
+		128 * sizeof(struct mshci_idmac), DMA_TO_DEVICE);
 
 	dma_unmap_sg(mmc_dev(host->mmc), data->sg,
 		data->sg_len, direction);
@@ -617,87 +497,41 @@ static void mshci_adma_table_post(struct mshci_host *host,
 
 static u32 mshci_calc_timeout(struct mshci_host *host, struct mmc_data *data)
 {
-#if 0 /* it SHOULDBE optimized */
-	u8 count;
-	unsigned target_timeout, current_timeout;
-
-	/*
-	 * If the host controller provides us with an incorrect timeout
-	 * value, just skip the check and use 0xE.  The hardware may take
-	 * longer to time out, but that's much better than having a too-short
-	 * timeout value.
-	 */
-	if (host->quirks & SDHCI_QUIRK_BROKEN_TIMEOUT_VAL)
-		return 0xE;
-
-	/* timeout in us */
-	target_timeout = data->timeout_ns / 1000 +
-		data->timeout_clks / host->clock;
-
-	if (host->quirks & SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK)
-		host->timeout_clk = host->clock / 1000;
-
-	/*
-	 * Figure out needed cycles.
-	 * We do this in steps in order to fit inside a 32 bit int.
-	 * The first step is the minimum timeout, which will have a
-	 * minimum resolution of 6 bits:
-	 * (1) 2^13*1000 > 2^22,
-	 * (2) host->timeout_clk < 2^16
-	 *     =>
-	 *     (1) / (2) > 2^6
-	 */
-	count = 0;
-	current_timeout = (1 << 13) * 1000 / host->timeout_clk;
-	while (current_timeout < target_timeout) {
-		count++;
-		current_timeout <<= 1;
-		if (count >= 0xF)
-			break;
-	}
-
-	if (count >= 0xF) {
-		printk(KERN_WARNING "%s: Too large timeout requested!\n",
-			mmc_hostname(host->mmc));
-		count = 0xE;
-	}
-
-	return count;
-#endif
-
 	return 0xffffffff; /* this value SHOULD be optimized */
 }
 
 static void mshci_set_transfer_irqs(struct mshci_host *host)
 {
-	u32 pio_irqs = DATA_STATUS;
-/* it SHOULDBE implemented
-	u32 dma_irqs = SDHCI_INT_DMA_END | SDHCI_INT_ADMA_ERROR;
+	u32 dma_irqs = INTMSK_DMA;
+	u32 pio_irqs = INTMSK_TXDR | INTMSK_RXDR;
 
-	if (host->flags & MSHCI_REQ_USE_DMA)
-		mshci_clear_set_irqs(host, pio_irqs, dma_irqs);
-	else
-*/
-	/* Next codes are the W/A for DDR */
-	if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16)) {
-		pio_irqs &= ~INTMSK_DCRC;
-		mshci_clear_set_irqs(host, INTMSK_DCRC, pio_irqs);
+	if (host->flags & MSHCI_REQ_USE_DMA) {
+		/* Next codes are the W/A for DDR */
+		if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16))
+			dma_irqs |= INTMSK_DCRC;
+		/* clear interrupts for PIO */
+		mshci_clear_set_irqs(host, dma_irqs, 0);
 	} else {
-		mshci_clear_set_irqs(host, 0, pio_irqs);
+		/* Next codes are the W/A for DDR */
+		if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16))
+			mshci_clear_set_irqs(host, INTMSK_DCRC, pio_irqs);
+		else
+			mshci_clear_set_irqs(host, 0, pio_irqs);
 	}
 }
 
 static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 {
 	u32 count;
+	u32 ret;
 
 	WARN_ON(host->data);
 
 	if (data == NULL)
 		return;
 
-	/* these value SHOULD be adjusted */
-	BUG_ON(data->blksz * data->blocks > 0x20000000);
+	BUG_ON(data->blksz * data->blocks > (host->mmc->max_req_size *
+					host->mmc->max_hw_segs));
 	BUG_ON(data->blksz > host->mmc->max_blk_size);
 	BUG_ON(data->blocks > 400000);
 
@@ -709,7 +543,7 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 
 	mshci_reset_fifo(host);
 	
-	if (host->flags & (MSHCI_USE_SDMA | MSHCI_USE_MDMA))
+	if (host->flags & (MSHCI_USE_IDMA))
 		host->flags |= MSHCI_REQ_USE_DMA;
 
 	/*
@@ -717,19 +551,11 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 	 * scatterlist.
 	 */
 	if (host->flags & MSHCI_REQ_USE_DMA) {
-		int broken, i;
+		/* mshc's IDMAC can't transfer data that is not aligned 
+		 * or has length not divided by 4 byte. */
+		int i;
 		struct scatterlist *sg;
 
-		broken = 0;
-		if (host->flags & MSHCI_USE_MDMA) {
-			if (host->quirks & SDHCI_QUIRK_32BIT_ADMA_SIZE)
-				broken = 1;
-		} else {
-			if (host->quirks & SDHCI_QUIRK_32BIT_DMA_SIZE)
-				broken = 1;
-		}
-
-		if (unlikely(broken)) {
 			for_each_sg(data->sg, sg, data->sg_len, i) {
 				if (sg->length & 0x3) {
 					DBG("Reverting to PIO because of "
@@ -737,23 +563,7 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 						sg->length);
 					host->flags &= ~MSHCI_REQ_USE_DMA;
 					break;
-				}
-			}
-		}
-	}
-
-	/*
-	 * The assumption here being that alignment is the same after
-	 * translation to device address space.
-	 */
-
-	/* it SHOULDBE checked. Not aligned buffer is OK on DMA transfer.? */
-	if (host->flags & MSHCI_REQ_USE_DMA) {
-		int i;
-		struct scatterlist *sg;
-
-		for_each_sg(data->sg, sg, data->sg_len, i) {
-			if (sg->offset & 0x3) {
+			} else if (sg->offset & 0x3) {
 				DBG("Reverting to PIO because of "
 					"bad alignment\n");
 				host->flags &= ~MSHCI_REQ_USE_DMA;
@@ -763,15 +573,28 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 	}
 
 	if (host->flags & MSHCI_REQ_USE_DMA) {
-		if (host->flags & MSHCI_USE_MDMA) {
+		ret = mshci_mdma_table_pre(host, data);
+		if (ret) {
 			/*
-			 * IT SHOULDBE IMPLEMENTED 
+			 * This only happens when someone fed
+			 * us an invalid request.
 			 */
+			WARN_ON(1);
+			host->flags &= ~MSHCI_REQ_USE_DMA;
 		} else {
-			/*
-			 * IT SHOULDBE IMPLEMENTED 
-			 */
+			mshci_writel(host, host->idma_addr,
+				MSHCI_DBADDR);
 		}
+	}
+
+	if (host->flags & MSHCI_REQ_USE_DMA) {
+		/* enable DMA, IDMA interrupts and IDMAC */
+		mshci_writel(host, (mshci_readl(host, MSHCI_CTRL) | 
+					ENABLE_IDMAC|DMA_ENABLE),MSHCI_CTRL);
+		mshci_writel(host, (mshci_readl(host, MSHCI_BMOD) |
+					(BMOD_IDMAC_ENABLE|BMOD_IDMAC_FB)),
+					MSHCI_BMOD);
+		mshci_writel(host, INTMSK_IDMAC_ERROR, MSHCI_IDINTEN);
 	}
 
 	if (!(host->flags & MSHCI_REQ_USE_DMA)) {
@@ -786,45 +609,9 @@ static void mshci_prepare_data(struct mshci_host *host, struct mmc_data *data)
 		sg_miter_start(&host->sg_miter, data->sg, data->sg_len, flags);
 		host->blocks = data->blocks;
 
-#if 0 /* It shouldbe check whether it is necessary */
-		if (data->flags & MMC_DATA_WRITE) {
-			unsigned long flags;
-			size_t fifo_cnt, len, chunk;
-			u32 scratch;
-			u8 *buf;
-
-			fifo_cnt = host->fifo_depth*4;
-
-			while( fifo_cnt != 0 ) {
-				if (!sg_miter_next(&host->sg_miter)) {
-					BUG();
-				}
-				len = min(host->sg_miter.length, fifo_cnt);
-
-				fifo_cnt -= len;
-				host->sg_miter.consumed = len;
-
-				buf = host->sg_miter.addr;
-
-				while (len) {
-					scratch |= (u32)*buf << (chunk * 8);
-
-					buf++;
-					chunk++;
-					len--;
-
-					if ((chunk == 4) || ((len == 0) && (fifo_cnt == 0))) {
-						mshci_writel(host, scratch, MSHCI_FIFODAT);
-						chunk = 0;
-						scratch = 0;
-					}
-				}
-			}
-			sg_miter_stop(&host->sg_miter);
-		}
-#endif		
+		printk(KERN_ERR "it starts transfer on PIO\n");
 	}
-	/* set transfered data as 0 */
+	/* set transfered data as 0. this value only uses for PIO write */
 	host->data_transfered = 0; 
 	mshci_set_transfer_irqs(host);
 
@@ -864,41 +651,24 @@ static void mshci_finish_data(struct mshci_host *host)
 	host->data = NULL;
 
 	if (host->flags & MSHCI_REQ_USE_DMA) {
-		if (host->flags & MSHCI_USE_MDMA)
-			mshci_adma_table_post(host, data);
-		else {
-			dma_unmap_sg(mmc_dev(host->mmc), data->sg,
-				data->sg_len, (data->flags & MMC_DATA_READ) ?
-					DMA_FROM_DEVICE : DMA_TO_DEVICE);
-		}
+		mshci_idma_table_post(host, data);
+		/* disable IDMAC and DMA interrupt */
+		mshci_writel(host, (mshci_readl(host, MSHCI_CTRL) & 
+				~(DMA_ENABLE|ENABLE_IDMAC)), MSHCI_CTRL);
+		/* mask all interrupt source of IDMAC */
+		mshci_writel(host, 0x0, MSHCI_IDINTEN);
 	}
 
-	/*
-	 * The specification states that the block count register must
-	 * be updated, but it does not specify at what point in the
-	 * data flow. That makes the register entirely useless to read
-	 * back so we have to assume that nothing made it to the card
-	 * in the event of an error.
-	 */
-	if (data->error)
+	if (data->error) {
+		mshci_reset_dma(host);
 		data->bytes_xfered = 0;
+	}
 	else
 		data->bytes_xfered = data->blksz * data->blocks;
 
-	if (data->stop) {
-		/*
-		 * The controller needs a reset of internal state machines
-		 * upon error conditions.
-		 */
-		if (data->error) {
-			/* 
-			 * ####### It should be defined
-			 * mshci_reset_all(host);
-			 */
-		}
-
+	if (data->stop) 
 		mshci_send_command(host, data->stop);
-	} else
+	else
 		tasklet_schedule(&host->finish_tasklet);
 }
 
@@ -937,13 +707,7 @@ static void mshci_send_command(struct mshci_host *host, struct mmc_command *cmd)
 	
 	WARN_ON(host->cmd);
 
-	if (host->quirks & SDHCI_QUIRK_CLOCK_OFF) {
-		/* clock on */
-		mshci_clock_onoff(host, SDHC_CLK_ON);
-	}
-
-	/* disable interrupt before issuing cmd to the card. 
-		why? SHOULD FIND OUT*/
+	/* disable interrupt before issuing cmd to the card. */
 	mshci_writel(host, (mshci_readl(host, MSHCI_CTRL) & ~INT_ENABLE), 
 					MSHCI_CTRL);	
 
@@ -981,8 +745,7 @@ static void mshci_send_command(struct mshci_host *host, struct mmc_command *cmd)
 
 	mshci_writel(host, flags, MSHCI_CMD);
 
-	/* enable interrupt once command sent to the card. 
-		why? SHOULD FIND OUT*/
+	/* enable interrupt upon it sends a command to the card. */
 	mshci_writel(host, (mshci_readl(host, MSHCI_CTRL) | INT_ENABLE), 
 					MSHCI_CTRL);	
 }
@@ -997,7 +760,6 @@ static void mshci_finish_command(struct mshci_host *host)
 		if (host->cmd->flags & MMC_RSP_136) {
 			/* 
 			 * response data are overturned. 
-			 * IT SHOULD FIND OUT. it is intended or not.
 			 */
 			for (i = 0;i < 4;i++) {
 				host->cmd->resp[0] = mshci_readl(host, MSHCI_RESP3);
@@ -1076,13 +838,7 @@ static void mshci_set_power(struct mshci_host *host, unsigned short power)
 
 	if (power == (unsigned short)-1)
 		pwr = 0;
-	else {
-		switch (1 << power) {
-		/*
-		 * IT shuoldbe implemented.
-		 */ 
-		}
-	}
+	
 	if (host->pwr == pwr)
 		return;
 
@@ -1182,7 +938,9 @@ static int mshci_get_ro(struct mmc_host *mmc)
 
 	spin_lock_irqsave(&host->lock, flags);
 
-	if (host->flags & MSHCI_DEVICE_DEAD)
+	if (host->quirks & MSHCI_QUIRK_NO_WP_BIT) 
+		wrtprt = host->ops->get_ro(mmc) ? 0:WRTPRT_ON;
+	else if (host->flags & MSHCI_DEVICE_DEAD)
 		wrtprt = 0;
 	else
 		wrtprt = mshci_readl(host, MSHCI_WRTPRT);
@@ -1274,18 +1032,7 @@ static void mshci_tasklet_finish(unsigned long param)
 	if (!(host->flags & MSHCI_DEVICE_DEAD) &&
 		(mrq->cmd->error ||
 		 (mrq->data && (mrq->data->error ||
-		  (mrq->data->stop && mrq->data->stop->error))) ||
-		   (host->quirks & SDHCI_QUIRK_RESET_AFTER_REQUEST))) {
-
-		/* Some controllers need this kick or reset won't work here */
-		if (host->quirks & SDHCI_QUIRK_CLOCK_BEFORE_RESET) {
-			unsigned int clock;
-
-			/* This is to force an update */
-			clock = host->clock;
-			host->clock = 0;
-			mshci_set_clock(host, clock);
-		}
+		  (mrq->data->stop && mrq->data->stop->error))))) {
 
 		/* Spec says we should do both at the same time, but Ricoh
 		   controllers do not like that. */
@@ -1300,11 +1047,6 @@ static void mshci_tasklet_finish(unsigned long param)
 	spin_unlock_irqrestore(&host->lock, flags);
 
 	mmc_request_done(host->mmc, mrq);
-
-	if (host->quirks & SDHCI_QUIRK_CLOCK_OFF) {
-		/* clock off */
-		mshci_clock_onoff(host, SDHC_CLK_OFF);
-	}
 }
 
 static void mshci_timeout_timer(unsigned long data)
@@ -1370,36 +1112,7 @@ static void mshci_cmd_irq(struct mshci_host *host, u32 intmask)
 		mshci_finish_command(host);
 }
 
-#ifdef DEBUG
-static void mshci_show_adma_error(struct mshci_host *host)
-{
-	const char *name = mmc_hostname(host->mmc);
-	u8 *desc = host->adma_desc;
-	__le32 *dma;
-	__le16 *len;
-	u8 attr;
-
-	mshci_dumpregs(host);
-
-	while (true) {
-		dma = (__le32 *)(desc + 4);
-		len = (__le16 *)(desc + 2);
-		attr = *desc;
-
-		DBG("%s: %p: DMA 0x%08x, LEN 0x%04x, Attr=0x%02x\n",
-		    name, desc, le32_to_cpu(*dma), le16_to_cpu(*len), attr);
-
-		desc += 8;
-
-		if (attr & 2)
-			break;
-	}
-}
-#else
-static void mshci_show_adma_error(struct mshci_host *host) { }
-#endif
-
-static void mshci_data_irq(struct mshci_host *host, u32 intmask)
+static void mshci_data_irq(struct mshci_host *host, u32 intmask, u8 intr_src)
 {
 	BUG_ON(intmask == 0);
 
@@ -1416,47 +1129,64 @@ static void mshci_data_irq(struct mshci_host *host, u32 intmask)
 			}
 		}
 
-		printk(KERN_ERR "%s: Got data interrupt 0x%08x even "
-			"though no data operation was in progress.\n",
-			mmc_hostname(host->mmc), (unsigned)intmask);
+		printk(KERN_ERR "%s: Got data interrupt 0x%08x from %s "
+			"even though no data operation was in progress.\n",
+			mmc_hostname(host->mmc), (unsigned)intmask,
+			intr_src ? "MINT":"IDMAC");
 		mshci_dumpregs(host);
 
 		return;
 	}
-
-	if (intmask & INTMSK_HTO) {
-		printk(KERN_ERR "%s: Host timeout error\n", 
+	if (intr_src == INT_SRC_MINT) {
+		if (intmask & INTMSK_HTO) {
+			printk(KERN_ERR "%s: Host timeout error\n", 
 							mmc_hostname(host->mmc));
-		host->data->error = -ETIMEDOUT;
-	} else if (intmask & INTMSK_DRTO) {
-		printk(KERN_ERR "%s: Data read timeout error\n", 
+			host->data->error = -ETIMEDOUT;
+		} else if (intmask & INTMSK_DRTO) {
+			printk(KERN_ERR "%s: Data read timeout error\n", 
 							mmc_hostname(host->mmc));
-		host->data->error = -ETIMEDOUT;
-	} else if (intmask & INTMSK_SBE) {
-		printk(KERN_ERR "%s: FIFO Start bit error\n", 
+			host->data->error = -ETIMEDOUT;
+		} else if (intmask & INTMSK_SBE) {
+			printk(KERN_ERR "%s: FIFO Start bit error\n", 
 						mmc_hostname(host->mmc));
-		host->data->error = -EIO;
-	} else if (intmask & INTMSK_EBE) {
-		printk(KERN_ERR "%s: FIFO Endbit/Write no CRC error\n", 
+			host->data->error = -EIO;
+		} else if (intmask & INTMSK_EBE) {
+			printk(KERN_ERR "%s: FIFO Endbit/Write no CRC error\n", 
 							mmc_hostname(host->mmc));
-		host->data->error = -EIO;
-	} else if (intmask & INTMSK_DCRC) {
-		printk(KERN_ERR "%s: Data CRC error\n", 
+			host->data->error = -EIO;
+		} else if (intmask & INTMSK_DCRC) {
+			printk(KERN_ERR "%s: Data CRC error\n", 
 							mmc_hostname(host->mmc));
-		host->data->error = -EIO;
-	} else if (intmask & INTMSK_FRUN) {
-		printk(KERN_ERR "%s: FIFO underrun/overrun error\n", 
+			host->data->error = -EIO;
+		} else if (intmask & INTMSK_FRUN) {
+			printk(KERN_ERR "%s: FIFO underrun/overrun error\n", 
 							mmc_hostname(host->mmc));
-		host->data->error = -EIO;
+			host->data->error = -EIO;
+		}
+	} else {
+		if (intmask & IDSTS_FBE) { 
+			printk(KERN_ERR "%s: Fatal Bus error on DMA\n", 
+					mmc_hostname(host->mmc));
+			host->data->error = -EIO;
+		} else if (intmask & IDSTS_CES) { 
+			printk(KERN_ERR "%s: Card error on DMA\n", 
+					mmc_hostname(host->mmc));
+			host->data->error = -EIO;
+		} else if (intmask & IDSTS_DU) { 
+			printk(KERN_ERR "%s: Description error on DMA\n", 
+					mmc_hostname(host->mmc));
+			host->data->error = -EIO;
+		}
 	}
 
-	if (host->data->error)
+	if (host->data->error) {
 		mshci_finish_data(host);
-	else {
-		if (((host->data->flags & MMC_DATA_READ)&&  
+	} else {
+		if (!(host->flags & MSHCI_REQ_USE_DMA) &&
+				(((host->data->flags & MMC_DATA_READ)&&  
 				(intmask & (INTMSK_RXDR | INTMSK_DTO))) ||
 				((host->data->flags & MMC_DATA_WRITE)&&  
-					(intmask & (INTMSK_TXDR))))	
+					(intmask & (INTMSK_TXDR)))))	
 			mshci_transfer_pio(host);
 			
 		if (intmask & INTMSK_DTO) {
@@ -1487,10 +1217,17 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 	intmask = mshci_readl(host, MSHCI_MINTSTS);
 		
 	if (!intmask || intmask == 0xffffffff) {
+		/* check if there is a interrupt for IDMAC  */
+		intmask = mshci_readl(host, MSHCI_IDSTS);
+		if (intmask) {
+			mshci_writel(host, intmask,MSHCI_IDSTS);
+			mshci_data_irq(host, intmask, INT_SRC_IDMAC);
+			result = IRQ_HANDLED;
+			goto out;
+			}
 		result = IRQ_NONE;
 		goto out;
 	}
-
 	DBG("*** %s got interrupt: 0x%08x\n",
 		mmc_hostname(host->mmc), intmask);
 
@@ -1502,11 +1239,9 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 	intmask &= ~INTMSK_CDETECT;
 
 	if (intmask & CMD_STATUS) {
-		if ( intmask & INTMSK_CDONE ) {
-			mshci_cmd_irq(host, intmask & CMD_STATUS);
-		} else {		
+		if ( !(intmask & INTMSK_CDONE) && (intmask & INTMSK_RTO)) {
 			/*
-			 * when error about command occurs,
+			 * when a error about command timeout occurs,
 			 * cmd done intr comes together.
 			 * cmd done intr comes later than error intr.
 			 * so, it has to wait for cmd done intr.
@@ -1522,11 +1257,33 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 				mshci_writel(host, INTMSK_CDONE, 
 					MSHCI_RINTSTS);
 			mshci_cmd_irq(host, intmask & CMD_STATUS);
+		} else {		
+			mshci_cmd_irq(host, intmask & CMD_STATUS);
 		}
 	}
 
 	if (intmask & DATA_STATUS) {
-		mshci_data_irq(host, intmask & DATA_STATUS);
+		if ( !(intmask & INTMSK_DTO) && (intmask & INTMSK_DRTO)) {
+			/*
+			 * when a error about data timout occurs,
+			 * DTO intr comes together.
+			 * DTO intr comes later than error intr.
+			 * so, it has to wait for DTO intr.
+			 */
+			while ( --timeout && 
+				!(mshci_readl(host, MSHCI_MINTSTS) 
+				  & INTMSK_DTO) )
+			if (!timeout)
+				printk(KERN_ERR"*** %s time out for\
+					CDONE intr\n",
+					mmc_hostname(host->mmc));
+			else
+				mshci_writel(host, INTMSK_DTO,
+					MSHCI_RINTSTS);
+			mshci_data_irq(host, intmask & DATA_STATUS,INT_SRC_MINT);
+		} else {
+			mshci_data_irq(host, intmask & DATA_STATUS,INT_SRC_MINT);
+		}
 	}
 
 	intmask &= ~(CMD_STATUS | DATA_STATUS);
@@ -1586,7 +1343,7 @@ int mshci_resume_host(struct mshci_host *host)
 {
 	int ret;
 
-	if (host->flags & (MSHCI_USE_SDMA | MSHCI_USE_MDMA)) {
+	if (host->flags & (MSHCI_USE_IDMA)) {
 		if (host->ops->enable_dma)
 			host->ops->enable_dma(host);
 	}
@@ -1652,7 +1409,7 @@ static void mshci_fifo_init(struct mshci_host *host)
 	fifo_val &= ~(RX_WMARK | TX_WMARK | MSIZE_MASK);
 
 	fifo_val |= (fifo_threshold | (fifo_threshold<<16));
-	fifo_val |= MSIZE_1;
+	fifo_val |= MSIZE_8;
 
 	mshci_writel(host, fifo_val, MSHCI_FIFOTH);
 }
@@ -1662,7 +1419,7 @@ EXPORT_SYMBOL_GPL(mshci_alloc_host);
 int mshci_add_host(struct mshci_host *host)
 {
 	struct mmc_host *mmc;
-	int ret;
+	int ret,count;
 	
 	WARN_ON(host == NULL);
 	if (host == NULL)
@@ -1677,15 +1434,29 @@ int mshci_add_host(struct mshci_host *host)
 
 	host->version = mshci_readl(host, MSHCI_VERID);
 
-	/* This DMA flag SHOULD BE ADDED from next version. */
-	/* host->flags |= MSHCI_USE_SDMA;*/
+	/* there are no reasons not to use DMA */
+	host->flags |= MSHCI_USE_IDMA;
+
+	if (host->flags & MSHCI_USE_IDMA) {
+		/* We need to allocate descriptors for all sg entries
+		 * 128 transfer for each of those entries. */
+		host->idma_desc = kmalloc(128 * sizeof(struct mshci_idmac),
+					GFP_KERNEL);
+		if (!host->idma_desc) {
+			kfree(host->idma_desc);
+			printk(KERN_WARNING "%s: Unable to allocate IDMA "
+				"buffers. Falling back to standard DMA.\n",
+				mmc_hostname(mmc));
+			host->flags &= ~MSHCI_USE_IDMA;
+		}
+	}
 
 	/*
 	 * If we use DMA, then it's up to the caller to set the DMA
 	 * mask, but PIO does not need the hw shim so we set a new
 	 * mask here in that case.
 	 */
-	if (!(host->flags & (MSHCI_USE_SDMA | MSHCI_USE_MDMA))) {
+	if (!(host->flags & (MSHCI_USE_IDMA))) {
 		host->dma_mask = DMA_BIT_MASK(64);
 		mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
 	}
@@ -1693,7 +1464,7 @@ int mshci_add_host(struct mshci_host *host)
 	printk(KERN_ERR "%s: Version ID 0x%x.\n",
 		mmc_hostname(host->mmc), host->version);
 		
-	host->max_clk = CLK_SDMMC_MAX;
+	host->max_clk = 0;
 	
 	if (host->max_clk == 0) {
 		if (!host->ops->get_max_clock) {
@@ -1705,23 +1476,6 @@ int mshci_add_host(struct mshci_host *host)
 		host->max_clk = host->ops->get_max_clock(host);
 	}
 
-/* IT SHOULDBE implemented.
-	host->timeout_clk =
-		(caps & SDHCI_TIMEOUT_CLK_MASK) >> SDHCI_TIMEOUT_CLK_SHIFT;
-	if (host->timeout_clk == 0) {
-		if (host->ops->get_timeout_clock) {
-			host->timeout_clk = host->ops->get_timeout_clock(host);
-		} else if (!(host->quirks &
-				SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK)) {
-			printk(KERN_ERR
-			       "%s: Hardware doesn't specify timeout clock "
-			       "frequency.\n", mmc_hostname(mmc));
-			return -ENODEV;
-		}
-	}
-	if (caps & SDHCI_TIMEOUT_CLK_UNIT)
-		host->timeout_clk *= 1000;
-*/
 	/*
 	 * Set host parameters.
 	 */
@@ -1729,16 +1483,11 @@ int mshci_add_host(struct mshci_host *host)
 		mshci_ops.get_ro = host->ops->get_ro;
 
 	mmc->ops = &mshci_ops;
-	mmc->f_min = host->max_clk / 256;
+	mmc->f_min = host->max_clk / 510;
 	mmc->f_max = host->max_clk;
 	mmc->caps |= MMC_CAP_SDIO_IRQ;
 
-	if (!(host->quirks & SDHCI_QUIRK_FORCE_1_BIT_DATA))
 		mmc->caps |= MMC_CAP_4_BIT_DATA;
-
-	if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-		mmc->caps |= MMC_CAP_NEEDS_POLL;
-
 
 	mmc->ocr_avail = 0;
 	mmc->ocr_avail |= MMC_VDD_32_33|MMC_VDD_33_34;
@@ -1757,10 +1506,8 @@ int mshci_add_host(struct mshci_host *host)
 	 * Maximum number of segments. Depends on if the hardware
 	 * can do scatter/gather or not.
 	 */
-	if (host->flags & MSHCI_USE_MDMA)
+	if (host->flags & MSHCI_USE_IDMA)
 		mmc->max_hw_segs = 128;
-	else if (host->flags & MSHCI_USE_SDMA)
-		mmc->max_hw_segs = 1;
 	else /* PIO */
 		mmc->max_hw_segs = 128;
 	
@@ -1768,35 +1515,27 @@ int mshci_add_host(struct mshci_host *host)
 
 	/*
 	 * Maximum number of sectors in one transfer. Limited by DMA boundary
-	 * size (512KiB).
-	 * it SHOUDBE find out how man sector can be transfered.
+	 * size (4KiB).
+	 * Limited by CPU I/O boundry size (0xfffff000 KiB) 
 	 */
-	mmc->max_req_size = 0x100000  ;
+
+	/* to prevent starvation of a process that want to access SD device
+	 * it should limit size that transfer at one time. */
+	mmc->max_req_size = 0x80000  ;
 
 	/*
 	 * Maximum segment size. Could be one segment with the maximum number
 	 * of bytes. When doing hardware scatter/gather, each entry cannot
-	 * be larger than 64 KiB though.
-	 * It SHOULDBE optimized.
+	 * be larger than 4 KiB though.
 	 */
-	if (host->flags & MSHCI_USE_MDMA)
-		mmc->max_seg_size = 65536;
+	if (host->flags & MSHCI_USE_IDMA)
+		mmc->max_seg_size = 0x1000;
 	else
 		mmc->max_seg_size = mmc->max_req_size;
 
-	/*
-	 * Maximum block size. This varies from controller to controller and
-	 * is specified in the capabilities register.
-	 * 
-	*/	 
-	if (host->quirks & SDHCI_QUIRK_FORCE_BLK_SZ_2048) {
-		mmc->max_blk_size = 2;
-	} else {
 		/* from SD spec 2.0 and MMC spec 4.2, block size has been
-		 * fixed to 512 byte.
-		 */
-		mmc->max_blk_size = 2;
-	}
+	 * fixed to 512 byte */
+	mmc->max_blk_size = 0;
 
 	mmc->max_blk_size = 512 << mmc->max_blk_size;
 
@@ -1830,9 +1569,19 @@ int mshci_add_host(struct mshci_host *host)
 	/* set debounce filter value*/
 	mshci_writel(host, 0xfffff, MSHCI_DEBNCE);
 
-	/* clear card type */
-	mshci_writel(host, mshci_readl(host, MSHCI_CTYPE), MSHCI_CTYPE);	
+	/* clear card type. set 1bit mode */
+	mshci_writel(host, 0x0, MSHCI_CTYPE);
 
+	/* set bus mode register for IDMAC */
+	if (host->flags & MSHCI_USE_IDMA) {
+		mshci_writel(host, BMOD_IDMAC_RESET, MSHCI_BMOD);
+		count = 100;
+		while( (mshci_readl(host, MSHCI_BMOD) & BMOD_IDMAC_RESET )
+			&& --count ) ; /* nothing to do */
+
+		mshci_writel(host, (mshci_readl(host, MSHCI_BMOD) |
+				(BMOD_IDMAC_ENABLE|BMOD_IDMAC_FB)), MSHCI_BMOD);
+	}
 #ifdef CONFIG_MMC_DEBUG
 	mshci_dumpregs(host);
 #endif
@@ -1843,8 +1592,7 @@ int mshci_add_host(struct mshci_host *host)
 
 	printk(KERN_INFO "%s: SDHCI controller on %s [%s] using %s\n",
 		mmc_hostname(mmc), host->hw_name, dev_name(mmc_dev(mmc)),
-		(host->flags & MSHCI_USE_MDMA) ? "ADMA" :
-		(host->flags & MSHCI_USE_SDMA) ? "DMA" : "PIO");
+		(host->flags & MSHCI_USE_IDMA) ? "IDMA" : "PIO");
 
 	mshci_enable_card_detection(host);
 
@@ -1893,10 +1641,9 @@ void mshci_remove_host(struct mshci_host *host, int dead)
 	tasklet_kill(&host->card_tasklet);
 	tasklet_kill(&host->finish_tasklet);
 
-	kfree(host->adma_desc);
-	kfree(host->align_buffer);
+	kfree(host->idma_desc);
 
-	host->adma_desc = NULL;
+	host->idma_desc = NULL;
 	host->align_buffer = NULL;
 }
 

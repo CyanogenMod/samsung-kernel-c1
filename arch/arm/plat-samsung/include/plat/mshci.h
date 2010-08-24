@@ -101,7 +101,7 @@ extern struct s3c_mshci_platdata s3c_mshci_def_platdata;
 extern void s5p6450_setup_mshci_cfg_gpio(struct platform_device *, int w);
 
 /* S5P6450 SDHCI setup */
-extern char *s5p6450_mshc_clksrcs[4];
+extern char *s5p6450_mshc_clksrcs[1];
 
 extern void s5p6450_setup_mshci_cfg_card(struct platform_device *dev,
 					   void __iomem *r,
