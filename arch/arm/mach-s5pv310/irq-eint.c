@@ -72,18 +72,6 @@ static unsigned int s5pv310_irq_to_bit(unsigned int irq)
 	return (1 << (ret));
 }
 
-static unsigned int s5pv310_eint_offset(unsigned int irq)
-{
-	int ret;
-	u32 tmp;
-
-	tmp = do_div(irq, IRQ_EINT_BASE);
-
-	ret = do_div(tmp, 8);
-
-	return ret;
-}
-
 static inline void s5pv310_irq_eint_mask(unsigned int irq)
 {
 	u32 mask;
