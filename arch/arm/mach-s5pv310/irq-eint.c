@@ -121,7 +121,7 @@ static void s5pv310_irq_eint_maskack(unsigned int irq)
 
 static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 {
-	int offs = s5pv310_eint_offset(irq);
+	int offs = EINT_OFFSET(irq);
 	int shift;
 	u32 ctrl, mask;
 	u32 newvalue = 0;
