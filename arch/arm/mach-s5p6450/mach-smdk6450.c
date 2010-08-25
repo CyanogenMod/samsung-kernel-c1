@@ -264,6 +264,11 @@ static struct s5m8751_power_pdata smdk6450_power_pdata = {
 	.gpio_hadp_lusb = S5P6450_GPN(15),
 };
 
+static struct s5m8751_audio_pdata smdk6450_audio_pdata = {
+	.dac_vol = 0x18,
+	.hp_vol = 0x14,
+};
+
 static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 	.regulator = {
 		&smdk6450_vddsys_ext,	/* LDO1 */
@@ -279,6 +284,7 @@ static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 	},
 	.backlight = &smdk6450_backlight_pdata,
 	.power = &smdk6450_power_pdata,
+	.audio = &smdk6450_audio_pdata,
 
 	.irq_base = S5P_IRQ_EINT_BASE,
 	.gpio_pshold = S5P6450_GPN(12),
