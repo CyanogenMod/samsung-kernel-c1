@@ -16,6 +16,7 @@
 #include <linux/err.h>
 #include <linux/clk.h>
 #include <linux/clockchips.h>
+#include <linux/cnt32_to_63.h>
 
 #include <asm/smp_twd.h>
 
@@ -31,6 +32,9 @@ static unsigned long clock_count_per_tick;
 
 static struct clk *timerclk;
 
+/*
+ * Clockevent handling.
+ */
 static void s5pv310_systimer_write(unsigned int value,	void *reg_offset)
 {
 	unsigned int temp_regs;
@@ -38,21 +42,21 @@ static void s5pv310_systimer_write(unsigned int value,	void *reg_offset)
 	__raw_writel(value, reg_offset);
 
 	if (reg_offset == S5PV310_TCON) {
-		while(!(__raw_readl(S5PV310_INT_CSTAT) & 1<<7));
+		while (!(__raw_readl(S5PV310_INT_CSTAT) & 1<<7));
 
 		temp_regs = __raw_readl(S5PV310_INT_CSTAT);
 		temp_regs |= 1<<7;
 		__raw_writel(temp_regs, S5PV310_INT_CSTAT);
 
 	} else if (reg_offset == S5PV310_TICNTB) {
-		while(!(__raw_readl(S5PV310_INT_CSTAT) & 1<<3));
+		while (!(__raw_readl(S5PV310_INT_CSTAT) & 1<<3));
 
 		temp_regs = __raw_readl(S5PV310_INT_CSTAT);
 		temp_regs |= 1<<3;
 		__raw_writel(temp_regs, S5PV310_INT_CSTAT);
 
 	} else if (reg_offset == S5PV310_FRCNTB) {
-		while(!(__raw_readl(S5PV310_INT_CSTAT) & 1<<6));
+		while (!(__raw_readl(S5PV310_INT_CSTAT) & 1<<6));
 
 		temp_regs = __raw_readl(S5PV310_INT_CSTAT);
 		temp_regs |= 1<<6;
@@ -209,9 +213,12 @@ static void __init s5pv310_clockevent_init(void)
 	setup_irq(IRQ_SYSTEM_TIMER, &s5pv310_clock_event_irq);
 }
 
+/*
+ * Clocksource handling
+ */
 static cycle_t s5pv310_frc_read(struct clocksource *cs)
 {
-	return (cycle_t) ~__raw_readl(S5PV310_FRCNTO);
+	return (cycle_t) (0xffffffff - __raw_readl(S5PV310_FRCNTO));
 }
 
 struct clocksource sys_frc_clksrc = {
@@ -260,13 +267,49 @@ static void __init s5pv310_timer_resources(void)
 #endif
 }
 
+/*
+ * S5PV310's sched_clock implementation.
+ * (Inspired by ORION implementation)
+ */
+#define TCLK2NS_SCALE_FACTOR 8
+
+static unsigned long tclk2ns_scale;
+
+unsigned long long sched_clock(void)
+{
+	unsigned long long v = cnt32_to_63(0xffffffff - readl(S5PV310_FRCNTO));
+	return (v * tclk2ns_scale) >> TCLK2NS_SCALE_FACTOR;
+}
+
+static void __init s5pv310_setup_sched_clock(void)
+{
+	unsigned long long v;
+	unsigned long clock_rate;
+
+	clock_rate = clk_get_rate(timerclk);
+
+	v = NSEC_PER_SEC;
+	v <<= TCLK2NS_SCALE_FACTOR;
+	v += clock_rate/2;
+	do_div(v, clock_rate);
+	/*
+	 * We want an even value to automatically clear the top bit
+	 * returned by cnt32_to_63() without an additional run time
+	 * instruction. So if the LSB is 1 then round it up.
+	 */
+	if (v & 1)
+		v++;
+	tclk2ns_scale = v;
+}
+
 static void __init s5pv310_timer_init(void)
 {
 #ifdef CONFIG_LOCAL_TIMERS
 	twd_base = S5P_VA_TWD;
 #endif
-
 	s5pv310_timer_resources();
+
+	s5pv310_setup_sched_clock();
 	s5pv310_clockevent_init();
 	s5pv310_clocksource_init();
 }
