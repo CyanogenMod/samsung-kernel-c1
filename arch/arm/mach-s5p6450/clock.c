@@ -107,7 +107,7 @@ static int s5p6450_epll_set_rate(struct clk *clk, unsigned long rate)
 	epll_con = __raw_readl(S5P_EPLL_CON);
 	epll_con_k = __raw_readl(S5P_EPLL_CON_K);
 
-	epll_con_k &= ~(0xff) |	(PLL90XX_VDIV_MASK << 16);
+	epll_con_k &= ~(PLL90XX_KDIV_MASK | PLL90XX_VDIV_MASK << 16);
 	epll_con &= ~(0xff << PLL90XX_MDIV_SHIFT |   \
 			PLL90XX_PDIV_MASK << PLL90XX_PDIV_SHIFT | \
 			PLL90XX_SDIV_MASK << PLL90XX_SDIV_SHIFT);
