@@ -70,6 +70,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM9705 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9712 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
+	select SND_SOC_S5M8751 if MFD_S5M8751
         help
           Normally ASoC codec drivers are only built if a machine driver which
           uses them is also built since they are only usable with a machine
@@ -101,7 +102,7 @@ config SND_SOC_AD1980
 
 config SND_SOC_AD73311
 	tristate
-	
+
 config SND_SOC_ADS117X
 	tristate
 
@@ -280,4 +281,7 @@ config SND_SOC_WM2000
 	tristate
 
 config SND_SOC_WM9090
+	tristate
+
+config SND_SOC_S5M8751
 	tristate

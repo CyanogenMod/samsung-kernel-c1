@@ -12,9 +12,6 @@
 #ifndef __LINUX_S5M8751_REGULATOR_H_
 #define __LINUX_S5M8751_REGULATOR_H_
 
-#include <linux/regulator/machine.h>
-#include <linux/platform_device.h>
-
 #define NUM_S5M8751_REGULATORS			10
 
 /* LDOs */
@@ -84,18 +81,6 @@
 /* BUCK2 V2 SET (0x11) */
 #define S5M8751_BUCK2_V2_SET_MASK		0x3F
 #define S5M8751_BUCK_MODE_SHIFT			6
-
-struct s5m8751;
-struct platform_device;
-struct regulator_init_data;
-
-struct s5m8751_pmic {
-	/* regulator devices */
-	struct platform_device *pdev[NUM_S5M8751_REGULATORS];
-};
-
-int s5m8751_register_regulator(struct s5m8751 *s5m8751, int reg,
-			      struct regulator_init_data *initdata);
 
 #endif
 

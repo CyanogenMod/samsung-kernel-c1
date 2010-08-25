@@ -63,7 +63,7 @@ config SND_S3C24XX_SOC_NEO1973_GTA02_WM8753
 	help
 	  This driver provides audio support for the Openmoko Neo FreeRunner
 	  smartphone.
-	  
+
 config SND_S3C24XX_SOC_SMDK2416_WM8580
 	tristate "SoC I2S Audio support for SMDK2416 - WM8580"
 	depends on SND_S3C24XX_SOC && (CPU_S3C2416)
@@ -187,3 +187,10 @@ config SND_SMDK64XX_WM8580_PCM
 	select SND_SOC_WM8580
 	help
 	  Say Y if you want to add support for SoC PCM audio on the SMDK.
+
+config SND_S3C64XX_SOC_S5M8751
+	tristate "SoC I2S Audio support for S5M8751 on SMDK64XX"
+	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDK6450) && MFD_S5M8751
+	select SND_SOC_S5M8751
+	select SND_S3C64XX_SOC_I2S_V4
+
