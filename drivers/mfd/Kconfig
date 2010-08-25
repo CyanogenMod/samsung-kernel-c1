@@ -357,11 +357,8 @@ config MFD_PCF50633
 	  so that function-specific drivers can bind to them.
 
 config MFD_S5M8751
-	tristate
-
-config MFD_S5M8751_I2C
-	tristate "Samsung Semiconductor S5M8751 PMIC Support with AUDIO DAC"
-	select MFD_S5M8751
+	bool "Samsung Semiconductor S5M8751 PMIC Support with AUDIO DAC"
+	select MFD_CORE
 	depends on I2C
 	help
 	  S5M8751 is an advanced power management with AUDIO DAC. This option
