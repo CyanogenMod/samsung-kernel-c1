@@ -254,6 +254,10 @@ static struct regulator_init_data smdk6450_vddarm_int = {
 	.consumer_supplies = smdk6450_vddarm_consumers,
 };
 
+static struct s5m8751_backlight_pdata smdk6450_backlight_pdata = {
+	.brightness = 31,
+};
+
 static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 	.regulator = {
 		&smdk6450_vddsys_ext,	/* LDO1 */
@@ -267,6 +271,7 @@ static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 		&smdk6450_vddarm_int,	/* BUCK2 */
 		NULL,
 	},
+	.backlight = &smdk6450_backlight_pdata,
 
 	.irq_base = S5P_IRQ_EINT_BASE,
 	.gpio_pshold = S5P6450_GPN(12),
