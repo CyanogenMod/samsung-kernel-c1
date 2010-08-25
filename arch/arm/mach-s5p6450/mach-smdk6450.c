@@ -258,6 +258,12 @@ static struct s5m8751_backlight_pdata smdk6450_backlight_pdata = {
 	.brightness = 31,
 };
 
+static struct s5m8751_power_pdata smdk6450_power_pdata = {
+	.constant_voltage = 4200,
+	.fast_chg_current = 400,
+	.gpio_hadp_lusb = S5P6450_GPN(15),
+};
+
 static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 	.regulator = {
 		&smdk6450_vddsys_ext,	/* LDO1 */
@@ -272,6 +278,7 @@ static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
 		NULL,
 	},
 	.backlight = &smdk6450_backlight_pdata,
+	.power = &smdk6450_power_pdata,
 
 	.irq_base = S5P_IRQ_EINT_BASE,
 	.gpio_pshold = S5P6450_GPN(12),

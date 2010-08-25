@@ -142,4 +142,11 @@ config CHARGER_PCF50633
 	help
 	 Say Y to include support for NXP PCF50633 Main Battery Charger.
 
+config POWER_S5M8751
+	tristate "S5M8751 Battery Power driver support"
+	depends on MFD_S5M8751
+	help
+	  Say Y here to enable support for the power management unit
+	  provided by the Samsung Semiconductor S5M8751 PMIC.
+
 endif # POWER_SUPPLY
