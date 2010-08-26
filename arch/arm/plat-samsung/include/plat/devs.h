@@ -129,6 +129,8 @@ extern struct platform_device s5p6450_device_iis0;
 extern struct platform_device s5p6450_device_pcm0;
 extern struct platform_device s3c_device_gib;
 
+extern struct platform_device s5p_device_sysmmu;
+
 /* s3c2440 specific devices */
 
 #ifdef CONFIG_CPU_S3C2440
