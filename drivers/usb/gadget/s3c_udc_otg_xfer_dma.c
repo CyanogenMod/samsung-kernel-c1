@@ -643,7 +643,7 @@ static inline int s3c_fifo_read(struct s3c_ep *ep, u32 *cp, int max)
 	u32 bytes;
 
 	bytes = sizeof(struct usb_ctrlrequest);
-	__dma_single_cpu_to_dev(&usb_ctrl, bytes, DMA_FROM_DEVICE);
+	__dma_single_dev_to_cpu(&usb_ctrl, bytes, DMA_FROM_DEVICE);
 	DEBUG_EP0("%s: bytes=%d, ep_index=%d\n", __func__, bytes, ep_index(ep));
 
 	return bytes;

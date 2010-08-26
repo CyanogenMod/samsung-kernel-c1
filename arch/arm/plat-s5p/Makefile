@@ -20,3 +20,4 @@ obj-y				+= irq.o
 obj-y				+= bootmem.o
 obj-$(CONFIG_S5P_EXT_INT)	+= irq-eint.o
 
+obj-$(CONFIG_S5P_SYSMMU)	+= sysmmu.o

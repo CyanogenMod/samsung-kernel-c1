@@ -31,3 +31,99 @@ config S5P_EXT_INT
 	help
 	  Use the external interrupts (other than GPIO interrupts.)
 	  Note: Do not choose this for S5P6440.
+
+menuconfig S5P_SYSMMU
+        bool "SYSMMU support"
+	depends on ARCH_S5PV310
+        help
+	  This is a System MMU driver for Samsung ARM based Soc.
+
+if S5P_SYSMMU
+
+config S5P_SYSMMU_MDMA1
+	bool "support System MMU for MDMA1"
+	help
+	  support System MMU for MDMA1
+
+config S5P_SYSMMU_SSS
+	bool "support System MMU for SSS"
+	help
+	  support System MMU for SSS
+
+config S5P_SYSMMU_FIMC0
+	bool "support System MMU for FIMC0"
+	help
+	  support System MMU for FIMC0
+
+config S5P_SYSMMU_FIMC1
+	bool "support System MMU for FIMC1"
+	help
+	  support System MMU for FIMC1
+
+config S5P_SYSMMU_FIMC2
+	bool "support System MMU for FIMC2"
+	help
+	  support System MMU for FIMC2
+
+config S5P_SYSMMU_FIMC3
+	bool "support System MMU for FIMC3"
+	help
+	  support System MMU for FIMC3
+
+config S5P_SYSMMU_JPEG
+	bool "support System MMU for JPEG"
+	help
+	  support System MMU for JPEG
+
+config S5P_SYSMMU_FIMD0
+	bool "support System MMU for FIMD0"
+	help
+	  support System MMU for FIMD0
+
+config S5P_SYSMMU_FIMD1
+	bool "support System MMU for FIMD1"
+	help
+	  support System MMU for FIMD1
+
+config S5P_SYSMMU_PCIe
+	bool "support System MMU for PCIe"
+	help
+	  support System MMU for PCIe
+
+config S5P_SYSMMU_FIMG2D
+	bool "support System MMU for FIMG2D"
+	help
+	  support System MMU for FIMG2D
+
+config S5P_SYSMMU_ROTATOR
+	bool "support System MMU for ROTATOR"
+	help
+	  support System MMU for ROTATOR
+
+config S5P_SYSMMU_MDMA2
+	bool "support System MMU for MDMA2"
+	help
+	  support System MMU for MDMA2
+
+config S5P_SYSMMU_TV
+	bool "support System MMU for TV"
+	help
+	  support System MMU for TV
+
+config S5P_SYSMMU_MFC_L
+	bool "support System MMU for MFC_L"
+	help
+	  support System MMU for MFC_L
+
+config S5P_SYSMMU_MFC_R
+	bool "support System MMU for MFC_R"
+	help
+	  support System MMU for MFC_R
+
+config S5P_SYSMMU_DEBUG
+        bool "Enables debug messages"
+	depends on S5P_SYSMMU
+        help
+          This enables SYSMMU driver debug massages.
+
+endif

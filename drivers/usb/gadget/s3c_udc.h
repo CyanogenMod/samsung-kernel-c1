@@ -60,7 +60,7 @@
 #define S3C_MAX_ENDPOINTS	5
 #elif defined(CONFIG_USB_GADGET_S3C_HS) || defined(CONFIG_PLAT_S5P64XX)\
 	|| defined(CONFIG_PLAT_S5PC11X) || defined(CONFIG_CPU_S5P6442)\
-	|| defined(CONFIG_CPU_S5P6450)
+	|| defined(CONFIG_CPU_S5P6450) || defined(CONFIG_CPU_S5PV310)
 #define EP0_FIFO_SIZE		64
 #define EP_FIFO_SIZE		512
 #define EP_FIFO_SIZE2		1024
