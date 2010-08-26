@@ -1077,7 +1077,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, dev);
 
 	otg_clock = clk_get(&pdev->dev, "usbotg");
-	if (otg_clock == NULL) {
+	if (IS_ERR(otg_clock)) {
 		printk(KERN_INFO "failed to find otg clock source\n");
 		return -ENOENT;
 	}
