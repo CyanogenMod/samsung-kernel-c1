@@ -16,6 +16,10 @@
 
 #include "fimg2d.h"
 
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+extern void *s5p_getaddress(unsigned int cookie);
+#endif
+
 /**
  * fimg2d3x_reset - [3.x] Software reset
  * @info: controller info
@@ -164,6 +168,18 @@ void fimg2d3x_set_src_param(struct fimg2d_control *info, struct fimg2d_param *p)
 	unsigned long cfg;
 
 	/* addr */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	if (p->cookie) {
+		/* option 2. fimg2d hw uses kernel virutal address */
+		p->addr = (unsigned long)s5p_getaddress(p->cookie);
+		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
+	}
+	else {
+		/* option 1. fimg2d hw uses user virutal address */
+		/* NOP */
+		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	}
+#endif
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_SRC_BASE_ADDR_REG);
 
 	/* stride */
@@ -242,6 +258,18 @@ void fimg2d3x_set_dst_param(struct fimg2d_control *info, struct fimg2d_param *p)
 	unsigned long cfg;
 
 	/* addr */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	if (p->cookie) {
+		/* option 2. fimg2d hw uses kernel virutal address */
+		p->addr = (unsigned long)s5p_getaddress(p->cookie);
+		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
+	}
+	else {
+		/* option 1. fimg2d hw uses user virutal address */
+		/* NOP */
+		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	}
+#endif
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_DST_BASE_ADDR_REG);
 
 	/* stride */
@@ -311,6 +339,18 @@ void fimg2d3x_set_pat_param(struct fimg2d_control *info, struct fimg2d_param *p)
 	writel(cfg, info->regs + FIMG2D_DST_PAT_DIRECT_REG);
 
 	/* addr */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	if (p->cookie) {
+		/* option 2. fimg2d hw uses kernel virutal address */
+		p->addr = (unsigned long)s5p_getaddress(p->cookie);
+		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
+	}
+	else {
+		/* option 1. fimg2d hw uses user virutal address */
+		/* NOP */
+		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	}
+#endif
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_PAT_BASE_ADDR_REG);
 
 	/* width & height */

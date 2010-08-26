@@ -146,6 +146,7 @@ struct fimg2d_alpha {
  * struct fimg2d_param - src and dst info
  * @type: image type
  * @addr: address (physical or user virtual)
+ * @cookie: cookie of s5p-vmem for kernel virtual address
  * @width: image width
  * @height: image height
  * @dx: -1 if negative direction of x
@@ -157,6 +158,7 @@ struct fimg2d_alpha {
 struct fimg2d_param {
 	FIMG2D_IMG_T type;
 	unsigned long addr;
+	unsigned int cookie;
 	int width;
 	int height;
 	int dx;
@@ -236,6 +238,7 @@ struct fimg2d_context {
 	struct list_head node;
 	struct list_head reg_q;
 	wait_queue_head_t wq;
+	unsigned long pgd;
 };
 
 /**

@@ -18,6 +18,10 @@
 #include "fimg2d.h"
 #include "fimg2d3x.h"
 
+#ifdef CONFIG_S5P_SYSMMU_FIMG2D
+#include <plat/sysmmu.h>
+#endif
+
 /* for pattern blend */
 static void *scratch_buf;
 static int pat_height;
@@ -102,11 +106,22 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 	info->update(info, ctx, reg);
 
 	atomic_set(&info->busy, 1);
+
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	if (!ctx->src.cookie && !ctx->dst.cookie) {
+		/* option 1. fimg2d hw uses user virtual address */
+		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+	}
+	else {
+		/* option 2. fimg2d hw uses kernel virtual address */
+		/* NOP */
+	}
+#endif
 	info->run(info);
 
 	ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
 	if (ret == 0)
-		printk(KERN_ERR "wait timeout\n");
+		printk(KERN_ERR "pattern: wait timeout\n");
 
 	kfree(scratch_buf);
 }
@@ -143,11 +158,22 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 		info->update(info, ctx, reg);
 
 		atomic_set(&info->busy, 1);
+
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	if (!ctx->src.cookie && !ctx->dst.cookie) {
+		/* option 1. fimg2d hw uses user virtual address */
+		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+	}
+	else {
+		/* option 2. fimg2d hw uses kernel virtual address */
+		/* NOP */
+	}
+#endif
 		info->run(info);
 
 		ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
 		if (ret == 0)
-			printk(KERN_ERR "wait timeout\n");
+			printk(KERN_ERR "bitblt: wait timeout\n");
 
 		/* pattern blend work around for 3.0 hardware */
 		if (ctx->op == OP_PAT_BLEND) {

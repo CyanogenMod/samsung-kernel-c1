@@ -15,20 +15,24 @@
 #include <linux/kernel.h>
 #include <linux/poll.h>
 #include <linux/clk.h>
-#include <linux/slab.h>
-#include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/slab.h>
 #include <linux/workqueue.h>
+#include <linux/dma-mapping.h>
 #include <asm/atomic.h>
 #include <asm/cacheflush.h>
 #include <plat/cpu.h>
 #include <plat/fimg2d.h>
 
 #include "fimg2d.h"
+
+#ifdef CONFIG_S5P_SYSMMU_FIMG2D
+#include <plat/sysmmu.h>
+#endif
 
 static struct fimg2d_control *info;
 
@@ -75,15 +79,22 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 	INIT_LIST_HEAD(&ctx->node);
 	INIT_LIST_HEAD(&ctx->reg_q);
 	init_waitqueue_head(&ctx->wq);
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	/* option 1. fimg2d hw uses user virtual address */
+	ctx->pgd = __pa(current->mm->pgd);
+	/* option 2. fimg2d hw uses kernel virtual address */
+	// sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir)); move to fimg2d_probe()
+#endif
 
 	fimg2d_enqueue(info, &ctx->node, &info->ctx_q);
 
 	file->private_data = ctx;
 	atomic_inc(&info->ref_count);
 
+#ifndef CONFIG_S5PV310_FPGA
 	if (atomic_read(&info->ref_count) == 1)
 		clk_enable(info->clock);
-
+#endif
 	return 0;
 }
 
@@ -111,7 +122,7 @@ static int fimg2d_release(struct inode *inode, struct file *file)
 
 		ret = wait_event_timeout(ctx->wq, !info->active, 10000);
 		if (ret == 0)
-			printk(KERN_ERR "wait timeout\n");
+			printk(KERN_ERR "release: wait timeout\n");
 
 		fimg2d_debug("done, it's time to release\n");
 	}
@@ -122,9 +133,10 @@ static int fimg2d_release(struct inode *inode, struct file *file)
 	kfree(ctx);
 	atomic_dec(&info->ref_count);
 
+#ifndef CONFIG_S5PV310_FPGA
 	if (atomic_read(&info->ref_count) == 0)
 		clk_disable(info->clock);
-
+#endif
 	return 0;
 }
 
@@ -325,6 +337,12 @@ static struct miscdevice fimg2d_dev = {
 */
 static int fimg2d_setup_controller(struct fimg2d_control *info)
 {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	sysmmu_on(SYSMMU_G2D);
+	fimg2d_debug("sysmmu on\n");
+	/* option 2. fimg2d hw uses kernel virtual address */
+	sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir));
+#endif
 	spin_lock_init(&info->lock);
 	atomic_set(&info->ref_count, 0);
 	atomic_set(&info->busy, 0);
@@ -411,6 +429,7 @@ static int fimg2d_probe(struct platform_device *pdev)
 		goto err_irq;
 	}
 
+#ifndef CONFIG_S5PV310_FPGA
 	/* clock for setting parent and rate */
 	parent = clk_get(&pdev->dev, pdata->parent_clkname);
 	if (IS_ERR(parent)) {
@@ -436,7 +455,7 @@ static int fimg2d_probe(struct platform_device *pdev)
 		ret = -ENOENT;
 		goto err_clk3;
 	}
-
+#endif
 	/* misc register */
 	ret = misc_register(&fimg2d_dev);
 	if (ret) {
@@ -486,6 +505,10 @@ err_plat:
 */
 static int fimg2d_remove(struct platform_device *pdev)
 {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	sysmmu_off(SYSMMU_G2D);
+	fimg2d_debug("sysmmu off\n");
+#endif
 	free_irq(info->irq, NULL);
 
 	if (info->mem) {
@@ -508,8 +531,9 @@ static int fimg2d_remove(struct platform_device *pdev)
 */
 static int fimg2d_suspend(struct platform_device *pdev, pm_message_t state)
 {
+#ifndef CONFIG_S5PV310_FPGA
 	clk_disable(info->clock);
-
+#endif
 	return 0;
 }
 
@@ -519,8 +543,9 @@ static int fimg2d_suspend(struct platform_device *pdev, pm_message_t state)
 */
 static int fimg2d_resume(struct platform_device *pdev)
 {
+#ifndef CONFIG_S5PV310_FPGA
 	clk_enable(info->clock);
-
+#endif
 	return 0;
 }
 
