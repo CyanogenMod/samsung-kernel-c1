@@ -1074,6 +1074,8 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_dout_mmc4,
 	&clk_mout_audss,
 	&clk_sclk_audss,
+	&clk_mout_g2d0,
+	&clk_mout_g2d1,
 };
 
 static int s5pv310_epll_enable(struct clk *clk, int enable)

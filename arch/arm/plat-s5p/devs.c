@@ -619,7 +619,7 @@ struct platform_device s5p_device_fimg2d = {
 EXPORT_SYMBOL(s5p_device_fimg2d);
 
 static struct fimg2d_platdata default_fimg2d_data __initdata = {
-	.parent_clkname = "mout_mpll",
+	.parent_clkname = "mout_g2d0",
 	.clkname = "sclk_fimg2d",
 	.gate_clkname = "fimg2d",
 	.clkrate = 250 * 1000000,
