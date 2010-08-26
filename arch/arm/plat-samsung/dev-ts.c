@@ -23,6 +23,10 @@
 #include <plat/devs.h>
 #include <plat/ts.h>
 
+#if defined(CONFIG_S3C_DEV_ADC1)
+#define SAMSUNG_PA_ADC	S5PV310_PA_ADC1
+#endif
+
 static struct resource s3c_ts_resource[] = {
 	[0] = {
 		.start = SAMSUNG_PA_ADC,

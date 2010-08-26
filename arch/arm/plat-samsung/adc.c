@@ -372,6 +372,13 @@ static int s3c_adc_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
 
+#if defined(CONFIG_S3C_DEV_ADC1)
+	tmp = readl(adc->regs + S3C2410_ADCCON);
+	tmp |= S3C64XX_ADCCON_TSSEL;
+	writel(tmp, adc->regs + S3C2410_ADCCON);
+	adc->regs += 0x1000;
+#endif
+
 	clk_enable(adc->clk);
 
 	tmp = adc->prescale | S3C2410_ADCCON_PRSCEN;
