@@ -494,7 +494,7 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_fsys_ctrl ,
 		.ctrlbit	= (1 << 12),
 	}, {
-		.name		= "otg",
+		.name		= "usbotg",
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
 		.ctrlbit	= (1 << 13),
