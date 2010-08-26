@@ -109,8 +109,6 @@ static unsigned int cookie;
 #define ROOTKVM			(&root_kvm)
 #define FIRSTKVM		(root_kvm.next)
 #define PAGEDESCSIZE(size)	((size >> PAGE_SHIFT) * sizeof(struct page *))
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-=======
 
 /* clean_outer_cache
  * Cleans specific page table entries in the outer (L2) cache
@@ -156,7 +154,6 @@ static void clean_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
 #else
 #define clean_outercache_pagetable(mm, addr, size) do { } while (0)
 #endif /* CONFIG_OUTER_CACHE && CONFIG_ARM */
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
 
 static struct kvm_area *createkvm(void *kvm_addr, size_t size)
 {
@@ -233,11 +230,7 @@ static int freekvm(unsigned int cookie)
 	if (rmarea->pages) {
 		int i;
 
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-		/* defined in /mm/vmalloc.c */
-=======
 		/* defined in mm/vmalloc.c */
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
 		unmap_kernel_range((unsigned long)rmarea->start_addr,
 				rmarea->size);
 
@@ -399,11 +392,6 @@ int s5p_vmem_mmap(struct file *filp, struct vm_area_struct *vma)
 			uaddr += PAGE_SIZE;
 			rpfn++;
 		}
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-		return 0;
-	} else
-		return remap_vmalloc_range(vma, recent_kvm_area->start_addr, 0);
-=======
 	} else {
 		ret = remap_vmalloc_range(vma, recent_kvm_area->start_addr, 0);
 	}
@@ -412,7 +400,6 @@ int s5p_vmem_mmap(struct file *filp, struct vm_area_struct *vma)
 		clean_outercache_pagetable(vma->vm_mm, vma->vm_start,
 				vma->vm_end - vma->vm_start);
 	return ret;
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
 }
 EXPORT_SYMBOL(s5p_vmem_mmap);
 
@@ -521,8 +508,6 @@ EXPORT_SYMBOL(s5p_vmem_release);
  * This returns 'cookie' of the allocated area so that users can share it.
  * Returning '0'(zero) means mapping is failed because of memory allocation
  * failure, mapping failure and so on.
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-=======
  *
  * va_start and size must be aligned by PAGE_SIZE. If they are not, they will
  * be fixed to be aligned. For example, although you wan to map physical memory
@@ -531,7 +516,6 @@ EXPORT_SYMBOL(s5p_vmem_release);
  * the virtual address spaces you provide are expanded through 2 pages.
  * With the mapping above, a try to map physical memory at 0x00001008 will
  * cause overwriting the existing mapping.
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
  */
 unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 				unsigned long va_end)
@@ -547,12 +531,6 @@ unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 
 	/* Desired size must not be larger than the size of supplied virtual
 	 * address space */
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-	size = PAGE_ALIGN(size);
-	if (size > (va_end - va_start))
-		return 0;
-
-=======
 	size = PAGE_ALIGN(size + (va_start & (~PAGE_MASK)));
 	if (size > (va_end - va_start))
 		return 0;
@@ -560,7 +538,6 @@ unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 	/* start address of the area must be page aligned */
 	va_start &= PAGE_MASK;
 
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
 	va_end = va_start + size;
 
 	nr_pages = size >> PAGE_SHIFT;
@@ -609,15 +586,10 @@ unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 	area.size = size + PAGE_SIZE;
 
 	/* page table generation */
-<<<<<<< HEAD:drivers/char/s5p_vmem.c
-	if (map_vm_area(&area, PAGE_KERNEL, &pages) == 0)
-		return kvma->cookie;
-=======
 	if (map_vm_area(&area, PAGE_KERNEL, &pages) == 0) {
 		clean_outercache_pagetable(&init_mm, va_start, size);
 		return kvma->cookie;
 	}
->>>>>>> d5f210a... ARM: S5PV310: s5p-vmem: Added clean_outercache_pagetable:drivers/char/s5p_vmem.c
 fail:
 	/* Free all pages in 'pages' array and kvma */
 	freekvm(kvma->cookie);
