@@ -28,7 +28,6 @@ void s5p6450_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 	struct s3c_sdhci_platdata *pdata = dev->dev.platform_data;
 	unsigned int gpio;
 
-        early_printk("6450_setup_sdhci0_cfg_gpio\n");
 	/* Set all the necessary GPG0/GPG1 pins to special-function 2 */
 	for (gpio = S5P6450_GPG(0); gpio < S5P6450_GPG(2); gpio++) {
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
@@ -45,7 +44,7 @@ void s5p6450_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 		break;
 	}
 
-        /* GPG[6] special-funtion 2 : MMC0 CDn */
+	/* GPG[6] special-funtion 2 : MMC0 CDn */
 	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL) {
 		s3c_gpio_setpull(S5P6450_GPG(6), S3C_GPIO_PULL_UP);
 		s3c_gpio_cfgpin(S5P6450_GPG(6), S3C_GPIO_SFN(2));
@@ -57,31 +56,30 @@ void s5p6450_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
 	struct s3c_sdhci_platdata *pdata = dev->dev.platform_data;
 	unsigned int gpio;
 
-        early_printk("6450_setup_sdhci1_cfg_gpio\n");
 	/* Set all the necessary GPH[0:1] pins to special-function 2 */
 	for (gpio = S5P6450_GPH(0); gpio < S5P6450_GPH(2); gpio++) {
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
 
-        switch(width) {
-        case 8:
-        	/* Data pin GPH[2:9] to special-function 2 */
-        	for (gpio = S5P6450_GPH(6); gpio <= S5P6450_GPH(9); gpio++) {
+	switch(width) {
+	case 8:
+		/* Data pin GPH[2:9] to special-function 2 */
+		for (gpio = S5P6450_GPH(6); gpio <= S5P6450_GPH(9); gpio++) {
+			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
+			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
+		}
+	case 4:
+		/* Data pin GPH[2:5] to special-function 2 */
+		for (gpio = S5P6450_GPH(2); gpio <= S5P6450_GPH(5); gpio++) {
         		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-        		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-        	}
-        case 4:
-        	/* Data pin GPH[2:5] to special-function 2 */
-        	for (gpio = S5P6450_GPH(2); gpio <= S5P6450_GPH(5); gpio++) {
-        		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
-        		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-        	}
-        default:
-                break;
+			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
+		}
+	default:
+		break;
         }
 
-        /* GPG[6] special-funtion 3 : MMC1 CDn */
+	/* GPG[6] special-funtion 3 : MMC1 CDn */
 	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL) {
 		s3c_gpio_setpull(S5P6450_GPG(6), S3C_GPIO_PULL_UP);
 		s3c_gpio_cfgpin(S5P6450_GPG(6), S3C_GPIO_SFN(3));
@@ -92,7 +90,6 @@ void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 {
 	unsigned int gpio;
 
-        early_printk("6450_setup_sdhci2_cfg_gpio\n");
 	/* Set all the necessary GPG[7:8] pins to special-function 3 */
 	for (gpio = S5P6450_GPG(7); gpio < S5P6450_GPG(9); gpio++) {
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
@@ -104,5 +101,5 @@ void s5p6450_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
-        /* not support MMC2 CDn */
+	/* not support MMC2 CDn */
 }

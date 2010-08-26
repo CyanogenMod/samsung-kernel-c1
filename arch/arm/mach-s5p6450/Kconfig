@@ -18,12 +18,11 @@ config MACH_SMDK6450
 	bool "SMDK6450"
 	select CPU_S5P6450
 	select S3C_DEV_MSHC
-	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC if !S5P6450_SD_CH1_8BIT
 	select S3C_DEV_HSMMC1
+	select S3C_DEV_HSMMC2 if !MMC_MSHCI
 	select S5P6450_SETUP_SDHCI
-	select S5P6450_SETUP_SDHCI_GPIO
 	select S5P6450_SETUP_MSHCI
-	select S5P6450_SETUP_MSHCI_GPIO
 	select SAMSUNG_DEV_ADC
 	select SAMSUNG_DEV_TS
         select S3C_DEV_GIB
@@ -73,4 +72,33 @@ config S5P6450_SETUP_FIMC0
 	default y
 	help
 	  Common setup code for FIMC0 conntroller.
+
+comment "MMC/SD slot setup"
+depends on PLAT_S5P
+
+menu "Use 8-bit bus width"
+config S5P6450_SD_CH1_8BIT
+bool "Channel 1"
+depends on PLAT_S5P
+default n
+help
+IF channel 1 uses 8-bit bus, channel 0 is disabled.
+
+config S5P6450_SD_CH3_8BIT
+bool "Channel 3"
+depends on (PLAT_S5P && MMC_MSHCI)
+default n
+help
+IF channel 3 uses 8-bit bus, channel 2 is disabled and can't use DDR mode.
+endmenu
+
+menu "Use DDR(Dual Data Rate)"
+config S5P6450_SD_CH3_DDR
+bool "Channel 3"
+depends on (PLAT_S5P && MMC_MSHCI)
+default n
+help
+IF channel 3 is working with DDR mode, can't use 8-bit bus.
+endmenu
+
 endif

@@ -1590,7 +1590,7 @@ int mshci_add_host(struct mshci_host *host)
 
 	mmc_add_host(mmc);
 
-	printk(KERN_INFO "%s: SDHCI controller on %s [%s] using %s\n",
+	printk(KERN_INFO "%s: MSHCI controller on %s [%s] using %s\n",
 		mmc_hostname(mmc), host->hw_name, dev_name(mmc_dev(mmc)),
 		(host->flags & MSHCI_USE_IDMA) ? "IDMA" : "PIO");
 

@@ -60,7 +60,6 @@ void s3c_sdhci2_set_platdata(struct s3c_sdhci_platdata *pd)
 {
 	struct s3c_sdhci_platdata *set = &s3c_hsmmc2_def_platdata;
 
-	set->max_width = pd->max_width;
 	set->cd_type = pd->cd_type;
 	set->ext_cd_init = pd->ext_cd_init;
 	set->ext_cd_cleanup = pd->ext_cd_cleanup;
@@ -69,6 +68,10 @@ void s3c_sdhci2_set_platdata(struct s3c_sdhci_platdata *pd)
 	set->wp_gpio = pd->wp_gpio;
 	set->has_wp_gpio = pd->has_wp_gpio;
 
+	if (pd->max_width)
+		set->max_width = pd->max_width;
+	if (pd->host_caps)
+		set->host_caps |= pd->host_caps;
 	if (pd->cfg_gpio)
 		set->cfg_gpio = pd->cfg_gpio;
 	if (pd->cfg_card)

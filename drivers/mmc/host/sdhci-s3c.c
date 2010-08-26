@@ -488,6 +488,10 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 	host->quirks |= SDHCI_QUIRK_NONSTANDARD_CLOCK;
 	host->quirks |= SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER;
 #endif
+	
+	if(pdata->host_caps)
+		host->mmc->caps |= pdata->host_caps;
+	
 	ret = sdhci_add_host(host);
 	if (ret) {
 		dev_err(dev, "sdhci_add_host() failed\n");

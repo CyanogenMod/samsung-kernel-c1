@@ -325,7 +325,7 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 		host->mmc->caps = 0;
 
 	if (pdata->cd_type == S3C_MSHCI_CD_PERMANENT){
-		host->mmc->caps = MMC_CAP_NONREMOVABLE;
+		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
 	}
 	/* IF SD controller's WP pin donsn't connected with SD card and there
 	 * is an allocated GPIO for getting WP data form SD card, 

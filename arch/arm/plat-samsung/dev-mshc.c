@@ -41,8 +41,6 @@ static u64 s3c_device_hsmmc_dmamask = 0xffffffffUL;
 struct s3c_mshci_platdata s3c_mshci_def_platdata = {
 	.max_width	= 4,
 	.host_caps	= (MMC_CAP_4_BIT_DATA |
-//	.host_caps	= (MMC_CAP_4_BIT_DATA | MMC_CAP_DDR |
-//	.host_caps	= (MMC_CAP_8_BIT_DATA |
 			   MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED),
 };
 
@@ -62,8 +60,10 @@ void s3c_mshci_set_platdata(struct s3c_mshci_platdata *pd)
 {
 	struct s3c_mshci_platdata *set = &s3c_mshci_def_platdata;
 
-	set->max_width = pd->max_width;
-
+	if (pd->max_width)
+		set->max_width = pd->max_width;
+	if (pd->host_caps)
+		set->host_caps |= pd->host_caps;
 	if (pd->cfg_gpio)
 		set->cfg_gpio = pd->cfg_gpio;
 	if (pd->cfg_card)

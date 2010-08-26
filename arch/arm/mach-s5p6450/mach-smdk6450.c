@@ -23,6 +23,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/spi/spi.h>
 #include <linux/pwm_backlight.h>
+#include <linux/mmc/host.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -440,13 +441,27 @@ static struct s3c_sdhci_platdata smdk6450_hsmmc0_pdata __initdata = {
 #ifdef CONFIG_S3C_DEV_HSMMC1
 static struct s3c_sdhci_platdata smdk6450_hsmmc1_pdata __initdata = {
 	.cd_type		= S3C_SDHCI_CD_INTERNAL,
-	.max_width		= 4,
+#if defined(CONFIG_S5P6450_SD_CH1_8BIT)
+	.max_width		= 8,
+	.host_caps		= MMC_CAP_8_BIT_DATA,
+#endif
 };
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC2
 static struct s3c_sdhci_platdata smdk6450_hsmmc2_pdata __initdata = {
 	.cd_type		= S3C_SDHCI_CD_NONE,
 	.max_width		= 4,
+};
+#endif
+#ifdef CONFIG_S3C_DEV_MSHC
+static struct s3c_mshci_platdata smdk6450_mshc_pdata __initdata = {
+#if defined(CONFIG_S5P6450_SD_CH3_8BIT)
+	.max_width		= 8,
+	.host_caps		= MMC_CAP_8_BIT_DATA,
+#endif
+#if defined(CONFIG_S5P6450_SD_CH3_DDR)
+	.host_caps		= MMC_CAP_DDR,
+#endif
 };
 #endif
 
@@ -654,6 +669,9 @@ static void __init smdk6450_machine_init(void)
 #endif
 #ifdef CONFIG_S3C_DEV_HSMMC2
 	s3c_sdhci2_set_platdata(&smdk6450_hsmmc2_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_MSHC
+	s3c_mshci_set_platdata(&smdk6450_mshc_pdata);
 #endif
 
 #ifdef CONFIG_VIDEO_FIMC
