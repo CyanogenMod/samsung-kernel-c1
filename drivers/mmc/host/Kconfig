@@ -24,6 +24,18 @@ config MMC_PXA
 
 	  If unsure, say N.
 
+config MMC_MSHCI
+	tristate "Mobile Storage Host Controller Interface support"
+	depends on HAS_DMA
+	help
+	  This selects the Mobile Storage Host Controller Interface.
+	  It is made by synopsys. It supports SD/MMC card.
+	  
+	  If you have a controller with this interface, say Y or M here. You
+	  also need to enable an appropriate bus interface.
+
+	  If unsure, say N.
+
 config MMC_SDHCI
 	tristate "Secure Digital Host Controller Interface support"
 	depends on HAS_DMA
@@ -32,18 +44,6 @@ config MMC_SDHCI
 	  It is used by manufacturers such as Texas Instruments(R), Ricoh(R)
 	  and Toshiba(R). Most controllers found in laptops are of this type.
 
-	  If you have a controller with this interface, say Y or M here. You
-	  also need to enable an appropriate bus interface.
-
-	  If unsure, say N.
-
-config MMC_MSHCI
-	tristate "Mobile Storage Host Controller Interface support"
-	depends on HAS_DMA
-	help
-	  This selects the Mobile Storage Host Controller Interface.
-	  It is made by synopsys. It supports SD/MMC card.
-	  
 	  If you have a controller with this interface, say Y or M here. You
 	  also need to enable an appropriate bus interface.
 
