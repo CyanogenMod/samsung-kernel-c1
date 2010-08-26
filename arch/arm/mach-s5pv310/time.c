@@ -277,7 +277,13 @@ static unsigned long tclk2ns_scale;
 
 unsigned long long sched_clock(void)
 {
-	unsigned long long v = cnt32_to_63(0xffffffff - readl(S5PV310_FRCNTO));
+	unsigned long long v;
+
+	if (tclk2ns_scale == 0)
+		return 0;
+
+	v = cnt32_to_63(0xffffffff - __raw_readl(S5PV310_FRCNTO));
+
 	return (v * tclk2ns_scale) >> TCLK2NS_SCALE_FACTOR;
 }
 
@@ -309,9 +315,10 @@ static void __init s5pv310_timer_init(void)
 #endif
 	s5pv310_timer_resources();
 
-	s5pv310_setup_sched_clock();
 	s5pv310_clockevent_init();
 	s5pv310_clocksource_init();
+
+	s5pv310_setup_sched_clock();
 }
 
 struct sys_timer s5pv310_timer = {
