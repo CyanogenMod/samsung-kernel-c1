@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *               http://www.samsung.com
  *
- * S5P_VMEM driver for /dev/S5P-VMEM
+ * S5P_VMEM driver for /dev/s5p-vmem
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,8 +19,10 @@
 #include <linux/mman.h>
 #include <linux/sched.h>	/* 'current' global variable */
 #include <linux/slab.h>
-
+#include <linux/vmalloc.h>	/* unmap_kernel_range, remap_vmalloc_range, */
+			/* map_vm_area, vmalloc_user, struct vm_struct */
 #include <linux/fs.h>
+#include <asm/outercache.h>
 
 #include "s5p_vmem.h"
 
@@ -36,12 +38,23 @@ enum ALLOCTYPE {
 	NR_ALLOCTYPE
 };
 
+char *s5p_alloctype_names[NR_ALLOCTYPE] = {
+	"MEM_ALLOC",
+	"MEM_ALLOC_SHARE",
+	"MEM_ALLOC_CACHEABLE",
+	"MEM_ALLOC_CACHEABLE_SHARE",
+	"MEM_FREE",
+	"MEM_FREE_SHARE",
+	"MEM_RESET",
+};
+
 struct kvm_area {
 	unsigned int cookie;	/* unique number. actually, pfn */
 /* TODO: cookie can be 0 because it's pfn. change type of cookie to signed */
 	void *start_addr;	/* the first virtual address */
 	size_t size;
 	int count;		/* reference count */
+	struct page **pages;	/* page descriptor table if required. */
 	struct kvm_area *next;
 };
 
@@ -56,19 +69,19 @@ static int (*mmanfns[NR_ALLOCTYPE]) (struct file *, struct s5p_vmem_alloc *) = {
 	s5p_alloc,
 	s5p_free,
 	s5p_free,
-	s5p_reset
+	s5p_reset,
 };
 
 static char funcmap[NR_ALLOCTYPE + 2] = {
 	MEM_ALLOC,
 	MEM_FREE,
-	-1,			/* NEVER USE THIS */
-	-1,			/* NEVER USE THIS */
+	MEM_INVTYPE,			/* NEVER USE THIS */
+	MEM_INVTYPE,			/* NEVER USE THIS */
 	MEM_ALLOC_SHARE,
 	MEM_FREE_SHARE,
 	MEM_ALLOC_CACHEABLE,
 	MEM_ALLOC_CACHEABLE_SHARE,
-	MEM_RESET
+	MEM_RESET,
 };
 
 /* we actually need only one mutex because ioctl must be executed atomically
@@ -83,7 +96,7 @@ static DEFINE_MUTEX(s5p_vmem_userlock);
 static int alloctype = MEM_INVTYPE;	/* enum ALLOCTYPE */
 /* the beginning of the list is dummy
  * do not access this variable directly; use ROOTKVM and FIRSTKVM */
-static struct kvm_area root_kvm;
+struct kvm_area root_kvm;
 
 /* points to the recently accessed entry of kvm_area */
 static struct kvm_area *recent_kvm_area;
@@ -95,12 +108,58 @@ static unsigned int cookie;
 #define ISSHARETYPE(nr)		(nr & 1)
 #define ROOTKVM			(&root_kvm)
 #define FIRSTKVM		(root_kvm.next)
+#define PAGEDESCSIZE(size)	((size >> PAGE_SHIFT) * sizeof(struct page *))
+
+/* clean_outer_cache
+ * Cleans specific page table entries in the outer (L2) cache
+ * pgd: page table base
+ * addr: start virtual address in the address space created by pgd
+ * size: the size of the range to be translated by pgd
+ *
+ * This function must be called whenever a new mapping is created.
+ * This function don't need to be called when a mapping is removed because
+ * the no one will use the removed mapping and the data in L2 cache will be
+ * flushed onto the memory soon.
+ */
+#if defined(CONFIG_OUTER_CACHE) && defined(CONFIG_ARM)
+static void clean_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
+					unsigned long size)
+{
+	unsigned long end;
+	pgd_t *pgd, *pgd_end;
+	pmd_t *pmd;
+	pte_t *pte, *pte_end;
+	unsigned long next;
+
+	addr &= PAGE_MASK;
+	end = addr + PAGE_ALIGN(size);
+	pgd = pgd_offset(mm, addr);
+	pgd_end = pgd_offset(mm, (addr + size + PGDIR_SIZE - 1) & PGDIR_MASK);
+
+	/* Clean L1 page table entries */
+	outer_clean_range(virt_to_phys(pgd), virt_to_phys(pgd_end));
+
+	/* clean L2 page table entries */
+	/* this regards pgd == pmd and no pud */
+	do {
+		next = pgd_addr_end(addr, end);
+		pgd = pgd_offset(mm, addr);
+		pmd = pmd_offset(pgd, addr);
+		pte = pte_offset_map(pmd, addr) - PTRS_PER_PTE;
+		pte_end = pte_offset_map(pmd, next-4) - PTRS_PER_PTE + 1;
+		outer_clean_range(virt_to_phys(pte), virt_to_phys(pte_end));
+		addr = next;
+	} while (addr != end);
+}
+#else
+#define clean_outercache_pagetable(mm, addr, size) do { } while (0)
+#endif /* CONFIG_OUTER_CACHE && CONFIG_ARM */
 
 static struct kvm_area *createkvm(void *kvm_addr, size_t size)
 {
 	struct kvm_area *newarea, *cur;
 
-	newarea = kmalloc(sizeof(struct kvm_area), GFP_ATOMIC);
+	newarea = kmalloc(sizeof(struct kvm_area), GFP_KERNEL);
 	if (newarea == NULL)
 		return NULL;
 
@@ -110,7 +169,8 @@ static struct kvm_area *createkvm(void *kvm_addr, size_t size)
 	newarea->size = size;
 	newarea->count = 1;
 	newarea->next = NULL;
-	newarea->cookie = vmalloc_to_pfn(kvm_addr);
+	newarea->pages = NULL;
+	newarea->cookie = virt_to_phys(kvm_addr) ^ 0xA5CF;/* simple encryption*/
 
 	cur = ROOTKVM;
 	while (cur->next != NULL)
@@ -167,7 +227,23 @@ static int freekvm(unsigned int cookie)
 
 	rmarea = kvmarea->next;
 	kvmarea->next = rmarea->next;
-	vfree(rmarea->start_addr);
+	if (rmarea->pages) {
+		int i;
+
+		/* defined in mm/vmalloc.c */
+		unmap_kernel_range((unsigned long)rmarea->start_addr,
+				rmarea->size);
+
+		for (i = 0; i < (rmarea->size >> PAGE_SHIFT); i++)
+			__free_page(rmarea->pages[i]);
+
+		if (PAGEDESCSIZE(rmarea->size) > PAGE_SIZE)
+			vfree(rmarea->pages);
+		else
+			kfree(rmarea->pages);
+	} else {
+		vfree(rmarea->start_addr);
+	}
 	kfree(rmarea);
 
 	mutex_unlock(&s5p_vmem_lock);
@@ -184,12 +260,20 @@ int s5p_vmem_ioctl(struct inode *inode, struct file *file,
 	int alloccmd;
 
 	alloccmd = IOCTLNR2FMAPIDX(cmd);
-	if ((alloccmd < 0) || (alloccmd > 7))
+	if ((alloccmd < 0) || (alloccmd > 9)) {
+		printk(KERN_DEBUG
+			"S5P-VMEM: Wrong allocation command number %d\n",
+			alloccmd);
 		return -EINVAL;
+	}
 
 	alloccmd = funcmap[alloccmd];
-	if (alloccmd < 0)
+	if (alloccmd < 0) {
+		printk(KERN_DEBUG
+		    "S5P-VMEM: Wrong translated allocation command number %d\n",
+			alloccmd);
 		return -EINVAL;
+	}
 
 	if (alloccmd < MEM_RESET) {
 		result = copy_from_user(&param, (struct s5p_vmem_alloc *)arg,
@@ -231,12 +315,14 @@ int s5p_vmem_ioctl(struct inode *inode, struct file *file,
 }
 EXPORT_SYMBOL(s5p_vmem_ioctl);
 
-inline struct kvm_area *createallockvm(size_t size)
+static struct kvm_area *createallockvm(size_t size)
 {
 	void *virt_addr;
 	virt_addr = vmalloc_user(size);
 	if (!virt_addr)
 		return NULL;
+
+	clean_outercache_pagetable(&init_mm, (unsigned long)virt_addr, size);
 
 	recent_kvm_area = createkvm(virt_addr, size);
 	if (recent_kvm_area == NULL)
@@ -267,8 +353,11 @@ void *s5p_getaddress(unsigned int cookie)
 }
 EXPORT_SYMBOL(s5p_getaddress);
 
+
 int s5p_vmem_mmap(struct file *filp, struct vm_area_struct *vma)
 {
+	int ret = 0;
+
 	if ((alloctype == MEM_ALLOC) || (alloctype == MEM_ALLOC_CACHEABLE))
 		recent_kvm_area = createallockvm(vma->vm_end - vma->vm_start);
 	else	/* alloctype == MEM_ALLOC_SHARE or MEM_ALLOC_CACHEABLE_SHARE */
@@ -282,12 +371,39 @@ int s5p_vmem_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	vma->vm_flags |= VM_RESERVED;
 
-	/* TOOD: if remap_vmalloc_range failed detachkvm must be invoked
-	 * to decrease reference count of kvm after detachkvm is implemented */
-	return remap_vmalloc_range(vma, recent_kvm_area->start_addr, 0);
+	if (recent_kvm_area->pages) {
+		/* We can't use remap_vmalloc_range if page frames are not
+		 * allocated by vmalloc. The following code is very simillar to
+		 * remap_vmalloc_range. */
+		int rpfn = 0;
+		unsigned long uaddr = vma->vm_start;
+		unsigned long usize = vma->vm_end - vma->vm_start;
+
+		/* below condition creates invalid mapping
+		 * remap_vmalloc_range checks it internally */
+		if (recent_kvm_area->size < usize)
+			return -EINVAL;
+
+		while (rpfn < (usize >> PAGE_SHIFT)) {
+			if (vm_insert_page(vma, uaddr,
+				recent_kvm_area->pages[rpfn]) != 0)
+				return -EFAULT;
+
+			uaddr += PAGE_SIZE;
+			rpfn++;
+		}
+	} else {
+		ret = remap_vmalloc_range(vma, recent_kvm_area->start_addr, 0);
+	}
+
+	if (ret == 0)
+		clean_outercache_pagetable(vma->vm_mm, vma->vm_start,
+				vma->vm_end - vma->vm_start);
+	return ret;
 }
 EXPORT_SYMBOL(s5p_vmem_mmap);
 
+/* return 0 if successful */
 static int s5p_alloc(struct file *file, struct s5p_vmem_alloc *param)
 {
 	cookie = param->cookie;
@@ -380,3 +496,104 @@ int s5p_vmem_release(struct inode *pinode, struct file *pfile)
 	return 0;
 }
 EXPORT_SYMBOL(s5p_vmem_release);
+
+/* s5p_vmem_vmemmap
+ * Maps a non-linear physical page frames into a contiguous virtual memory area
+ * in the kernel's address space
+ * @size: size in bytes to map into the virtual address space
+ * @va_start: the beginning address of the virtual memory area
+ * @va_end: the past to the last address of the virtual memory area
+ *
+ * If @end - @start is smaller than @size, allocation and mapping will fail.
+ * This returns 'cookie' of the allocated area so that users can share it.
+ * Returning '0'(zero) means mapping is failed because of memory allocation
+ * failure, mapping failure and so on.
+ *
+ * va_start and size must be aligned by PAGE_SIZE. If they are not, they will
+ * be fixed to be aligned. For example, although you wan to map physical memory
+ * into virtual address space between 0x00000FFC and 0x00001004 (size: 8 bytes),
+ * s5p_vmem_vmemmap maps between 0x00000000 and 0x00002000 (size: 8KB) because
+ * the virtual address spaces you provide are expanded through 2 pages.
+ * With the mapping above, a try to map physical memory at 0x00001008 will
+ * cause overwriting the existing mapping.
+ */
+unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
+				unsigned long va_end)
+{
+	struct page **pages;
+	struct kvm_area *kvma;	/* new virtual address area */
+	unsigned int nr_pages, array_size, i;
+	struct vm_struct area; /* argument for map_vm_area*/
+
+	/* DMA and normal memory area must not be remapped */
+	if ((va_start > va_end) || (va_start < VMALLOC_START))
+		return 0;
+
+	/* Desired size must not be larger than the size of supplied virtual
+	 * address space */
+	size = PAGE_ALIGN(size + (va_start & (~PAGE_MASK)));
+	if (size > (va_end - va_start))
+		return 0;
+
+	/* start address of the area must be page aligned */
+	va_start &= PAGE_MASK;
+
+	va_end = va_start + size;
+
+	nr_pages = size >> PAGE_SHIFT;
+	array_size = nr_pages * sizeof(struct page *);
+
+	kvma = createkvm((void *)va_start, size);
+	if (unlikely(!kvma))
+		return 0;
+
+	/* preparing memory buffer for page descriptors */
+	/* below condition must be used when freeing this memory */
+	if (array_size > PAGE_SIZE)
+		pages = vmalloc(array_size);
+	else
+		pages = kmalloc(array_size, GFP_KERNEL);
+	/* below error handling causes invoking vfree(va_start).
+	 * It is ok because vfree just ignore if va_start is not found in
+	 * its rb_tree */
+	if (unlikely(!pages))
+		goto fail;
+
+	memset(pages, 0, array_size);
+	kvma->pages = pages;
+
+	/* page frame allocation */
+	/* even though alloc_page fails in the middle of allocation and pages
+	 * array is not filled enough, deallocation is always successful in
+	 * freekvm() because pages array is initialized with 0.
+	 */
+	for (i = 0; i < nr_pages; i++) {
+		struct page *page;
+
+		page = alloc_page(GFP_KERNEL);
+
+		if (unlikely(!page))
+			goto fail;
+
+		pages[i] = page;
+	}
+
+	/* map_vm_area just manipulates 'addr' and 'size' of vm_struct */
+	/* but if map_vm_area is modified to touch other members of vm_struct,
+	 * initialization of 'area' must be also changed!*/
+	area.addr = (void *)va_start;
+	/* map_vm_area regards all area contains a guard page */
+	area.size = size + PAGE_SIZE;
+
+	/* page table generation */
+	if (map_vm_area(&area, PAGE_KERNEL, &pages) == 0) {
+		clean_outercache_pagetable(&init_mm, va_start, size);
+		return kvma->cookie;
+	}
+fail:
+	/* Free all pages in 'pages' array and kvma */
+	freekvm(kvma->cookie);
+	return 0;
+}
+EXPORT_SYMBOL(s5p_vmem_vmemmap);
+

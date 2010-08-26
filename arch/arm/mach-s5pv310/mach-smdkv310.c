@@ -17,6 +17,8 @@
 #include <linux/delay.h>
 #include <linux/usb/ch9.h>
 #include <linux/gpio.h>
+#include <linux/spi/spi.h>
+#include <linux/spi/spi_gpio.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
@@ -42,6 +44,7 @@
 #include <mach/regs-mem.h>
 #include <mach/regs-clock.h>
 #include <mach/media.h>
+#include <mach/gpio.h>
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM
 #include <linux/android_pmem.h>
@@ -63,7 +66,7 @@ extern struct sys_timer s5pv310_timer;
 				 S5PV210_UFCON_TXTRIG4 |	\
 				 S5PV210_UFCON_RXTRIG4)
 
-extern void s5pv310_reserve_bootmem(void);
+extern void s5p_reserve_bootmem(void);
 
 static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	[0] = {
@@ -103,8 +106,8 @@ static struct resource smdkv310_smsc911x_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-		.start = EINT_NUMBER(5),
-		.end   = EINT_NUMBER(5),
+		.start = IRQ_EINT(5),
+		.end   = IRQ_EINT(5),
 		.flags = IORESOURCE_IRQ,
 	},
 };
@@ -189,6 +192,51 @@ static struct fimg2d_platdata fimg2d_data __initdata = {
 };
 #endif
 
+#ifdef CONFIG_FB_S3C_TL2796
+
+static struct s3c_platform_fb tl2796_data __initdata = {
+	.hw_ver = 0x62,
+	.clk_name = "sclk_lcd",
+	.nr_wins = 5,
+	.default_win = CONFIG_FB_S3C_DEFAULT_WINDOW,
+	.swap = FB_SWAP_HWORD | FB_SWAP_WORD,
+};
+
+#define	LCD_BUS_NUM	3
+
+#define	DISPLAY_CS	S5PV310_GPB(5)
+#define	DISPLAY_CLK	S5PV310_GPB(4)
+#define	DISPLAY_SI	S5PV310_GPB(7)
+
+static struct spi_board_info spi_board_info[] __initdata = {
+	{
+		.modalias	= "tl2796",
+		.platform_data	= NULL,
+		.max_speed_hz	= 1200000,
+		.bus_num	= LCD_BUS_NUM,
+		.chip_select	= 0,
+		.mode		= SPI_MODE_3,
+		.controller_data = (void *)DISPLAY_CS,
+	},
+};
+
+static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
+	.sck	= DISPLAY_CLK,
+	.mosi	= DISPLAY_SI,
+	.miso	= -1,
+	.num_chipselect	= 1,
+};
+
+static struct platform_device s3c_device_spi_gpio = {
+	.name	= "spi_gpio",
+	.id	= LCD_BUS_NUM,
+	.dev	= {
+		.parent		= &s3c_device_fb.dev,
+		.platform_data	= &tl2796_spi_gpio_data,
+	},
+};
+#endif
+
 static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -268,6 +316,14 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
 #endif
+
+#ifdef CONFIG_FB_S3C_TL2796
+	&s3c_device_spi_gpio,
+#endif
+
+#ifdef CONFIG_S5P_SYSMMU
+	&s5p_device_sysmmu,
+#endif
 };
 
 #ifdef CONFIG_S3C_DEV_HSMMC
@@ -318,14 +374,13 @@ static void __init sromc_setup(void)
 	tmp = __raw_readl(S5P_SROM_BW);
 	tmp &= ~ (0xffff);
 	tmp |= (0x9999);
-	printk("#### 0x%0x\n",tmp);
 	__raw_writel(tmp, S5P_SROM_BW);
 
-	__raw_writel(0xffffffff,S5P_SROM_BC1);
+	__raw_writel(0xff1ffff1,S5P_SROM_BC1);
 
 	tmp = __raw_readl(S5P_VA_GPIO + 0x120);
 	tmp &= ~(0xffffff);
-	tmp |= (0x222222);
+	tmp |= (0x221121);
 	__raw_writel(tmp, (S5P_VA_GPIO + 0x120));
 
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x180));
@@ -333,6 +388,14 @@ static void __init sromc_setup(void)
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1c0));
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1e0));
 }
+#ifdef CONFIG_CACHE_L2X0
+static void __init s5p_l2x0_cache_init(void)
+{
+	__raw_writel(0x111, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
+	__raw_writel(0x111, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
+	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
+}
+#endif
 
 static void __init smdkv310_map_io(void)
 {
@@ -359,15 +422,6 @@ static void __init s5p_pmem_set_platdata(void)
 {
 	pmem_pdata.start = s5p_get_media_memory_bank(S5P_MDEV_PMEM, 1);
 	pmem_pdata.size = s5p_get_media_memsize_bank(S5P_MDEV_PMEM, 1);
-}
-#endif
-
-#ifdef CONFIG_CACHE_L2X0
-static void __init s5p_l2x0_cache_init(void)
-{
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
-	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
 }
 #endif
 
@@ -425,6 +479,11 @@ static void __init smdkv310_machine_init(void)
 	s5p_l2x0_cache_init();
 #endif
 
+#ifdef CONFIG_FB_S3C_TL2796
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&tl2796_data);
+#endif
+
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv310_hsmmc0_pdata);
 #endif
@@ -475,26 +534,37 @@ EXPORT_SYMBOL(otg_phy_off);
 
 void usb_host_phy_init(void)
 {
-	struct clk *otg_clk;
-
-	otg_clk = clk_get(NULL, "otg");
-	clk_enable(otg_clk);
-
-	if (__raw_readl(S5P_USBHOST_PHY_CONTROL) & (0x1<<0))
+	if (__raw_readl(S5P_USBHOST_PHY_CONTROL) & (0x1<<0)) {
+		printk("[usb_host_phy_init]Already power on PHY\n");
 		return;
-
+	}
+	
 	__raw_writel(__raw_readl(S5P_USBHOST_PHY_CONTROL)
 		|(0x1<<0), S5P_USBHOST_PHY_CONTROL);
-	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
-		&~(0x7<<6)&~(0x3<<9)&~(0x3<<11)), S3C_USBOTG_PHYPWR);
-	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
-		&~(0x1<<7))|(0x3<<0), S3C_USBOTG_PHYCLK);
-	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON))
-		|(0x1<<9)|(0x1<<8)|(0x1<<7)|(0x1<<5)|(0x1<<4),
+
+	/* floating prevention logic : disable */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHY1CON) | (0x1<<0)),
+		S3C_USBOTG_PHY1CON);
+
+	/* set hsic phy0,1 to normal */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR) & ~(0xf<<9)),
+		S3C_USBOTG_PHYPWR);
+
+	/* phy-power on */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR) & ~(0x7<<6)),
+		S3C_USBOTG_PHYPWR);
+
+	/* set clock source for PLL (24MHz) */
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK) | (0x1<<7) | (0x3<<0)),
+		S3C_USBOTG_PHYCLK);
+
+	/* reset all ports of both PHY and Link */
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON) | (0x1<<6) | (0x7<<3)),
 		S3C_USBOTG_RSTCON);
-	__raw_writel(__raw_readl(S3C_USBOTG_RSTCON)
-		&~(0x1<<9)&~(0x1<<8)&~(0x1<<7)&~(0x1<<5)&~(0x1<<4),
+	udelay(10);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON) & ~(0x1<<6) & ~(0x7<<3)),
 		S3C_USBOTG_RSTCON);
+	udelay(50);
 }
 EXPORT_SYMBOL(usb_host_phy_init);
 

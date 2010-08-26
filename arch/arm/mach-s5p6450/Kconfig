@@ -29,6 +29,7 @@ config MACH_SMDK6450
         select S3C_DEV_GIB
 	select S3C_DEV_WDT
 	select SAMSUNG_WAKEMASK
+	select HAVE_PWM
 	help
 	  Machine support for the Samsung SMDK6450
 

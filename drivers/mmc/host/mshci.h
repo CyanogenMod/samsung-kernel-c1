@@ -19,12 +19,9 @@
  * Controller registers
  */
 /*****************************************************/
-/*      SDIOC Internal Registers       */
+/*      MSHC Internal Registers       */
 /*****************************************************/
 
-/*****************************************************/
-/*  SDIOC  Registers    (0xC0000000 ~ 0xC0000100)  */
-/*****************************************************/
 #define MSHCI_CTRL 	0x00	/* Control */
 #define MSHCI_PWREN 	0x04   	/* Power-enable */
 #define MSHCI_CLKDIV 	0x08   	/* Clock divider */
@@ -54,17 +51,17 @@
 #define MSHCI_USRID 	0x68	/* User ID */
 #define MSHCI_VERID 	0x6C	/* Version ID */
 #define MSHCI_HCON 	0x70	/* Hardware Configuration */
-#define MSHCI_UHS_REG 	0x74	/* Specifies the UHS-1 reg */
-#define MSHCI_BMOD 	0x80	/* Specifies the bus mode reg */
-#define MSHCI_PLDDMND 	0x84	/* Specifies the poll demand reg */
-#define MSHCI_DBADDR 	0x88	/* Specifies the descriptor list base address reg */
-#define MSHCI_IDSTS 	0x8C	/* Specifies the internal DMAC status reg */
-#define MSHCI_IDINTEN 	0x90	/* Specifies the internal DMAC interrupt enable reg */
-#define MSHCI_DSCADDR 	0x94	/* Specifies the current host descriptor address reg */
-#define MSHCI_BUFADDR 	0x98	/* Specifies the current buffer descriptor add reg */
-#define MSHCI_WAKEUPCON 0xA0	/* Specifies the wake-up control reg */
-#define MSHCI_CLOCKCON 	0xA4	/* Specifies the clock control reg */
-#define MSHCI_FIFODAT 	0x100	/* FIFO data reg */
+#define MSHCI_UHS_REG  	0x74	/* UHS and DDR setting */
+#define MSHCI_BMOD      0x80    /* Bus mode register */
+#define MSHCI_PLDMND    0x84    /* Poll demand */
+#define MSHCI_DBADDR    0x88    /* Descriptor list base address */
+#define MSHCI_IDSTS     0x8C    /* Internal DMAC status */
+#define MSHCI_IDINTEN   0x90    /* Internal DMAC interrupt enable */
+#define MSHCI_DSCADDR   0x94    /* Current host descriptor address */
+#define MSHCI_BUFADDR   0x98    /* Current host buffer address */
+#define MSHCI_WAKEUPCON 0xA0    /* Wakeup control register */
+#define MSHCI_CLOCKCON  0xA4    /* Clock (delay) control register */
+#define MSHCI_FIFODAT 	0x100	/* FIFO data read write */
 
 /*****************************************************
  *  Control Register  Register
@@ -85,6 +82,7 @@
 #define CARD_VOLA		(0xF<<16)
 #define CARD_VOLB		(0xF<<20)
 #define ENABLE_OD_PULLUP (0x1<<24)	
+#define ENABLE_IDMAC    (0x1<<25)
 
 #define MSHCI_RESET_ALL  (0x1)
 
@@ -108,8 +106,7 @@
  *  Clock Enable Register
  *  MSHCI_CLKENA - offset 0x10
  *****************************************************/
-//#define CLK_SDMMC_MAX	(96000000) /* 96Mhz. it SHOULDBE optimized */
-#define CLK_SDMMC_MAX	(47657142) /* 47Mhz. it SHOULDBE optimized */
+#define CLK_SDMMC_MAX	(48000000) /* 96Mhz. it SHOULDBE optimized */
 #define CLK_ENABLE		(0x1<<0)
 #define CLK_DISABLE		(0x0<<0)
 
@@ -161,6 +158,9 @@
 #define INTMSK_EBE		(0x1<<15)
 #define INTMSK_DMA		(INTMSK_ACD|INTMSK_RXDR|INTMSK_TXDR)
 
+#define INT_SRC_IDMAC   (0x0)
+#define INT_SRC_MINT    (0x1)
+
 
 /*****************************************************
  *  Command Register
@@ -200,6 +200,7 @@
 #define DATA_TOUT	(INTMSK_HTO|INTMSK_DRTO)
 #define DATA_STATUS (DATA_ERR|DATA_TOUT|INTMSK_RXDR|INTMSK_TXDR|INTMSK_DTO)
 #define CMD_STATUS	(INTMSK_RTO|INTMSK_RCRC|INTMSK_CDONE|INTMSK_RE)
+#define CMD_ERROR       (INTMSK_RCRC|INTMSK_RTO|INTMSK_RE)
 
 /*****************************************************
  *  Status Register
@@ -278,7 +279,13 @@
  *****************************************************/
 #define WRTPRT_ON	(0x1<<0)
 
-
+/*****************************************************
+ *  Bus Mode Register
+ *  MSHCI_BMOD - offset 0x80
+ *****************************************************/
+#define BMOD_IDMAC_RESET        (0x1<<1)
+#define BMOD_IDMAC_FB           (0x1<<1)
+#define BMOD_IDMAC_ENABLE       (0x1<<7)
 
 /*****************************************************
  *  Hardware Configuration  Register
@@ -296,75 +303,46 @@
 #define SET_CLK_FALSE_PATH	(0x1<<23)
 #define NUM_CLK_DIVIDER		(0x3<<24)
 
+/*****************************************************
+ *  Hardware Configuration  Register
+ *  MSHCI_IDSTS - offset 0x8c
+ *****************************************************/
+#define IDSTS_FSM               (0xf<<13)
+#define IDSTS_EB                (0x7<<10)
+#define IDSTS_AIS               (0x1<<9)
+#define IDSTS_NIS               (0x1<<8)
+#define IDSTS_CES               (0x1<<5)
+#define IDSTS_DU                (0x1<<4)
+#define IDSTS_FBE               (0x1<<2)
+#define IDSTS_RI                (0x1<<1)
+#define IDSTS_TI                (0x1<<0)
 
 struct mshci_ops;
+
+struct mshci_idmac {
+        u32     des0;
+        u32     des1;
+        u32     des2;
+        u32     des3;
+#define MSHCI_IDMAC_OWN         (1<<31)
+#define MSHCI_IDMAC_ER          (1<<5)
+#define MSHCI_IDMAC_CH          (1<<4)
+#define MSHCI_IDMAC_FS          (1<<3)
+#define MSHCI_IDMAC_LD          (1<<2)
+#define MSHCI_IDMAC_DIC         (1<<1)
+#define INTMSK_IDMAC_ALL        (0x337)
+#define INTMSK_IDMAC_ERROR      (0x214)        
+};
 
 struct mshci_host {
 	/* Data set by hardware interface driver */
 	const char		*hw_name;	/* Hardware bus name */
 
 	unsigned int		quirks;		/* Deviations from spec. */
+/* Controller has no write-protect pin connected with SD card */
+#define MSHCI_QUIRK_NO_WP_BIT                           (1<<0)
+#define MSHCI_QUIRK_BROKEN_CARD_DETECTION               (1<<1)
 
-/* Controller doesn't honor resets unless we touch the clock register */
-#define SDHCI_QUIRK_CLOCK_BEFORE_RESET			(1<<0)
-/* Controller has bad caps bits, but really supports DMA */
-#define SDHCI_QUIRK_FORCE_DMA				(1<<1)
-/* Controller doesn't like to be reset when there is no card inserted. */
-#define SDHCI_QUIRK_NO_CARD_NO_RESET			(1<<2)
-/* Controller doesn't like clearing the power reg before a change */
-#define SDHCI_QUIRK_SINGLE_POWER_WRITE			(1<<3)
-/* Controller has flaky internal state so reset it on each ios change */
-#define SDHCI_QUIRK_RESET_CMD_DATA_ON_IOS		(1<<4)
-/* Controller has an unusable DMA engine */
-#define SDHCI_QUIRK_BROKEN_DMA				(1<<5)
-/* Controller has an unusable ADMA engine */
-#define SDHCI_QUIRK_BROKEN_ADMA				(1<<6)
-/* Controller can only DMA from 32-bit aligned addresses */
-#define SDHCI_QUIRK_32BIT_DMA_ADDR			(1<<7)
-/* Controller can only DMA chunk sizes that are a multiple of 32 bits */
-#define SDHCI_QUIRK_32BIT_DMA_SIZE			(1<<8)
-/* Controller can only ADMA chunks that are a multiple of 32 bits */
-#define SDHCI_QUIRK_32BIT_ADMA_SIZE			(1<<9)
-/* Controller needs to be reset after each request to stay stable */
-#define SDHCI_QUIRK_RESET_AFTER_REQUEST			(1<<10)
-/* Controller needs voltage and power writes to happen separately */
-#define SDHCI_QUIRK_NO_SIMULT_VDD_AND_POWER		(1<<11)
-/* Controller provides an incorrect timeout value for transfers */
-#define SDHCI_QUIRK_BROKEN_TIMEOUT_VAL			(1<<12)
-/* Controller has an issue with buffer bits for small transfers */
-#define SDHCI_QUIRK_BROKEN_SMALL_PIO			(1<<13)
-/* Controller does not provide transfer-complete interrupt when not busy */
-#define SDHCI_QUIRK_NO_BUSY_IRQ				(1<<14)
-/* Controller has unreliable card detection */
-#define SDHCI_QUIRK_BROKEN_CARD_DETECTION		(1<<15)
-/* Controller reports inverted write-protect state */
-#define SDHCI_QUIRK_INVERTED_WRITE_PROTECT		(1<<16)
-/* Controller has nonstandard clock management */
-#define SDHCI_QUIRK_NONSTANDARD_CLOCK			(1<<17)
-/* Controller does not like fast PIO transfers */
-#define SDHCI_QUIRK_PIO_NEEDS_DELAY			(1<<18)
-/* Controller losing signal/interrupt enable states after reset */
-#define SDHCI_QUIRK_RESTORE_IRQS_AFTER_RESET		(1<<19)
-/* Controller has to be forced to use block size of 2048 bytes */
-#define SDHCI_QUIRK_FORCE_BLK_SZ_2048			(1<<20)
-/* Controller cannot do multi-block transfers */
-#define SDHCI_QUIRK_NO_MULTIBLOCK			(1<<21)
-/* Controller can only handle 1-bit data transfers */
-#define SDHCI_QUIRK_FORCE_1_BIT_DATA			(1<<22)
-/* Controller needs 10ms delay between applying power and clock */
-#define SDHCI_QUIRK_DELAY_AFTER_POWER			(1<<23)
-/* Controller uses SDCLK instead of TMCLK for data timeouts */
-#define SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK		(1<<24)
-/* Controller cannot support End Attribute in NOP ADMA descriptor */
-#define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<25)
-/* Controller does not use HISPD bit field in HI-SPEED SD cards */
-#define SDHCI_QUIRK_NO_HISPD_BIT			(1<<26)
-/* Controller has unreliable card present bit */
-#define SDHCI_QUIRK_BROKEN_CARD_PRESENT_BIT		(1<<27)
-/* Controller put off SD clock in no using*/
-#define SDHCI_QUIRK_CLOCK_OFF				(1<<28)
-/* Controller has hardware bugs */
-#define SDHCI_QUIRK_INIT_ISSUE_CMD			(1<<29)
 	int			irq;		/* Device IRQ */
 	void __iomem *		ioaddr;		/* Mapped address */
 
@@ -377,8 +355,7 @@ struct mshci_host {
 	spinlock_t		lock;		/* Mutex */
 
 	int			flags;		/* Host attributes */
-#define MSHCI_USE_SDMA		(1<<0)		/* Host is SDMA capable */
-#define MSHCI_USE_MDMA		(1<<1)		/* Host is ADMA capable */
+#define MSHCI_USE_IDMA		(1<<1)		/* Host is ADMA capable */
 #define MSHCI_REQ_USE_DMA	(1<<2)		/* Use DMA for this req. */
 #define MSHCI_DEVICE_DEAD	(1<<3)		/* Device unresponsive */
 
@@ -400,10 +377,10 @@ struct mshci_host {
 
 	int			sg_count;	/* Mapped sg entries */
 
-	u8			*adma_desc;	/* ADMA descriptor table */
+	u8			*idma_desc;	/* ADMA descriptor table */
 	u8			*align_buffer;	/* Bounce buffer */
 
-	dma_addr_t		adma_addr;	/* Mapped ADMA descr. table */
+	dma_addr_t		idma_addr;	/* Mapped ADMA descr. table */
 	dma_addr_t		align_addr;	/* Mapped bounce buffer */
 
 	struct tasklet_struct	card_tasklet;	/* Tasklet structures */

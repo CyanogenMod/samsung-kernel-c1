@@ -73,10 +73,16 @@ struct clk *clk_get(struct device *dev, const char *id)
 	struct clk *clk = ERR_PTR(-ENOENT);
 	int idno;
 
-	if (dev == NULL || dev->bus != &platform_bus_type)
+	if (dev == NULL)
 		idno = -1;
-	else
-		idno = to_platform_device(dev)->id;
+	else {
+		if (to_platform_device(dev)->id)
+			idno = to_platform_device(dev)->id;
+		else if (dev->bus != &platform_bus_type)
+			idno = -1;
+		else
+			idno = to_platform_device(dev)->id;
+	}
 
 	spin_lock(&clocks_lock);
 

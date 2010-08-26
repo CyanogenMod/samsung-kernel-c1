@@ -12,11 +12,11 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/platform_device.h>
 #include <linux/i2c.h>
-#include <linux/mfd/s5m8751/core.h>
+#include <linux/platform_device.h>
 #include <linux/slab.h>
+
+#include <linux/mfd/s5m8751/core.h>
 
 static int s5m8751_i2c_read_device(struct s5m8751 *s5m8751, uint8_t reg,
 					uint8_t *val)
@@ -73,29 +73,23 @@ static int s5m8751_probe(struct i2c_client *i2c,
 					const struct i2c_device_id *id)
 {
 	struct s5m8751 *s5m8751;
-	int ret = 0;
 
 	s5m8751 = kzalloc(sizeof(struct s5m8751), GFP_KERNEL);
-	if (s5m8751 == NULL)
-		goto err;
+	if (s5m8751 == NULL) {
+		kfree(i2c);
+		return -ENOMEM;
+	}
 
 	i2c_set_clientdata(i2c, s5m8751);
-
 	s5m8751->dev = &i2c->dev;
 	s5m8751->i2c_client = i2c;
+	s5m8751->control_data = i2c;
 	s5m8751->read_dev = s5m8751_i2c_read_device;
 	s5m8751->write_dev = s5m8751_i2c_write_device;
 	s5m8751->read_block_dev = s5m8751_i2c_read_block_device;
 	s5m8751->write_block_dev = s5m8751_i2c_write_block_device;
 
-	ret = s5m8751_device_init(s5m8751, i2c->irq, i2c->dev.platform_data);
-	if (ret < 0)
-		goto err;
-
-	return 0;
-
-err:
-	return ret;
+	return s5m8751_device_init(s5m8751, i2c->irq, i2c->dev.platform_data);
 }
 
 static int s5m8751_remove(struct i2c_client *i2c)

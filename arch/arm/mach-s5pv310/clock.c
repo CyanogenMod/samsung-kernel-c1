@@ -51,16 +51,6 @@ static struct clk clk_audiocdclk0 = {
 	.id		= 0,
 };
 
-static struct clk clk_audiocdclk1 = {
-	.name		= "audiocdclk",
-	.id		= 1,
-};
-
-static struct clk clk_audiocdclk2 = {
-	.name		= "audiocdclk",
-	.id		= 2,
-};
-
 static int s5pv310_clk_ip_cam_ctrl(struct clk *clk, int enable)
 {
 	return s5p_gatectrl(S5P_CLKGATE_IP_CAM, clk, enable);
@@ -504,7 +494,7 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_fsys_ctrl ,
 		.ctrlbit	= (1 << 12),
 	}, {
-		.name		= "otg",
+		.name		= "usbotg",
 		.id		= -1,
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
 		.ctrlbit	= (1 << 13),
@@ -536,49 +526,49 @@ static struct clk init_clocks[] = {
 	}, {
 		.name		= "i2c",
 		.id		= 0,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 6),
 	}, {
 		.name		= "i2c",
 		.id		= 1,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 7),
 	}, {
 		.name		= "i2c",
 		.id		= 2,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 8),
 	}, {
 		.name		= "i2c",
 		.id		= 3,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 9),
 	}, {
 		.name		= "i2c",
 		.id		= 4,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 10),
 	}, {
 		.name		= "i2c",
 		.id		= 5,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 11),
 	}, {
 		.name		= "i2c",
 		.id		= 6,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 12),
 	}, {
 		.name		= "i2c",
 		.id		= 7,
-		.parent 		= &clk_aclk_100.clk,
+		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 13),
 	},

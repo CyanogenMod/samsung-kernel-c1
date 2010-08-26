@@ -22,6 +22,7 @@
 #include <linux/clk.h>
 #include <linux/usb/ch9.h>
 #include <linux/spi/spi.h>
+#include <linux/pwm_backlight.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -60,7 +61,12 @@
 #include <media/s5k4ea_platform.h>
 #include <media/s5k6aa_platform.h>
 
+#include <linux/regulator/machine.h>
+#if defined(CONFIG_MFD_S5M8751)
 #include <linux/mfd/s5m8751/core.h>
+#include <linux/mfd/s5m8751/pdata.h>
+#endif
+
 #include <plat/media.h>
 extern struct sys_timer s5p6450_timer;
 
@@ -128,234 +134,160 @@ static struct s3c2410_uartcfg smdk6450_uartcfgs[] __initdata = {
 
 #if defined(CONFIG_MFD_S5M8751)
 /* SYS, EXT */
-static struct regulator_init_data s5m8751_ldo1_data = {
+static struct regulator_init_data smdk6450_vddsys_ext = {
 	.constraints = {
 		.name = "PVDD_SYS/PVDD_EXT",
 		.min_uV = 3300000,
 		.max_uV = 3300000,
-		.min_uA = 0,
-		.max_uA = 300000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
-			.uV = 0,
+			.uV = 3300000,
 			.mode = REGULATOR_MODE_STANDBY,
 			.enabled = 1,
-		}
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
 /* LCD */
-static struct regulator_init_data s5m8751_ldo2_data = {
+static struct regulator_init_data smdk6450_vddlcd = {
 	.constraints = {
 		.name = "PVDD_LCD",
 		.min_uV = 3300000,
 		.max_uV = 3300000,
-		.min_uA = 0,
-		.max_uA = 150000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
 			.uV = 0,
 			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
+			.disabled = 1,
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
 /* ALIVE */
-static struct regulator_init_data s5m8751_ldo3_data = {
+static struct regulator_init_data smdk6450_vddalive = {
 	.constraints = {
 		.name = "PVDD_ALIVE",
 		.min_uV = 1100000,
 		.max_uV = 1100000,
-		.min_uA = 0,
-		.max_uA = 150000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
-			.uV = 0,
+			.uV = 1100000,
 			.mode = REGULATOR_MODE_STANDBY,
 			.enabled = 1,
-		}
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
 /* PLL */
-static struct regulator_init_data s5m8751_ldo4_data = {
+static struct regulator_init_data smdk6450_vddpll = {
 	.constraints = {
 		.name = "PVDD_PLL",
 		.min_uV = 1100000,
 		.max_uV = 1100000,
-		.min_uA = 0,
-		.max_uA = 300000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
 			.uV = 0,
 			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
+			.disabled = 1,
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
 /* MEM/SS */
-static struct regulator_init_data s5m8751_ldo5_data = {
+static struct regulator_init_data smdk6450_vddmem_ss = {
 	.constraints = {
 		.name = "PVDD_MEM/SS",
 		.min_uV = 1800000,
 		.max_uV = 1800000,
-		.min_uA = 0,
-		.max_uA = 300000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
-			.uV = 0,
+			.uV = 1800000,
 			.mode = REGULATOR_MODE_STANDBY,
 			.enabled = 1,
-		}
-	},
-};
-
-/* RTC */
-static struct regulator_init_data s5m8751_ldo6_data = {
-	.constraints = {
-		.name = "PVDD_RTC",
-		.min_uV = 3300000,
-		.max_uV = 3300000,
-		.min_uA = 0,
-		.max_uA = 150000,
-		.always_on = 1,
-		.apply_uV = 1,
-		.state_mem = {
-			.uV = 0,
-			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
 /* GPS */
-static struct regulator_init_data s5m8751_buck1_1_data = {
+static struct regulator_init_data smdk6450_vddgps = {
 	.constraints = {
 		.name = "PVDD_GPS",
 		.min_uV = 1800000,
 		.max_uV = 1800000,
-		.min_uA = 0,
-		.max_uA = 400000,
 		.always_on = 1,
-		.apply_uV = 1,
 		.state_mem = {
 			.uV = 0,
 			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
+			.disabled = 1,
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
 };
 
-static struct regulator_init_data s5m8751_buck1_2_data = {
-	.constraints = {
-		.name = "PVDD_GPS",
-		.min_uV = 3300000,
-		.max_uV = 3300000,
-		.min_uA = 0,
-		.max_uA = 400000,
-		.always_on = 1,
-		.apply_uV = 1,
-		.state_mem = {
-			.uV = 0,
-			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
-	},
-};
-
-static struct regulator_consumer_supply buck2_1_consumers[] = {
+/* ARM_INT */
+static struct regulator_consumer_supply smdk6450_vddarm_consumers[] = {
 	{
-		.supply		= "vddarm1",
-	},
+		.supply = "vddarm_int",
+	}
 };
 
-static struct regulator_consumer_supply buck2_2_consumers[] = {
-	{
-		.supply		= "vddarm2",
-	},
-};
-
-/* ARM/INT */
-static struct regulator_init_data s5m8751_buck2_1_data = {
+static struct regulator_init_data smdk6450_vddarm_int = {
 	.constraints = {
-		.name = "PVDD_ARM/PVDD_INT",
-		.min_uV = 950000,
+		.name = "PVDD_ARM/INT",
+		.min_uV = 1100000,
 		.max_uV = 1300000,
-		.min_uA = 0,
-		.max_uA = 1000000,
 		.always_on = 1,
 		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 		.state_mem = {
 			.uV = 0,
 			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
+			.disabled = 1,
+		},
+		.initial_state = PM_SUSPEND_MEM,
 	},
-	.num_consumer_supplies	= ARRAY_SIZE(buck2_1_consumers),
-	.consumer_supplies	= buck2_1_consumers,
+	.num_consumer_supplies = ARRAY_SIZE(smdk6450_vddarm_consumers),
+	.consumer_supplies = smdk6450_vddarm_consumers,
 };
 
-static struct regulator_init_data s5m8751_buck2_2_data = {
-	.constraints = {
-		.name = "PVDD_ARM/PVDD_INT",
-		.min_uV = 950000,
-		.max_uV = 1300000,
-		.min_uA = 0,
-		.max_uA = 1000000,
-		.always_on = 1,
-		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
-		.state_mem = {
-			.uV = 0,
-			.mode = REGULATOR_MODE_STANDBY,
-			.enabled = 0,
-		}
-	},
-	.num_consumer_supplies	= ARRAY_SIZE(buck2_2_consumers),
-	.consumer_supplies	= buck2_2_consumers,
+static struct s5m8751_backlight_pdata smdk6450_backlight_pdata = {
+	.brightness = 31,
 };
 
-int s5m8751_gpio_irq_init(void)
-{
-	unsigned int gpio_irq;
+static struct s5m8751_power_pdata smdk6450_power_pdata = {
+	.constant_voltage = 4200,
+	.fast_chg_current = 400,
+	.gpio_hadp_lusb = S5P6450_GPN(15),
+};
 
-	gpio_irq = S5P6450_GPN(7);
-	s3c_gpio_cfgpin(gpio_irq, S3C_GPIO_SFN(2));
-	s3c_gpio_setpull(gpio_irq, S3C_GPIO_PULL_UP);
+static struct s5m8751_audio_pdata smdk6450_audio_pdata = {
+	.dac_vol = 0x18,
+	.hp_vol = 0x14,
+};
 
-	return gpio_irq;
-}
+static struct s5m8751_pdata smdk6450_s5m8751_pdata = {
+	.regulator = {
+		&smdk6450_vddsys_ext,	/* LDO1 */
+		&smdk6450_vddlcd,	/* LDO2 */
+		&smdk6450_vddalive,	/* LDO3 */
+		&smdk6450_vddpll,	/* LDO4 */
+		&smdk6450_vddmem_ss,	/* LDO5 */
+		NULL,
+		&smdk6450_vddgps,	/* BUCK1 */
+		NULL,
+		&smdk6450_vddarm_int,	/* BUCK2 */
+		NULL,
+	},
+	.backlight = &smdk6450_backlight_pdata,
+	.power = &smdk6450_power_pdata,
+	.audio = &smdk6450_audio_pdata,
 
-static int smdk6450_s5m8751_init(struct s5m8751 *s5m8751)
-{
-	s5m8751_gpio_irq_init();
-
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO1, &s5m8751_ldo1_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO2, &s5m8751_ldo2_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO3, &s5m8751_ldo3_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO4, &s5m8751_ldo4_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO5, &s5m8751_ldo5_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_LDO6, &s5m8751_ldo6_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_BUCK1_1,
-							 &s5m8751_buck1_1_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_BUCK1_2,
-							 &s5m8751_buck1_2_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_BUCK2_1,
-							 &s5m8751_buck2_1_data);
-	s5m8751_register_regulator(s5m8751, S5M8751_BUCK2_2,
-							 &s5m8751_buck2_2_data);
-
-	return 0;
-}
-
-static struct s5m8751_platform_data __initdata smdk6450_s5m8751_pdata = {
-	.init = smdk6450_s5m8751_init,
+	.irq_base = S5P_IRQ_EINT_BASE,
+	.gpio_pshold = S5P6450_GPN(12),
 };
 #endif
 
@@ -372,7 +304,7 @@ static struct i2c_board_info i2c_devs1[] __initdata = {
 /* S5M8751_SLAVE_ADDRESS >> 1 = 0xD0 >> 1 = 0x68 */
 	{ I2C_BOARD_INFO("s5m8751", (0xD0 >> 1)),
 	.platform_data = &smdk6450_s5m8751_pdata,
-	.irq = S5P_IRQ(7),
+	.irq = S5P_EINT(7),
 	},
 #endif
 };
@@ -418,6 +350,23 @@ static struct spi_board_info s3c_spi_devs[] __initdata = {
 	},
 };
 
+#endif
+
+#if defined(CONFIG_HAVE_PWM)
+static struct platform_pwm_backlight_data smdk6450_backlight_data = {
+	.pwm_id         = 1,
+	.max_brightness = 255,
+	.dft_brightness = 255,
+	.pwm_period_ns  = 78770,
+};
+
+static struct platform_device smdk6450_backlight_device = {
+	.name           = "pwm-backlight",
+	.dev            = {
+		.parent = &s3c_device_timer[1].dev,
+		.platform_data = &smdk6450_backlight_data,
+	},
+};
 #endif
 
 static struct platform_device *smdk6450_devices[] __initdata = {
@@ -474,6 +423,11 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5p6450_device_spi0,
 	&s5p6450_device_spi1,
+#endif
+
+#ifdef CONFIG_HAVE_PWM
+	&s3c_device_timer[1],
+	&smdk6450_backlight_device,
 #endif
 };
 
@@ -706,6 +660,11 @@ static void __init smdk6450_machine_init(void)
 	/* fimc */
 	s3c_fimc0_set_platdata(&fimc_plat);
 #endif
+
+#if defined(CONFIG_HAVE_PWM)
+	s3c_gpio_cfgpin(S5P6450_GPF(15), (0x2 << 30));
+#endif
+
 	platform_add_devices(smdk6450_devices, ARRAY_SIZE(smdk6450_devices));
 }
 

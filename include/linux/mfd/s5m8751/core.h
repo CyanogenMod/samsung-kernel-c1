@@ -14,11 +14,9 @@
 #ifndef __LINUX_MFD_S5M8751_CORE_H_
 #define __LINUX_MFD_S5M8751_CORE_H_
 
-#include <linux/kernel.h>
-#include <linux/mutex.h>
-#include <linux/workqueue.h>
+#include <linux/mfd/s5m8751/pdata.h>
+#include <linux/interrupt.h>
 
-#include <linux/mfd/s5m8751/regulator.h>
 /*
  * Register values.
  */
@@ -118,19 +116,16 @@
 #define S5M8751_MASK_VCHG_DET			0x10
 #define S5M8751_IRQ_VCHG_REMOVAL		4
 #define S5M8751_MASK_VCHG_REM			0x08
-#define S5M8751_IRQ_CHARGER_TIMEOUT		5
+#define S5M8751_IRQ_VCHG_TIMEOUT		5
 #define S5M8751_MASK_CHG_T_OUT			0x04
 #define S5M8751_NUM_IRQ				6
 
 /* S5M8751 SLEEPB_PIN enable */
 #define S5M8751_SLEEPB_PIN_ENABLE		0x02
+#define S5M8751_SLEEPB_ENABLE			1
+#define S5M8751_SLEEPB_DISABLE			0
 
 struct s5m8751;
-
-struct s5m8751_irq {
-	void (*handler) (struct s5m8751 *, int, void *);
-	void *data;
-};
 
 struct s5m8751 {
 	struct device *dev;
@@ -145,34 +140,21 @@ struct s5m8751 {
 							uint8_t *val);
 	int (*write_block_dev)(struct s5m8751 *s5m8751, uint8_t reg, int len,
 							uint8_t *val);
-	u8 *reg_cache;
+	uint8_t *reg_cache;
+
+	void *control_data;
 
 	/* Interrupt handling */
-	struct work_struct irq_work;
-	struct mutex irq_mutex; /* IRQ table mutex */
-	struct s5m8751_irq irq[S5M8751_NUM_IRQ];
-	int chip_irq;
-
-	/* Client devices */
-	struct s5m8751_pmic pmic;
-};
-
-/**
- * Data to be supplied by the platform to initialise the S5m8751.
- *
- * @init: Function called during driver initialisation.  Should be
- *        used by the platform to configure GPIO functions and similar.
- */
-struct s5m8751_platform_data {
-	int (*init)(struct s5m8751 *s5m8751);
+	struct mutex irq_lock;
+	int irq_base;
+	int core_irq;
 };
 
 /*
  * S5M8751 device initialisation and exit.
  */
 int s5m8751_device_init(struct s5m8751 *s5m8751, int irq,
-			struct s5m8751_platform_data *pdata);
-
+						struct s5m8751_pdata *pdata);
 void s5m8751_device_exit(struct s5m8751 *s5m8751);
 
 /*
@@ -186,27 +168,5 @@ int s5m8751_block_read(struct s5m8751 *s5m8751, uint8_t reg, int len,
 							uint8_t *val);
 int s5m8751_block_write(struct s5m8751 *s5m8751, uint8_t reg, int len,
 							uint8_t *val);
-/*
- * S5M8751 internal interrupts
- */
-int s5m8751_register_irq(struct s5m8751 *s5m8751, int irq,
-			void (*handler) (struct s5m8751 *, int, void *),
-			void *data);
-
-int s5m8751_free_irq(struct s5m8751 *s5m8751, int irq);
-int s5m8751_mask_irq(struct s5m8751 *s5m8751, int irq);
-int s5m8751_unmask_irq(struct s5m8751 *s5m8751, int irq);
-int s5m8751_clear_irq(struct s5m8751 *s5m8751);
-
-
-/*
- * S5M8751 sysfs functions
- */
-int s5m8751_uvlo_get(struct s5m8751 *s5m8751);
-int s5m8751_uvlo_set(struct s5m8751 *s5m8751, int voltage);
-
-int s5m8751_audio_dev_register(struct s5m8751 *s5m8751,
-						const char *name,
-						struct platform_device **pdev);
 
 #endif /* __LINUX_MFD_S5M8751_H_ */

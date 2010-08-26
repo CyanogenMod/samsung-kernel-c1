@@ -21,7 +21,7 @@
 
 #include <plat/mshci.h>
 
-char *s5p6450_mshc_clksrcs[4] = {
+char *s5p6450_mshc_clksrcs[1] = {
 	[0] = "sclk_hsmmc44",	/* mmc_bus */
 };
 

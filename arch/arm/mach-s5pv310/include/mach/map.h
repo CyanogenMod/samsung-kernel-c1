@@ -150,6 +150,25 @@
 #define S5P_PA_FIMC3			S5PV310_PA_FIMC3
 #define S5P_SZ_FIMC3			SZ_64K
 
+#define S5P_PA_SYSMMU_MDMA                (0x10A40000)
+#define S5P_PA_SYSMMU_SSS                 (0x10A50000)
+#define S5P_PA_SYSMMU_FIMC0               (0x11A20000)
+#define S5P_PA_SYSMMU_FIMC1               (0x11A30000)
+#define S5P_PA_SYSMMU_FIMC2               (0x11A40000)
+#define S5P_PA_SYSMMU_FIMC3               (0x11A50000)
+#define S5P_PA_SYSMMU_JPEG                (0x11A60000)
+#define S5P_PA_SYSMMU_FIMD0               (0x11E20000)
+#define S5P_PA_SYSMMU_FIMD1               (0x12220000)
+#define S5P_PA_SYSMMU_PCIe                (0x12620000)
+#define S5P_PA_SYSMMU_G2D                 (0x12A20000)
+#define S5P_PA_SYSMMU_ROTATOR             (0x12A30000)
+#define S5P_PA_SYSMMU_MDMA2               (0x12A40000)
+#define S5P_PA_SYSMMU_TV                  (0x12E20000)
+#define S5P_PA_SYSMMU_MFC_L               (0x13620000)
+#define S5P_PA_SYSMMU_MFC_R               (0x13630000)
+
+#define S5P_SZ_SYSMMU                     (0XFFFF)
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART			S5PV310_PA_UART
 #define S3C_PA_IIC			S5PV310_PA_IIC0
