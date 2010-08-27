@@ -191,15 +191,6 @@ static inline struct kvm_area *findkvm(unsigned int cookie)
 	return kvmarea;
 }
 
-static inline struct kvm_area *findkvmaddr(void *addr)
-{
-	struct kvm_area *kvmarea;
-	kvmarea = FIRSTKVM;
-	while ((kvmarea != NULL) && (kvmarea->start_addr != addr))
-		kvmarea = kvmarea->next;
-	return kvmarea;
-}
-
 static inline unsigned int findcookie(void *addr)
 {
 	struct kvm_area *kvmarea;
@@ -364,9 +355,7 @@ EXPORT_SYMBOL(s5p_getaddress);
 
 unsigned int s5p_getcookie(void *addr)
 {
-	struct kvm_area *kvmarea;
-	kvmarea = findkvmaddr(addr);
-	return (kvmarea == NULL) ? 0 : kvmarea->cookie;
+	return findcookie(addr);
 }
 EXPORT_SYMBOL(s5p_getcookie);
 
