@@ -10,6 +10,7 @@
 
 #include <linux/sched.h>
 #include <linux/sysdev.h>
+#include <asm/hardware/cache-l2x0.h>
 
 #include <asm/mach/map.h>
 #include <asm/mach/irq.h>
@@ -166,6 +167,18 @@ void __init s5pv310_init_irq(void)
 	 */
 	s5p_init_irq(NULL, 0);
 }
+
+#ifdef CONFIG_CACHE_L2X0
+static void __init s5p_l2x0_cache_init(void)
+{
+	__raw_writel(0x111, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
+	__raw_writel(0x111, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
+	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
+}
+early_initcall(s5p_l2x0_cache_init);
+#endif
+
+
 
 struct sysdev_class s5pv310_sysclass = {
 	.name	= "s5pv310-core",

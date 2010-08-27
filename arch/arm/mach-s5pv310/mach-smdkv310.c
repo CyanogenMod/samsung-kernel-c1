@@ -22,7 +22,6 @@
 
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
-#include <asm/hardware/cache-l2x0.h>
 
 #include <asm/mach/map.h>
 
@@ -388,14 +387,6 @@ static void __init sromc_setup(void)
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1c0));
 	__raw_writel(0x22222222, (S5P_VA_GPIO + 0x1e0));
 }
-#ifdef CONFIG_CACHE_L2X0
-static void __init s5p_l2x0_cache_init(void)
-{
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
-	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
-}
-#endif
 
 static void __init smdkv310_map_io(void)
 {
@@ -475,9 +466,6 @@ static void __init smdkv310_machine_init(void)
 #endif
 
 	sromc_setup();
-#ifdef CONFIG_CACHE_L2X0
-	s5p_l2x0_cache_init();
-#endif
 
 #ifdef CONFIG_FB_S3C_TL2796
 	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
