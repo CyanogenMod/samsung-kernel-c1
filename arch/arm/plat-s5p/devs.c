@@ -431,54 +431,62 @@ EXPORT_SYMBOL(s5p_device_rotator);
 
 #ifdef CONFIG_VIDEO_TV20
 /* TVOUT interface */
-static struct resource s5p_tvout_resources[] = {
+static struct resource s5p_tv_resources[] = {
 	[0] = {
 		.start  = S5P_PA_TVENC,
 		.end    = S5P_PA_TVENC + S5P_SZ_TVENC - 1,
 		.flags  = IORESOURCE_MEM,
+		.name	= "s5p-sdo"
 	},
 	[1] = {
 		.start  = S5P_PA_VP,
 		.end    = S5P_PA_VP + S5P_SZ_VP - 1,
 		.flags  = IORESOURCE_MEM,
+		.name	= "s5p-vp"
 	},
 	[2] = {
 		.start  = S5P_PA_MIXER,
 		.end    = S5P_PA_MIXER + S5P_SZ_MIXER - 1,
 		.flags  = IORESOURCE_MEM,
+		.name	= "s5p-mixer"
 	},
 	[3] = {
 		.start  = S5P_PA_HDMI,
 		.end    = S5P_PA_HDMI + S5P_SZ_HDMI - 1,
 		.flags  = IORESOURCE_MEM,
+		.name	= "s5p-hdmi"
 	},
 	[4] = {
 		.start  = S5P_I2C_HDMI_PHY,
 		.end    = S5P_I2C_HDMI_PHY + S5P_I2C_HDMI_SZ_PHY - 1,
 		.flags  = IORESOURCE_MEM,
+		.name	= "s5p-i2c-hdmi-phy"
 	},
 	[5] = {
 		.start  = IRQ_MIXER,
 		.end    = IRQ_MIXER,
 		.flags  = IORESOURCE_IRQ,
+		.name	= "s5p-mixer"
 	},
 	[6] = {
 		.start  = IRQ_HDMI,
 		.end    = IRQ_HDMI,
 		.flags  = IORESOURCE_IRQ,
+		.name	= "s5p-hdmi"
 	},
 	[7] = {
 		.start  = IRQ_TVENC,
 		.end    = IRQ_TVENC,
 		.flags  = IORESOURCE_IRQ,
+		.name	= "s5p-sdo"
 	},
 };
 
 struct platform_device s5p_device_tvout = {
-	.name           = "s5p-tvout",
+	.name           = "s5p-tv",
 	.id             = -1,
-	.num_resources  = ARRAY_SIZE(s5p_tvout_resources),
-	.resource       = s5p_tvout_resources,
+	.num_resources  = ARRAY_SIZE(s5p_tv_resources),
+	.resource       = s5p_tv_resources,
 };
 EXPORT_SYMBOL(s5p_device_tvout);
 

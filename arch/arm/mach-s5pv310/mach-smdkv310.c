@@ -302,6 +302,12 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_adc,
 #endif
 
+#ifdef CONFIG_VIDEO_TV20
+	&s5p_device_tvout,
+	&s5p_device_cec,
+	&s5p_device_hpd,
+#endif
+
 #ifdef CONFIG_USB
 	&s3c_device_usb_ehci,
 	&s3c_device_usb_ohci,
