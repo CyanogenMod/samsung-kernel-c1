@@ -105,9 +105,13 @@
 /* Registers related to power management */
 #define S5P_PMREG(x)			(S5PV310_VA_PMU + (x))
 
+#define S5P_HDMI_PHY_CONTROL		S5P_PMREG(0x0700)
 #define S5P_USBOTG_PHY_CONTROL		S5P_PMREG(0x0704)
 #define S5P_USBHOST_PHY_CONTROL		S5P_PMREG(0x0708)
+#define S5P_DAC_CONTROL			S5P_PMREG(0x070C)
 
-
+/* S5P_DAC_CONTROL */
+#define S5P_DAC_ENABLE			(1)
+#define S5P_DAC_DISABLE			(0)
 
 #endif /* __ASM_ARCH_REGS_CLOCK_H */
