@@ -111,6 +111,9 @@
 #define S5P_PA_FIMC0		S5P6450_PA_FIMC0
 #define S5P_SZ_FIMC0		SZ_1M
 
+/*MEMCON */
+#define S5P6450_PA_DMC0		(0xE6000000)
+
 /* compatibiltiy defines. */
 #define S3C_PA_UART		S5P6450_PA_UART
 #define S3C_PA_HSMMC0		S5P6450_PA_HSMMC0

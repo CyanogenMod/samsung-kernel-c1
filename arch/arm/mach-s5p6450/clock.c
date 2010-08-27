@@ -142,16 +142,16 @@ static struct clk_ops s5p6450_epll_ops = {
 };
 
 enum perf_level {
-	L0 = 532*1000,
-	L1 = 266*1000,
-	L2 = 133*1000,
+	L0 = 667*1000,
+	L1 = 333*1000,
+	L2 = 166*1000,
 };
 
 static const u32 clock_table[][3] = {
 	/*{ARM_CLK, DIVarm, DIVhclk}*/
 	{L0 * 1000, (0 << ARM_DIV_RATIO_SHIFT), (3 << S5P_CLKDIV0_HCLK166_SHIFT)},
-	{L1 * 1000, (1 << ARM_DIV_RATIO_SHIFT), (1 << S5P_CLKDIV0_HCLK166_SHIFT)},
-	{L2 * 1000, (3 << ARM_DIV_RATIO_SHIFT), (0 << S5P_CLKDIV0_HCLK166_SHIFT)},
+	{L1 * 1000, (1 << ARM_DIV_RATIO_SHIFT), (3 << S5P_CLKDIV0_HCLK166_SHIFT)},
+	{L2 * 1000, (3 << ARM_DIV_RATIO_SHIFT), (3 << S5P_CLKDIV0_HCLK166_SHIFT)},
 };
 
 static unsigned long s5p6450_armclk_get_rate(struct clk *clk)
@@ -239,7 +239,7 @@ static struct clk_ops s5p6450_clkarm_ops = {
 static struct clksrc_clk clk_armclk = {
 	.clk	= {
 		.name	= "armclk",
-		.id	= 1,
+		.id	= -1,
 		.parent	= &clk_mout_apll.clk,
 		.ops	= &s5p6450_clkarm_ops,
 	},

@@ -154,9 +154,6 @@ static void s5p6450_cpu_suspend(void)
 	__raw_writel(__raw_readl(S5P6450_WAKEUP_STAT),
 		     S5P6450_WAKEUP_STAT);
 
-	/* test */
-	__raw_writel(0x11110000, S5P6450_INFORM7);
-
 	tmp = 0x4;
 	__raw_writel(tmp, S5P6450_PWR_STABLE);
 
@@ -182,7 +179,6 @@ static void s5p6450_cpu_suspend(void)
 
 /* mapping of interrupts to parts of the wakeup mask */
 static struct samsung_wakeup_mask wake_irqs[] = {
-	{ .irq = IRQ_RTC_ALARM,	.bit = S5P6450_PWRCFG_RTC_ALARM_DISABLE, },
 	{ .irq = IRQ_RTC_TIC,	.bit = S5P6450_PWRCFG_RTC_TICK_DISABLE, },
 	{ .irq = IRQ_PENDN,		.bit = S5P6450_PWRCFG_TS_DISABLE, },
 	{ .irq = IRQ_HSMMC0,	.bit = S5P6450_PWRCFG_MMC0_DISABLE, },

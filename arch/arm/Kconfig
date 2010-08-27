@@ -681,6 +681,7 @@ config ARCH_S5P6450
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
 	help
 	  Samsung S5P6450 CPU based systems
 
@@ -1609,6 +1610,11 @@ config CPU_FREQ_S3C24XX_DEBUGFS
 	depends on CPU_FREQ_S3C24XX && DEBUG_FS
 	help
 	  Export status information via debugfs.
+
+config CPU_FREQ_S5P6450
+    bool "CPUfreq support for Samsung S5P6450 CPUs"
+	    depends on CPU_FREQ && MACH_SMDK6450
+
 
 endif
 
