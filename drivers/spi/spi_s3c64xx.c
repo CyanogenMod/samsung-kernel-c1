@@ -174,7 +174,7 @@ struct s3c64xx_spi_driver_data {
 	unsigned                        state;
 	unsigned                        cur_mode, cur_bpw;
 	unsigned                        cur_speed;
-	void (do_xfer*)(void *ptr, void __iomem *fifo, unsigned sz, bool rd);
+	void (*do_xfer)(void *ptr, void *fifo, unsigned sz, bool rd);
 };
 
 static struct s3c2410_dma_client s3c64xx_spi_dma_client = {
