@@ -316,6 +316,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	void __iomem *regs = sdd->regs;
 	unsigned long val;
+	u32 status;
 	int ms;
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
@@ -328,8 +329,8 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	} else {
 		val = msecs_to_loops(ms);
 		do {
-			val = readl(regs + S3C64XX_SPI_STATUS);
-		} while (RX_FIFO_LVL(val, sci) < xfer->len && --val);
+			status = readl(regs + S3C64XX_SPI_STATUS);
+		} while (RX_FIFO_LVL(status, sci) < xfer->len && --val);
 	}
 
 	if (!val)
