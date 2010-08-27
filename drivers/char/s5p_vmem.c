@@ -362,7 +362,7 @@ void *s5p_getaddress(unsigned int cookie)
 }
 EXPORT_SYMBOL(s5p_getaddress);
 
-unsigned int s5p_getcookie(void * addr)
+unsigned int s5p_getcookie(void *addr)
 {
 	struct kvm_area *kvmarea;
 	kvmarea = findkvmaddr(addr);
