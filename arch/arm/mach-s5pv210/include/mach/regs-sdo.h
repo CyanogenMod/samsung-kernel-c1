@@ -1,16 +1,17 @@
-/* linux/arch/arm/mach-s5pv210/include/mach/regs-sdout.h
+/* linux/arch/arm/mach-s5pv210/include/mach/regs-sdo.h
  *
  * Copyright (c) 2009 Samsung Electronics
- * 	http://www.samsung.com/
+ *		http://www.samsung.com/
  *
- * TV Encoder register header file for Samsung TVOut driver
+ * SDO register description file for Samsung TVOUT driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
+ */
 
-#ifndef __ASM_ARCH_REGS_SDAOUT_H
+#ifndef __ARCH_ARM_REGS_SDO_H
+#define __ARCH_ARM_REGS_SDO_H __FILE__
 
 #include <mach/map.h>
 
@@ -91,15 +92,11 @@
 #define S5P_SDO_CBSCALE				(0x0188)
 #define S5P_SDO_CRSCALE				(0x018C)
 #define S5P_SDO_CB_CR_OFFSET			(0x0190)
-#define S5P_SDO_RGB_CC				(0x0194)
 #define S5P_SDO_CVBS_CC_Y1			(0x0198)
 #define S5P_SDO_CVBS_CC_Y2			(0x019C)
 #define S5P_SDO_CVBS_CC_C			(0x01A0)
-#define S5P_SDO_YC_CC_Y				(0x01A4)
-#define S5P_SDO_YC_CC_C				(0x01A8)
 #define S5P_SDO_CSC_525_PORCH			(0x01B0)
 #define S5P_SDO_CSC_625_PORCH			(0x01B4)
-#define S5P_SDO_RGBSYNC				(0x01C0)
 #define S5P_SDO_OSFC00_0			(0x0200)
 #define S5P_SDO_OSFC01_0			(0x0204)
 #define S5P_SDO_OSFC02_0			(0x0208)
@@ -254,28 +251,6 @@
 #define S5P_SDO_CVBS_21H_CLOSED_CAPTION		(1 << 12)
 #define S5P_SDO_CVBS_21H_284H_CLOSED_CAPTION	(2 << 12)
 #define S5P_SDO_CVBS_USE_OTHERS			(3 << 12)
-#define S5P_SDO_SVIDEO_NO_WSS			(0 << 10)
-#define S5P_SDO_SVIDEO_WSS_INS			(1 << 10)
-#define S5P_SDO_SVIDEO_NO_CLOSED_CAPTION	(0 << 8)
-#define S5P_SDO_SVIDEO_21H_CLOSED_CAPTION	(1 << 8)
-#define S5P_SDO_SVIDEO_21H_284H_CLOSED_CAPTION	(2 << 8)
-#define S5P_SDO_SVIDEO_USE_OTHERS		(3 << 8)
-#define S5P_SDO_RGB_NO_CGMSA			(0 << 7)
-#define S5P_SDO_RGB_CGMSA_INS			(1 << 7)
-#define S5P_SDO_RGB_NO_WSS			(0 << 6)
-#define S5P_SDO_RGB_WSS_INS			(1 << 6)
-#define S5P_SDO_RGB_NO_CLOSED_CAPTION		(0 << 4)
-#define S5P_SDO_RGB_21H_CLOSED_CAPTION		(1 << 4)
-#define S5P_SDO_RGB_21H_284H_CLOSED_CAPTION	(2 << 4)
-#define S5P_SDO_RGB_USE_OTHERS			(3 << 4)
-#define S5P_SDO_YPBPR_NO_CGMSA			(0 << 3)
-#define S5P_SDO_YPBPR_CGMSA_INS			(1 << 3)
-#define S5P_SDO_YPBPR_NO_WSS			(0 << 2)
-#define S5P_SDO_YPBPR_WSS_INS			(1 << 2)
-#define S5P_SDO_YPBPR_NO_CLOSED_CAPTION		(0)
-#define S5P_SDO_YPBPR_21H_CLOSED_CAPTION	(1)
-#define S5P_SDO_YPBPR_21H_284H_CLOSED_CAPTION	(2)
-#define S5P_SDO_YPBPR_USE_OTHERS		(3)
 
 /* SDO Channel #0 Scale Control Register (SDO_SCALE_CH0) */
 #define S5P_SDO_SCALE_CONV_OFFSET(x)		(((x) & 0x3FF) << 16)
@@ -291,12 +266,8 @@
 #define S5P_SDO_COLOR_SC_PHASE_NOADJ		(0)
 
 /* SDO DAC Configuration Register (SDO_DAC) */
-#define S5P_SDO_POWER_ON_DAC2			(1 << 2)
-#define S5P_SDO_POWER_DOWN_DAC2			(0 << 2)
-#define S5P_SDO_POWER_ON_DAC1			(1 << 1)
-#define S5P_SDO_POWER_DOWN_DAC1			(0 << 1)
-#define S5P_SDO_POWER_ON_DAC0			(1 << 0)
-#define S5P_SDO_POWER_DOWN_DAC0			(0 << 0)
+#define S5P_SDO_POWER_ON_DAC			(1 << 0)
+#define S5P_SDO_POWER_DOWN_DAC			(0 << 0)
 
 /* SDO Status Register (SDO_FINFO) */
 #define S5P_SDO_FIELD_MOD_1001(x)		(((x) & (0x3ff << 16)) >> 16)
@@ -308,12 +279,6 @@
 /* SDO Color Compensation On/Off Control (SDO_CCCON) */
 #define S5P_SDO_COMPONENT_BHS_ADJ_ON		(0 << 4)
 #define S5P_SDO_COMPONENT_BHS_ADJ_OFF		(1 << 4)
-#define S5P_SDO_COMPONENT_YPBPR_COMP_ON		(0 << 3)
-#define S5P_SDO_COMPONENT_YPBPR_COMP_OFF	(1 << 3)
-#define S5P_SDO_COMPONENT_RGB_COMP_ON		(0 << 2)
-#define S5P_SDO_COMPONENT_RGB_COMP_OFF		(1 << 2)
-#define S5P_SDO_COMPONENT_YC_COMP_ON		(0 << 1)
-#define S5P_SDO_COMPONENT_YC_COMP_OFF		(1 << 1)
 #define S5P_SDO_COMPONENT_CVBS_COMP_ON		(0)
 #define S5P_SDO_COMPONENT_CVBS_COMP_OFF		(1)
 
@@ -347,11 +312,6 @@
 /* Color Compensation Control Register for CVBS Output (SDO_CVBS_CC_C) */
 #define S5P_SDO_RADIUS_CVBS_CORN(x)		((x) & 0x1FF)
 
-#define S5P_SDO_Y_TOP_YC_CYLINDER(x)		(((x) & 0x3FF) << 16)
-#define S5P_SDO_Y_BOTOM_YC_CYLINDER(x)		((x) & 0x3FF)
-
-#define S5P_SDO_RADIUS_YC_CYLINDER(x)		((x) & 0x1FF)
-
 /*
  * SDO 525 Line Component Front/Back Porch Position 
  * Control Register (SDO_CSC_525_PORCH) 
@@ -365,14 +325,6 @@
  */
 #define S5P_SDO_COMPONENT_625_BP(x)		(((x) & 0x3FF) << 16)
 #define S5P_SDO_COMPONENT_625_FP(x)		((x) & 0x3FF)
-
-/* SDO_RGBSYNC */
-#define S5P_SDO_RGB_SYNC_COMPOSITE		(0 << 8)
-#define S5P_SDO_RGB_SYNC_SEPERATE		(1 << 8)
-#define S5P_SDO_RGB_VSYNC_LOW_ACT		(0 << 4)
-#define S5P_SDO_RGB_VSYNC_HIGH_ACT		(1 << 4)
-#define S5P_SDO_RGB_HSYNC_LOW_ACT		(0)
-#define S5P_SDO_RGB_HSYNC_HIGH_ACT		(1)
 
 /* SDO Oversampling #0 Filter Coefficient (SDO_OSFC00_0) */
 #define S5P_SDO_OSF_COEF_ODD(x)			(((x) & 0xFFF) << 16)
@@ -494,4 +446,4 @@
 /* SDO Version Register (SDO_VERSION) */
 #define S5P_SDO_VERSION_NUMBER_MASK			(0xFFFFFFFF)
 
-#endif
+#endif /* __ARCH_ARM_REGS_SDO_H */
