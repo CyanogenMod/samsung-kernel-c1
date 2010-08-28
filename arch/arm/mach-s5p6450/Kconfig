@@ -25,10 +25,9 @@ config MACH_SMDK6450
 	select S5P6450_SETUP_MSHCI
 	select SAMSUNG_DEV_ADC
 	select SAMSUNG_DEV_TS
-        select S3C_DEV_GIB
+	select S3C_DEV_GIB
 	select S3C_DEV_WDT
 	select SAMSUNG_WAKEMASK
-	select HAVE_PWM
 	help
 	  Machine support for the Samsung SMDK6450
 
@@ -72,6 +71,12 @@ config S5P6450_SETUP_FIMC0
 	default y
 	help
 	  Common setup code for FIMC0 conntroller.
+
+config S5P6450_PWM
+    bool "S5P6450 PWM support"
+    select HAVE_PWM
+    help
+      Support for exporting the PWM timer blocks via the pwm device system.
 
 comment "MMC/SD slot setup"
 depends on PLAT_S5P

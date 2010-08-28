@@ -73,6 +73,12 @@ struct clk *clk_get(struct device *dev, const char *id)
 	struct clk *clk = ERR_PTR(-ENOENT);
 	int idno;
 
+#if defined(CONFIG_ARCH_S5P6450)
+	if (dev == NULL || dev->bus != &platform_bus_type)
+		idno = -1;
+	else
+	idno = to_platform_device(dev)->id;
+#else	
 	if (dev == NULL)
 		idno = -1;
 	else {
@@ -83,7 +89,7 @@ struct clk *clk_get(struct device *dev, const char *id)
 		else
 			idno = to_platform_device(dev)->id;
 	}
-
+#endif
 	spin_lock(&clocks_lock);
 
 	list_for_each_entry(p, &clocks, list) {
