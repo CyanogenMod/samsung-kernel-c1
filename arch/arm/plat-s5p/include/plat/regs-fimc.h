@@ -155,13 +155,17 @@
 /*
  * Macro part
 */
-/* frame start address 1~32 */
-#define S3C_CIOYSA(__x)			\
-	((__x < 5)?(0x18 + (__x) * 4):(0x200 + (__x) * 4))
-#define S3C_CIOCBSA(__x)		\
-	((__x < 5)?(0x28 + (__x) * 4):(0x270 + (__x) * 4))
-#define S3C_CIOCRSA(__x)		\
-	((__x < 5)?(0x38 + (__x) * 4):(0x2e0 + (__x) * 4))
+/* frame start address 1 ~ 4, 5 ~ 32 */
+#define DEF_PP		4 /* Number of Default PingPong Memory */
+#define S3C_CIOYSA(__x)		\
+	(((__x) < DEF_PP)?	\
+	 (S3C_CIOYSA1  + (__x) * 4):(S3C_CIOYSA5  + ((__x) - DEF_PP) * 4))
+#define S3C_CIOCBSA(__x)	\
+	(((__x) < DEF_PP)?	\
+	 (S3C_CIOCBSA1 + (__x) * 4):(S3C_CIOCBSA5 + ((__x) - DEF_PP) * 4))
+#define S3C_CIOCRSA(__x)	\
+	(((__x) < DEF_PP)?	\
+	 (S3C_CIOCRSA1 + (__x) * 4):(S3C_CIOCRSA5 + ((__x) - DEF_PP) * 4))
 
 #define S3C_CISRCFMT_SOURCEHSIZE(x)		((x) << 16)
 #define S3C_CISRCFMT_SOURCEVSIZE(x)		((x) << 0)
