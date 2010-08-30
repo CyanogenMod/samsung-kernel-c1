@@ -379,9 +379,17 @@ static inline void fimc_irq_cap(struct fimc_control *ctrl)
 	struct fimc_capinfo *cap = ctrl->cap;
 	int pp;
 
+	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
+
 	fimc_hwset_clear_irq(ctrl);
 	fimc_hwget_overflow_state(ctrl);
-	pp = ((fimc_hwget_frame_count(ctrl) + 2) % 4);
+	if (pdata->hw_ver >= 0x51) {
+		pp = fimc_hwget_before_frame_count(ctrl);
+		fimc_info1("%s[%d]\n", __func__, pp);
+	}
+	else
+		pp = ((fimc_hwget_frame_count(ctrl) + 2) % 4);
+
 	if (cap->fmt.field == V4L2_FIELD_INTERLACED_TB) {
 		/* odd value of pp means one frame is made with top/bottom */
 		if (pp & 0x1) {
@@ -440,6 +448,9 @@ struct fimc_control *fimc_register_controller(struct platform_device *pdev)
 		break;
 	case 0x50:
 		ctrl->limit = &fimc50_limits[id];
+		break;
+	case 0x51:
+		ctrl->limit = &fimc51_limits[id];
 		break;
 	}
 
@@ -1062,6 +1073,11 @@ struct video_device fimc_video_device[FIMC_DEVICES] = {
 		.ioctl_ops = &fimc_v4l2_ops,
 		.release = fimc_vdev_release,
 	},
+	[3] = {
+		.fops = &fimc_fops,
+		.ioctl_ops = &fimc_v4l2_ops,
+		.release = fimc_vdev_release,
+	},
 };
 
 static int fimc_init_global(struct platform_device *pdev)
@@ -1083,7 +1099,7 @@ static int fimc_init_global(struct platform_device *pdev)
 			break;
 
 		/* WriteBack doesn't need clock setting */
-		if (cam->id == CAMERA_WB) {
+		if ((cam->id == CAMERA_WB) || (cam->id == CAMERA_WB_B)) {
 			fimc_dev->camera[cam->id] = cam;
 			break;
 		}
@@ -1140,7 +1156,7 @@ static int fimc_configure_subdev(struct	platform_device	*pdev, int id)
 		for (i = 0; i < FIMC_MAXCAMS; i++) {
 			cam = pdata->camera[i];
 			if (cam) { 
-				if (cam->id == CAMERA_WB) {
+				if ((cam->id == CAMERA_WB) || (cam->id == CAMERA_WB_B)) {
 					subdev_cnt++;
 					continue;
 				}
@@ -1488,7 +1504,8 @@ static inline int fimc_suspend_out(struct fimc_control *ctrl)
 
 static inline int fimc_suspend_cap(struct fimc_control *ctrl)
 {
-	if (ctrl->cam->id == CAMERA_WB && ctrl->status == FIMC_STREAMON)
+	if ((ctrl->cam->id == CAMERA_WB) || (ctrl>cam->id == CAMERA_WB_B)
+		&& (ctrl->status == FIMC_STREAMON))
 		fimc_streamoff_capture((void *)ctrl);
 	ctrl->status = FIMC_ON_SLEEP;
 
@@ -1641,7 +1658,7 @@ static inline int fimc_resume_out(struct fimc_control *ctrl)
 
 static inline int fimc_resume_cap(struct fimc_control *ctrl)
 {
-	if (ctrl->cam->id == CAMERA_WB)
+	if (ctrl->cam->id == CAMERA_WB || ctrl->cam->id == CAMERA_WB_B)
 		fimc_streamon_capture((void *)ctrl);
 
 	return 0;

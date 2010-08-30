@@ -97,6 +97,39 @@ struct fimc_limit fimc50_limits[FIMC_DEVICES] = {
 	},
 };
 
+struct fimc_limit fimc51_limits[FIMC_DEVICES] = {
+	{
+		.pre_dst_w	= 4224,
+		.bypass_w	= 8192,
+		.trg_h_no_rot	= 4224,
+		.trg_h_rot	= 1920,
+		.real_w_no_rot	= 8192,
+		.real_h_rot	= 1920,
+	}, {
+		.pre_dst_w	= 4224,
+		.bypass_w	= 8192,
+		.trg_h_no_rot	= 4224,
+		.trg_h_rot	= 1920,
+		.real_w_no_rot	= 8192,
+		.real_h_rot	= 1920,
+	}, {
+		.pre_dst_w	= 4224,
+		.bypass_w	= 8192,
+		.trg_h_no_rot	= 4224,
+		.trg_h_rot	= 1920,
+		.real_w_no_rot	= 8192,
+		.real_h_rot	= 1920,
+	}, {
+
+		.pre_dst_w	= 1920,
+		.bypass_w	= 8192,
+		.trg_h_no_rot	= 1920,
+		.trg_h_rot	= 1280,
+		.real_w_no_rot	= 8192,
+		.real_h_rot	= 1280,
+	},
+};
+
 int fimc_hwset_camera_source(struct fimc_control *ctrl)
 {
 	struct s3c_platform_camera *cam = ctrl->cam;
@@ -789,6 +822,7 @@ int fimc_hwset_scaler(struct fimc_control *ctrl, struct fimc_scaler *sc)
 		fimc43_hwset_scaler(ctrl, sc);
 		break;
 	case 0x50:
+	case 0x51:
 		fimc50_hwset_scaler(ctrl, sc);
 		break;
 	default:
@@ -1337,7 +1371,7 @@ int fimc_hwset_output_offset(struct fimc_control *ctrl, u32 pixelformat,
 {
 	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
 
-	if (pdata->hw_ver == 0x50)
+	if (pdata->hw_ver >= 0x50)
 		fimc50_hwset_output_offset(ctrl, pixelformat, bounds, crop);
 	else
 		fimc40_hwset_output_offset(ctrl, pixelformat, bounds, crop);
@@ -1437,7 +1471,7 @@ int fimc_hwset_input_offset(struct fimc_control *ctrl, u32 pixelformat,
 {
 	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
 
-	if (pdata->hw_ver == 0x50)
+	if (pdata->hw_ver >= 0x50)
 		fimc50_hwset_input_offset(ctrl, pixelformat, bounds, crop);
 	else
 		fimc40_hwset_input_offset(ctrl, pixelformat, bounds, crop);
@@ -1617,9 +1651,21 @@ int fimc_hwset_output_buf_sequence(struct fimc_control *ctrl, u32 shift, u32 ena
 	u32 cfg = readl(ctrl->regs + S3C_CIFCNTSEQ);
 	u32 mask = 0x00000001 << shift;
 
-	cfg &= ~mask;
-	cfg |= enable << shift;
+	cfg &= (~mask);
+	cfg |= (enable << shift);
 	writel(cfg, ctrl->regs + S3C_CIFCNTSEQ);
+	return 0;
+}
+
+int fimc_hwget_output_buf_sequence(struct fimc_control *ctrl)
+{
+	u32 cfg = readl(ctrl->regs + S3C_CIFCNTSEQ);
+	return cfg;
+}
+/* Above FIMC v5.1 */
+int fimc_hw_reset_output_buf_sequence(struct fimc_control *ctrl)
+{
+	writel(0x0, ctrl->regs + S3C_CIFCNTSEQ);
 	return 0;
 }
 

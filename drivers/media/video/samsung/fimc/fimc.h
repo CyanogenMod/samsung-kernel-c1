@@ -31,15 +31,22 @@
 
 #define FIMC_NAME		"s3c-fimc"
 
+#if defined(CONFIG_CPU_S5PV310)
+#define FIMC_DEVICES		4
+#define FIMC_PHYBUFS		32
+#define FIMC_MAXCAMS		7
+#else
 #define FIMC_DEVICES		3
-#define FIMC_SUBDEVS		3
-#define FIMC_MAXCAMS		5 /* added 1 because of WriteBack */
 #define FIMC_PHYBUFS		4
+#define FIMC_MAXCAMS		5
+#endif
+
+#define FIMC_SUBDEVS		3
 #define FIMC_OUTBUFS		3
 #define FIMC_INQUEUES		10
 #define FIMC_MAX_CTXS		4
 #define FIMC_TPID		3
-#define FIMC_CAPBUFS		16
+#define FIMC_CAPBUFS		32
 #define FIMC_ONESHOT_TIMEOUT	200
 #define FIMC_DQUEUE_TIMEOUT	200
 #define FIMC_FIFOOFF_CNT	1000000 /* Sufficiently big value for stop */
@@ -395,6 +402,7 @@ extern const struct v4l2_ioctl_ops fimc_v4l2_ops;
 extern struct fimc_limit fimc40_limits[FIMC_DEVICES];
 extern struct fimc_limit fimc43_limits[FIMC_DEVICES];
 extern struct fimc_limit fimc50_limits[FIMC_DEVICES];
+extern struct fimc_limit fimc51_limits[FIMC_DEVICES];
 
 /* FIMD */
 extern int s3cfb_direct_ioctl(int id, unsigned int cmd, unsigned long arg);
@@ -539,9 +547,11 @@ extern int fimc_hw_wait_winoff(struct fimc_control *ctrl);
 extern int fimc_hw_wait_stop_input_dma(struct fimc_control *ctrl);
 extern int fimc_hwset_input_lineskip(struct fimc_control *ctrl);
 extern int fimc_hw_reset_camera(struct fimc_control *ctrl);
+extern int fimc_hw_reset_output_buf_sequence(struct fimc_control *ctrl);
 extern int fimc_hwset_output_buf_sequence(struct fimc_control *ctrl, u32 shift, u32 enable);
 extern int fimc_hwget_before_frame_count(struct fimc_control *ctrl);
 extern int fimc_hwget_present_frame_count(struct fimc_control *ctrl);
+extern int fimc_hwget_output_buf_sequence(struct fimc_control *ctrl);
 
 /* IPC related file */
 extern void ipc_start(void);

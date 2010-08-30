@@ -13,7 +13,7 @@ config VIDEO_SAMSUNG_V4L2
 	help
 	  This feature is for new V4L2 APIs all about digital camera
 
-if CPU_S5PV210 || CPU_S5P6450
+if CPU_S5PV210 || CPU_S5P6450 || CPU_S5PV310
 source "drivers/media/video/samsung/fimc/Kconfig"
 source "drivers/media/video/samsung/jpeg_v2/Kconfig"
 source "drivers/media/video/samsung/tv20/Kconfig"
@@ -39,6 +39,11 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMC1
 
 config VIDEO_SAMSUNG_MEMSIZE_FIMC2
 	int "Memory size in kbytes for FIMC2"
+	depends on VIDEO_FIMC
+	default "5120"
+
+config VIDEO_SAMSUNG_MEMSIZE_FIMC3
+	int "Memory size in kbytes for FIMC3"
 	depends on VIDEO_FIMC
 	default "5120"
 

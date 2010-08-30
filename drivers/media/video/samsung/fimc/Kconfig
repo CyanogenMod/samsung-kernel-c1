@@ -1,6 +1,6 @@
 config VIDEO_FIMC
 	bool "Samsung Camera Interface (FIMC) driver"
-	depends on VIDEO_SAMSUNG && (ARCH_S5PV210 || ARCH_S5P6450)
+	depends on VIDEO_SAMSUNG && (ARCH_S5PV210 || ARCH_S5P6450 || ARCH_S5PV310)
 	select VIDEO_IPC if ARCH_S5PV210
 	default n
 	help
@@ -15,7 +15,7 @@ config VIDEO_FIMC_DEBUG
 
 config VIDEO_FIMC_MIPI
 	bool "MIPI-CSI2 Slave Interface support"
-	depends on VIDEO_FIMC && ARCH_S5PV210
+	depends on VIDEO_FIMC && (ARCH_S5PV210 || ARCH_S5PV310)
 	default y
 
 choice
