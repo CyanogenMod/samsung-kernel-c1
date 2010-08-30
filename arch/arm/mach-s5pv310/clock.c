@@ -406,21 +406,25 @@ static struct clk init_clocks[] = {
 	}, {
 		.name		= "fimc",
 		.id		= 0,
+		.parent		= &clk_aclk_160.clk,
 		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 0),
 	}, {
 		.name		= "fimc",
 		.id		= 1,
+		.parent		= &clk_aclk_160.clk,
 		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 1),
 	}, {
 		.name		= "fimc",
 		.id		= 2,
+		.parent		= &clk_aclk_160.clk,
 		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 2),
 	}, {
 		.name		= "fimc",
 		.id		= 3,
+		.parent		= &clk_aclk_160.clk,
 		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 3),
 	}, {
@@ -856,8 +860,8 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 28, .size = 4 },
 	}, {
 		.clk		= {
-			.name		= "sclk_cam",
-			.id		= 0,
+			.name		= "sclk_cam0",
+			.id		= -1,
 			.enable		= s5pv310_clksrc_mask_cam_ctrl,
 			.ctrlbit	= (1 << 16),
 		},
@@ -866,8 +870,8 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLKDIV_CAM, .shift = 16, .size = 4 },
 	}, {
 		.clk		= {
-			.name		= "sclk_cam",
-			.id		= 1,
+			.name		= "sclk_cam1",
+			.id		= -1,
 			.enable		= s5pv310_clksrc_mask_cam_ctrl,
 			.ctrlbit	= (1 << 20),
 		},

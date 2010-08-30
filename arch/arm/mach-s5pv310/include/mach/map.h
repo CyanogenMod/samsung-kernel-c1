@@ -154,6 +154,13 @@
 #define S5P_PA_FIMC3			S5PV310_PA_FIMC3
 #define S5P_SZ_FIMC3			SZ_64K
 
+#define S5PV310_PA_CSIS0		(0x11880000)
+#define S5P_PA_CSIS0			S5PV310_PA_CSIS0
+#define S5P_SZ_CSIS0			SZ_64K
+#define S5PV310_PA_CSIS1		(0x11890000)
+#define S5P_PA_CSIS1			S5PV310_PA_CSIS1
+#define S5P_SZ_CSIS1			SZ_64K
+
 #define S5P_PA_SYSMMU_MDMA                (0x10A40000)
 #define S5P_PA_SYSMMU_SSS                 (0x10A50000)
 #define S5P_PA_SYSMMU_FIMC0               (0x11A20000)
