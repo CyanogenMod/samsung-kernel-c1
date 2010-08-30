@@ -99,8 +99,7 @@ config FB_S3C_TL2796
 	bool "TL2796"
 	depends on MACH_SMDKV310
 	select SPI
-	select SPI_GPIO
-	select SPI_BITBANG
+	select SPI_S3C64XX
 	help
 	  This enables support for Samsung TL2796 WVGA LCD panel
 endchoice

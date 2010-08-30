@@ -25,6 +25,7 @@
 
 #include <asm/mach/map.h>
 
+#include <plat/s3c64xx-spi.h>
 #include <plat/regs-serial.h>
 #include <plat/s5pv310.h>
 #include <plat/cpu.h>
@@ -37,6 +38,7 @@
 #include <plat/media.h>
 #include <plat/regs-otg.h>
 #include <plat/sdhci.h>
+#include <plat/gpio-cfg.h>
 
 #include <mach/irqs.h>
 #include <mach/map.h>
@@ -44,6 +46,7 @@
 #include <mach/regs-clock.h>
 #include <mach/media.h>
 #include <mach/gpio.h>
+#include <mach/spi-clocks.h>
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM
 #include <linux/android_pmem.h>
@@ -201,37 +204,23 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 	.swap = FB_SWAP_HWORD | FB_SWAP_WORD,
 };
 
-#define	LCD_BUS_NUM	3
+#define	LCD_BUS_NUM	1
 
-#define	DISPLAY_CS	S5PV310_GPB(5)
-#define	DISPLAY_CLK	S5PV310_GPB(4)
-#define	DISPLAY_SI	S5PV310_GPB(7)
+static struct s3c64xx_spi_csinfo spi1_csi[] = {
+	[0] = {
+		.line = S5PV310_GPB(5),
+		.set_level = gpio_set_value,
+	},
+};
 
 static struct spi_board_info spi_board_info[] __initdata = {
 	{
 		.modalias	= "tl2796",
-		.platform_data	= NULL,
 		.max_speed_hz	= 1200000,
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,
 		.mode		= SPI_MODE_3,
-		.controller_data = (void *)DISPLAY_CS,
-	},
-};
-
-static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
-	.sck	= DISPLAY_CLK,
-	.mosi	= DISPLAY_SI,
-	.miso	= -1,
-	.num_chipselect	= 1,
-};
-
-static struct platform_device s3c_device_spi_gpio = {
-	.name	= "spi_gpio",
-	.id	= LCD_BUS_NUM,
-	.dev	= {
-		.parent		= &s3c_device_fb.dev,
-		.platform_data	= &tl2796_spi_gpio_data,
+		.controller_data = &spi1_csi[0],
 	},
 };
 #endif
@@ -323,7 +312,7 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #endif
 
 #ifdef CONFIG_FB_S3C_TL2796
-	&s3c_device_spi_gpio,
+	&s5pv310_device_spi1,
 #endif
 
 #ifdef CONFIG_S5P_SYSMMU
@@ -426,6 +415,12 @@ static void __init s5p_pmem_set_platdata(void)
 
 static void __init smdkv310_machine_init(void)
 {
+#ifdef CONFIG_FB_S3C_TL2796
+	struct clk *sclk = NULL;
+	struct clk *prnt = NULL;
+	struct device *spi_dev = &s5pv310_device_spi1.dev;
+#endif
+
 #ifdef CONFIG_I2C_S3C2410
 	s3c_i2c0_set_platdata(NULL);
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
@@ -475,11 +470,6 @@ static void __init smdkv310_machine_init(void)
 
 	sromc_setup();
 
-#ifdef CONFIG_FB_S3C_TL2796
-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
-	s3cfb_set_platdata(&tl2796_data);
-#endif
-
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv310_hsmmc0_pdata);
 #endif
@@ -493,6 +483,27 @@ static void __init smdkv310_machine_init(void)
 	s3c_sdhci3_set_platdata(&smdkv310_hsmmc3_pdata);
 #endif
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
+
+#ifdef CONFIG_FB_S3C_TL2796
+	sclk = clk_get(spi_dev, "sclk_spi");
+	if (IS_ERR(sclk))
+		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
+	prnt = clk_get(spi_dev, "mout_epll");
+	if (IS_ERR(prnt))
+		dev_err(spi_dev, "failed to get prnt\n");
+	clk_set_parent(sclk, prnt);
+	clk_put(prnt);
+
+	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
+		gpio_direction_output(S5PV310_GPB(5), 1);
+		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
+		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
+			ARRAY_SIZE(spi1_csi));
+	}
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&tl2796_data);
+#endif
 }
 
 #ifdef CONFIG_USB_SUPPORT
