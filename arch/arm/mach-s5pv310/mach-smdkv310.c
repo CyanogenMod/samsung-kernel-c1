@@ -115,7 +115,7 @@ static struct platform_device smdkv310_smsc911x = {
 	.name          = "smc911x",
 	.id            = -1,
 	.num_resources = ARRAY_SIZE(smdkv310_smsc911x_resources),
-	.resource      = &smdkv310_smsc911x_resources,
+	.resource      = smdkv310_smsc911x_resources,
 };
 
 #ifdef CONFIG_I2C_S3C2410
@@ -408,11 +408,13 @@ static void __init smdkv310_map_io(void)
 	s5p_reserve_bootmem();
 }
 
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
 static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.delay			= 10000,
 	.presc			= 49,
 	.oversampling_shift	= 2,
 };
+#endif
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM
 static void __init s5p_pmem_set_platdata(void)
