@@ -456,7 +456,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			if (host->caps & MMC_CAP_8_BIT_DATA) {
 				ext_csd_bit = EXT_CSD_BUS_WIDTH_8_DDR;
 				bus_width = MMC_BUS_WIDTH_8_DDR;
-			} else if (host->caps & MMC_CAP_4_BIT_DATA) {
+			} else {
 				ext_csd_bit = EXT_CSD_BUS_WIDTH_4_DDR;
 				bus_width = MMC_BUS_WIDTH_4_DDR;
 			}
@@ -464,7 +464,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			if (host->caps & MMC_CAP_8_BIT_DATA) {
 				ext_csd_bit = EXT_CSD_BUS_WIDTH_8;
 				bus_width = MMC_BUS_WIDTH_8;
-			} else if (host->caps & MMC_CAP_4_BIT_DATA) {
+			} else {
 				ext_csd_bit = EXT_CSD_BUS_WIDTH_4;
 				bus_width = MMC_BUS_WIDTH_4;
 			}
