@@ -34,3 +34,4 @@ obj-$(CONFIG_S5PV310_SETUP_I2C7)	+= setup-i2c7.o
 obj-$(CONFIG_S5PV310_SETUP_SDHCI)	+= setup-sdhci.o
 obj-$(CONFIG_S5PV310_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
 obj-$(CONFIG_SND_SOC)			+= dev-audio.o
+obj-$(CONFIG_S3C64XX_DEV_SPI)		+= dev-spi.o

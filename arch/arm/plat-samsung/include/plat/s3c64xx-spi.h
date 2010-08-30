@@ -71,5 +71,6 @@ extern void s5pv210_spi_set_info(int cntrlr, int src_clk_nr, int num_cs);
 extern void s5p6440_spi_set_info(int cntrlr, int src_clk_nr, int num_cs);
 extern void s5p6442_spi_set_info(int cntrlr, int src_clk_nr, int num_cs);
 extern void s5p6450_spi_set_info(int cntrlr, int src_clk_nr, int num_cs);
+extern void s5pv310_spi_set_info(int cntrlr, int src_clk_nr, int num_cs);
 
 #endif /* __S3C64XX_PLAT_SPI_H */
