@@ -29,7 +29,7 @@ static DEFINE_SPINLOCK(eint_lock);
 
 static unsigned int s5pv310_get_irq_nr(unsigned int number)
 {
-	u32 ret;
+	u32 ret = 0;
 
 	switch (number) {
 	case 0 ... 3:

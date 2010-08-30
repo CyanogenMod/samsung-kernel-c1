@@ -33,7 +33,7 @@ static struct s3c_gpio_cfg gpio_cfg_noint = {
 
 int s5pv310_gpio2int(struct gpio_chip *chip, unsigned pin)
 {
-	int ret;
+	int ret = 0;
 	int base = chip->base;
 
 	switch (base) {
