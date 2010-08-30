@@ -94,8 +94,8 @@ static struct resource s5p_uart2_resource[] = {
 	},
 };
 
-static struct resource s5p_uart3_resource[] = {
 #if CONFIG_SERIAL_SAMSUNG_UARTS > 3
+static struct resource s5p_uart3_resource[] = {
 	[0] = {
 		.start	= S5P_PA_UART3,
 		.end	= S5P_PA_UART3 + S5P_SZ_UART,
@@ -116,11 +116,11 @@ static struct resource s5p_uart3_resource[] = {
 		.end	= IRQ_S5P_UART_ERR3,
 		.flags	= IORESOURCE_IRQ,
 	},
-#endif
 };
+#endif
 
-static struct resource s5p_uart4_resource[] = {
 #if CONFIG_SERIAL_SAMSUNG_UARTS > 4
+static struct resource s5p_uart4_resource[] = {
 	[0] = {
 		.start  = S5P_PA_UART4,
 		.end    = S5P_PA_UART4 + S5P_SZ_UART,
@@ -141,11 +141,11 @@ static struct resource s5p_uart4_resource[] = {
 		.end    = IRQ_S5P_UART_ERR4,
 		.flags  = IORESOURCE_IRQ,
 	},
-#endif
 };
+#endif
 
-static struct resource s5p_uart5_resource[] = {
 #if CONFIG_SERIAL_SAMSUNG_UARTS > 5
+static struct resource s5p_uart5_resource[] = {
 	[0] = {
 		.start  = S5P_PA_UART5,
 		.end    = S5P_PA_UART5 + S5P_SZ_UART,
@@ -166,8 +166,8 @@ static struct resource s5p_uart5_resource[] = {
 		.end    = IRQ_S5P_UART_ERR5,
 		.flags  = IORESOURCE_IRQ,
 	},
-#endif
 };
+#endif
 
 struct s3c24xx_uart_resources s5p_uart_resources[] __initdata = {
 	[0] = {
