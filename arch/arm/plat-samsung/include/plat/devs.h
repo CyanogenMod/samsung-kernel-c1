@@ -43,7 +43,13 @@ extern struct platform_device s3c_device_fb;
 extern struct platform_device s3c_device_fimc0;
 extern struct platform_device s3c_device_fimc1;
 extern struct platform_device s3c_device_fimc2;
+#ifdef CONFIG_CPU_S5PV310
+extern struct platform_device s3c_device_fimc3;
+extern struct platform_device s3c_device_csis0;
+extern struct platform_device s3c_device_csis1;
+#else
 extern struct platform_device s3c_device_csis;
+#endif
 extern struct platform_device s3c_device_ipc;
 extern struct platform_device s3c_device_ohci;
 extern struct platform_device s3c_device_usb_ehci;

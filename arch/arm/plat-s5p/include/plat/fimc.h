@@ -49,8 +49,10 @@ enum fimc_cam_index {
 	CAMERA_PAR_A	= 0,
 	CAMERA_PAR_B	= 1,
 	CAMERA_CSI_C	= 2,
-	CAMERA_PATTERN	= 3,	/* Not actual camera but test pattern */
-	CAMERA_WB 	= 4,	/* Not actual camera but write back */
+	CAMERA_CSI_D	= 3,
+	CAMERA_WB 	= 4,
+	CAMERA_WB_B 	= 5,
+	CAMERA_PATTERN	= 6,
 };
 
 /* struct s3c_platform_camera: abstraction for input camera */
@@ -98,7 +100,11 @@ struct s3c_platform_camera {
 /* For camera interface driver */
 struct s3c_platform_fimc {
 	enum fimc_cam_index		default_cam;		/* index of default cam */
+#ifdef CONFIG_CPU_S5PV310
+	struct s3c_platform_camera	*camera[7];		/* FIXME */
+#else
 	struct s3c_platform_camera	*camera[5];		/* FIXME */
+#endif
 	int				hw_ver;
 
 	void				(*cfg_gpio)(struct platform_device *pdev);
@@ -109,12 +115,17 @@ struct s3c_platform_fimc {
 extern void s3c_fimc0_set_platdata(struct s3c_platform_fimc *fimc);
 extern void s3c_fimc1_set_platdata(struct s3c_platform_fimc *fimc);
 extern void s3c_fimc2_set_platdata(struct s3c_platform_fimc *fimc);
+#ifdef CONFIG_CPU_S5PV310
+extern void s3c_fimc3_set_platdata(struct s3c_platform_fimc *fimc);
+#endif
 
 /* defined by architecture to configure gpio */
 extern void s3c_fimc0_cfg_gpio(struct platform_device *pdev);
 extern void s3c_fimc1_cfg_gpio(struct platform_device *pdev);
 extern void s3c_fimc2_cfg_gpio(struct platform_device *pdev);
-
+#ifdef CONFIG_CPU_S5PV310
+extern void s3c_fimc3_cfg_gpio(struct platform_device *pdev);
+#endif
 /* platform specific clock functions */
 extern int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk);
 extern int s3c_fimc_clk_off(struct platform_device *pdev, struct clk **clk);
