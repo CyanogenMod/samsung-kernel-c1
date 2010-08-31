@@ -86,10 +86,18 @@ void __init s5pv210_map_io(void)
 	iotable_init(s5pv210_iodesc, ARRAY_SIZE(s5pv210_iodesc));
 
 	/* initialise device information early */
+#ifdef CONFIG_S3C_DEV_HSMMC
 	s5pv210_default_sdhci0();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
 	s5pv210_default_sdhci1();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
 	s5pv210_default_sdhci2();
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC3
 	s5pv210_default_sdhci3();
+#endif
 
 	s3c_adc_setname("s3c64xx-adc");
 

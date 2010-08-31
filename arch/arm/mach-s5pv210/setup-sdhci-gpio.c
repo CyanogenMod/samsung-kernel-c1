@@ -18,10 +18,16 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
 
-#include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
 #include <plat/regs-sdhci.h>
 #include <plat/sdhci.h>
+#include <mach/gpio.h>
+#include <mach/regs-gpio.h>
+
+#define S5PV210_GPG0DRV		(S5PV210_GPG0_BASE + 0xC)
+#define S5PV210_GPG1DRV		(S5PV210_GPG1_BASE + 0xC)
+#define S5PV210_GPG2DRV		(S5PV210_GPG2_BASE + 0xC)
+#define S5PV210_GPG3DRV		(S5PV210_GPG3_BASE + 0xC)
 
 void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 {
@@ -40,12 +46,16 @@ void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		}
+		gpio = readl(S5PV210_GPG1DRV);
+		writel(gpio | 0x3fc0, S5PV210_GPG1DRV);
 	case 4:
 		/* GPG0[3:6] special-funtion 2 */
 		for (gpio = S5PV210_GPG0(3); gpio <= S5PV210_GPG0(6); gpio++) {
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		}
+		gpio = readl(S5PV210_GPG0DRV);
+		writel(gpio | 0x3fff, S5PV210_GPG0DRV);
 	default:
 		break;
 	}
@@ -73,6 +83,9 @@ void s5pv210_setup_sdhci1_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
 
+	gpio = readl(S5PV210_GPG1DRV);
+	writel(gpio | 0x3fff, S5PV210_GPG1DRV);
+  
 	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL) {
 		s3c_gpio_setpull(S5PV210_GPG1(2), S3C_GPIO_PULL_UP);
 		s3c_gpio_cfgpin(S5PV210_GPG1(2), S3C_GPIO_SFN(2));
@@ -97,12 +110,16 @@ void s5pv210_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		}
+		gpio = readl(S5PV210_GPG3DRV);
+		writel(gpio | 0x3fc0, S5PV210_GPG3DRV);
 	case 4:
 		/* Data pin GPG2[3:6] to special-function 2 */
 		for (gpio = S5PV210_GPG2(3); gpio <= S5PV210_GPG2(6); gpio++) {
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		}
+		gpio = readl(S5PV210_GPG2DRV);
+		writel(gpio | 0x3fff, S5PV210_GPG2DRV);
 	default:
 		break;
 	}
@@ -129,6 +146,10 @@ void s5pv210_setup_sdhci3_cfg_gpio(struct platform_device *dev, int width)
 		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 	}
+	
+	gpio = readl(S5PV210_GPG3DRV);
+	writel(gpio | 0x3fff, S5PV210_GPG3DRV);
+
 	if (pdata->cd_type == S3C_SDHCI_CD_INTERNAL) {
 		s3c_gpio_setpull(S5PV210_GPG3(2), S3C_GPIO_PULL_UP);
 		s3c_gpio_cfgpin(S5PV210_GPG3(2), S3C_GPIO_SFN(2));
