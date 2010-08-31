@@ -510,7 +510,7 @@ int fimc_hwset_output_colorspace(struct fimc_control *ctrl, u32 pixelformat)
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
 	case V4L2_PIX_FMT_NV12:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:	/* fall through */
-	case V4L2_PIX_FMT_NV21:		
+	case V4L2_PIX_FMT_NV21:
 		cfg |= S3C_CITRGFMT_OUTFORMAT_YCBCR420;
 		break;
 
@@ -1667,6 +1667,11 @@ int fimc_hw_reset_output_buf_sequence(struct fimc_control *ctrl)
 {
 	writel(0x0, ctrl->regs + S3C_CIFCNTSEQ);
 	return 0;
+}
+
+void fimc_hwset_output_buf_sequence_all(struct fimc_control *ctrl, u32 framecnt_seq)
+{
+	writel(framecnt_seq, ctrl->regs + S3C_CIFCNTSEQ);
 }
 
 /* Above FIMC v5.1 */
