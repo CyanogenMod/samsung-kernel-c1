@@ -37,7 +37,9 @@
 #include <plat/regs_jpeg.h>
 #include <mach/media.h>
 #include <mach/irqs.h>
-/*#include <mach/pd.h>*/
+#if defined(CONFIG_CPU_S5PV210)
+#include <mach/pd.h>
+#endif
 
 #include "jpeg_core.h"
 #include "jpeg_dev.h"
@@ -62,13 +64,13 @@ static int jpeg_open(struct inode *inode, struct file *file)
 	}
 
 	mutex_unlock(&jpeg_ctrl->lock);
-/*
+#if defined(CONFIG_CPU_S5PV210)
 	ret = s5pv210_pd_enable("jpeg_pd");
 	if (ret < 0) {
 		jpeg_err("failed to enable jpeg power domain\n");
 		return -EINVAL;
 	}
-*/
+#endif
 	/* clock enable */
 	clk_enable(jpeg_ctrl->clk);
 
@@ -87,13 +89,13 @@ static int jpeg_release(struct inode *inode, struct file *file)
 	atomic_dec(&jpeg_ctrl->in_use);
 
 	clk_disable(jpeg_ctrl->clk);
-/*
+#if defined(CONFIG_CPU_S5PV210)
 	ret = s5pv210_pd_disable("jpeg_pd");
 	if (ret < 0) {
 		jpeg_err("failed to disable jpeg power domain\n");
 		return -EINVAL;
 	}
-*/
+#endif
 
 	return 0;
 }
@@ -322,26 +324,26 @@ static int jpeg_suspend(struct platform_device *pdev, pm_message_t state)
 	int ret;
 	/* clock disable */
 	clk_disable(jpeg_ctrl->clk);
-/*
+#if defined(CONFIG_CPU_S5PV210)
 	ret = s5pv210_pd_disable("jpeg_pd");
 	if (ret < 0) {
 		jpeg_err("failed to disable jpeg power domain\n");
 		return -EINVAL;
 	}
-*/
+#endif
 	return 0;
 }
 
 static int jpeg_resume(struct platform_device *pdev)
 {
 	int ret;
-/*
+#if defined(CONFIG_CPU_S5PV210)
 	ret = s5pv210_pd_enable("jpeg_pd");
 	if (ret < 0) {
 		jpeg_err("failed to enable jpeg power domain\n");
 		return -EINVAL;
 	}
-*/
+#endif
 	/* clock enable */
 	clk_enable(jpeg_ctrl->clk);
 
