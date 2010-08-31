@@ -86,3 +86,69 @@ struct platform_device s5pv310_device_iis0 = {
 		.platform_data = &s3c_i2s_pdata,
 		},
 };
+
+static int s5pv310_pcm_cfg_gpio(struct platform_device *pdev)
+{
+	switch (pdev->id) {
+	case 1:
+		s3c_gpio_cfgpin(S5PV310_GPC0(0), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC0(1), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC0(2), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC0(3), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC0(4), S3C_GPIO_SFN(3));
+		break;
+	case 2:
+		s3c_gpio_cfgpin(S5PV310_GPC1(0), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC1(1), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC1(2), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC1(3), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPC1(4), S3C_GPIO_SFN(3));
+		break;
+	case 0:
+		s3c_gpio_cfgpin(S5PV310_GPZ(0), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(1), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(2), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(3), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(4), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(5), S3C_GPIO_SFN(3));
+		s3c_gpio_cfgpin(S5PV310_GPZ(6), S3C_GPIO_SFN(3));
+		break;
+	default:
+		printk(KERN_DEBUG "Invalid PCM Controller number!");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct s3c_audio_pdata s3c_pcm_pdata = {
+	.cfg_gpio = s5pv310_pcm_cfg_gpio,
+};
+
+static struct resource s5pv310_pcm1_resource[] = {
+	[0] = {
+		.start = S5PV310_PA_PCM1,
+		.end   = S5PV310_PA_PCM1 + 0x100 - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = DMACH_PCM1_TX,
+		.end   = DMACH_PCM1_TX,
+		.flags = IORESOURCE_DMA,
+	},
+	[2] = {
+		.start = DMACH_PCM1_RX,
+		.end   = DMACH_PCM1_RX,
+		.flags = IORESOURCE_DMA,
+	},
+};
+
+struct platform_device s5pv310_device_pcm1 = {
+	.name		  = "samsung-pcm",
+	.id		  = 1,
+	.num_resources	  = ARRAY_SIZE(s5pv310_pcm1_resource),
+	.resource	  = s5pv310_pcm1_resource,
+	.dev = {
+		.platform_data = &s3c_pcm_pdata,
+	},
+};
