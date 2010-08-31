@@ -682,8 +682,8 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5p_device_mfc,
 #endif
 
-#ifdef CONFIG_VIDEO_JPEG_V2
-	&s3c_device_jpeg,
+#ifdef CONFIG_VIDEO_JPEG
+	&s5p_device_jpeg,
 #endif
 
 #ifdef CONFIG_VIDEO_ROTATOR
