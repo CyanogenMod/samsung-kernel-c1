@@ -249,20 +249,11 @@ static int smdkv310_mipi_cam1_reset(int dummy)
 #ifdef CONFIG_VIDEO_S5K4BA
 #define S5K4BA_ENABLED
 #endif
-#if 0
 #ifdef CONFIG_VIDEO_S5K4EA
 #define S5K4EA_ENABLED
-/* undef : 3BA, 4BA, 6AA */
-#elif defined CONFIG_VIDEO_S5K6AA
-#define S5K6AA_ENABLED
-/* undef : 4EA */
-#elif defined CONFIG_VIDEO_S5K3BA
-#define S5K3BA_ENABLED
-/* undef : 4BA */
-#elif defined CONFIG_VIDEO_S5K4BA
-#define S5K4BA_ENABLED
-/* undef : 3BA */
 #endif
+#ifdef CONFIG_VIDEO_S5K6AA
+#define S5K6AA_ENABLED
 #endif
 /* External camera module setting */
 /* 2 ITU Cameras */
@@ -289,7 +280,7 @@ static struct s3c_platform_camera s5k3ba = {
 	.info		= &s5k3ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_VYUY,
 	.srclk_name	= "xusbxti",
-	.clk_name	= "sclk_cam",
+	.clk_name	= "sclk_cam0",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
 	.width		= 640,
@@ -342,7 +333,7 @@ static struct s3c_platform_camera s5k4ba = {
 	.i2c_busnum	= 1,
 	.info		= &s5k4ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_UYVY,
-	.srclk_name	= "mout_epll",
+	.srclk_name	= "xusbxti",
 	.clk_name	= "sclk_cam1",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
