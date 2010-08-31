@@ -62,6 +62,10 @@
 #include <linux/android_pmem.h>
 #endif
 
+#if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
+#include <linux/mfd/wm8994/pdata.h>
+#endif
+
 extern struct sys_timer s5pv310_timer;
 
 /* Following are default values for UCON, ULCON and UFCON UART registers */
@@ -549,6 +553,16 @@ static struct platform_device smdkv310_smsc911x = {
 	.resource      = smdkv310_smsc911x_resources,
 };
 
+#if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
+static struct wm8994_pdata wm8994_platform_data = {
+	/* configure gpio3/4/5/7 function for AIF2 voice */
+	.gpio_defaults[2] = 0x8100,/*BCLK2 in*/
+	.gpio_defaults[3] = 0x8100,/*LRCLK2 in*/
+	.gpio_defaults[4] = 0x8100,/*DACDAT2 in*/
+	.gpio_defaults[6] = 0x0100,/*ADCDAT2 out*/
+};
+#endif
+
 #ifdef CONFIG_I2C_S3C2410
 /* I2C0 */
 static struct i2c_board_info i2c_devs0[] __initdata = {
@@ -559,7 +573,10 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 /* I2C1 */
 static struct i2c_board_info i2c_devs1[] __initdata = {
 #if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
-	{ I2C_BOARD_INFO("wm8994", 0x1a), },
+	{
+		I2C_BOARD_INFO("wm8994", 0x1a),
+		.platform_data	= &wm8994_platform_data,
+	},
 #endif
 };
 #endif
@@ -684,6 +701,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #endif
 #if defined(CONFIG_SND_S3C64XX_SOC_I2S_V4)
 	&s5pv310_device_iis0,
+#endif
+
+#ifdef CONFIG_SND_S3C_SOC_PCM
+       &s5pv310_device_pcm1,
 #endif
 
 #ifdef CONFIG_VIDEO_MFC51
