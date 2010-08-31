@@ -320,6 +320,8 @@ struct sdhci_ops {
 	unsigned int	(*get_max_clock)(struct sdhci_host *host);
 	unsigned int	(*get_min_clock)(struct sdhci_host *host);
 	unsigned int	(*get_timeout_clock)(struct sdhci_host *host);
+	void            (*set_ios)(struct sdhci_host *host,
+					struct mmc_ios *ios);
 	int		(*get_ro)(struct mmc_host *mmc);
 };
 
