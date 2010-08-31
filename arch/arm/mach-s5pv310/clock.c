@@ -443,6 +443,11 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 3),
 	}, {
+		.name		= "jpeg",
+		.id		= -1,
+		.enable 	= s5pv310_clk_ip_cam_ctrl,
+		.ctrlbit	= (1 << 6),
+	}, {
 		.name		= "fimd",
 		.id		= 0,
 		.enable		= s5pv310_clk_ip_lcd0_ctrl,
