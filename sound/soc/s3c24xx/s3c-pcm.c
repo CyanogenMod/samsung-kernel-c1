@@ -215,10 +215,15 @@ static int s3c_pcm_hw_params(struct snd_pcm_substream *substream,
 	sclk_div = clk_get_rate(clk) / pcm->sclk_per_fs /
 					params_rate(params) / 2 - 1;
 
+#if defined(CONFIG_ARCH_S5PV310)
+	if(clk_get_rate(clk) != (pcm->sclk_per_fs*params_rate(params)))
+		clk_set_rate(clk, pcm->sclk_per_fs*params_rate(params));
+#else
 	clkctl &= ~(S3C_PCM_CLKCTL_SCLKDIV_MASK
 			<< S3C_PCM_CLKCTL_SCLKDIV_SHIFT);
 	clkctl |= ((sclk_div & S3C_PCM_CLKCTL_SCLKDIV_MASK)
 			<< S3C_PCM_CLKCTL_SCLKDIV_SHIFT);
+#endif
 
 	/* Set the SYNC divider */
 	sync_div = pcm->sclk_per_fs - 1;

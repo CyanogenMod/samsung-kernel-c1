@@ -20,12 +20,35 @@
 #include <mach/regs-clock.h>
 #include "../codecs/wm8994.h"
 #include "s3c-dma.h"
+#include "s3c-pcm.h"
 #include "s3c64xx-i2s.h"
 
 /* smdkv310 has a 16.9344MHZ crystal attached to wm8994 */
 #define SMDK_WM8994_OSC_FREQ 16934400
 
-static int smdk_hw_params(struct snd_pcm_substream *substream,
+static int set_epll_rate(unsigned long rate)
+{
+	struct clk *fout_epll;
+
+	fout_epll = clk_get(NULL, "fout_epll");
+	if (IS_ERR(fout_epll)) {
+		printk(KERN_ERR "%s: failed to get fout_epll\n", __func__);
+		return -ENOENT;
+	}
+
+	if (rate == clk_get_rate(fout_epll))
+		goto out;
+
+	clk_disable(fout_epll);
+	clk_set_rate(fout_epll, rate);
+	clk_enable(fout_epll);
+out:
+	clk_put(fout_epll);
+
+	return 0;
+}
+
+static int smdk_hifi_hw_params(struct snd_pcm_substream *substream,
 			      struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -48,7 +71,8 @@ static int smdk_hw_params(struct snd_pcm_substream *substream,
 
 	ret = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1,
 				WM8994_FLL_SRC_MCLK1,
-				SMDK_WM8994_OSC_FREQ,	params_rate(params)*256);
+				SMDK_WM8994_OSC_FREQ,
+				params_rate(params)*256);
 	if (ret < 0)
 		return ret;
 
@@ -66,6 +90,106 @@ static int smdk_hw_params(struct snd_pcm_substream *substream,
 
 	ret = snd_soc_dai_set_sysclk(cpu_dai, S3C64XX_CLKSRC_MUX,
 				0, SND_SOC_CLOCK_IN);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
+static int smdk_voice_hw_params(struct snd_pcm_substream *substream,
+			      struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
+	int rfs, ret;
+	unsigned long epll_out_rate;
+
+	switch (params_rate(params)) {
+	case 8000:
+	case 12000:
+	case 16000:
+	case 24000:
+	case 32000:
+	case 48000:
+	case 64000:
+	case 96000:
+		epll_out_rate = 49152000;
+		break;
+	case 11025:
+	case 22050:
+	case 44100:
+	case 88200:
+		epll_out_rate = 67737600;
+		break;
+	default:
+		printk(KERN_ERR "%s:%d Sampling Rate %u not supported!\n",
+			__func__, __LINE__, params_rate(params));
+		return -EINVAL;
+	}
+
+	switch (params_rate(params)) {
+	case 16000:
+	case 22050:
+	case 22025:
+	case 32000:
+	case 44100:
+	case 48000:
+	case 96000:
+	case 24000:
+		rfs = 256;
+		break;
+	case 64000:
+		rfs = 384;
+		break;
+	case 8000:
+	case 11025:
+	case 12000:
+		rfs = 512;
+		break;
+	case 88200:
+		rfs = 128;
+		break;
+	default:
+		printk(KERN_ERR "%s:%d Sampling Rate %u not supported!\n",
+			__func__, __LINE__, params_rate(params));
+		return -EINVAL;
+	}
+
+	/* Set the codec DAI configuration */
+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_DSP_B
+				| SND_SOC_DAIFMT_IB_NF
+				| SND_SOC_DAIFMT_CBS_CFS);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8994_SYSCLK_MCLK1,
+				SMDK_WM8994_OSC_FREQ,
+				SND_SOC_CLOCK_IN);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1,
+				WM8994_FLL_SRC_MCLK1,
+				SMDK_WM8994_OSC_FREQ,
+				params_rate(params)*256);
+	if (ret < 0)
+		return ret;
+
+	/* Set the cpu DAI configuration */
+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_B
+				| SND_SOC_DAIFMT_IB_NF
+				| SND_SOC_DAIFMT_CBS_CFS);
+	if (ret < 0)
+		return ret;
+
+	/* Set EPLL clock rate */
+	ret = set_epll_rate(epll_out_rate);
+	if (ret < 0)
+		return ret;
+
+	/* Set SCLK_DIV for making bclk */
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, S3C_PCM_SCLK_PER_FS, rfs);
 	if (ret < 0)
 		return ret;
 
@@ -158,11 +282,11 @@ static const struct snd_soc_dapm_route smdk_dapm_routes[] = {
 	{"Headset Out", NULL, "HPOUT1L"},
 	{"Headset Out", NULL, "HPOUT1R"},
 	/* Connections to Mics */
-	{"LINEOUT1P", NULL, "Mic In"},
-	{"LINEOUT1N", NULL, "Mic In"},
+	{"IN1LN", NULL, "Mic In"},
+	{"IN1RN", NULL, "Mic In"},
 	/* Connections to Line In */
-	{"LINEOUT2P", NULL, "Line In"},
-	{"LINEOUT2N", NULL, "Line In"},
+	{"IN2LN", NULL, "Line In"},
+	{"IN2RN", NULL, "Line In"},
 };
 
 static int smdk_hifiaudio_init(struct snd_soc_codec *codec)
@@ -176,8 +300,10 @@ static int smdk_hifiaudio_init(struct snd_soc_codec *codec)
 	snd_soc_dapm_nc_pin(codec, "SPKOUTRN");
 	snd_soc_dapm_nc_pin(codec, "HPOUT2P");
 	snd_soc_dapm_nc_pin(codec, "HPOUT2N");
-	snd_soc_dapm_nc_pin(codec, "IN2LP:VXRN");
-	snd_soc_dapm_nc_pin(codec, "IN2RP:VXRP");
+	snd_soc_dapm_nc_pin(codec, "LINEOUT1P");
+	snd_soc_dapm_nc_pin(codec, "LINEOUT1N");
+	snd_soc_dapm_nc_pin(codec, "LINEOUT2P");
+	snd_soc_dapm_nc_pin(codec, "LINEOUT2N");
 
 	/* Add smdk specific widgets */
 	err = snd_soc_dapm_new_controls(codec, smdk_dapm_widgets,
@@ -211,8 +337,12 @@ static int smdk_hifiaudio_init(struct snd_soc_codec *codec)
 /*
  * smdk wm8994 DAI operations.
  */
-static struct snd_soc_ops smdk_ops = {
-	.hw_params = smdk_hw_params,
+static struct snd_soc_ops smdk_hifi_ops = {
+	.hw_params = smdk_hifi_hw_params,
+};
+
+static struct snd_soc_ops smdk_voice_ops = {
+	.hw_params = smdk_voice_hw_params,
 };
 
 static struct snd_soc_dai_link smdk_dai[] = {
@@ -222,7 +352,14 @@ static struct snd_soc_dai_link smdk_dai[] = {
 	 .cpu_dai = &s3c64xx_i2s_v4_dai,
 	 .codec_dai = &wm8994_dai[0],
 	 .init = smdk_hifiaudio_init,
-	 .ops = &smdk_ops,
+	 .ops = &smdk_hifi_ops,
+	 },
+	 {
+	 .name = "wm8994 AIF2 pcm",
+	 .stream_name = "voice",
+	 .cpu_dai = &s3c_pcm_dai[1],
+	 .codec_dai = &wm8994_dai[1],
+	 .ops = &smdk_voice_ops,
 	 },
 };
 
