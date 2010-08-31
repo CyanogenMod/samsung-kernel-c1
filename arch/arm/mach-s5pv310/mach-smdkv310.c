@@ -958,7 +958,7 @@ static void __init smdkv310_machine_init(void)
 	sclk = clk_get(spi_dev, "sclk_spi");
 	if (IS_ERR(sclk))
 		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
-	prnt = clk_get(spi_dev, "mout_epll");
+	prnt = clk_get(spi_dev, "xusbxti");
 	if (IS_ERR(prnt))
 		dev_err(spi_dev, "failed to get prnt\n");
 	clk_set_parent(sclk, prnt);
