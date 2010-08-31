@@ -20,6 +20,7 @@
 #define S5P_MDEV_FIMC1          4
 #define S5P_MDEV_FIMC2          5
 #define S5P_MDEV_FIMC3          6
+#define S5P_MDEV_JPEG		7
 
 #endif
 
