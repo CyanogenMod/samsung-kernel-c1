@@ -77,6 +77,8 @@
 #define FIMC_PINGPONG 2
 #endif
 
+#define check_bit(data, loc)	((data) & (0x1<<(loc)))
+#define FRAME_SEQ		0xf
 /*
  * ENUMERATIONS
 */
@@ -549,9 +551,13 @@ extern int fimc_hwset_input_lineskip(struct fimc_control *ctrl);
 extern int fimc_hw_reset_camera(struct fimc_control *ctrl);
 extern int fimc_hw_reset_output_buf_sequence(struct fimc_control *ctrl);
 extern int fimc_hwset_output_buf_sequence(struct fimc_control *ctrl, u32 shift, u32 enable);
+extern void fimc_hwset_output_buf_sequence_all(struct fimc_control *ctrl, u32 framecnt_seq);
+extern int fimc_hwget_output_buf_sequence(struct fimc_control *ctrl);
 extern int fimc_hwget_before_frame_count(struct fimc_control *ctrl);
 extern int fimc_hwget_present_frame_count(struct fimc_control *ctrl);
 extern int fimc_hwget_output_buf_sequence(struct fimc_control *ctrl);
+
+
 
 /* IPC related file */
 extern void ipc_start(void);
