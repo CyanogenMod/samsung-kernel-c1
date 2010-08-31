@@ -195,7 +195,6 @@ static struct clksrc_clk clk_mout_epll = {
 	.clk	= {
 		.name		= "mout_epll",
 		.id		= -1,
-		.parent	= &clk_fout_epll,
 	},
 	.sources	= &clk_src_epll,
 	.reg_src	= { .reg = S5P_CLKSRC_TOP0, .shift = 4, .size = 1 },
@@ -1296,7 +1295,6 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	clk_set_parent(&clk_sclk_audss.clk, &clk_mout_audss.clk);
 	clk_set_parent(&clk_mout_audss.clk, &clk_fout_epll);
 	clk_set_parent(&clk_sclk_audio1.clk, &clk_mout_epll.clk);
-	clk_set_parent(&clk_mout_epll.clk, &clk_fout_epll);
 }
 
 static struct clk *clks[] __initdata = {
