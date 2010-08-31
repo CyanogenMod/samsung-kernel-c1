@@ -27,6 +27,7 @@
 
 #include <asm/mach/map.h>
 
+#include <plat/s3c64xx-spi.h>
 #include <plat/regs-serial.h>
 #include <plat/s5pv310.h>
 #include <plat/cpu.h>
@@ -37,8 +38,19 @@
 #include <plat/ts.h>
 #include <plat/fimg2d.h>
 #include <plat/media.h>
+#include <mach/regs-gpio.h>
+
+#include <media/s5k3ba_platform.h>
+#include <media/s5k4ba_platform.h>
+#include <media/s5k4ea_platform.h>
+#include <media/s5k6aa_platform.h>
+
+#include <plat/csis.h>
+#include <plat/fimc.h>
+#include <plat/gpio-cfg.h>
 #include <plat/regs-otg.h>
 #include <plat/sdhci.h>
+#include <plat/gpio-cfg.h>
 
 #include <mach/irqs.h>
 #include <mach/map.h>
@@ -46,9 +58,14 @@
 #include <mach/regs-clock.h>
 #include <mach/media.h>
 #include <mach/gpio.h>
+#include <mach/spi-clocks.h>
 
 #ifdef CONFIG_S5P_SAMSUNG_PMEM
 #include <linux/android_pmem.h>
+#endif
+
+#if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
+#include <linux/mfd/wm8994/pdata.h>
 #endif
 
 extern struct sys_timer s5pv310_timer;
@@ -100,6 +117,424 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	},
 };
 
+#ifdef CONFIG_VIDEO_FIMC
+/*
+ * External camera reset
+ * Because the most of cameras take i2c bus signal, so that
+ * you have to reset at the boot time for other i2c slave devices.
+ * This function also called at fimc_init_camera()
+ * Do optimization for cameras on your platform.
+*/
+#ifdef CAM_ITU_CH_A
+static int smdkv310_cam0_reset(int dummy)
+{
+	int err;
+	/* Camera A */
+	err = gpio_request(S5PV310_GPX1(2), "GPX1");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPX1_2 ####\n");
+
+	s3c_gpio_setpull(S5PV310_GPX1(2), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX1(2), 0);
+	gpio_direction_output(S5PV310_GPX1(2), 1);
+	gpio_free(S5PV310_GPX1(2));
+
+	return 0;
+}
+#else
+static int smdkv310_cam1_reset(int dummy)
+{
+	int err;
+
+	/* Camera B */
+	err = gpio_request(S5PV310_GPX1(0), "GPX1");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPX1_0 ####\n");
+
+	s3c_gpio_setpull(S5PV310_GPX1(0), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX1(0), 0);
+	gpio_direction_output(S5PV310_GPX1(0), 1);
+	gpio_free(S5PV310_GPX1(0));
+
+	return 0;
+}
+#endif
+/* for 12M camera */
+#ifdef CE143_MONACO
+static int smdkv310_cam0_standby(void)
+{
+	int err;
+	/* Camera A */
+	err = gpio_request(S5PV310_GPX3(3), "GPX3");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPX3_3 ####\n");
+	s3c_gpio_setpull(S5PV310_GPX3(3), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX3(3), 0);
+	gpio_direction_output(S5PV310_GPX3(3), 1);
+	gpio_free(S5PV310_GPX3(3));
+
+	return 0;
+}
+
+static int smdkv310_cam1_standby(void)
+{
+	int err;
+
+	/* Camera B */
+	err = gpio_request(S5PV310_GPX1(1), "GPX1");
+	if (err)
+		printk(KERN_ERR "#### failed to request GPX1_1 ####\n");
+	s3c_gpio_setpull(S5PV310_GPX1(1), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX1(1), 0);
+	gpio_direction_output(S5PV310_GPX1(1), 1);
+	gpio_free(S5PV310_GPX1(1));
+
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_VIDEO_FIMC_MIPI
+/* Set for MIPI-CSI Camera module Reset */
+static int smdkv310_mipi_cam0_reset(int dummy)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPX1(2), "GPX1");
+	if (err)
+		printk(KERN_ERR "#### failed to reset(GPX1_2) MIPI CAM\n");
+
+	s3c_gpio_setpull(S5PV310_GPX1(2), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX1(2), 0);
+	gpio_direction_output(S5PV310_GPX1(2), 1);
+	gpio_free(S5PV310_GPX1(2));
+
+	return 0;
+}
+
+static int smdkv310_mipi_cam1_reset(int dummy)
+{
+	int err;
+
+	err = gpio_request(S5PV310_GPX1(0), "GPX1");
+	if (err)
+		printk(KERN_ERR "#### failed to reset(GPX1_0) MIPI CAM\n");
+
+	s3c_gpio_setpull(S5PV310_GPX1(0), S3C_GPIO_PULL_NONE);
+	gpio_direction_output(S5PV310_GPX1(0), 0);
+	gpio_direction_output(S5PV310_GPX1(0), 1);
+	gpio_free(S5PV310_GPX1(0));
+
+	return 0;
+}
+#endif
+/*
+ * Guide for Camera Configuration for smdkv210
+ * ITU channel must be set as A or B
+ * ITU CAM CH A: S5K3BA only
+ * ITU CAM CH B: one of S5K3BA and S5K4BA
+ * MIPI: one of S5K4EA and S5K6AA
+ *
+ * NOTE1: if the S5K4EA is enabled, all other cameras must be disabled
+ * NOTE2: currently, only 1 MIPI camera must be enabled
+ * NOTE3: it is possible to use both one ITU cam and
+ *	one MIPI cam except for S5K4EA case
+ *
+*/
+#undef CAM_ITU_CH_A
+#undef WRITEBACK_ENABLED
+
+#ifdef CONFIG_VIDEO_S5K3BA
+#define S5K3BA_ENABLED
+#endif
+#ifdef CONFIG_VIDEO_S5K4BA
+#define S5K4BA_ENABLED
+#endif
+#if 0
+#ifdef CONFIG_VIDEO_S5K4EA
+#define S5K4EA_ENABLED
+/* undef : 3BA, 4BA, 6AA */
+#elif defined CONFIG_VIDEO_S5K6AA
+#define S5K6AA_ENABLED
+/* undef : 4EA */
+#elif defined CONFIG_VIDEO_S5K3BA
+#define S5K3BA_ENABLED
+/* undef : 4BA */
+#elif defined CONFIG_VIDEO_S5K4BA
+#define S5K4BA_ENABLED
+/* undef : 3BA */
+#endif
+#endif
+/* External camera module setting */
+/* 2 ITU Cameras */
+#ifdef S5K3BA_ENABLED
+static struct s5k3ba_platform_data s5k3ba_plat = {
+	.default_width = 640,
+	.default_height = 480,
+	.pixelformat = V4L2_PIX_FMT_VYUY,
+	.freq = 24000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k3ba_i2c_info = {
+	I2C_BOARD_INFO("S5K3BA", 0x2d),
+	.platform_data = &s5k3ba_plat,
+};
+
+static struct s3c_platform_camera s5k3ba = {
+	.id		= CAMERA_PAR_A,
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CRYCBY,
+	.i2c_busnum	= 0,
+	.info		= &s5k3ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_VYUY,
+	.srclk_name	= "xusbxti",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	.width		= 640,
+	.height		= 480,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 640,
+		.height	= 480,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+#ifdef CAM_ITU_CH_A
+	.cam_power	= smdkv310_cam0_reset,
+#else
+	.cam_power	= smdkv310_cam1_reset,
+#endif
+};
+#endif
+
+#ifdef S5K4BA_ENABLED
+static struct s5k4ba_platform_data s5k4ba_plat = {
+	.default_width = 800,
+	.default_height = 600,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 0,
+};
+
+static struct i2c_board_info  s5k4ba_i2c_info = {
+	I2C_BOARD_INFO("S5K4BA", 0x2d),
+	.platform_data = &s5k4ba_plat,
+};
+
+static struct s3c_platform_camera s5k4ba = {
+#ifdef CAM_ITU_CH_A
+	.id		= CAMERA_PAR_A,
+#else
+	.id		= CAMERA_PAR_B,
+#endif
+	.type		= CAM_TYPE_ITU,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 1,
+	.info		= &s5k4ba_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "mout_epll",
+	.clk_name	= "sclk_cam1",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	.width		= 1600,
+	.height		= 1200,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 800,
+		.height	= 600,
+	},
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+#ifdef CAM_ITU_CH_A
+	.cam_power	= smdkv310_cam0_reset,
+#else
+	.cam_power	= smdkv310_cam1_reset,
+#endif
+};
+#endif
+
+/* 2 MIPI Cameras */
+#ifdef S5K4EA_ENABLED
+static struct s5k4ea_platform_data s5k4ea_plat = {
+	.default_width = 1920,
+	.default_height = 1080,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 1,
+};
+
+static struct i2c_board_info  s5k4ea_i2c_info = {
+	I2C_BOARD_INFO("S5K4EA", 0x2d),
+	.platform_data = &s5k4ea_plat,
+};
+
+static struct s3c_platform_camera s5k4ea = {
+	.id		= CAMERA_CSI_C,
+	.type		= CAM_TYPE_MIPI,
+	.fmt		= MIPI_CSI_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k4ea_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 48000000,
+	.line_length	= 1920,
+	.width		= 1920,
+	.height		= 1080,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 1920,
+		.height	= 1080,
+	},
+
+	.mipi_lanes	= 2,
+	.mipi_settle	= 12,
+	.mipi_align	= 32,
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+	.cam_power	= smdkv310_mipi_cam0_reset,
+};
+#endif
+
+#ifdef S5K6AA_ENABLED
+static struct s5k6aa_platform_data s5k6aa_plat = {
+	.default_width = 640,
+	.default_height = 480,
+	.pixelformat = V4L2_PIX_FMT_UYVY,
+	.freq = 24000000,
+	.is_mipi = 1,
+};
+
+static struct i2c_board_info  s5k6aa_i2c_info = {
+	I2C_BOARD_INFO("S5K6AA", 0x3c),
+	.platform_data = &s5k6aa_plat,
+};
+
+static struct s3c_platform_camera s5k6aa = {
+	.id		= CAMERA_CSI_D,
+	.type		= CAM_TYPE_MIPI,
+	.fmt		= MIPI_CSI_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &s5k6aa_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_UYVY,
+	.srclk_name	= "xusbxti",
+	.clk_name	= "sclk_cam",
+	.clk_rate	= 24000000,
+	.line_length	= 1920,
+	/* default resol for preview kind of thing */
+	.width		= 640,
+	.height		= 480,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 640,
+		.height	= 480,
+	},
+
+	.mipi_lanes	= 1,
+	.mipi_settle	= 6,
+	.mipi_align	= 32,
+
+	/* Polarity */
+	.inv_pclk	= 0,
+	.inv_vsync	= 1,
+	.inv_href	= 0,
+	.inv_hsync	= 0,
+
+	.initialized	= 0,
+	.cam_power	= smdkv310_mipi_cam1_reset,
+};
+#endif
+
+#ifdef WRITEBACK_ENABLED
+static struct i2c_board_info  writeback_i2c_info = {
+	I2C_BOARD_INFO("WriteBack", 0x0),
+};
+
+static struct s3c_platform_camera writeback = {
+	.id		= CAMERA_WB,
+	.fmt		= ITU_601_YCBCR422_8BIT,
+	.order422	= CAM_ORDER422_8BIT_CBYCRY,
+	.i2c_busnum	= 0,
+	.info		= &writeback_i2c_info,
+	.pixelformat	= V4L2_PIX_FMT_YUV444,
+	.line_length	= 800,
+	.width		= 480,
+	.height		= 800,
+	.window		= {
+		.left	= 0,
+		.top	= 0,
+		.width	= 480,
+		.height	= 800,
+	},
+
+	.initialized	= 0,
+};
+#endif
+
+/* Interface setting */
+static struct s3c_platform_fimc fimc_plat = {
+#if defined(S5K4EA_ENABLED) || defined(S5K6AA_ENABLED)
+	.default_cam	= CAMERA_CSI_C,
+#else
+
+#ifdef WRITEBACK_ENABLED
+	.default_cam	= CAMERA_WB,
+#elif defined (CAM_ITU_CH_A)
+	.default_cam	= CAMERA_PAR_A,
+#else
+	.default_cam	= CAMERA_PAR_B,
+#endif
+
+#endif
+	.camera		= {
+#ifdef S5K3BA_ENABLED
+		&s5k3ba,
+#endif
+#ifdef S5K4BA_ENABLED
+		&s5k4ba,
+#endif
+#ifdef S5K4EA_ENABLED
+		&s5k4ea,
+#endif
+#ifdef S5K6AA_ENABLED
+		&s5k6aa,
+#endif
+#ifdef WRITEBACK_ENABLED
+		&writeback,
+#endif
+	},
+	.hw_ver		= 0x51,
+};
+#endif
+
+
 static struct resource smdkv310_smsc911x_resources[] = {
 	[0] = {
 		.start = S5PV310_PA_SROM1,
@@ -120,6 +555,16 @@ static struct platform_device smdkv310_smsc911x = {
 	.resource      = smdkv310_smsc911x_resources,
 };
 
+#if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
+static struct wm8994_pdata wm8994_platform_data = {
+	/* configure gpio3/4/5/7 function for AIF2 voice */
+	.gpio_defaults[2] = 0x8100,/*BCLK2 in*/
+	.gpio_defaults[3] = 0x8100,/*LRCLK2 in*/
+	.gpio_defaults[4] = 0x8100,/*DACDAT2 in*/
+	.gpio_defaults[6] = 0x0100,/*ADCDAT2 out*/
+};
+#endif
+
 #ifdef CONFIG_I2C_S3C2410
 /* I2C0 */
 static struct i2c_board_info i2c_devs0[] __initdata = {
@@ -130,7 +575,10 @@ static struct i2c_board_info i2c_devs0[] __initdata = {
 /* I2C1 */
 static struct i2c_board_info i2c_devs1[] __initdata = {
 #if defined(CONFIG_SND_SOC_WM8994) || defined(CONFIG_SND_SOC_WM8994_MODULE)
-	{ I2C_BOARD_INFO("wm8994", 0x1a), },
+	{
+		I2C_BOARD_INFO("wm8994", 0x1a),
+		.platform_data	= &wm8994_platform_data,
+	},
 #endif
 };
 #endif
@@ -203,37 +651,23 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 	.swap = FB_SWAP_HWORD | FB_SWAP_WORD,
 };
 
-#define	LCD_BUS_NUM	3
+#define	LCD_BUS_NUM	1
 
-#define	DISPLAY_CS	S5PV310_GPB(5)
-#define	DISPLAY_CLK	S5PV310_GPB(4)
-#define	DISPLAY_SI	S5PV310_GPB(7)
+static struct s3c64xx_spi_csinfo spi1_csi[] = {
+	[0] = {
+		.line = S5PV310_GPB(5),
+		.set_level = gpio_set_value,
+	},
+};
 
 static struct spi_board_info spi_board_info[] __initdata = {
 	{
 		.modalias	= "tl2796",
-		.platform_data	= NULL,
 		.max_speed_hz	= 1200000,
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,
 		.mode		= SPI_MODE_3,
-		.controller_data = (void *)DISPLAY_CS,
-	},
-};
-
-static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
-	.sck	= DISPLAY_CLK,
-	.mosi	= DISPLAY_SI,
-	.miso	= -1,
-	.num_chipselect	= 1,
-};
-
-static struct platform_device s3c_device_spi_gpio = {
-	.name	= "spi_gpio",
-	.id	= LCD_BUS_NUM,
-	.dev	= {
-		.parent		= &s3c_device_fb.dev,
-		.platform_data	= &tl2796_spi_gpio_data,
+		.controller_data = &spi1_csi[0],
 	},
 };
 #endif
@@ -362,6 +796,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s5pv310_device_iis0,
 #endif
 
+#ifdef CONFIG_SND_S3C_SOC_PCM
+       &s5pv310_device_pcm1,
+#endif
+
 #ifdef CONFIG_VIDEO_MFC51
 	&s5p_device_mfc,
 #endif
@@ -414,9 +852,21 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
 #endif
-
+#ifdef CONFIG_VIDEO_FIMC
+	&s3c_device_fimc0,
+	&s3c_device_fimc1,
+	&s3c_device_fimc2,
+	&s3c_device_fimc3,
+#ifdef CONFIG_VIDEO_FIMC_MIPI
+	&s3c_device_csis0,
+	&s3c_device_csis1,
+#endif
+#endif
+#ifdef CONFIG_VIDEO_JPEG
+	&s5p_device_jpeg,
+#endif
 #ifdef CONFIG_FB_S3C_TL2796
-	&s3c_device_spi_gpio,
+	&s5pv310_device_spi1,
 #endif
 
 #ifdef CONFIG_S5P_SYSMMU
@@ -519,6 +969,12 @@ static void __init s5p_pmem_set_platdata(void)
 
 static void __init smdkv310_machine_init(void)
 {
+#ifdef CONFIG_FB_S3C_TL2796
+	struct clk *sclk = NULL;
+	struct clk *prnt = NULL;
+	struct device *spi_dev = &s5pv310_device_spi1.dev;
+#endif
+
 #ifdef CONFIG_I2C_S3C2410
 	s3c_i2c0_set_platdata(NULL);
 	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
@@ -556,6 +1012,18 @@ static void __init smdkv310_machine_init(void)
 	s3cfb_set_platdata(NULL);
 #endif
 
+#ifdef CONFIG_VIDEO_FIMC
+	/* fimc */
+	s3c_fimc0_set_platdata(&fimc_plat);
+	s3c_fimc1_set_platdata(&fimc_plat);
+	s3c_fimc2_set_platdata(&fimc_plat);
+	s3c_fimc3_set_platdata(&fimc_plat);
+#ifdef CONFIG_VIDEO_FIMC_MIPI
+	s3c_csis0_set_platdata(NULL);
+	s3c_csis1_set_platdata(NULL);
+#endif
+#endif
+
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
 #endif
@@ -567,11 +1035,6 @@ static void __init smdkv310_machine_init(void)
 #endif
 
 	sromc_setup();
-
-#ifdef CONFIG_FB_S3C_TL2796
-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
-	s3cfb_set_platdata(&tl2796_data);
-#endif
 
 #ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv310_hsmmc0_pdata);
@@ -589,6 +1052,27 @@ static void __init smdkv310_machine_init(void)
 	i2c_register_board_info(1, s5pv310_i2c1_info, ARRAY_SIZE(s5pv310_i2c1_info));
 
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
+
+#ifdef CONFIG_FB_S3C_TL2796
+	sclk = clk_get(spi_dev, "sclk_spi");
+	if (IS_ERR(sclk))
+		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
+	prnt = clk_get(spi_dev, "xusbxti");
+	if (IS_ERR(prnt))
+		dev_err(spi_dev, "failed to get prnt\n");
+	clk_set_parent(sclk, prnt);
+	clk_put(prnt);
+
+	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
+		gpio_direction_output(S5PV310_GPB(5), 1);
+		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
+		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
+			ARRAY_SIZE(spi1_csi));
+	}
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&tl2796_data);
+#endif
 }
 
 #ifdef CONFIG_USB_SUPPORT

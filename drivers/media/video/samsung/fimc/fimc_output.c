@@ -343,8 +343,8 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 			ctx->src[i].base[FIMC_ADDR_CR] = 0;
 			ctx->src[i].length[FIMC_ADDR_CR] = 0;
 			*curr += size;
-               }
-               break;
+		}
+		break;
 	case V4L2_PIX_FMT_NV12T:
 		for (i = 0; i < FIMC_OUTBUFS; i++) {
 			ctx->src[i].base[FIMC_ADDR_Y] = *curr;
@@ -1493,6 +1493,8 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 		b->count = FIMC_OUTBUFS;
 	}
 
+	fimc_hwset_output_buf_sequence_all(ctrl, FRAME_SEQ);
+
 	fimc_init_out_buf(ctx);
 	ctx->is_requested = 0;
 
@@ -1969,7 +1971,7 @@ static int fimc_qbuf_output_single_buf(struct fimc_control *ctrl,
 	u32 height = ctx->fbuf.fmt.height;
 	u32 y_size = width * height;
 	u32 c_size = y_size >> 2;
-	int ret = -1, i;
+	int ret = -1, i, cfg;
 
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
@@ -1997,8 +1999,12 @@ static int fimc_qbuf_output_single_buf(struct fimc_control *ctrl,
 		return -EINVAL;
 	}
 
-	for (i = 0; i < FIMC_PHYBUFS; i++)
-		fimc_hwset_output_address(ctrl, &buf_set, i);
+	cfg = fimc_hwget_output_buf_sequence(ctrl);
+
+	for (i = 0; i < FIMC_PHYBUFS; i++) {
+		if (check_bit(cfg, i))
+			fimc_hwset_output_address(ctrl, &buf_set, i);
+	}
 
 	ret = fimc_outdev_start_camif(ctrl);
 	if (ret < 0) {
@@ -2021,7 +2027,7 @@ static int fimc_qbuf_output_multi_buf(struct fimc_control *ctrl,
 {
 	struct fimc_buf_set buf_set;	/* destination addr */
 	u32 format = ctx->fbuf.fmt.pixelformat;
-	int ret = -1, i;
+	int ret = -1, i, cfg;
 
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
@@ -2045,8 +2051,11 @@ static int fimc_qbuf_output_multi_buf(struct fimc_control *ctrl,
 		return -EINVAL;
 	}
 
-	for (i = 0; i < FIMC_PHYBUFS; i++)
-		fimc_hwset_output_address(ctrl, &buf_set, i);
+
+	for (i = 0; i < FIMC_PHYBUFS; i++) {
+		if (check_bit(cfg, i))
+			fimc_hwset_output_address(ctrl, &buf_set, i);
+	}
 
 	ret = fimc_outdev_start_camif(ctrl);
 	if (ret < 0) {
@@ -2072,7 +2081,7 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 	struct v4l2_rect fimd_rect;
 	struct fimc_buf_set buf_set;	/* destination addr */
 	u32 id = ctrl->id;
-	int ret = -1, i;
+	int ret = -1, i, cfg;
 
 	switch (ctx->status) {
 	case FIMC_READY_ON:
@@ -2137,8 +2146,12 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 		memset(&buf_set, 0x00, sizeof(buf_set));
 		buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
 
-		for (i = 0; i < FIMC_PHYBUFS; i++)
-			fimc_hwset_output_address(ctrl, &buf_set, i);
+		cfg = fimc_hwget_output_buf_sequence(ctrl);
+
+		for (i = 0; i < FIMC_PHYBUFS; i++) {
+			if (check_bit(cfg, i))
+				fimc_hwset_output_address(ctrl, &buf_set, i);
+		}
 
 		ret = fimc_outdev_start_camif(ctrl);
 		if (ret < 0) {
@@ -2166,15 +2179,19 @@ static int fimc_qbuf_output_dma_manual(struct fimc_control *ctrl,
 				      int idx)
 {
 	struct fimc_buf_set buf_set;	/* destination addr */
-	int ret = -1, i;
+	int ret = -1, i, cfg;
 
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
 	memset(&buf_set, 0x00, sizeof(buf_set));
 	buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
 
-	for (i = 0; i < FIMC_PHYBUFS; i++)
-		fimc_hwset_output_address(ctrl, &buf_set, i);
+	cfg = fimc_hwget_output_buf_sequence(ctrl);
+
+	for (i = 0; i < FIMC_PHYBUFS; i++) {
+		if (check_bit(cfg, i))
+			fimc_hwset_output_address(ctrl, &buf_set, i);
+	}
 
 	ret = fimc_outdev_start_camif(ctrl);
 	if (ret < 0) {

@@ -110,6 +110,7 @@ config SND_SOC_SMDK_WM8994
 	select SND_SOC_WM8994
 	select SND_SOC_WM_HUBS
 	select SND_S3C64XX_SOC_I2S_V4
+	select SND_S3C_SOC_PCM
 	help
 	  Say Y if you want to add support for SoC audio on the SMDK.
 

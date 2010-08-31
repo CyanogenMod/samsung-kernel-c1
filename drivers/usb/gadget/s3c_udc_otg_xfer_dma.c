@@ -1360,8 +1360,8 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 			s3c_udc_ep0_set_stall(ep);
 			dev->ep0state = WAIT_FOR_SETUP;
 
-			DEBUG_SETUP("\tdev->driver->setup failed (%d),
-				bRequest = %d\n",
+			DEBUG_SETUP("\tdev->driver->setup failed (%d),"
+				"bRequest = %d\n",
 				i, usb_ctrl.bRequest);
 
 

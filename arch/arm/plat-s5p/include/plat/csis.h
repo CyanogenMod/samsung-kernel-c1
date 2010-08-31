@@ -23,9 +23,16 @@ struct s3c_platform_csis {
 	void		(*cfg_gpio)(void);
 	void		(*cfg_phy_global)(int on);
 };
-
+#ifdef CONFIG_CPU_S5PV310
+extern void s3c_csis0_set_platdata(struct s3c_platform_csis *csis);
+extern void s3c_csis1_set_platdata(struct s3c_platform_csis *csis);
+extern void s3c_csis0_cfg_gpio(void);
+extern void s3c_csis1_cfg_gpio(void);
+extern void s3c_csis0_cfg_phy_global(int on);
+extern void s3c_csis1_cfg_phy_global(int on);
+#else
 extern void s3c_csis_set_platdata(struct s3c_platform_csis *csis);
 extern void s3c_csis_cfg_gpio(void);
 extern void s3c_csis_cfg_phy_global(int on);
-
+#endif
 #endif /* __ASM_PLAT_CSIS_H */

@@ -43,7 +43,13 @@ extern struct platform_device s3c_device_fb;
 extern struct platform_device s3c_device_fimc0;
 extern struct platform_device s3c_device_fimc1;
 extern struct platform_device s3c_device_fimc2;
+#ifdef CONFIG_CPU_S5PV310
+extern struct platform_device s3c_device_fimc3;
+extern struct platform_device s3c_device_csis0;
+extern struct platform_device s3c_device_csis1;
+#else
 extern struct platform_device s3c_device_csis;
+#endif
 extern struct platform_device s3c_device_ipc;
 extern struct platform_device s3c_device_ohci;
 extern struct platform_device s3c_device_usb_ehci;
@@ -95,7 +101,7 @@ extern struct platform_device s3c_device_usb_hsotg;
 extern struct platform_device s3c_device_usb_hsudc;
 
 extern struct platform_device s5p_device_mfc;
-extern struct platform_device s3c_device_jpeg;
+extern struct platform_device s5p_device_jpeg;
 extern struct platform_device s5p_device_rotator;
 extern struct platform_device s5p_device_fimg2d;
 
@@ -107,6 +113,11 @@ extern struct platform_device s5pv210_device_iis0;
 extern struct platform_device s5pv210_device_iis1;
 extern struct platform_device s5pv210_device_iis2;
 extern struct platform_device s5pv310_device_iis0;
+extern struct platform_device s5pv310_device_pcm1;
+
+extern struct platform_device s5pv310_device_spi0;
+extern struct platform_device s5pv310_device_spi1;
+extern struct platform_device s5pv310_device_spi2;
 
 extern struct platform_device s5p6442_device_pcm0;
 extern struct platform_device s5p6442_device_pcm1;

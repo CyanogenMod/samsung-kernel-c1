@@ -20,6 +20,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/spi/spi.h>
 #include <linux/regulator/consumer.h>
+#include <linux/mmc/host.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -648,10 +649,18 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 #endif
 	&s5pv210_device_ac97,
 	&s3c_device_adc,
+#ifdef CONFIG_S3C_DEV_HSMMC
 	&s3c_device_hsmmc0,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
 	&s3c_device_hsmmc1,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
 	&s3c_device_hsmmc2,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC3
 	&s3c_device_hsmmc3,
+#endif
 	&s3c_device_ts,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,
@@ -673,8 +682,8 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5p_device_mfc,
 #endif
 
-#ifdef CONFIG_VIDEO_JPEG_V2
-	&s3c_device_jpeg,
+#ifdef CONFIG_VIDEO_JPEG
+	&s5p_device_jpeg,
 #endif
 
 #ifdef CONFIG_VIDEO_ROTATOR
@@ -731,25 +740,41 @@ static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 	.oversampling_shift	= 2,
 };
 
+#ifdef CONFIG_S3C_DEV_HSMMC
 static struct s3c_sdhci_platdata smdkv210_hsmmc0_pdata __initdata = {
 	.wp_gpio		= S5PV210_GPH0(7),
 	.has_wp_gpio		= true,
+#if defined(CONFIG_S5PV210_SD_CH0_8BIT)
+	.max_width		= 8,
+	.host_caps		= MMC_CAP_8_BIT_DATA,
+#endif
 };
+#endif
 
+#ifdef CONFIG_S3C_DEV_HSMMC1
 static struct s3c_sdhci_platdata smdkv210_hsmmc1_pdata __initdata = {
 	.wp_gpio		= S5PV210_GPH0(7),
 	.has_wp_gpio		= true,
 };
+#endif
 
+#ifdef CONFIG_S3C_DEV_HSMMC2
 static struct s3c_sdhci_platdata smdkv210_hsmmc2_pdata __initdata = {
 	.wp_gpio		= S5PV210_GPH3(1),
 	.has_wp_gpio		= true,
+#if defined(CONFIG_S5PV210_SD_CH2_8BIT)
+	.max_width		= 8,
+	.host_caps		= MMC_CAP_8_BIT_DATA,
+#endif
 };
+#endif
 
+#ifdef CONFIG_S3C_DEV_HSMMC3
 static struct s3c_sdhci_platdata smdkv210_hsmmc3_pdata __initdata = {
 	.wp_gpio		= S5PV210_GPH1(0),
 	.has_wp_gpio		= true,
 };
+#endif
 
 static void __init smdkv210_map_io(void)
 {
@@ -770,10 +795,18 @@ static void __init s5p_pmem_set_platdata(void)
 static void __init smdkv210_machine_init(void)
 {
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
+#ifdef CONFIG_S3C_DEV_HSMMC
 	s3c_sdhci0_set_platdata(&smdkv210_hsmmc0_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1
 	s3c_sdhci1_set_platdata(&smdkv210_hsmmc1_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2
 	s3c_sdhci2_set_platdata(&smdkv210_hsmmc2_pdata);
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC3
 	s3c_sdhci3_set_platdata(&smdkv210_hsmmc3_pdata);
+#endif
 	dm9000_set();
 
 	s3c_i2c0_set_platdata(NULL);

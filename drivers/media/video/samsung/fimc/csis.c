@@ -26,7 +26,11 @@
 #include <plat/clock.h>
 #include <plat/regs-csis.h>
 #include <plat/csis.h>
+
+#if !defined(CONFIG_CPU_S5PV310)
 #include <mach/pd.h>
+#endif
+
 #include "csis.h"
 
 static struct s3c_csis_info *s3c_csis;
@@ -217,12 +221,13 @@ static int s3c_csis_clk_on(struct device *dev)
 	int ret;
 
 	/* power domain enable for mipi-csis */
+#if !defiend(CONFIG_CPU_S5PV310)
 	ret = s5pv210_pd_enable("csis_pd");
 	if (ret < 0) {
 		err("failed to enable csis power domain\n");
 		return -EINVAL;
 	}
-
+#endif
 	pdata = to_csis_plat(dev);
 
 	/* mout_mpll */
@@ -267,14 +272,14 @@ static int s3c_csis_clk_off(struct device *dev)
 
 	/* clock disable for csis */
 	clk_disable(s3c_csis->clock);
-
+#if !defined(CONFIG_CPU_S5PV310)
 	/* power domain disable for mipi-csis */
 	ret = s5pv210_pd_disable("csis_pd");
 	if (ret < 0) {
 		err("failed to enable csis power domain\n");
 		return -EINVAL;
 	}
-
+#endif
 	return 0;
 }
 

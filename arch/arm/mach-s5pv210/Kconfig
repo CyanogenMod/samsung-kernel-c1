@@ -102,9 +102,9 @@ config MACH_SMDKV210
 	select ARCH_SPARSEMEM_ENABLE
 	select SAMSUNG_DEV_ADC
 	select S3C_DEV_HSMMC
-	select S3C_DEV_HSMMC1
+	select S3C_DEV_HSMMC1 if !S5PV210_SD_CH0_8BIT
 	select S3C_DEV_HSMMC2
-	select S3C_DEV_HSMMC3
+	select S3C_DEV_HSMMC3 if !S5PV210_SD_CH2_8BIT
 	select S3C_DEV_I2C1
 	select S3C_DEV_I2C2
 	select SAMSUNG_DEV_TS
@@ -123,5 +123,24 @@ config MACH_SMDKC110
 	help
 	  Machine support for Samsung SMDKC110
 	  S5PC110(MCP) is one of package option of S5PV210
+
+comment "MMC/SD slot setup"
+depends on PLAT_S5P
+
+menu "Use 8-bit bus width"
+config S5PV210_SD_CH0_8BIT
+bool "Channel 0"
+depends on PLAT_S5P
+default n
+help
+IF channel 0 uses 8-bit bus, channel 1 is disabled.
+
+config S5PV210_SD_CH2_8BIT
+bool "Channel 2"
+depends on PLAT_S5P
+default n
+help
+IF channel 2 uses 8-bit bus, channel 3 is disabled.
+endmenu
 
 endif

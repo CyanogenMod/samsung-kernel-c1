@@ -166,6 +166,8 @@ static struct s3c_platform_fimc default_fimc0_data __initdata = {
 	.hw_ver	= 0x45,
 #elif defined(CONFIG_CPU_S5P6450)
 	.hw_ver = 0x50,
+#elif defined(CONFIG_CPU_S5PV310)
+	.hw_ver = 0x51,
 #else
 	.hw_ver	= 0x43,
 #endif
@@ -194,6 +196,8 @@ void __init s3c_fimc0_set_platdata(struct s3c_platform_fimc *pd)
 		npd->hw_ver = 0x45;
 #elif defined(CONFIG_CPU_S5P6450)
 		npd->hw_ver = 0x50;
+#elif defined(CONFIG_CPU_S5PV310)
+		npd->hw_ver = 0x51;
 #else
 		npd->hw_ver = 0x43;
 #endif
@@ -227,6 +231,8 @@ static struct s3c_platform_fimc default_fimc1_data __initdata = {
 	.default_cam	= CAMERA_PAR_A,
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 	.hw_ver	= 0x50,
+#elif defined(CONFIG_CPU_S5PV310)
+	.hw_ver = 0x51,
 #else
 	.hw_ver	= 0x43,
 #endif
@@ -253,6 +259,8 @@ void __init s3c_fimc1_set_platdata(struct s3c_platform_fimc *pd)
 			npd->clk_off = s3c_fimc_clk_off;
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 		npd->hw_ver = 0x50;
+#elif defined(CONFIG_CPU_S5PV310)
+		npd->hw_ver = 0x51;
 #else
 		npd->hw_ver = 0x43;
 #endif
@@ -285,6 +293,8 @@ static struct s3c_platform_fimc default_fimc2_data __initdata = {
 	.default_cam	= CAMERA_PAR_A,
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 	.hw_ver	= 0x45,
+#elif defined(CONFIG_CPU_S5PV310)
+	.hw_ver	= 0x51,
 #else
 	.hw_ver	= 0x43,
 #endif
@@ -311,6 +321,8 @@ void __init s3c_fimc2_set_platdata(struct s3c_platform_fimc *pd)
 			npd->clk_off = s3c_fimc_clk_off;
 #if defined(CONFIG_CPU_S5PV210_EVT1)
 		npd->hw_ver = 0x45;
+#elif defined(CONFIG_CPU_S5PV310)
+		npd->hw_ver = 0x51;
 #else
 		npd->hw_ver = 0x43;
 #endif
@@ -319,23 +331,143 @@ void __init s3c_fimc2_set_platdata(struct s3c_platform_fimc *pd)
 	}
 }
 
-static struct resource s3c_ipc_resource[] = {
+#endif
+#if defined(CONFIG_CPU_S5PV310)
+static struct resource s3c_fimc3_resource[] = {
 	[0] = {
-		.start	= S5P_PA_IPC,
-		.end	= S5P_PA_IPC + S5P_SZ_IPC - 1,
+		.start	= S5P_PA_FIMC3,
+		.end	= S5P_PA_FIMC3 + S5P_SZ_FIMC3 - 1,
 		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_FIMC3,
+		.end	= IRQ_FIMC3,
+		.flags	= IORESOURCE_IRQ,
 	},
 };
 
-struct platform_device s3c_device_ipc = {
-	.name		= "s3c-ipc",
-	.id		= -1,
-	.num_resources	= ARRAY_SIZE(s3c_ipc_resource),
-	.resource	= s3c_ipc_resource,
+struct platform_device s3c_device_fimc3 = {
+	.name		= "s3c-fimc",
+	.id		= 3,
+	.num_resources	= ARRAY_SIZE(s3c_fimc3_resource),
+	.resource	= s3c_fimc3_resource,
 };
-#endif
 
+static struct s3c_platform_fimc default_fimc3_data __initdata = {
+	.default_cam	= CAMERA_PAR_A,
+	.hw_ver	= 0x51,
+};
+
+void __init s3c_fimc3_set_platdata(struct s3c_platform_fimc *pd)
+{
+	struct s3c_platform_fimc *npd;
+
+	if (!pd)
+		pd = &default_fimc3_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_fimc), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+	else {
+		if (!npd->cfg_gpio)
+			npd->cfg_gpio = s3c_fimc3_cfg_gpio;
+
+		if (!npd->clk_on)
+			npd->clk_on = s3c_fimc_clk_on;
+
+		if (!npd->clk_off)
+			npd->clk_off = s3c_fimc_clk_off;
+		npd->hw_ver = 0x51;
+
+		s3c_device_fimc3.dev.platform_data = npd;
+	}
+}
+#endif
 #ifdef CONFIG_VIDEO_FIMC_MIPI
+#if defined(CONFIG_CPU_S5PV310)
+static struct resource s3c_csis0_resource[] = {
+	[0] = {
+		.start	= S5P_PA_CSIS0,
+		.end	= S5P_PA_CSIS0 + S5P_SZ_CSIS0 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_MIPICSI0,
+		.end	= IRQ_MIPICSI0,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_csis0 = {
+	.name		= "s3c-csis",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(s3c_csis0_resource),
+	.resource	= s3c_csis0_resource,
+};
+
+static struct s3c_platform_csis default_csis0_data __initdata = {
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_csis",
+	.clk_rate	= 166000000,
+};
+
+void __init s3c_csis0_set_platdata(struct s3c_platform_csis *pd)
+{
+	struct s3c_platform_csis *npd;
+
+	if (!pd)
+		pd = &default_csis0_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_csis), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+
+	npd->cfg_gpio = s3c_csis0_cfg_gpio;
+	npd->cfg_phy_global = s3c_csis0_cfg_phy_global;
+	s3c_device_csis0.dev.platform_data = npd;
+}
+static struct resource s3c_csis1_resource[] = {
+	[0] = {
+		.start	= S5P_PA_CSIS1,
+		.end	= S5P_PA_CSIS1 + S5P_SZ_CSIS0 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.start	= IRQ_MIPICSI1,
+		.end	= IRQ_MIPICSI1,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s3c_device_csis1 = {
+	.name		= "s3c-csis",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(s3c_csis1_resource),
+	.resource	= s3c_csis1_resource,
+};
+
+static struct s3c_platform_csis default_csis1_data __initdata = {
+	.srclk_name	= "mout_mpll",
+	.clk_name	= "sclk_csis",
+	.clk_rate	= 166000000,
+};
+
+void __init s3c_csis1_set_platdata(struct s3c_platform_csis *pd)
+{
+	struct s3c_platform_csis *npd;
+
+	if (!pd)
+		pd = &default_csis1_data;
+
+	npd = kmemdup(pd, sizeof(struct s3c_platform_csis), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+
+	npd->cfg_gpio = s3c_csis1_cfg_gpio;
+	npd->cfg_phy_global = s3c_csis1_cfg_phy_global;
+	s3c_device_csis1.dev.platform_data = npd;
+}
+#else
 static struct resource s3c_csis_resource[] = {
 	[0] = {
 		.start	= S5P_PA_CSIS,
@@ -380,13 +512,14 @@ void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
 }
 #endif
 #endif
+#endif /* CONFIG_VIDEO_FIMC */
 
-#ifdef CONFIG_VIDEO_JPEG_V2
+#ifdef CONFIG_VIDEO_JPEG
 /* JPEG controller  */
-static struct resource s3c_jpeg_resource[] = {
+static struct resource s5p_jpeg_resource[] = {
 	[0] = {
-		.start = S5PV210_PA_JPEG,
-		.end   = S5PV210_PA_JPEG + S5PV210_SZ_JPEG - 1,
+		.start = S5P_PA_JPEG,
+		.end   = S5P_PA_JPEG + S5P_SZ_JPEG - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -396,14 +529,14 @@ static struct resource s3c_jpeg_resource[] = {
 	}
 };
 
-struct platform_device s3c_device_jpeg = {
-	.name             = "s3c-jpg",
+struct platform_device s5p_device_jpeg = {
+	.name             = "s5p-jpeg",
 	.id               = -1,
-	.num_resources    = ARRAY_SIZE(s3c_jpeg_resource),
-	.resource         = s3c_jpeg_resource,
+	.num_resources    = ARRAY_SIZE(s5p_jpeg_resource),
+	.resource         = s5p_jpeg_resource,
 };
-EXPORT_SYMBOL(s3c_device_jpeg);
-#endif /* CONFIG_VIDEO_JPEG_V2 */
+EXPORT_SYMBOL(s5p_device_jpeg);
+#endif /* CONFIG_VIDEO_JPEG */
 
 #ifdef CONFIG_VIDEO_ROTATOR
 /* rotator interface */

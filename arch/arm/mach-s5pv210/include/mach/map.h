@@ -147,7 +147,8 @@
 
 /* jpeg */
 #define S5PV210_PA_JPEG		(0xFB600000)
-#define S5PV210_SZ_JPEG		SZ_1M
+#define S5P_PA_JPEG		S5PV210_PA_JPEG
+#define S5P_SZ_JPEG		SZ_1M
 
 /* rotator */
 #define S5PV210_PA_ROTATOR	(0xFA300000)

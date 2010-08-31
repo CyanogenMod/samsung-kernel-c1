@@ -1,0 +1,55 @@
+/* linux/arch/arm/mach-s5pv310/setup-csis.c
+ *
+ * Copyright (c) 2010 Samsung Electronics Co., Ltd.
+ * 		http://www.samsung.com/
+ *
+ * S5P - Base MIPI-CSI2 gpio configuration
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+#include <linux/kernel.h>
+#include <linux/types.h>
+#include <mach/map.h>
+#include <mach/regs-clock.h>
+#include <linux/io.h>
+
+struct platform_device; /* don't need the contents */
+
+void s3c_csis0_cfg_gpio(void) { }
+void s3c_csis1_cfg_gpio(void) { }
+
+void s3c_csis0_cfg_phy_global(int on)
+{
+	u32 cfg;
+
+	if (on) {
+		/* MIPI D-PHY Power Enable */
+		cfg = __raw_readl(S5P_MIPI_CONTROL0);
+		cfg |= S5P_MIPI_DPHY_EN;
+		__raw_writel(cfg, S5P_MIPI_CONTROL0);
+	} else {
+		/* MIPI Power Disable */
+		cfg = __raw_readl(S5P_MIPI_CONTROL0);
+		cfg &= ~S5P_MIPI_DPHY_EN;
+		__raw_writel(cfg, S5P_MIPI_CONTROL0);
+	}
+}
+void s3c_csis1_cfg_phy_global(int on)
+{
+	u32 cfg;
+
+	if (on) {
+		/* MIPI D-PHY Power Enable */
+		cfg = __raw_readl(S5P_MIPI_CONTROL1);
+		cfg |= S5P_MIPI_DPHY_EN;
+		__raw_writel(cfg, S5P_MIPI_CONTROL1);
+	} else {
+		/* MIPI Power Disable */
+		cfg = __raw_readl(S5P_MIPI_CONTROL1);
+		cfg &= ~S5P_MIPI_DPHY_EN;
+		__raw_writel(cfg, S5P_MIPI_CONTROL1);
+	}
+}
