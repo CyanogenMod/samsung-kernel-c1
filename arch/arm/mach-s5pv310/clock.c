@@ -961,6 +961,16 @@ static struct clksrc_clk clksrcs[] = {
 		.reg_div = { .reg = S5P_CLKDIV_PERIL0, .shift = 12, .size = 4 },
 	}, {
 		.clk		= {
+			.name		= "uclk1",
+			.id		= 4,
+			.enable		= s5pv310_clksrc_mask_peril0_ctrl,
+			.ctrlbit	= (1 << 16),
+		},
+		.sources = &clkset_group,
+		.reg_src = { .reg = S5P_CLKSRC_PERIL0, .shift = 16, .size = 4 },
+		.reg_div = { .reg = S5P_CLKDIV_PERIL0, .shift = 16, .size = 4 },
+	}, {
+		.clk		= {
 			.name		= "sclk_pwm",
 			.id		= -1,
 			.enable		= s5pv310_clksrc_mask_peril0_ctrl,

@@ -166,7 +166,23 @@
 
 #define IRQ_EINT16_31		COMBINER_IRQ(39,0)
 
-#define IRQ_EINT_BASE		IRQ_EINT16_31 + 1
+/* UART interrupts, each UART has 4 intterupts per channel so
+ *  * use the space between the ISA and S3C main interrupts. Note, these
+ *   * are not in the same order as the S3C24XX series! */
+#define IRQ_S5P_UART_BASE4	COMBINER_IRQ(40,0)
+
+#define UART_IRQ_RXD           (0)
+#define UART_IRQ_ERR           (1)
+#define UART_IRQ_TXD           (2)
+
+#define IRQ_S5P_UART_RX4       (IRQ_S5P_UART_BASE4 + UART_IRQ_RXD)
+#define IRQ_S5P_UART_TX4       (IRQ_S5P_UART_BASE4 + UART_IRQ_TXD)
+#define IRQ_S5P_UART_ERR4      (IRQ_S5P_UART_BASE4 + UART_IRQ_ERR)
+
+/* S3C compatibilty defines */
+#define IRQ_S3CUART_RX4                IRQ_S5P_UART_RX4
+
+#define IRQ_EINT_BASE		IRQ_S5P_UART_BASE4 + 4
 
 /* Set the default NR_IRQS */
 #define NR_IRQS			(IRQ_EINT_BASE + 32)

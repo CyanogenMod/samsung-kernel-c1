@@ -115,6 +115,13 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 		.ulcon		= SMDKV310_ULCON_DEFAULT,
 		.ufcon		= SMDKV310_UFCON_DEFAULT,
 	},
+	[4] = {
+		.hwport		= 4,
+		.flags		= 0,
+		.ucon		= SMDKV310_UCON_DEFAULT,
+		.ulcon		= SMDKV310_ULCON_DEFAULT,
+		.ufcon		= SMDKV310_UFCON_DEFAULT,
+	},
 };
 
 #ifdef CONFIG_VIDEO_FIMC
