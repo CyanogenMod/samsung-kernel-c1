@@ -195,6 +195,7 @@ static struct clksrc_clk clk_mout_epll = {
 	.clk	= {
 		.name		= "mout_epll",
 		.id		= -1,
+		.parent = &clk_fout_epll,
 	},
 	.sources	= &clk_src_epll,
 	.reg_src	= { .reg = S5P_CLKSRC_TOP0, .shift = 4, .size = 1 },
@@ -511,7 +512,7 @@ static struct clk init_clocks[] = {
 	}, {
 		.name		= "jpeg",
 		.id		= -1,
-		.enable 	= s5pv310_clk_ip_cam_ctrl,
+		.enable		= s5pv310_clk_ip_cam_ctrl,
 		.ctrlbit	= (1 << 6),
 	}, {
 		.name		= "fimd",
@@ -549,21 +550,21 @@ static struct clk init_clocks[] = {
 		.enable		= s5pv310_clk_ip_fsys_ctrl,
 		.ctrlbit	= (1 << 9),
 	}, {
-                .name           = "iis",
-                .id             = 1,
-                .enable         = s5pv310_clk_ip_peril_ctrl,
-                .ctrlbit        = (1 << 21),
-        }, {
-                .name           = "iis",
-                .id             = 0,
-                .enable         = s5pv310_clk_ip_peril_ctrl,
-                .ctrlbit        = (1 << 20),
-        }, {
-                .name           = "iis",
-                .id             = -1,
-                .enable         = s5pv310_clk_audss_ctrl,
-                .ctrlbit                = S5P_AUDSS_CLKGATE_I2SSPECIAL,
-        }, {
+		.name           = "iis",
+		.id             = 1,
+		.enable         = s5pv310_clk_ip_peril_ctrl,
+		.ctrlbit        = (1 << 21),
+	}, {
+		.name           = "iis",
+		.id             = 0,
+		.enable         = s5pv310_clk_ip_peril_ctrl,
+		.ctrlbit        = (1 << 20),
+	}, {
+		.name           = "iis",
+		.id		= -1,
+		.enable         = s5pv310_clk_audss_ctrl,
+		.ctrlbit	= S5P_AUDSS_CLKGATE_I2SSPECIAL,
+	}, {
 		.name		= "pcm",
 		.id		= 1,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
@@ -1392,6 +1393,8 @@ void __init_or_cpufreq s5pv310_setup_clocks(void)
 	clk_set_parent(&clk_sclk_audss.clk, &clk_mout_audss.clk);
 	clk_set_parent(&clk_mout_audss.clk, &clk_fout_epll);
 	clk_set_parent(&clk_sclk_audio1.clk, &clk_mout_epll.clk);
+	clk_set_parent(&clk_sclk_audio1.clk, &clk_mout_epll.clk);
+	clk_set_parent(&clk_mout_epll.clk, &clk_fout_epll);
 }
 
 static struct clk *clks[] __initdata = {
