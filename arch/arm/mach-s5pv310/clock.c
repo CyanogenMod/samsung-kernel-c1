@@ -367,6 +367,72 @@ static struct clksrc_clk clk_sclk_vpll = {
 	.reg_src        = { .reg = S5P_CLKSRC_TOP0, .shift = 8, .size = 1 },
 };
 
+static struct clk *clkset_mout_dac_list[] = {
+	[0] = &clk_sclk_vpll.clk,
+	[1] = &clk_sclk_hdmiphy,
+};
+
+static struct clksrc_sources clkset_mout_dac = {
+	.sources	= clkset_mout_dac_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_dac_list),
+};
+
+static struct clksrc_clk clk_mout_dac = {
+	.clk	= {
+		.name		= "mout_dac",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_dac,
+	.reg_src	= { .reg = S5P_CLKSRC_TV, .shift = 8, .size = 1 },
+};
+
+static struct clksrc_clk clk_dout_tv_blk = {
+	.clk	= {
+		.name		= "dout_tv_blk",
+		.id		= -1,
+		.parent		= &clk_sclk_vpll.clk,
+	},
+	.reg_div	= { .reg = S5P_CLKDIV_TV, .shift = 0, .size = 4 },
+};
+
+static struct clk *clkset_mout_hdmi_list[] = {
+	[0] = &clk_dout_tv_blk.clk,
+	[1] = &clk_sclk_hdmiphy,
+};
+
+static struct clksrc_sources clkset_mout_hdmi = {
+	.sources	= clkset_mout_hdmi_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_hdmi_list),
+};
+
+static struct clksrc_clk clk_mout_hdmi = {
+	.clk	= {
+		.name		= "mout_hdmi",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_hdmi,
+	.reg_src	= { .reg = S5P_CLKSRC_TV, .shift = 0, .size = 1 },
+};
+
+static struct clk *clkset_sclk_mixer_list[] = {
+	[0] = &clk_mout_dac.clk,
+	[1] = &clk_dout_tv_blk.clk,
+};
+
+static struct clksrc_sources clkset_sclk_mixer = {
+	.sources	= clkset_sclk_mixer_list,
+	.nr_sources	= ARRAY_SIZE(clkset_sclk_mixer_list),
+};
+
+static struct clksrc_clk clk_sclk_mixer = {
+	.clk	= {
+		.name		= "sclk_mixer",
+		.id		= -1,
+	},
+	.sources	= &clkset_sclk_mixer,
+	.reg_src	= { .reg = S5P_CLKSRC_TV, .shift = 4, .size = 1 },
+};
+
 static struct clk init_clocks_disable[] = {
 	/* Nothing here yet */
 };
@@ -600,6 +666,18 @@ static struct clk init_clocks[] = {
 		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 13),
+	}, {
+		.name		= "sclk_dac",
+		.id		= -1,
+		.parent		= &clk_mout_dac.clk,
+	}, {
+		.name		= "sclk_pixel",
+		.id		= -1,
+		.parent		= &clk_dout_tv_blk.clk,
+	}, {
+		.name		= "sclk_hdmi",
+		.id		= -1,
+		.parent		= &clk_mout_hdmi.clk,
 	},
 };
 
@@ -1134,6 +1212,10 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_sclk_audio1,
 	&clk_mout_g2d0,
 	&clk_mout_g2d1,
+	&clk_mout_dac,
+	&clk_dout_tv_blk,
+	&clk_mout_hdmi,
+	&clk_sclk_mixer,
 };
 
 static int s5pv310_epll_enable(struct clk *clk, int enable)
