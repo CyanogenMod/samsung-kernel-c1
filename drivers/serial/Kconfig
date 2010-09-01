@@ -538,7 +538,7 @@ config SERIAL_S3C24A0
 config SERIAL_S3C6400
 	tristate "Samsung S3C6400/S3C6410/S5P6440/S5P6450/S5PC100 Serial port support"
 	depends on SERIAL_SAMSUNG && (CPU_S3C6400 || CPU_S3C6410 || CPU_S5P6440 || CPU_S5P6450 || CPU_S5PC100)
-	select SERIAL_SAMSUNG_UARTS_4
+	select SERIAL_SAMSUNG_UARTS_4 !if CPU_S5P6450
 	default y
 	help
 	  Serial port support for the Samsung S3C6400, S3C6410, S5P6440, S5P6450
