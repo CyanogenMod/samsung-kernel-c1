@@ -514,12 +514,12 @@ void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
 #endif
 #endif /* CONFIG_VIDEO_FIMC */
 
-#ifdef CONFIG_VIDEO_JPEG_V2
+#ifdef CONFIG_VIDEO_JPEG
 /* JPEG controller  */
-static struct resource s3c_jpeg_resource[] = {
+static struct resource s5p_jpeg_resource[] = {
 	[0] = {
-		.start = S5PV210_PA_JPEG,
-		.end   = S5PV210_PA_JPEG + S5PV210_SZ_JPEG - 1,
+		.start = S5P_PA_JPEG,
+		.end   = S5P_PA_JPEG + S5P_SZ_JPEG - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -529,14 +529,14 @@ static struct resource s3c_jpeg_resource[] = {
 	}
 };
 
-struct platform_device s3c_device_jpeg = {
-	.name             = "s3c-jpg",
+struct platform_device s5p_device_jpeg = {
+	.name             = "s5p-jpeg",
 	.id               = -1,
-	.num_resources    = ARRAY_SIZE(s3c_jpeg_resource),
-	.resource         = s3c_jpeg_resource,
+	.num_resources    = ARRAY_SIZE(s5p_jpeg_resource),
+	.resource         = s5p_jpeg_resource,
 };
-EXPORT_SYMBOL(s3c_device_jpeg);
-#endif /* CONFIG_VIDEO_JPEG_V2 */
+EXPORT_SYMBOL(s5p_device_jpeg);
+#endif /* CONFIG_VIDEO_JPEG */
 
 #ifdef CONFIG_VIDEO_ROTATOR
 /* rotator interface */

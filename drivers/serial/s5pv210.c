@@ -119,6 +119,7 @@ static struct s3c24xx_uart_info *s5p_uart_inf[] = {
 	[1] = &s5p_port_fifo64,
 	[2] = &s5p_port_fifo16,
 	[3] = &s5p_port_fifo16,
+	[4] = &s5p_port_fifo16,
 };
 
 /* device management */

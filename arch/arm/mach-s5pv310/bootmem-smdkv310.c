@@ -80,5 +80,16 @@ struct s5p_media_device media_devs[] = {
                 .paddr = 0,
         },
 #endif
+
+#ifdef CONFIG_VIDEO_SAMSUNG_MEMSIZE_JPEG
+	{
+		.id = S5P_MDEV_JPEG,
+		.name = "jpeg",
+		.bank = 0,
+		.memsize = CONFIG_VIDEO_SAMSUNG_MEMSIZE_JPEG * SZ_1K,
+		.paddr = 0,
+	},
+#endif
+
 };
 int nr_media_devs = (sizeof(media_devs) / sizeof(media_devs[0]));

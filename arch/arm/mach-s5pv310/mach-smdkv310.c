@@ -19,6 +19,8 @@
 #include <linux/gpio.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi_gpio.h>
+#include <linux/regulator/machine.h>
+#include <linux/regulator/max8649.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
@@ -108,6 +110,13 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	},
 	[3] = {
 		.hwport		= 3,
+		.flags		= 0,
+		.ucon		= SMDKV310_UCON_DEFAULT,
+		.ulcon		= SMDKV310_ULCON_DEFAULT,
+		.ufcon		= SMDKV310_UFCON_DEFAULT,
+	},
+	[4] = {
+		.hwport		= 4,
 		.flags		= 0,
 		.ucon		= SMDKV310_UCON_DEFAULT,
 		.ulcon		= SMDKV310_ULCON_DEFAULT,
@@ -247,20 +256,11 @@ static int smdkv310_mipi_cam1_reset(int dummy)
 #ifdef CONFIG_VIDEO_S5K4BA
 #define S5K4BA_ENABLED
 #endif
-#if 0
 #ifdef CONFIG_VIDEO_S5K4EA
 #define S5K4EA_ENABLED
-/* undef : 3BA, 4BA, 6AA */
-#elif defined CONFIG_VIDEO_S5K6AA
-#define S5K6AA_ENABLED
-/* undef : 4EA */
-#elif defined CONFIG_VIDEO_S5K3BA
-#define S5K3BA_ENABLED
-/* undef : 4BA */
-#elif defined CONFIG_VIDEO_S5K4BA
-#define S5K4BA_ENABLED
-/* undef : 3BA */
 #endif
+#ifdef CONFIG_VIDEO_S5K6AA
+#define S5K6AA_ENABLED
 #endif
 /* External camera module setting */
 /* 2 ITU Cameras */
@@ -287,7 +287,7 @@ static struct s3c_platform_camera s5k3ba = {
 	.info		= &s5k3ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_VYUY,
 	.srclk_name	= "xusbxti",
-	.clk_name	= "sclk_cam",
+	.clk_name	= "sclk_cam0",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
 	.width		= 640,
@@ -340,7 +340,7 @@ static struct s3c_platform_camera s5k4ba = {
 	.i2c_busnum	= 1,
 	.info		= &s5k4ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_UYVY,
-	.srclk_name	= "mout_epll",
+	.srclk_name	= "xusbxti",
 	.clk_name	= "sclk_cam1",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
@@ -670,6 +670,97 @@ static struct spi_board_info spi_board_info[] __initdata = {
 };
 #endif
 
+static struct regulator_consumer_supply max8952_supply[] = {
+	REGULATOR_SUPPLY("vdd_arm", NULL),
+};
+
+static struct regulator_consumer_supply max8649_supply[] = {
+	REGULATOR_SUPPLY("vdd_int", NULL),
+};
+
+static struct regulator_consumer_supply max8649a_supply[] = {
+	REGULATOR_SUPPLY("vdd_g3d", NULL),
+};
+
+static struct regulator_init_data max8952_init_data = {
+	.constraints	= {
+		.name		= "vdd_arm range",
+		.min_uV		= 770000,
+		.max_uV		= 1400000,
+		.always_on	= 1,
+		.boot_on	= 1,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8952_supply[0],
+};
+
+static struct regulator_init_data max8649_init_data = {
+	.constraints	= {
+		.name		= "vdd_int range",
+		.min_uV		= 750000,
+		.max_uV		= 1380000,
+		.always_on	= 1,
+		.boot_on	= 1,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8649_supply[0],
+};
+static struct regulator_init_data max8649a_init_data = {
+	.constraints	= {
+		.name		= "vdd_g3d range",
+		.min_uV		= 750000,
+		.max_uV		= 1380000,
+		.always_on	= 0,
+		.boot_on	= 0,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8649a_supply[0],
+};
+
+static struct max8649_platform_data s5pv310_max8952_info = {
+	.mode		= 3,	/* VID1 = 1, VID0 = 1 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8952_init_data,
+};
+
+static struct max8649_platform_data s5pv310_max8649_info = {
+	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8649_init_data,
+};
+static struct max8649_platform_data s5pv310_max8649a_info = {
+	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8649a_init_data,
+};
+
+static struct i2c_board_info s5pv310_i2c0_info[] = {
+	[0] = {
+		.type		= "max8952",
+		.addr		= 0x60,
+		.platform_data	= &s5pv310_max8952_info,
+	},
+	[1] = {
+		.type		= "max8649",
+		.addr		= 0x62,
+		.platform_data	= &s5pv310_max8649a_info,
+	},
+};
+
+static struct i2c_board_info s5pv310_i2c1_info[] = {
+	[0] = {
+		.type		= "max8649",
+		.addr		= 0x60,
+		.platform_data	= &s5pv310_max8649_info,
+	},
+};
+
 static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
@@ -773,6 +864,9 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_csis0,
 	&s3c_device_csis1,
 #endif
+#endif
+#ifdef CONFIG_VIDEO_JPEG
+	&s5p_device_jpeg,
 #endif
 #ifdef CONFIG_FB_S3C_TL2796
 	&s5pv310_device_spi1,
@@ -963,13 +1057,16 @@ static void __init smdkv310_machine_init(void)
 #ifdef CONFIG_S3C_DEV_HSMMC3
 	s3c_sdhci3_set_platdata(&smdkv310_hsmmc3_pdata);
 #endif
+	i2c_register_board_info(0, s5pv310_i2c0_info, ARRAY_SIZE(s5pv310_i2c0_info));
+	i2c_register_board_info(1, s5pv310_i2c1_info, ARRAY_SIZE(s5pv310_i2c1_info));
+
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
 
 #ifdef CONFIG_FB_S3C_TL2796
 	sclk = clk_get(spi_dev, "sclk_spi");
 	if (IS_ERR(sclk))
 		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
-	prnt = clk_get(spi_dev, "mout_epll");
+	prnt = clk_get(spi_dev, "xusbxti");
 	if (IS_ERR(prnt))
 		dev_err(spi_dev, "failed to get prnt\n");
 	clk_set_parent(sclk, prnt);
@@ -1026,7 +1123,7 @@ void usb_host_phy_init(void)
 		printk("[usb_host_phy_init]Already power on PHY\n");
 		return;
 	}
-	
+
 	__raw_writel(__raw_readl(S5P_USBHOST_PHY_CONTROL)
 		|(0x1<<0), S5P_USBHOST_PHY_CONTROL);
 
