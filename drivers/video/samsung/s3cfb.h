@@ -194,6 +194,7 @@ struct s3cfb_window {
 	struct			s3cfb_alpha alpha;
 	struct			s3cfb_chroma chroma;
 	int			power_state;
+	unsigned long		fb_paddr;
 };
 
 /*
