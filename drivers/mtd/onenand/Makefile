@@ -13,4 +13,9 @@ obj-$(CONFIG_MTD_ONENAND_SAMSUNG)       += samsung.o
 # Simulator
 obj-$(CONFIG_MTD_ONENAND_SIM)		+= onenand_sim.o
 
-onenand-objs = onenand_base.o onenand_bbt.o
+ifeq ($(CONFIG_MTD_ONENAND_SAMSUNG_AUDI),y)
+onenand-objs = samsung_audi.o
+else
+onenand-objs = onenand_base.o
+endif
+onenand-objs += onenand_bbt.o

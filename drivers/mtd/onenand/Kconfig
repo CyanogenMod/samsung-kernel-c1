@@ -37,6 +37,14 @@ config MTD_ONENAND_SAMSUNG
           Support for a OneNAND flash device connected to an Samsung SOC
           S3C64XX/S5PC1XX controller.
 
+config MTD_ONENAND_SAMSUNG_AUDI
+	tristate "OneNAND on Samsung AP (with AUDI controller) support"
+	depends on MTD_ONENAND && (ARCH_S5PV210 || ARCH_S5PV310)
+	default y
+	help
+	  Support for a OneNAND flash device connected to an Samsung CPU
+	  via the AUDI OneNAND controller.
+
 config MTD_ONENAND_OTP
 	bool "OneNAND OTP Support"
 	select HAVE_MTD_OTP

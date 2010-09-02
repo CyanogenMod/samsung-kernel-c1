@@ -203,6 +203,13 @@
 #define SAMSUNG_PA_ADC1			S5PV310_PA_ADC1
 #define S3C_PA_WDT			S5PV310_PA_WATCHDOG
 
+/* OneNAND */
+#define S5PV310_PA_ONENAND		(0x0C000000)
+#define S5P_PA_ONENAND			S5PV310_PA_ONENAND
+
+#define S5PV310_SZ_ONENAND		SZ_8M   // redefined at device/mtd/onenand/samsung_audi.c
+#define S5P_SZ_ONENAND			S5PV310_SZ_ONENAND
+
 /* CEC */
 #define S5PV310_PA_CEC		(0x100B0000)
 #define S5P_PA_CEC		S5PV310_PA_CEC

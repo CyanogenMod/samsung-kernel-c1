@@ -800,6 +800,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s3c_device_rtc,
 #endif
 
+#ifdef CONFIG_MTD_ONENAND
+	&s5p_device_onenand,
+#endif
+
 #ifdef CONFIG_S3C_DEV_HSMMC
 	&s3c_device_hsmmc0,
 #endif
