@@ -10,19 +10,23 @@
  * published by the Free Software Foundation
  */
 
-#include <linux/init.h>
+#include <asm/asm-offsets.h>
+/* VM_EXEC is originally defined in linux/mm.h but asm/asm-offset also defines
+ * it with same value */
+#if defined(VM_EXEC)
+#undef VM_EXEC
+#endif /* VM_EXEC */
+
 #include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/mm.h>
 #include <linux/uaccess.h>	/* copy_from_user, copy_to_user */
-#include <linux/vmalloc.h>
 #include <linux/mman.h>
-#include <linux/sched.h>	/* 'current' global variable */
+#include <linux/sched.h>	/* 'current' and 'init_mm global variables */
 #include <linux/slab.h>
 #include <linux/vmalloc.h>	/* unmap_kernel_range, remap_vmalloc_range, */
 			/* map_vm_area, vmalloc_user, struct vm_struct */
 #include <linux/fs.h>
 #include <asm/outercache.h>
+#include <asm/cacheflush.h>
 
 #include "s5p_vmem.h"
 
@@ -122,7 +126,7 @@ static unsigned int cookie;
  * flushed onto the memory soon.
  */
 #if defined(CONFIG_OUTER_CACHE) && defined(CONFIG_ARM)
-static void clean_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
+static void flush_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
 					unsigned long size)
 {
 	unsigned long end;
@@ -137,7 +141,7 @@ static void clean_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
 	pgd_end = pgd_offset(mm, (addr + size + PGDIR_SIZE - 1) & PGDIR_MASK);
 
 	/* Clean L1 page table entries */
-	outer_clean_range(virt_to_phys(pgd), virt_to_phys(pgd_end));
+	outer_flush_range(virt_to_phys(pgd), virt_to_phys(pgd_end));
 
 	/* clean L2 page table entries */
 	/* this regards pgd == pmd and no pud */
@@ -147,12 +151,12 @@ static void clean_outercache_pagetable(struct mm_struct *mm, unsigned long addr,
 		pmd = pmd_offset(pgd, addr);
 		pte = pte_offset_map(pmd, addr) - PTRS_PER_PTE;
 		pte_end = pte_offset_map(pmd, next-4) - PTRS_PER_PTE + 1;
-		outer_clean_range(virt_to_phys(pte), virt_to_phys(pte_end));
+		outer_flush_range(virt_to_phys(pte), virt_to_phys(pte_end));
 		addr = next;
 	} while (addr != end);
 }
 #else
-#define clean_outercache_pagetable(mm, addr, size) do { } while (0)
+#define flush_outercache_pagetable(mm, addr, size) do { } while (0)
 #endif /* CONFIG_OUTER_CACHE && CONFIG_ARM */
 
 static struct kvm_area *createkvm(void *kvm_addr, size_t size)
@@ -317,16 +321,26 @@ EXPORT_SYMBOL(s5p_vmem_ioctl);
 
 static struct kvm_area *createallockvm(size_t size)
 {
-	void *virt_addr;
+	void *virt_addr, *virt_end;
 	virt_addr = vmalloc_user(size);
 	if (!virt_addr)
 		return NULL;
 
-	clean_outercache_pagetable(&init_mm, (unsigned long)virt_addr, size);
+	flush_outercache_pagetable(&init_mm, (unsigned long)virt_addr, size);
 
 	recent_kvm_area = createkvm(virt_addr, size);
 	if (recent_kvm_area == NULL)
 		vfree(virt_addr);
+
+	/* We vmalloced page-aligned. Thus below operation is correct */
+	virt_end = virt_addr + size;
+	dmac_flush_range(virt_addr, virt_end);
+	while (virt_addr < virt_end) {
+		unsigned long phys_addr;
+		phys_addr = vmalloc_to_pfn(virt_addr) << PAGE_SHIFT;
+		outer_flush_range(phys_addr, phys_addr + PAGE_SIZE);
+		virt_addr += PAGE_SIZE;
+	}
 
 	return recent_kvm_area;
 }
@@ -403,7 +417,7 @@ int s5p_vmem_mmap(struct file *filp, struct vm_area_struct *vma)
 	}
 
 	if (ret == 0)
-		clean_outercache_pagetable(vma->vm_mm, vma->vm_start,
+		flush_outercache_pagetable(vma->vm_mm, vma->vm_start,
 				vma->vm_end - vma->vm_start);
 	return ret;
 }
@@ -575,8 +589,12 @@ unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 	 */
 	for (i = 0; i < nr_pages; i++) {
 		struct page *page;
+		unsigned long phys_addr;
 
 		page = alloc_page(GFP_KERNEL);
+		phys_addr = page_to_pfn(page) << PAGE_SHIFT;
+		/* flushes L2 cache */
+		outer_flush_range(phys_addr, phys_addr + PAGE_SIZE);
 
 		if (unlikely(!page))
 			goto fail;
@@ -593,7 +611,9 @@ unsigned int s5p_vmem_vmemmap(size_t size, unsigned long va_start,
 
 	/* page table generation */
 	if (map_vm_area(&area, PAGE_KERNEL, &pages) == 0) {
-		clean_outercache_pagetable(&init_mm, va_start, size);
+		flush_outercache_pagetable(&init_mm, va_start, size);
+		/* invalidates L1 cache */
+		dmac_map_area((void *)va_start, size, DMA_FROM_DEVICE);
 		return kvma->cookie;
 	}
 fail:
@@ -602,4 +622,73 @@ fail:
 	return 0;
 }
 EXPORT_SYMBOL(s5p_vmem_vmemmap);
+
+/* s5p_vmem_va2page
+ * Returns the pointer to a page descriptor of any given virtual address IN THE
+ * KERNEL'S ADDRESS SPACE. Returning NULL means no mapping is prepared for the
+ * given virtual address.
+ * This function is exactly same as vmalloc_to_page.
+ */
+struct page *s5p_vmem_va2page(const void *virt_addr)
+{
+	struct page *page = NULL;
+	unsigned int addr = (unsigned long) virt_addr;
+	pgd_t *pgd = pgd_offset_k(addr);
+
+	BUG_ON((unsigned int)virt_addr < VMALLOC_START);
+
+	if (!pgd_none(*pgd)) {
+		pud_t *pud = pud_offset(pgd, addr);
+		if (!pud_none(*pud)) {
+			pmd_t *pmd = pmd_offset(pud, addr);
+			if (!pmd_none(*pmd)) {
+				pte_t *ptep, pte;
+
+				ptep = pte_offset_map(pmd, addr);
+				pte = *ptep;
+				if (pte_present(pte))
+					page = pte_page(pte);
+				pte_unmap(ptep);
+			}
+		}
+	}
+	return page;
+}
+EXPORT_SYMBOL(s5p_vmem_va2page);
+
+
+/* s5p_vmem_dmac_map_area
+ * start_addr: the beginning virtual address to be flushed
+ * size: the size of virtual memory area
+ * dir: direction of DMA. one of DMA_FROM_DEVICE(2) and DMA_TO_DEVICE(1)
+ * The memory area must not exist under VMALLOC_START because the steps to find
+ * the physical adress for the given virtual address does not consider ARM
+ * section mappings.
+ */
+void s5p_vmem_dmac_map_area(const void *start_addr, unsigned long size, int dir)
+{
+	void *end_addr, *cur_addr;
+
+	/* TODO: the first address needs not to be page-aligned but
+	 * L2 line-size-aligned. Enhance that if we know how to find L2 line
+	 * size.
+	 */
+	dmac_map_area(start_addr, size, dir);
+
+	cur_addr = (void *)((unsigned long)start_addr & PAGE_MASK);
+	size = PAGE_ALIGN(size);
+	end_addr = cur_addr + size;
+
+	while (cur_addr < end_addr) {
+		unsigned long phys_addr;
+
+		phys_addr = page_to_pfn(s5p_vmem_va2page(cur_addr));
+		phys_addr <<= PAGE_SHIFT;
+		if (dir == DMA_FROM_DEVICE)
+			outer_inv_range(phys_addr, phys_addr + PAGE_SIZE);
+		outer_clean_range(phys_addr, phys_addr + PAGE_SIZE);
+		cur_addr += PAGE_SIZE;
+	}
+}
+EXPORT_SYMBOL(s5p_vmem_dmac_map_area);
 
