@@ -38,6 +38,7 @@ extern struct platform_device s3c64xx_device_pcm1;
 extern struct platform_device s3c64xx_device_ac97;
 
 extern struct platform_device s3c_device_ts;
+extern struct platform_device s3c_device_ts1;
 
 extern struct platform_device s3c_device_fb;
 extern struct platform_device s3c_device_fimc0;

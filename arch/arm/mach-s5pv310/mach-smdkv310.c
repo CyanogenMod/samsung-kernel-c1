@@ -733,7 +733,12 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
+#ifdef CONFIG_S3C_DEV_ADC
 	&s3c_device_ts,
+#endif
+#ifdef CONFIG_S3C_DEV_ADC1
+	&s3c_device_ts1,
+#endif
 #endif
 
 #ifdef CONFIG_S3C_ADC
@@ -929,8 +934,14 @@ static void __init smdkv310_machine_init(void)
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_S3C2410
+#ifdef CONFIG_S3C_DEV_ADC
 	s3c24xx_ts_set_platdata(&s3c_ts_platform);
 #endif
+#ifdef CONFIG_S3C_DEV_ADC1
+        s3c24xx_ts1_set_platdata(&s3c_ts_platform);
+#endif
+#endif
+
 #ifdef CONFIG_VIDEO_FIMG2D
 	s5p_fimg2d_set_platdata(&fimg2d_data);
 #endif

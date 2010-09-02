@@ -177,12 +177,12 @@
 
 #define MAX_COMBINER_NR		40
 
-#if defined(CONFIG_S3C_DEV_ADC1)
-#define	IRQ_ADC		IRQ_ADC1
-#define	IRQ_TC		IRQ_PEN1
-#else
+#if defined(CONFIG_S3C_DEV_ADC)
 #define	IRQ_ADC		IRQ_ADC0
 #define	IRQ_TC		IRQ_PEN0
+#else
+#define	IRQ_ADC		IRQ_ADC1
+#define	IRQ_TC		IRQ_PEN1
 #endif
 
 #endif /* ASM_ARCH_IRQS_H */
