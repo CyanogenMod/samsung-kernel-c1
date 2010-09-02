@@ -215,13 +215,15 @@ static int s3cfb_map_video_memory(struct fb_info *fb)
 	fb->screen_base = dma_alloc_writecombine(fbdev->dev,
 						 PAGE_ALIGN(fix->smem_len),
 						 (unsigned int *)
-						 &fix->smem_start, GFP_KERNEL);
+						 &win->fb_paddr, GFP_KERNEL);
+	fix->smem_start = (unsigned int)fb->screen_base;
+
 	if (!fb->screen_base)
 		return -ENOMEM;
 	else
 		dev_info(fbdev->dev, "[fb%d] dma: 0x%08x, cpu: 0x%08x, "
 			 "size: 0x%08x\n", win->id,
-			 (unsigned int)fix->smem_start,
+			 (unsigned int)win->fb_paddr,
 			 (unsigned int)fb->screen_base, fix->smem_len);
 
 	memset(fb->screen_base, 0, fix->smem_len);
@@ -239,16 +241,17 @@ static int s3cfb_map_default_video_memory(struct fb_info *fb)
 	if (win->owner == DMA_MEM_OTHER)
 		return 0;
 
-	fix->smem_start = s5p_get_media_memory_bank(S5P_MDEV_FIMD, 1);
+	win->fb_paddr = s5p_get_media_memory_bank(S5P_MDEV_FIMD, 1);
 	reserved_size = s5p_get_media_memsize_bank(S5P_MDEV_FIMD, 1);
-	fb->screen_base = ioremap_wc(fix->smem_start, reserved_size);
+	fb->screen_base = ioremap_wc(win->fb_paddr, reserved_size);
+	fix->smem_start = (unsigned int)fb->screen_base;
 
 	if (!fb->screen_base)
 		return -ENOMEM;
 	else
 		dev_info(fbdev->dev, "[fb%d] dma: 0x%08x, cpu: 0x%08x, "
 			"size: 0x%08x\n", win->id,
-			(unsigned int)fix->smem_start,
+			(unsigned int)win->fb_paddr,
 			(unsigned int)fb->screen_base, fix->smem_len);
 
 	memset(fb->screen_base, 0, fix->smem_len);
@@ -262,10 +265,10 @@ static int s3cfb_unmap_video_memory(struct fb_info *fb)
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
 
-	if (fix->smem_start) {
+	if (win->fb_paddr) {
 		dma_free_writecombine(fbdev->dev, fix->smem_len,
-				      fb->screen_base, fix->smem_start);
-		fix->smem_start = 0;
+				      fb->screen_base, win->fb_paddr);
+		win->fb_paddr = 0;
 		fix->smem_len = 0;
 		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
 	}
@@ -278,9 +281,9 @@ static int s3cfb_unmap_default_video_memory(struct fb_info *fb)
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
 
-	if (fix->smem_start) {
+	if (win->fb_paddr) {
 		iounmap(fb->screen_base);
-		fix->smem_start = 0;
+		win->fb_paddr = 0;
 		fix->smem_len = 0;
 		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
 	}
@@ -403,7 +406,8 @@ static int s3cfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 
 	if (var->pixclock != fbdev->fb[pdata->default_win]->var.pixclock) {
 		dev_info(fbdev->dev, "pixclk is changed from %d Hz to %d Hz\n",
-			fbdev->fb[pdata->default_win]->var.pixclock, var->pixclock);
+			fbdev->fb[pdata->default_win]->var.pixclock,
+			var->pixclock);
 	}
 
 	s3cfb_set_bitfield(var);
@@ -433,7 +437,7 @@ static int s3cfb_set_par(struct fb_info *fb)
 
 	dev_dbg(fbdev->dev, "[fb%d] set_par\n", win->id);
 
-	if ((win->id != pdata->default_win) && fb->fix.smem_start)
+	if ((win->id != pdata->default_win) && win->fb_paddr)
 		s3cfb_unmap_video_memory(fb);
 
 	/* modify the fix info */
@@ -464,13 +468,16 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
-		if (!fb->fix.smem_start) {
-			dev_info(fbdev->dev, "[fb%d] no allocated memory for unblank\n", win->id);
+		if (!win->fb_paddr) {
+			dev_info(fbdev->dev,
+				"[fb%d] no allocated memory for	\
+				unblank\n", win->id);
 			break;
 		}
 
 		if (win->power_state == FB_BLANK_UNBLANK) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_UNBLANK\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_UNBLANK\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_UNBLANK);
@@ -508,7 +515,8 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_NORMAL:
 		if (win->power_state == FB_BLANK_NORMAL) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_NORMAL\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_NORMAL\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_NORMAL);
@@ -547,7 +555,8 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_POWERDOWN:
 		if (win->power_state == FB_BLANK_POWERDOWN) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_POWERDOWN\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_POWERDOWN\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_POWERDOWN);
@@ -793,6 +802,34 @@ static int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+static int s3cfb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
+{
+	struct s3cfb_window *win = fb->par;
+	unsigned long off;
+	unsigned long start;
+	u32 len;
+
+	if (vma->vm_end - vma->vm_start == 0)
+		return 0;
+
+	off = vma->vm_pgoff << PAGE_SHIFT;
+	start = win->fb_paddr;
+	len = fb->fix.smem_len;
+	if (off >= len)
+		return -EINVAL;
+	start &= PAGE_MASK;
+	if ((vma->vm_end - vma->vm_start + off) > len)
+		return -EINVAL;
+	off += start;
+	vma->vm_pgoff = off >> PAGE_SHIFT;
+	vma->vm_flags |= VM_IO | VM_RESERVED;
+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+			vma->vm_end - vma->vm_start, vma->vm_page_prot))
+		return -EAGAIN;
+	return 0;
+}
+
 struct fb_ops s3cfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_fillrect = cfb_fillrect,
@@ -805,6 +842,7 @@ struct fb_ops s3cfb_ops = {
 	.fb_setcolreg = s3cfb_setcolreg,
 	.fb_cursor = s3cfb_cursor,
 	.fb_ioctl = s3cfb_ioctl,
+	.fb_mmap = s3cfb_mmap,
 	.fb_open = s3cfb_open,
 	.fb_release = s3cfb_release,
 };
@@ -1069,8 +1107,10 @@ static int s3cfb_init_fbinfo(int id)
 	var->upper_margin = timing->v_bp;
 	var->lower_margin = timing->v_fp;
 	var->pixclock = (lcd->freq *
-			(var->left_margin + var->right_margin + var->hsync_len + var->xres) *
-			(var->upper_margin + var->lower_margin + var->vsync_len + var->yres));
+			(var->left_margin + var->right_margin
+			+ var->hsync_len + var->xres) *
+			(var->upper_margin + var->lower_margin
+			+ var->vsync_len + var->yres));
 	var->pixclock = KHZ2PICOS(var->pixclock/1000);
 
 	dev_dbg(fbdev->dev, "pixclock: %d\n", var->pixclock);
