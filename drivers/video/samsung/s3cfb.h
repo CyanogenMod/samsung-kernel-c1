@@ -85,7 +85,7 @@ enum s3cfb_mem_owner_t {
  * @value:		alpha value (for plane blending)
 */
 struct s3cfb_alpha {
-	enum 		s3cfb_alpha_t mode;
+	enum		s3cfb_alpha_t mode;
 	int		channel;
 	unsigned int	value;
 };
@@ -100,12 +100,12 @@ struct s3cfb_alpha {
  * @dir:		chroma key direction (fg/bg, fixed to fg)
 */
 struct s3cfb_chroma {
-	int 		enabled;
-	int 		blended;
+	int		enabled;
+	int		blended;
 	unsigned int	key;
 	unsigned int	comp_key;
 	unsigned int	alpha;
-	enum 		s3cfb_chroma_dir_t dir;
+	enum		s3cfb_chroma_dir_t dir;
 };
 
 /*
@@ -159,11 +159,11 @@ struct s3cfb_lcd {
 	int	height;
 	int	bpp;
 	int	freq;
-	struct 	s3cfb_lcd_timing timing;
-	struct 	s3cfb_lcd_polarity polarity;
+	struct	s3cfb_lcd_timing timing;
+	struct	s3cfb_lcd_polarity polarity;
 
-	void 	(*init_ldi)(void);
-	void 	(*deinit_ldi)(void);
+	void	(*init_ldi)(void);
+	void	(*deinit_ldi)(void);
 };
 
 /*
@@ -186,8 +186,8 @@ struct s3cfb_window {
 	atomic_t		in_use;
 	int			x;
 	int			y;
-	enum 			s3cfb_data_path_t path;
-	enum 			s3cfb_mem_owner_t owner;
+	enum			s3cfb_data_path_t path;
+	enum			s3cfb_mem_owner_t owner;
 	int			local_channel;
 	int			dma_burst;
 	unsigned int		pseudo_pal[16];
@@ -223,9 +223,9 @@ struct s3cfb_global {
 	atomic_t		enabled_win;
 	int			dsi;
 	int			interlace;
-	enum s3cfb_output_t 	output;
+	enum s3cfb_output_t	output;
 	enum s3cfb_rgb_mode_t	rgb_mode;
-	struct s3cfb_lcd 	*lcd;
+	struct s3cfb_lcd	*lcd;
 };
 
 
@@ -238,14 +238,14 @@ struct s3cfb_user_window {
 };
 
 struct s3cfb_user_plane_alpha {
-	int 		channel;
+	int		channel;
 	unsigned char	red;
 	unsigned char	green;
 	unsigned char	blue;
 };
 
 struct s3cfb_user_chroma {
-	int 		enabled;
+	int		enabled;
 	unsigned char	red;
 	unsigned char	green;
 	unsigned char	blue;

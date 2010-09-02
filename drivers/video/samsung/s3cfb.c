@@ -403,7 +403,8 @@ static int s3cfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
 
 	if (var->pixclock != fbdev->fb[pdata->default_win]->var.pixclock) {
 		dev_info(fbdev->dev, "pixclk is changed from %d Hz to %d Hz\n",
-			fbdev->fb[pdata->default_win]->var.pixclock, var->pixclock);
+			fbdev->fb[pdata->default_win]->var.pixclock,
+			var->pixclock);
 	}
 
 	s3cfb_set_bitfield(var);
@@ -465,12 +466,15 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 		if (!fb->fix.smem_start) {
-			dev_info(fbdev->dev, "[fb%d] no allocated memory for unblank\n", win->id);
+			dev_info(fbdev->dev,
+				"[fb%d] no allocated memory for	\
+				unblank\n", win->id);
 			break;
 		}
 
 		if (win->power_state == FB_BLANK_UNBLANK) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_UNBLANK\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_UNBLANK\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_UNBLANK);
@@ -508,7 +512,8 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_NORMAL:
 		if (win->power_state == FB_BLANK_NORMAL) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_NORMAL\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_NORMAL\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_NORMAL);
@@ -547,7 +552,8 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_POWERDOWN:
 		if (win->power_state == FB_BLANK_POWERDOWN) {
-			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_POWERDOWN\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in	\
+				FB_BLANK_POWERDOWN\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(win->id, FB_BLANK_POWERDOWN);
@@ -1069,8 +1075,10 @@ static int s3cfb_init_fbinfo(int id)
 	var->upper_margin = timing->v_bp;
 	var->lower_margin = timing->v_fp;
 	var->pixclock = (lcd->freq *
-			(var->left_margin + var->right_margin + var->hsync_len + var->xres) *
-			(var->upper_margin + var->lower_margin + var->vsync_len + var->yres));
+			(var->left_margin + var->right_margin
+			+ var->hsync_len + var->xres) *
+			(var->upper_margin + var->lower_margin
+			+ var->vsync_len + var->yres));
 	var->pixclock = KHZ2PICOS(var->pixclock/1000);
 
 	dev_dbg(fbdev->dev, "pixclock: %d\n", var->pixclock);
