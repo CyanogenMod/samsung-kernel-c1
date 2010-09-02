@@ -802,6 +802,34 @@ static int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+static int s3cfb_mmap(struct fb_info *fb, struct vm_area_struct *vma)
+{
+	struct s3cfb_window *win = fb->par;
+	unsigned long off;
+	unsigned long start;
+	u32 len;
+
+	if (vma->vm_end - vma->vm_start == 0)
+		return 0;
+
+	off = vma->vm_pgoff << PAGE_SHIFT;
+	start = win->fb_paddr;
+	len = fb->fix.smem_len;
+	if (off >= len)
+		return -EINVAL;
+	start &= PAGE_MASK;
+	if ((vma->vm_end - vma->vm_start + off) > len)
+		return -EINVAL;
+	off += start;
+	vma->vm_pgoff = off >> PAGE_SHIFT;
+	vma->vm_flags |= VM_IO | VM_RESERVED;
+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+	if (io_remap_pfn_range(vma, vma->vm_start, off >> PAGE_SHIFT,
+			vma->vm_end - vma->vm_start, vma->vm_page_prot))
+		return -EAGAIN;
+	return 0;
+}
+
 struct fb_ops s3cfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_fillrect = cfb_fillrect,
@@ -814,6 +842,7 @@ struct fb_ops s3cfb_ops = {
 	.fb_setcolreg = s3cfb_setcolreg,
 	.fb_cursor = s3cfb_cursor,
 	.fb_ioctl = s3cfb_ioctl,
+	.fb_mmap = s3cfb_mmap,
 	.fb_open = s3cfb_open,
 	.fb_release = s3cfb_release,
 };
