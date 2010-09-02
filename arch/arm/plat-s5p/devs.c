@@ -58,6 +58,7 @@ struct platform_device s5p_device_mfc = {
 #endif
 
 /* OneNAND Controller */
+#ifdef CONFIG_MTD_ONENAND
 static struct resource s5p_onenand_resource[] = {
 	[0] = {
 		.start = S5P_PA_ONENAND,
@@ -74,6 +75,7 @@ struct platform_device s5p_device_onenand = {
 };
 
 EXPORT_SYMBOL(s5p_device_onenand);
+#endif
 
 #ifdef CONFIG_FB_S3C
 static struct resource s3cfb_resource[] = {
