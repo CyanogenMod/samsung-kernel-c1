@@ -582,7 +582,7 @@ struct platform_device s5p_device_rotator = {
 EXPORT_SYMBOL(s5p_device_rotator);
 #endif
 
-#ifdef CONFIG_VIDEO_TV20
+#if defined(CONFIG_VIDEO_TV20) || defined(CONFIG_VIDEO_TV30)
 /* TVOUT interface */
 static struct resource s5p_tv_resources[] = {
 	[0] = {

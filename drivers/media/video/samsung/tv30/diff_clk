@@ -1,0 +1,147 @@
+diff --git a/Makefile b/Makefile
+index 914e5f5..fc831a2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -230,8 +230,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
+ 
+ HOSTCC       = gcc
+ HOSTCXX      = g++
+-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
+-HOSTCXXFLAGS = -O2
++HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O0 -fomit-frame-pointer
++HOSTCXXFLAGS = -O0
+ 
+ # Decide whether to build built-in, modular, or both.
+ # Normally, just do built-in.
+diff --git a/drivers/media/video/samsung/tv20/s5p_mixer_ctrl.c b/drivers/media/video/samsung/tv20/s5p_mixer_ctrl.c
+index e532672..422e984 100644
+--- a/drivers/media/video/samsung/tv20/s5p_mixer_ctrl.c
++++ b/drivers/media/video/samsung/tv20/s5p_mixer_ctrl.c
+@@ -62,8 +62,11 @@ struct s5p_mixer_ctrl_private_data {
+ 	enum s5p_mixer_burst_mode burst;
+ 	enum s5p_tv_endian endian;
+ 	struct s5p_bg_color bg_color[3];
+-	struct reg_mem_info reg_mem;
++
+ 	struct s5p_mixer_grp_layer_info layer[S5PTV_FB_CNT];
++
++	struct reg_mem_info reg_mem;
++	struct s5p_tv_power_clk_info p_c[2];
+ };
+ 
+ static struct s5p_mixer_ctrl_private_data s5p_mixer_ctrl_private = {
+@@ -71,6 +74,16 @@ static struct s5p_mixer_ctrl_private_data s5p_mixer_ctrl_private = {
+ 		.name = "s5p-mixer",
+ 		.res = NULL,
+ 		.base = NULL
++	},
++	.p_c[0] = {
++		.pow_name = "mixer_pd",
++		.clk_name = "mixer",
++		.clk_ptr = NULL
++	},
++	.p_c[1] = {
++		.pow_name = "mixer_pd",
++		.clk_name = "sclk_mixer",
++		.clk_ptr = NULL
+ 	}
+ };
+ 
+@@ -555,7 +568,7 @@ extern int s5p_tv_map_resource_mem(
+ 
+ int s5p_mixer_ctrl_constructor(struct platform_device *pdev)
+ {
+-	int ret = 0;
++	int ret = 0, i;
+ 
+ 	ret = s5p_tv_map_resource_mem(
+ 		pdev,
+@@ -566,18 +579,37 @@ int s5p_mixer_ctrl_constructor(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_on_res;
+ 
++	for (i = 0; i < 2; i++) {
++		s5p_mixer_ctrl_private.p_c[i].clk_ptr = clk_get(&pdev->dev,
++			s5p_mixer_ctrl_private.p_c[i].clk_name);
++
++		if (IS_ERR(s5p_mixer_ctrl_private.p_c[i].clk_ptr)) {
++			printk(KERN_ERR	"Failed to find clock %s\n",
++				s5p_mixer_ctrl_private.p_c[i].clk_name);
++			ret = -ENOENT;
++			goto err_on_clk;
++		}
++	}
++	
+ 	s5p_mixer_init(s5p_mixer_ctrl_private.reg_mem.base);
+ 	s5p_mixer_ctrl_init_private(MIXER_GPR0_LAYER);
+ 	s5p_mixer_ctrl_init_private(MIXER_GPR1_LAYER);
+ 
+ 	return 0;
+ 
++err_on_clk:
++	iounmap(s5p_mixer_ctrl_private.reg_mem.base);
++	release_resource(s5p_mixer_ctrl_private.reg_mem.res);
++	kfree(s5p_mixer_ctrl_private.reg_mem.res);
++	
+ err_on_res:
+ 	return ret;
+ }
+ 
+ void s5p_mixer_ctrl_destructor(void)
+ {
++	int i;
++	
+ 	if (s5p_mixer_ctrl_private.reg_mem.base)
+ 		iounmap(s5p_mixer_ctrl_private.reg_mem.base);
+ 
+@@ -585,6 +617,13 @@ void s5p_mixer_ctrl_destructor(void)
+ 		release_resource(s5p_mixer_ctrl_private.reg_mem.res);
+ 		kfree(s5p_mixer_ctrl_private.reg_mem.res);
+ 	}
++
++	for (i = 0; i < 2; i++) {
++		if (s5p_mixer_ctrl_private.p_c[i].clk_ptr) {
++			clk_disable(s5p_mixer_ctrl_private.p_c[i].clk_ptr);
++			clk_put(s5p_mixer_ctrl_private.p_c[i].clk_ptr);
++		}
++	}
+ }
+ 
+ void s5p_mixer_ctrl_suspend(void)
+diff --git a/drivers/media/video/samsung/tv20/s5p_tv_base.c b/drivers/media/video/samsung/tv20/s5p_tv_base.c
+index 0596ed3..f48ba16 100644
+--- a/drivers/media/video/samsung/tv20/s5p_tv_base.c
++++ b/drivers/media/video/samsung/tv20/s5p_tv_base.c
+@@ -181,12 +181,12 @@ static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
+ 			*mout_vpll;
+ 
+ //	TV_CLK_GET_WITH_ERR_CHECK(ctrl->tvenc_clk,	pdev, "tvenc");
+-	TV_CLK_GET_WITH_ERR_CHECK(ctrl->mixer_clk,	pdev, "mixer");
++//	TV_CLK_GET_WITH_ERR_CHECK(ctrl->mixer_clk,	pdev, "mixer");
+ 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->hdmi_clk,	pdev, "hdmi");
+ 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->i2c_phy_clk,	pdev, "i2c-hdmiphy");
+ 
+ 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_dac,	pdev, "sclk_dac");
+-	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_mixer,	pdev, "sclk_mixer");
++//	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_mixer,	pdev, "sclk_mixer");
+ 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_hdmi,	pdev, "sclk_hdmi");
+ 
+ 	TV_CLK_GET_WITH_ERR_CHECK(ctrl->sclk_pixel,	pdev, "sclk_pixel");
+@@ -204,7 +204,7 @@ static int __devinit s5p_tv_clk_get(struct platform_device *pdev,
+ 	clk_set_parent(ctrl->sclk_dac, mout_vpll);
+ 
+ 	clk_enable(ctrl->sclk_dac);
+-	clk_enable(ctrl->sclk_mixer);
++	//clk_enable(ctrl->sclk_mixer);
+ 	clk_enable(ctrl->sclk_hdmi);
+ 
+ 	clk_enable(mout_vpll_src);
+@@ -529,7 +529,7 @@ static int s5p_tv_remove(struct platform_device *pdev)
+ 	clk_disable(s5ptv_status.mixer_clk);
+ 	clk_disable(s5ptv_status.hdmi_clk);
+ 	clk_disable(s5ptv_status.sclk_hdmi);
+-	clk_disable(s5ptv_status.sclk_mixer);
++//	clk_disable(s5ptv_status.sclk_mixer);
+ 	clk_disable(s5ptv_status.sclk_dac);
+ 
+ //	clk_put(s5ptv_status.tvenc_clk);
