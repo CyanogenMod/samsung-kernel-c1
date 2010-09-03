@@ -19,7 +19,7 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
-#include <mach/pd.h>
+//#include <mach/pd.h>
 
 #include "ver_1/mixer.h"
 #include "ver_1/tvout_ver_1.h"

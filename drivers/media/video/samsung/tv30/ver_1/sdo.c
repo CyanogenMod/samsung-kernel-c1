@@ -23,7 +23,7 @@
 #include <plat/clock.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-sdo.h>
-#include <mach/pd.h>
+//#include <mach/pd.h>
 
 #include "mixer.h"
 #include "tvout_ver_1.h"

@@ -39,7 +39,7 @@
 #include <plat/gpio-cfg.h>
 #include <mach/regs-gpio.h>
 
-#include <mach/pd.h>
+//#include <mach/pd.h>
 
 #if defined(CONFIG_S5P_SYSMMU_TV)
 #include <plat/sysmmu.h>
