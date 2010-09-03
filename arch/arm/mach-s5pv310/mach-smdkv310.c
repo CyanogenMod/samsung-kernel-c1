@@ -563,11 +563,90 @@ static struct wm8994_pdata wm8994_platform_data = {
 };
 #endif
 
+static struct regulator_consumer_supply max8952_supply[] = {
+	REGULATOR_SUPPLY("vdd_arm", NULL),
+};
+
+static struct regulator_consumer_supply max8649_supply[] = {
+	REGULATOR_SUPPLY("vdd_int", NULL),
+};
+
+static struct regulator_consumer_supply max8649a_supply[] = {
+	REGULATOR_SUPPLY("vdd_g3d", NULL),
+};
+
+static struct regulator_init_data max8952_init_data = {
+	.constraints	= {
+		.name		= "vdd_arm range",
+		.min_uV		= 770000,
+		.max_uV		= 1400000,
+		.always_on	= 1,
+		.boot_on	= 1,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8952_supply[0],
+};
+
+static struct regulator_init_data max8649_init_data = {
+	.constraints	= {
+		.name		= "vdd_int range",
+		.min_uV		= 750000,
+		.max_uV		= 1380000,
+		.always_on	= 1,
+		.boot_on	= 1,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8649_supply[0],
+};
+static struct regulator_init_data max8649a_init_data = {
+	.constraints	= {
+		.name		= "vdd_g3d range",
+		.min_uV		= 750000,
+		.max_uV		= 1380000,
+		.always_on	= 0,
+		.boot_on	= 0,
+		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
+	},
+	.num_consumer_supplies	= 1,
+	.consumer_supplies	= &max8649a_supply[0],
+};
+
+static struct max8649_platform_data s5pv310_max8952_info = {
+	.mode		= 3,	/* VID1 = 1, VID0 = 1 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8952_init_data,
+};
+
+static struct max8649_platform_data s5pv310_max8649_info = {
+	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8649_init_data,
+};
+static struct max8649_platform_data s5pv310_max8649a_info = {
+	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
+	.extclk		= 0,
+	.ramp_timing	= MAX8649_RAMP_32MV,
+	.regulator	= &max8649a_init_data,
+};
+
 #ifdef CONFIG_I2C_S3C2410
 /* I2C0 */
 static struct i2c_board_info i2c_devs0[] __initdata = {
-	{ I2C_BOARD_INFO("24c128", 0x50), },	 /* Samsung S524AD0XD1 */
-	{ I2C_BOARD_INFO("24c128", 0x52), },	 /* Samsung S524AD0XD1 */
+	{
+		I2C_BOARD_INFO("24c128", 0x50),		/* Samsung S524AD0XD1 */
+	},{
+		I2C_BOARD_INFO("24c128", 0x52),		/* Samsung S524AD0XD1 */
+	},{
+		I2C_BOARD_INFO("max8952", 0x60),
+		.platform_data	= &s5pv310_max8952_info,
+	},{
+		I2C_BOARD_INFO("max8649", 0x62),
+		.platform_data	= &s5pv310_max8649a_info,
+	},
 };
 #ifdef CONFIG_S3C_DEV_I2C1
 /* I2C1 */
@@ -578,6 +657,10 @@ static struct i2c_board_info i2c_devs1[] __initdata = {
 		.platform_data	= &wm8994_platform_data,
 	},
 #endif
+	{
+		I2C_BOARD_INFO("max8649", 0x60),
+		.platform_data	= &s5pv310_max8649_info,
+	},
 };
 #endif
 #ifdef CONFIG_S3C_DEV_I2C2
@@ -670,96 +753,7 @@ static struct spi_board_info spi_board_info[] __initdata = {
 };
 #endif
 
-static struct regulator_consumer_supply max8952_supply[] = {
-	REGULATOR_SUPPLY("vdd_arm", NULL),
-};
 
-static struct regulator_consumer_supply max8649_supply[] = {
-	REGULATOR_SUPPLY("vdd_int", NULL),
-};
-
-static struct regulator_consumer_supply max8649a_supply[] = {
-	REGULATOR_SUPPLY("vdd_g3d", NULL),
-};
-
-static struct regulator_init_data max8952_init_data = {
-	.constraints	= {
-		.name		= "vdd_arm range",
-		.min_uV		= 770000,
-		.max_uV		= 1400000,
-		.always_on	= 1,
-		.boot_on	= 1,
-		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &max8952_supply[0],
-};
-
-static struct regulator_init_data max8649_init_data = {
-	.constraints	= {
-		.name		= "vdd_int range",
-		.min_uV		= 750000,
-		.max_uV		= 1380000,
-		.always_on	= 1,
-		.boot_on	= 1,
-		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &max8649_supply[0],
-};
-static struct regulator_init_data max8649a_init_data = {
-	.constraints	= {
-		.name		= "vdd_g3d range",
-		.min_uV		= 750000,
-		.max_uV		= 1380000,
-		.always_on	= 0,
-		.boot_on	= 0,
-		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &max8649a_supply[0],
-};
-
-static struct max8649_platform_data s5pv310_max8952_info = {
-	.mode		= 3,	/* VID1 = 1, VID0 = 1 */
-	.extclk		= 0,
-	.ramp_timing	= MAX8649_RAMP_32MV,
-	.regulator	= &max8952_init_data,
-};
-
-static struct max8649_platform_data s5pv310_max8649_info = {
-	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
-	.extclk		= 0,
-	.ramp_timing	= MAX8649_RAMP_32MV,
-	.regulator	= &max8649_init_data,
-};
-static struct max8649_platform_data s5pv310_max8649a_info = {
-	.mode		= 2,	/* VID1 = 1, VID0 = 0 */
-	.extclk		= 0,
-	.ramp_timing	= MAX8649_RAMP_32MV,
-	.regulator	= &max8649a_init_data,
-};
-
-static struct i2c_board_info s5pv310_i2c0_info[] = {
-	[0] = {
-		.type		= "max8952",
-		.addr		= 0x60,
-		.platform_data	= &s5pv310_max8952_info,
-	},
-	[1] = {
-		.type		= "max8649",
-		.addr		= 0x62,
-		.platform_data	= &s5pv310_max8649a_info,
-	},
-};
-
-static struct i2c_board_info s5pv310_i2c1_info[] = {
-	[0] = {
-		.type		= "max8649",
-		.addr		= 0x60,
-		.platform_data	= &s5pv310_max8649_info,
-	},
-};
 
 static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
@@ -804,6 +798,10 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 
 #ifdef CONFIG_S3C_DEV_RTC
 	&s3c_device_rtc,
+#endif
+
+#ifdef CONFIG_MTD_ONENAND
+	&s5p_device_onenand,
 #endif
 
 #ifdef CONFIG_S3C_DEV_HSMMC
@@ -1057,9 +1055,6 @@ static void __init smdkv310_machine_init(void)
 #ifdef CONFIG_S3C_DEV_HSMMC3
 	s3c_sdhci3_set_platdata(&smdkv310_hsmmc3_pdata);
 #endif
-	i2c_register_board_info(0, s5pv310_i2c0_info, ARRAY_SIZE(s5pv310_i2c0_info));
-	i2c_register_board_info(1, s5pv310_i2c1_info, ARRAY_SIZE(s5pv310_i2c1_info));
-
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
 
 #ifdef CONFIG_FB_S3C_TL2796

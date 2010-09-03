@@ -57,6 +57,26 @@ struct platform_device s5p_device_mfc = {
 };
 #endif
 
+/* OneNAND Controller */
+#ifdef CONFIG_MTD_ONENAND
+static struct resource s5p_onenand_resource[] = {
+	[0] = {
+		.start = S5P_PA_ONENAND,
+		.end   = S5P_PA_ONENAND + S5P_SZ_ONENAND - 1,
+		.flags = IORESOURCE_MEM,
+	}
+};
+
+struct platform_device s5p_device_onenand = {
+	.name		= "s5p-onenand",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(s5p_onenand_resource),
+	.resource	= s5p_onenand_resource,
+};
+
+EXPORT_SYMBOL(s5p_device_onenand);
+#endif
+
 #ifdef CONFIG_FB_S3C
 static struct resource s3cfb_resource[] = {
 	[0] = {
