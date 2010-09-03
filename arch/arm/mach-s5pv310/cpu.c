@@ -169,13 +169,17 @@ void __init s5pv310_init_irq(void)
 }
 
 #ifdef CONFIG_CACHE_L2X0
-static int __init s5p_l2x0_cache_init(void)
+static void __init s5p_l2x0_cache_init(void)
 {
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
-	__raw_writel(0x111, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
+    /* DATA, TAG Latency is 2cycle */
+	__raw_writel(0x110, S5P_VA_L2CC + L2X0_TAG_LATENCY_CTRL);
+	__raw_writel(0x110, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
+
+	/*  L2 cache Prefetch Control Register setting */
+	__raw_writel(0x70800000, S5P_VA_L2CC + L2X0_PREFETCH_CTRL);
+
 	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
 
-	return 0;
 }
 early_initcall(s5p_l2x0_cache_init);
 #endif
