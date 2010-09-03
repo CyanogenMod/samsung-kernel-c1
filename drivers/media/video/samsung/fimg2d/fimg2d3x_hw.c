@@ -165,21 +165,26 @@ void fimg2d3x_set_src_type(struct fimg2d_control *info, FIMG2D_IMG_T type)
 void fimg2d3x_set_src_param(struct fimg2d_control *info, struct fimg2d_param *p)
 {
 	int bpp = 0;
+	unsigned long addr;
 	unsigned long cfg;
 
 	/* addr */
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	if (p->cookie) {
-		/* option 2. fimg2d hw uses kernel virutal address */
-		p->addr = (unsigned long)s5p_getaddress(p->cookie);
-		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
-	}
-	else {
-		/* option 1. fimg2d hw uses user virutal address */
-		/* NOP */
-		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	if (p->addr_type == FIMG2D_ADDR_COOKIE) {
+		/* in case fimg2d hw uses (kernel) virtual address */
+        addr = (unsigned long)s5p_getaddress(p->addr);
+        if (!addr) {
+            printk(KERN_ERR "[%s]: unknown cookie(0x%x) kaddr(0x%x)\n",
+					__func__, (unsigned int)p->addr, (unsigned int)addr);
+			p->addr = addr;
+            return;
+        }
+        fimg2d_debug("cookie(0x%x) --> kaddr(0x%x)\n", (unsigned int)p->addr, (unsigned int)addr);
+        p->addr = addr;
+        p->addr_type = FIMG2D_ADDR_KERN;
 	}
 #endif
+	fimg2d_debug("addr(0x%x) addr_type(%d)\n", (unsigned int)p->addr, p->addr_type);
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_SRC_BASE_ADDR_REG);
 
 	/* stride */
@@ -255,21 +260,26 @@ void fimg2d3x_set_dst_type(struct fimg2d_control *info, FIMG2D_IMG_T type)
 void fimg2d3x_set_dst_param(struct fimg2d_control *info, struct fimg2d_param *p)
 {
 	int bpp = 0;
+	unsigned long addr;
 	unsigned long cfg;
 
 	/* addr */
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	if (p->cookie) {
-		/* option 2. fimg2d hw uses kernel virutal address */
-		p->addr = (unsigned long)s5p_getaddress(p->cookie);
-		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
-	}
-	else {
-		/* option 1. fimg2d hw uses user virutal address */
-		/* NOP */
-		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	if (p->addr_type == FIMG2D_ADDR_COOKIE) {
+		/* in case fimg2d hw uses (kernel) virtual address */
+        addr = (unsigned long)s5p_getaddress(p->addr);
+        if (!addr) {
+            printk(KERN_ERR "[%s]: unknown cookie(0x%x) kaddr(0x%x)\n",
+					__func__, (unsigned int)p->addr, (unsigned int)addr);
+			p->addr = addr;
+            return;
+        }
+        fimg2d_debug("cookie(0x%x) --> kaddr(0x%x)\n", (unsigned int)p->addr, (unsigned int)addr);
+        p->addr = addr;
+        p->addr_type = FIMG2D_ADDR_KERN;
 	}
 #endif
+	fimg2d_debug("addr(0x%x) addr_type(%d)\n", (unsigned int)p->addr, p->addr_type);
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_DST_BASE_ADDR_REG);
 
 	/* stride */
@@ -324,6 +334,7 @@ void fimg2d3x_set_dst_coordinate(struct fimg2d_control *info, struct fimg2d_rect
 void fimg2d3x_set_pat_param(struct fimg2d_control *info, struct fimg2d_param *p)
 {
 	int bpp = 0;
+	unsigned long addr;
 	unsigned long cfg;
 
 	/* direction */
@@ -340,17 +351,21 @@ void fimg2d3x_set_pat_param(struct fimg2d_control *info, struct fimg2d_param *p)
 
 	/* addr */
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	if (p->cookie) {
-		/* option 2. fimg2d hw uses kernel virutal address */
-		p->addr = (unsigned long)s5p_getaddress(p->cookie);
-		printk(KERN_DEBUG "kaddr(0x%x) cookie(0x%x)\n", (unsigned int)p->addr, p->cookie);
-	}
-	else {
-		/* option 1. fimg2d hw uses user virutal address */
-		/* NOP */
-		printk(KERN_DEBUG "uaddr(0x%x)\n", (unsigned int)p->addr);
+	if (p->addr_type == FIMG2D_ADDR_COOKIE) {
+		/* in case fimg2d hw uses (kernel) virtual address */
+        addr = (unsigned long)s5p_getaddress(p->addr);
+        if (!addr) {
+            printk(KERN_ERR "[%s]: unknown cookie(0x%x) kaddr(0x%x)\n", 
+					__func__, (unsigned int)p->addr, (unsigned int)addr);
+			p->addr = addr;
+            return;
+        }
+        fimg2d_debug("cookie(0x%x) --> kaddr(0x%x)\n", (unsigned int)p->addr, (unsigned int)addr);
+        p->addr = addr;
+        p->addr_type = FIMG2D_ADDR_KERN;
 	}
 #endif
+	fimg2d_debug("addr(0x%x) addr_type(%d)\n", (unsigned int)p->addr, p->addr_type);
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_PAT_BASE_ADDR_REG);
 
 	/* width & height */
@@ -579,7 +594,7 @@ void fimg2d3x_dump_regs(struct fimg2d_control *info)
 	for (i = 0; i < 11; i++) {
 		for (j = 0; j < table[i][1]; j++) {
 			offset = table[i][0] + (j * 4);
-			printk(KERN_DEBUG "[0x%03x] 0x%08x\n", offset,
+			fimg2d_debug("[0x%03x] 0x%08x\n", offset,
 						readl(info->regs + offset));
 		}
 	}

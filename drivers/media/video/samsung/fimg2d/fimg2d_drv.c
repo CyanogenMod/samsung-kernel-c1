@@ -32,6 +32,9 @@
 
 #ifdef CONFIG_S5P_SYSMMU_FIMG2D
 #include <plat/sysmmu.h>
+#ifdef CONFIG_S5P_VMEM
+extern void *s5p_getaddress(unsigned int cookie);
+#endif
 #endif
 
 static struct fimg2d_control *info;
@@ -79,11 +82,9 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 	INIT_LIST_HEAD(&ctx->node);
 	INIT_LIST_HEAD(&ctx->reg_q);
 	init_waitqueue_head(&ctx->wq);
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	/* option 1. fimg2d hw uses user virtual address */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
+	/* in case fimg2d hw uses (user) virtual address */
 	ctx->pgd = __pa(current->mm->pgd);
-	/* option 2. fimg2d hw uses kernel virtual address */
-	// sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir)); move to fimg2d_probe()
 #endif
 
 	fimg2d_enqueue(info, &ctx->node, &info->ctx_q);
@@ -206,7 +207,22 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 	if (copy_from_user(&dma, (struct fimg2d_dma_info *)arg, sizeof(dma)))
 		return -EFAULT;
 
-	vaddr = phys_to_virt(dma.addr);
+	switch (dma.addr_type) {
+	case FIMG2D_ADDR_PHYS:
+		vaddr = phys_to_virt(dma.addr);
+		break;
+	case FIMG2D_ADDR_KERN:
+		vaddr = (void *)dma.addr;
+		break;
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	case FIMG2D_ADDR_COOKIE:
+		vaddr = s5p_getaddress(dma.addr);
+		break;
+#endif
+	default:
+		fimg2d_debug("invalid address type\n");
+		return -1;
+	}
 
 	switch (cmd) {
 	case FIMG2D_DMA_CACHE_INVAL:
@@ -337,10 +353,10 @@ static struct miscdevice fimg2d_dev = {
 */
 static int fimg2d_setup_controller(struct fimg2d_control *info)
 {
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
 	sysmmu_on(SYSMMU_G2D);
 	fimg2d_debug("sysmmu on\n");
-	/* option 2. fimg2d hw uses kernel virtual address */
+	/* in case fimg2d hw uses (kernel) virtual address */
 	sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir));
 #endif
 	spin_lock_init(&info->lock);
@@ -505,7 +521,7 @@ err_plat:
 */
 static int fimg2d_remove(struct platform_device *pdev)
 {
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
 	sysmmu_off(SYSMMU_G2D);
 	fimg2d_debug("sysmmu off\n");
 #endif
