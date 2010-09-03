@@ -57,7 +57,8 @@ obj-$(CONFIG_S3C_DEV_GIB)	+= dev-gib.o
 obj-$(CONFIG_SAMSUNG_DEV_ADC)	+= dev-adc.o
 ifeq ($(CONFIG_S3C_DEV_ADC),y)
 obj-$(CONFIG_SAMSUNG_DEV_TS)	+= dev-ts.o
-else
+endif
+ifeq ($(CONFIG_S3C_DEV_ADC1),y)
 obj-$(CONFIG_SAMSUNG_DEV_TS)	+= dev-ts1.o
 endif
 
