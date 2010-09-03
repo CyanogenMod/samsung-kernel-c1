@@ -29,6 +29,7 @@ static int org_width;
 static int org_height;
 static struct fimg2d_rect org_dst;
 static unsigned long org_addr;
+static FIMG2D_ADDR_TYPE_T org_type;
 
 /**
  * fimg2d3x_pattern_blend_pre - [3.x] Do pre-work for pattern blending
@@ -41,6 +42,7 @@ static inline void fimg2d3x_pattern_blend_pre(struct fimg2d_context *ctx,
 	/* backup originals */
 	pat_height = ctx->src.height;
 	org_addr = ctx->dst.addr;
+	org_type = ctx->dst.addr_type;
 	org_width = ctx->dst.width;
 	org_height = ctx->dst.height;
 	memcpy(&org_dst, &reg->dst, sizeof(org_dst));
@@ -54,9 +56,20 @@ static inline void fimg2d3x_pattern_blend_pre(struct fimg2d_context *ctx,
 
 	/* temporary buffer for pattern copy */
 	scratch_buf = kmalloc(ctx->dst.width * ctx->dst.height * 4, GFP_KERNEL);
+	if (!scratch_buf) {
+		printk(KERN_ERR "[%s]: kmalloc failed\n", __func__);
+		return;
+	}
 
 	/* new addr and region */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D)
+	ctx->dst.addr = (unsigned long)scratch_buf;
+	ctx->dst.addr_type = FIMG2D_ADDR_KERN;
+	fimg2d_debug("src.addr(0x%x) src.type(%d)\n", (unsigned int)ctx->src.addr, ctx->src.addr_type);
+#else
 	ctx->dst.addr = (unsigned long)virt_to_phys(scratch_buf);
+	ctx->dst.addr_type = FIMG2D_ADDR_PHYS;
+#endif
 	reg->src.x1 = 0;
 	reg->src.y1 = 0;
 	reg->src.x2 = ctx->src.width;
@@ -83,8 +96,16 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 
 	ctx->src.type = NORMAL;
 	ctx->dst.type = NORMAL;
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
+	ctx->src.addr = (unsigned long)scratch_buf;
+	ctx->src.addr_type = FIMG2D_ADDR_KERN;
+	fimg2d_debug("src.addr(0x%x) src.type(%d)\n", (unsigned int)ctx->src.addr, ctx->src.addr_type);
+#else
 	ctx->src.addr = (unsigned long)virt_to_phys(scratch_buf);
+	ctx->src.addr_type = FIMG2D_ADDR_PHYS;
+#endif
 	ctx->dst.addr = org_addr;
+	ctx->dst.addr_type = org_type;
 	ctx->alpha.enabled = 1;
 	ctx->alpha.nonpre_type = DISABLED;
 	ctx->alpha.value = 0xff;
@@ -105,23 +126,31 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 	info->configure(info, ctx);
 	info->update(info, ctx, reg);
 
-	atomic_set(&info->busy, 1);
-
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	if (!ctx->src.cookie && !ctx->dst.cookie) {
-		/* option 1. fimg2d hw uses user virtual address */
-		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+	if ((ctx->src.addr_type && !ctx->src.addr) || 
+		(ctx->dst.addr_type && !ctx->dst.addr)) {
+		/* avoid system hang-up */
+		printk(KERN_ERR "[%s]: invalid addr: src.addr(0x%x) dst.addr(0x%x)\n", 
+				__func__, (unsigned int)ctx->src.addr, (unsigned int)ctx->dst.addr);
 	}
 	else {
-		/* option 2. fimg2d hw uses kernel virtual address */
-		/* NOP */
-	}
-#endif
-	info->run(info);
 
-	ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
-	if (ret == 0)
-		printk(KERN_ERR "pattern: wait timeout\n");
+		atomic_set(&info->busy, 1);
+
+		if (ctx->src.addr && ctx->dst.addr) {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D)
+			if (ctx->dst.addr_type == FIMG2D_ADDR_USER) {
+				/* in case fimg2d hw uses (user) virtual address */
+				sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+			}
+#endif
+
+			info->run(info);
+
+			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
+			if (ret == 0)
+				printk(KERN_ERR "pattern: wait timeout\n");
+		}
+	}
 
 	kfree(scratch_buf);
 }
@@ -157,23 +186,28 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 
 		info->update(info, ctx, reg);
 
-		atomic_set(&info->busy, 1);
+		if ((ctx->src.addr_type && !ctx->src.addr) || 
+			(ctx->dst.addr_type && !ctx->dst.addr)) {
+			/* avoid system hang-up */
+			printk(KERN_ERR "[%s]: invalid addr: src.addr(0x%x) dst.addr(0x%x)\n", 
+					__func__, (unsigned int)ctx->src.addr, (unsigned int)ctx->dst.addr);
+		}
+		else {
+			atomic_set(&info->busy, 1);
 
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
-	if (!ctx->src.cookie && !ctx->dst.cookie) {
-		/* option 1. fimg2d hw uses user virtual address */
-		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
-	}
-	else {
-		/* option 2. fimg2d hw uses kernel virtual address */
-		/* NOP */
-	}
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
+			if ((ctx->src.addr_type == FIMG2D_ADDR_USER) ||
+				(ctx->dst.addr_type == FIMG2D_ADDR_USER)) {
+				/* in case fimg2d hw uses (user) virtual address */
+				sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+			}
 #endif
-		info->run(info);
+			info->run(info);
 
-		ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
-		if (ret == 0)
-			printk(KERN_ERR "bitblt: wait timeout\n");
+			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
+			if (ret == 0)
+				printk(KERN_ERR "bitblt: wait timeout\n");
+		}
 
 		/* pattern blend work around for 3.0 hardware */
 		if (ctx->op == OP_PAT_BLEND) {

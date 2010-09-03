@@ -45,6 +45,14 @@
 #define FIMG2D_DMA_CACHE_FLUSH		_IOWR(FIMG2D_IOCTL_MAGIC, 6, struct fimg2d_dma_info)
 #define FIMG2D_DMA_CACHE_FLUSH_ALL	_IO(FIMG2D_IOCTL_MAGIC, 7)
 
+
+typedef int FIMG2D_ADDR_TYPE_T;
+#define	FIMG2D_ADDR_NONE	0	/* address is not set */
+#define	FIMG2D_ADDR_PHYS	1	/* physical address */
+#define	FIMG2D_ADDR_KERN	2	/* virtual address on kernel space */
+#define	FIMG2D_ADDR_USER	3	/* virtual address on user space */
+#define	FIMG2D_ADDR_COOKIE	4	/* key to virtual address on kernel space */
+
 typedef enum img_t {
 	NORMAL,
 	PATTERN,
@@ -114,6 +122,7 @@ typedef enum bitblt_t {
 struct fimg2d_dma_info {
 	unsigned long addr;
 	size_t size;
+	FIMG2D_ADDR_TYPE_T addr_type;
 };
 
 /**
@@ -145,8 +154,8 @@ struct fimg2d_alpha {
 /**
  * struct fimg2d_param - src and dst info
  * @type: image type
- * @addr: address (physical or user virtual)
- * @cookie: cookie of s5p-vmem for kernel virtual address
+ * @addr: address with addr_type
+ * @addr_type: physical, kernel virtual or user virtual address type
  * @width: image width
  * @height: image height
  * @dx: -1 if negative direction of x
@@ -158,7 +167,7 @@ struct fimg2d_alpha {
 struct fimg2d_param {
 	FIMG2D_IMG_T type;
 	unsigned long addr;
-	unsigned int cookie;
+	FIMG2D_ADDR_TYPE_T addr_type;
 	int width;
 	int height;
 	int dx;
