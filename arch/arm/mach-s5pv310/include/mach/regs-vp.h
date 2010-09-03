@@ -1,19 +1,17 @@
-/* linux/arch/arm/mach-s5pv310/include/mach/regs-vprocessor.h
+/* linux/arch/arm/mach-s5pv210/include/mach/regs-vp.h
  *
- * Copyright (c) 2010 Samsung Electronics
- * 	http://www.samsung.com/
+ * Copyright (c) 2009 Samsung Electronics
+ *		http://www.samsung.com/
  *
- * Video Processor register header file for Samsung TVOUT driver
+ * Video processor register header file for Samsung TVOUT driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
 */
 
-#ifndef __ASM_ARCH_REGS_VPROCESSOR_H
-#define __ASM_ARCH_REGS_VPROCESSOR_H
-
-#include <mach/map.h>
+#ifndef __ARCH_ARM_REGS_VP_H
+#define __ARCH_ARM_REGS_VP_H __FILE__
 
 /*
  * Register part
@@ -169,25 +167,25 @@
 #define S5P_VP_FIELD_ID_BOTTOM			(1 << 0)
 
 /* VP_MODE */
-#define S5P_VP_MODE_LINE_SKIP_OFF			(0 << 5)
-#define S5P_VP_MODE_LINE_SKIP_ON			(1 << 5)
-#define S5P_VP_MODE_MEM_MODE_LINEAR			(0 << 4)
-#define S5P_VP_MODE_MEM_MODE_2D_TILE			(1 << 4)
-#define S5P_VP_MODE_CROMA_EXPANSION_C_TOP_PTR		(0 << 3)
-#define S5P_VP_MODE_CROMA_EXPANSION_C_TOPBOTTOM_PTR	(1 << 3)
-#define S5P_VP_MODE_FIELD_ID_MAN_TOGGLING		(0 << 2)
-#define S5P_VP_MODE_FIELD_ID_AUTO_TOGGLING		(1 << 2)
-#define S5P_VP_MODE_2D_IPC_DISABLE			(0 << 1)
-#define S5P_VP_MODE_2D_IPC_ENABLE			(1 << 1)
+#define S5P_VP_MODE_LINE_SKIP_OFF		(0 << 5)
+#define S5P_VP_MODE_LINE_SKIP_ON		(1 << 5)
+#define S5P_VP_MODE_MEM_MODE_LINEAR		(0 << 4)
+#define S5P_VP_MODE_MEM_MODE_2D_TILE		(1 << 4)
+#define S5P_VP_MODE_CROMA_EXP_C_TOP_PTR		(0 << 3)
+#define S5P_VP_MODE_CROMA_EXP_C_TOPBOTTOM_PTR	(1 << 3)
+#define S5P_VP_MODE_FIELD_ID_MAN_TOGGLING	(0 << 2)
+#define S5P_VP_MODE_FIELD_ID_AUTO_TOGGLING	(1 << 2)
+#define S5P_VP_MODE_2D_IPC_DISABLE		(0 << 1)
+#define S5P_VP_MODE_2D_IPC_ENABLE		(1 << 1)
 
 /* VP_IMG_SIZE_Y */
 /* VP_IMG_SIZE_C */
 #define S5P_VP_IMG_HSIZE(x)			(((x) & 0x3FFF) << 16)
 #define S5P_VP_IMG_VSIZE(x)			(((x) & 0x3FFF) << 0)
-#define S5P_VP_IMG_SIZE_ILLEGAL(x)			((x) & 0x7)
+#define S5P_VP_IMG_SIZE_ILLEGAL(x)		((x) & 0x7)
 
-/* VP_PER_RATE_CTRL */
-#define S5P_VP_PEL_RATE_CTRL(x)			(((x) & 0x3) << 0)	/* Not support in S5PV210 */
+/* VP_PER_RATE_CTRL */ /* Not support in S5PV210 */
+#define S5P_VP_PEL_RATE_CTRL(x)			(((x) & 0x3) << 0)
 
 /* VP_TOP_Y_PTR */
 /* VP_BOT_Y_PTR */
@@ -219,253 +217,12 @@
 /* VP_DST_WIDTH */
 /* VP_DST_HEIGHT */
 #define S5P_VP_DST_WIDTH_VAL(x)			((x) & 0x7FF)
-#define S5P_VP_DST_HEIGHT_VAL(x)			((x) & 0x7FF)
+#define S5P_VP_DST_HEIGHT_VAL(x)		((x) & 0x7FF)
 
 /* VP_H_RATIO */
 /* VP_V_RATIO */
 #define S5P_VP_H_RATIO_VAL(x)			((x) & 0x7FFFF)
 #define S5P_VP_V_RATIO_VAL(x)			((x) & 0x7FFFF)
-
-/* VP_POLY8_Y0_LL */
-#define S5P_VP_POLY8_Y0_X0(x)			(((x) & 0x7) << 24)
-#define S5P_VP_POLY8_Y0_X1(x)			(((x) & 0x7) << 16)
-#define S5P_VP_POLY8_Y0_X2(x)			(((x) & 0x7) << 8)
-#define S5P_VP_POLY8_Y0_X3(x)			(((x) & 0x7) << 0)
-
-/* VP_POLY8_Y0_LH */
-#define S5P_VP_POLY8_Y0_X4(x)			(((x) & 0x7) << 24)
-#define S5P_VP_POLY8_Y0_X5(x)			(((x) & 0x7) << 16)
-#define S5P_VP_POLY8_Y0_X6(x)			(((x) & 0x7) << 8)
-#define S5P_VP_POLY8_Y0_X7(x)			(((x) & 0x7) << 0)
-
-/* VP_POLY8_Y0_HL */
-#define S5P_VP_POLY8_Y0_X8(x)			(((x) & 0x7) << 24)
-#define S5P_VP_POLY8_Y0_X9(x)			(((x) & 0x7) << 16)
-#define S5P_VP_POLY8_Y0_X10(x)			(((x) & 0x7) << 8)
-#define S5P_VP_POLY8_Y0_X11(x)			(((x) & 0x7) << 0)
-
-/* VP_POLY8_Y0_HH */
-#define S5P_VP_POLY8_Y0_X12(x)			(((x) & 0x7) << 24)
-#define S5P_VP_POLY8_Y0_X13(x)			(((x) & 0x7) << 16)
-#define S5P_VP_POLY8_Y0_X14(x)			(((x) & 0x7) << 8)
-#define S5P_VP_POLY8_Y0_X15(x)			(((x) & 0x7) << 0)
-
-
-/* VP_POLY8_Y1_LL */
-#define S5P_VP_POLY8_Y1_X0(x)			(((x) & 0x1F) << 24)
-#define S5P_VP_POLY8_Y1_X1(x)			(((x) & 0x1F) << 16)
-#define S5P_VP_POLY8_Y1_X2(x)			(((x) & 0x1F) << 8)
-#define S5P_VP_POLY8_Y1_X3(x)			(((x) & 0x1F) << 0)
-
-/* VP_POLY8_Y1_LH */
-#define S5P_VP_POLY8_Y1_X4(x)			(((x) & 0x1F) << 24)
-#define S5P_VP_POLY8_Y1_X5(x)			(((x) & 0x1F) << 16)
-#define S5P_VP_POLY8_Y1_X6(x)			(((x) & 0x1F) << 8)
-#define S5P_VP_POLY8_Y1_X7(x)			(((x) & 0x1F) << 0)
-
-/* VP_POLY8_Y1_HL */
-#define S5P_VP_POLY8_Y1_X8(x)			(((x) & 0x1F) << 24)
-#define S5P_VP_POLY8_Y1_X9(x)			(((x) & 0x1F) << 16)
-#define S5P_VP_POLY8_Y1_X10(x)			(((x) & 0x1F) << 8)
-#define S5P_VP_POLY8_Y1_X11(x)			(((x) & 0x1F) << 0)
-
-/* VP_POLY8_Y1_HH */
-#define S5P_VP_POLY8_Y1_X12(x)			(((x) & 0x1F) << 24)
-#define S5P_VP_POLY8_Y1_X13(x)			(((x) & 0x1F) << 16)
-#define S5P_VP_POLY8_Y1_X14(x)			(((x) & 0x1F) << 8)
-#define S5P_VP_POLY8_Y1_X15(x)			(((x) & 0x1F) << 0)
-
-/* VP_POLY8_Y2_LL */
-#define S5P_VP_POLY8_Y2_X0(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y2_X1(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y2_X2(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y2_X3(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y2_LH */
-#define S5P_VP_POLY8_Y2_X4(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y2_X5(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y2_X6(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y2_X7(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y2_HL */
-#define S5P_VP_POLY8_Y2_X8(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y2_X9(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y2_X10(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y2_X11(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y2_HH */
-#define S5P_VP_POLY8_Y2_X12(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y2_X13(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y2_X14(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y2_X15(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y3_LL */
-#define S5P_VP_POLY8_Y3_X0(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y3_X1(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y3_X2(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y3_X3(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y3_LH */
-#define S5P_VP_POLY8_Y3_X4(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y3_X5(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y3_X6(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y3_X7(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y3_HL */
-#define S5P_VP_POLY8_Y3_X8(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y3_X9(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y3_X10(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y3_X11(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY8_Y3_HH */
-#define S5P_VP_POLY8_Y3_X12(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY8_Y3_X13(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY8_Y3_X14(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY8_Y3_X15(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY4_Y0_LL */
-#define S5P_VP_POLY4_Y0_X0(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y0_X1(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y0_X2(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y0_X3(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y0_LH */
-#define S5P_VP_POLY4_Y0_X4(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y0_X5(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y0_X6(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y0_X7(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y0_HL */
-#define S5P_VP_POLY4_Y0_X8(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y0_X9(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y0_X10(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y0_X11(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y0_HH */
-#define S5P_VP_POLY4_Y0_X12(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y0_X13(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y0_X14(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y0_X15(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y1_LL */
-#define S5P_VP_POLY4_Y1_X0(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y1_X1(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y1_X2(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y1_X3(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y1_LH */
-#define S5P_VP_POLY4_Y1_X4(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y1_X5(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y1_X6(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y1_X7(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y1_HL */
-#define S5P_VP_POLY4_Y1_X8(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y1_X9(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y1_X10(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y1_X11(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y1_HH */
-#define S5P_VP_POLY4_Y1_X12(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y1_X13(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y1_X14(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y1_X15(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y2_LL */
-#define S5P_VP_POLY4_Y2_X0(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y2_X1(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y2_X2(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y2_X3(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y2_LH */
-#define S5P_VP_POLY4_Y2_X4(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y2_X5(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y2_X6(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y2_X7(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y2_HL */
-#define S5P_VP_POLY4_Y2_X8(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y2_X9(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y2_X10(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y2_X11(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y2_HH */
-#define S5P_VP_POLY4_Y2_X12(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y2_X13(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y2_X14(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y2_X15(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y3_LL */
-#define S5P_VP_POLY4_Y3_X0(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y3_X1(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y3_X2(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y3_X3(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y3_LH */
-#define S5P_VP_POLY4_Y3_X4(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y3_X5(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y3_X6(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y3_X7(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y3_HL */
-#define S5P_VP_POLY4_Y3_X8(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y3_X9(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y3_X10(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y3_X11(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_Y3_HH */
-#define S5P_VP_POLY4_Y3_X12(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_Y3_X13(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_Y3_X14(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_Y3_X15(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_C0_LL */
-#define S5P_VP_POLY4_C0_PH0(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY4_C0_PH1(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY4_C0_PH2(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY4_C0_PH3(x)			(((x) & 0x7F) << 0)
-
-/* VP_POLY4_C0_LH */
-#define S5P_VP_POLY4_C0_PH4(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_C0_PH5(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_C0_PH6(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_C0_PH7(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_C0_HL */
-#define S5P_VP_POLY4_C0_PH8(x)			(((x) & 0x3F) << 24)
-#define S5P_VP_POLY4_C0_PH9(x)			(((x) & 0x3F) << 16)
-#define S5P_VP_POLY4_C0_PH10(x)			(((x) & 0x3F) << 8)
-#define S5P_VP_POLY4_C0_PH11(x)			(((x) & 0x3F) << 0)
-
-/* VP_POLY4_C0_HH */
-#define S5P_VP_POLY4_C0_PH12(x)			(((x) & 0x1F) << 24)
-#define S5P_VP_POLY4_C0_PH13(x)			(((x) & 0x1F) << 16)
-#define S5P_VP_POLY4_C0_PH14(x)			(((x) & 0x1F) << 8)
-#define S5P_VP_POLY4_C0_PH15(x)			(((x) & 0x1F) << 0)
-
-/* VP_POLY4_C1_LL */
-#define S5P_VP_POLY4_C1_PH0(x)			(((x) & 0xFF) << 24)
-#define S5P_VP_POLY4_C1_PH1(x)			(((x) & 0xFF) << 16)
-#define S5P_VP_POLY4_C1_PH2(x)			(((x) & 0xFF) << 8)
-#define S5P_VP_POLY4_C1_PH3(x)			(((x) & 0xFF) << 0)
-
-/* VP_POLY4_C1_LH */
-#define S5P_VP_POLY4_C1_PH4(x)			(((x) & 0xFF) << 24)
-#define S5P_VP_POLY4_C1_PH5(x)			(((x) & 0xFF) << 16)
-#define S5P_VP_POLY4_C1_PH6(x)			(((x) & 0xFF) << 8)
-#define S5P_VP_POLY4_C1_PH7(x)			(((x) & 0xFF) << 0)
-
-/* VP_POLY4_C1_HL */
-#define S5P_VP_POLY4_C1_PH8(x)			(((x) & 0xFF) << 24)
-#define S5P_VP_POLY4_C1_PH9(x)			(((x) & 0xFF) << 16)
-#define S5P_VP_POLY4_C1_PH10(x)			(((x) & 0xFF) << 8)
-#define S5P_VP_POLY4_C1_PH11(x)			(((x) & 0xFF) << 0)
-
-/* VP_POLY4_C1_HH */
-#define S5P_VP_POLY4_C1_PH12(x)			(((x) & 0x7F) << 24)
-#define S5P_VP_POLY4_C1_PH13(x)			(((x) & 0x7F) << 16)
-#define S5P_VP_POLY4_C1_PH14(x)			(((x) & 0x7F) << 8)
-#define S5P_VP_POLY4_C1_PH15(x)			(((x) & 0x7F) << 0)
 
 /* PP_CSC_Y2Y_COEF */
 #define S5P_PP_Y2Y_COEF_601_TO_709		(0x400)
@@ -516,14 +273,7 @@
 #define S5P_VP_TH_HNOISE(x)			(((x) & 0xF) << 8)
 #define S5P_VP_SHARPNESS(x)			((x) & 0x3)
 
-/* PP_LINE_EQ0 */
-/* PP_LINE_EQ1 */
-/* PP_LINE_EQ2 */
-/* PP_LINE_EQ3 */
-/* PP_LINE_EQ4 */
-/* PP_LINE_EQ5 */
-/* PP_LINE_EQ6 */
-/* PP_LINE_EQ7 */
+/* PP_LINE_EQ0 ~ 7 */
 #define S5P_VP_LINE_INTC(x)			(((x) & 0xFFFF) << 8)
 #define S5P_VP_LINE_SLOPE(x)			((x) & 0xFF)
 #define S5P_VP_LINE_INTC_CLEAR(x)		((x) & ~(0xFFFF << 8))
@@ -538,47 +288,4 @@
 #define S5P_VP_CSC_ENABLE			(1)
 #define S5P_VP_CSC_DISABLE			(0)
 
-/* VP_VERSION_INFO */
-/* VP_FIELD_ID_S */
-/* VP_MODE_S */
-/* VP_IMG_SIZE_Y_S */
-/* VP_IMG_SIZE_C_S */
-/* VP_TOP_Y_PTR_S */
-/* VP_BOT_Y_PTR_S */
-/* VP_TOP_C_PTR_S */
-/* VP_BOT_C_PTR_S */
-/* VP_ENDIAN_MODE_ */
-/* VP_SRC_H_POSITION_S */
-/* VP_SRC_V_POSITION_S */
-/* VP_SRC_WIDTH_S */
-/* VP_SRC_HEIGHT_S */
-/* VP_DST_H_POSITION_S */
-/* VP_DST_V_POSITION_S */
-/* VP_DST_WIDTH_S */
-/* VP_DST_HEIGHT_S */
-/* VP_H_RATIO_S */
-/* VP_V_RATIO_S	*/
-/* PP_BYPASS_S */
-/* PP_SATURATION_S */
-/* PP_SHARPNESS_S */
-/* PP_LINE_EQ0_S */
-/* PP_LINE_EQ1_S */
-/* PP_LINE_EQ2_S */
-/* PP_LINE_EQ3_S */
-/* PP_LINE_EQ4_S */
-/* PP_LINE_EQ5_S */
-/* PP_LINE_EQ6_S */
-/* PP_LINE_EQ7_S */
-/* PP_BRIGHT_OFFSET_S */
-/* PP_CSC_EN_S */
-/* PP_CSC_Y2Y_COEF_S */
-/* PP_CSC_CB2Y_COEF_S */
-/* PP_CSC_CR2Y_COEF_S */
-/* PP_CSC_Y2CB_COEF_S */
-/* PP_CSC_CB2CB_COEF_S */
-/* PP_CSC_CR2CB_COEF_S */
-/* PP_CSC_Y2CR_COEF_S */
-/* PP_CSC_CB2CR_COEF_S */
-/* PP_CSC_CR2CR_COEF_S */
-
-#endif /* __ASM_ARCH_REGS_VPROCESSOR_H */
+#endif /* __ARCH_ARM_REGS_VP_H */
