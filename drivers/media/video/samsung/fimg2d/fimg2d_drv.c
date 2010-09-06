@@ -201,6 +201,7 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 {
 	struct fimg2d_dma_info dma;
 	void *vaddr;
+	int op;
 
 	fimg2d_debug("do cache op\n");
 
@@ -211,10 +212,10 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 	case FIMG2D_ADDR_PHYS:
 		vaddr = phys_to_virt(dma.addr);
 		break;
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
 	case FIMG2D_ADDR_KERN:
 		vaddr = (void *)dma.addr;
 		break;
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
 	case FIMG2D_ADDR_COOKIE:
 		vaddr = s5p_getaddress(dma.addr);
 		break;
@@ -281,7 +282,6 @@ static int fimg2d_ioctl(struct inode *inode, struct file *file,
 	case FIMG2D_BITBLT_CONFIG:
 		fimg2d_debug("FIMG2D_BITBLT_CONFIG: %p\n", ctx);
 		p.u_ctx = (struct fimg2d_user_context *)arg;
-		fimg2d_wait(info, ctx);
 		ret = fimg2d_set_context(info, ctx, p.u_ctx);
 		break;
 
@@ -304,9 +304,13 @@ static int fimg2d_ioctl(struct inode *inode, struct file *file,
 			spin_lock(&info->lock);
 			info->active = ctx;
 			spin_unlock(&info->lock);
+			fimg2d_debug("dispatch to kernel thread\n");
 			queue_work(info->workqueue, &fimg2d_work);
 		}
-
+		/* some existing application releases memory right after 
+		 * calling this ioctl without a call of bitblt wait.
+		 * so, it happens that memory is freed while it is being accessed. */
+		fimg2d_wait(info, ctx);
 		break;
 
 	case FIMG2D_BITBLT_WAIT:

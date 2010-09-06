@@ -136,20 +136,18 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 
 		atomic_set(&info->busy, 1);
 
-		if (ctx->src.addr && ctx->dst.addr) {
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D)
-			if (ctx->dst.addr_type == FIMG2D_ADDR_USER) {
-				/* in case fimg2d hw uses (user) virtual address */
-				sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
-			}
+		if (ctx->dst.addr_type == FIMG2D_ADDR_USER) {
+			/* in case fimg2d hw uses (user) virtual address */
+			sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
+		}
 #endif
 
-			info->run(info);
+		info->run(info);
 
-			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
-			if (ret == 0)
-				printk(KERN_ERR "pattern: wait timeout\n");
-		}
+		ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
+		if (ret == 0)
+			printk(KERN_ERR "pattern: wait timeout\n");
 	}
 
 	kfree(scratch_buf);
