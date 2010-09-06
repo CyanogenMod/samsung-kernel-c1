@@ -41,6 +41,7 @@ struct s5p_vmem_alloc {
 	size_t size;
 	unsigned long vir_addr;
 	unsigned int cookie;
+	unsigned long vir_addr_k;
 };
 
 #endif /* S5P_VMEM_H */

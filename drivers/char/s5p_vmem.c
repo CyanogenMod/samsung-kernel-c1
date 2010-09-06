@@ -452,6 +452,7 @@ static int s5p_alloc(struct file *file, struct s5p_vmem_alloc *param)
 	if ((alloctype == MEM_ALLOC) || (alloctype == MEM_ALLOC_CACHEABLE))
 		param->cookie = recent_kvm_area->cookie;
 
+	param->vir_addr_k = (unsigned long)recent_kvm_area->start_addr;
 	param->size = recent_kvm_area->size;
 
 	return 0;
