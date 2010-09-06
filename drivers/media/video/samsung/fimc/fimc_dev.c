@@ -530,7 +530,7 @@ static void fimc_mmap_open(struct vm_area_struct *vma)
 {
 	struct fimc_global *dev = fimc_dev;
 	int pri_data	= (int)vma->vm_private_data;
-	u32 id		= pri_data / 0x10;
+	u32 id		= pri_data / 0x100;
 	u32 ctx		= (pri_data - (id * 0x100)) / 0x10;
 	u32 idx		= pri_data % 0x10;
 
