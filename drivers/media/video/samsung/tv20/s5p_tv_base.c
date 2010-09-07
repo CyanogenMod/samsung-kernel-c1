@@ -775,7 +775,7 @@ static struct platform_driver s5p_tv_driver = {
 	.suspend	= s5p_tv_suspend,
 	.resume		= s5p_tv_resume,
 	.driver		= {
-		.name	= "s5p-tvout",
+		.name	= "s5p-tv",
 		.owner	= THIS_MODULE,
 	},
 };
