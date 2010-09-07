@@ -19,8 +19,8 @@
 #include <linux/io.h>
 #include <plat/clock.h>
 #include <plat/gpio-cfg.h>
-#include <plat/map-s5p.h>
 #include <mach/regs-gpio.h>
+#include <plat/map-s5p.h>
 #include <mach/map.h>
 
 struct platform_device; /* don't need the contents */
@@ -30,23 +30,23 @@ void s3c_fimc0_cfg_gpio(struct platform_device *pdev)
 	int i = 0;
 
 	/* CAM A port(b0010) : PCLK, VSYNC, HREF, DATA[0-4] */
-	for (i=0; i < 8; i++) {
+	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPJ0(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPJ0(i), S3C_GPIO_PULL_NONE);
 	}
 	/* CAM A port(b0010) : DATA[5-7], CLKOUT(MIPI CAM also), FIELD */
-	for (i=0; i < 5; i++) {
+	for (i = 0; i < 5; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPJ1(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPJ1(i), S3C_GPIO_PULL_NONE);
 	}
 
 	/* CAM B port(b0011) : DATA[0-7] */
-	for (i=0; i < 8; i++) {
+	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPE1(i), S3C_GPIO_SFN(3));
 		s3c_gpio_setpull(S5PV310_GPE1(i), S3C_GPIO_PULL_NONE);
 	}
 	/* CAM B port(b0011) : PCLK, VSYNC, HREF, FIELD, CLCKOUT */
-	for (i=0; i < 5; i++) {
+	for (i = 0; i < 5; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPE0(i), S3C_GPIO_SFN(3));
 		s3c_gpio_setpull(S5PV310_GPE0(i), S3C_GPIO_PULL_NONE);
 	}
@@ -87,7 +87,7 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 	printk(KERN_INFO "mout_mpll : %ld\n", clk_get_rate(mout_mpll));
 	printk(KERN_INFO "sclk_fimc : %ld\n", clk_get_rate(sclk_fimc_lclk));
 	printk(KERN_INFO "fimc_clk: %ld\n", clk_get_rate(*clk));
-	
+
 	clk_enable(*clk);
 	clk_enable(sclk_fimc_lclk);
 
