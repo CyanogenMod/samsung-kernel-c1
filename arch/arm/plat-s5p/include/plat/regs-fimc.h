@@ -15,7 +15,7 @@
 
 /*
  * Register part
-*/ 
+*/
 #define S3C_CISRCFMT		(0x00)	/* Input source format */
 #define S3C_CIWDOFST		(0x04)	/* Window offset */
 #define S3C_CIGCTRL		(0x08)	/* Global control */
@@ -158,14 +158,14 @@
 /* frame start address 1 ~ 4, 5 ~ 32 */
 #define DEF_PP		4 /* Number of Default PingPong Memory */
 #define S3C_CIOYSA(__x)		\
-	(((__x) < DEF_PP)?	\
-	 (S3C_CIOYSA1  + (__x) * 4):(S3C_CIOYSA5  + ((__x) - DEF_PP) * 4))
+	(((__x) < DEF_PP) ?	\
+	 (S3C_CIOYSA1  + (__x) * 4) : (S3C_CIOYSA5  + ((__x) - DEF_PP) * 4))
 #define S3C_CIOCBSA(__x)	\
-	(((__x) < DEF_PP)?	\
-	 (S3C_CIOCBSA1 + (__x) * 4):(S3C_CIOCBSA5 + ((__x) - DEF_PP) * 4))
+	(((__x) < DEF_PP) ?	\
+	 (S3C_CIOCBSA1 + (__x) * 4) : (S3C_CIOCBSA5 + ((__x) - DEF_PP) * 4))
 #define S3C_CIOCRSA(__x)	\
-	(((__x) < DEF_PP)?	\
-	 (S3C_CIOCRSA1 + (__x) * 4):(S3C_CIOCRSA5 + ((__x) - DEF_PP) * 4))
+	(((__x) < DEF_PP) ?	\
+	 (S3C_CIOCRSA1 + (__x) * 4) : (S3C_CIOCRSA5 + ((__x) - DEF_PP) * 4))
 
 #define S3C_CISRCFMT_SOURCEHSIZE(x)		((x) << 16)
 #define S3C_CISRCFMT_SOURCEVSIZE(x)		((x) << 0)
@@ -287,6 +287,9 @@
 #define S3C_CIGCTRL_SELCAM_MIPI_MASK		(1 << 7)
 #define S3C_CIGCTRL_SELWB_CAMIF_CAMERA  	(0 << 6)
 #define S3C_CIGCTRL_SELWB_CAMIF_WRITEBACK 	(1 << 6)
+#define S3C_CIGCTRL_SELWRITEBACK_MASK		(1 << 10)
+#define S3C_CIGCTRL_SELWRITEBACK_A		(1 << 10)
+#define S3C_CIGCTRL_SELWRITEBACK_B		(0 << 10)
 #define S3C_CIGCTRL_SELWB_CAMIF_MASK  		(1 << 6)
 #define S3C_CIGCTRL_CSC_ITU601			(0 << 5)
 #define S3C_CIGCTRL_CSC_ITU709			(1 << 5)
