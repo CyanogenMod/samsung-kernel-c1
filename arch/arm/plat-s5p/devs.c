@@ -444,12 +444,14 @@ void __init s3c_csis0_set_platdata(struct s3c_platform_csis *pd)
 
 	npd->cfg_gpio = s3c_csis0_cfg_gpio;
 	npd->cfg_phy_global = s3c_csis0_cfg_phy_global;
+	npd->clk_on = s3c_csis_clk_on;
+	npd->clk_off = s3c_csis_clk_off;
 	s3c_device_csis0.dev.platform_data = npd;
 }
 static struct resource s3c_csis1_resource[] = {
 	[0] = {
 		.start	= S5P_PA_CSIS1,
-		.end	= S5P_PA_CSIS1 + S5P_SZ_CSIS0 - 1,
+		.end	= S5P_PA_CSIS1 + S5P_SZ_CSIS1 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 	[1] = {
@@ -461,7 +463,7 @@ static struct resource s3c_csis1_resource[] = {
 
 struct platform_device s3c_device_csis1 = {
 	.name		= "s3c-csis",
-	.id		= 0,
+	.id		= 1,
 	.num_resources	= ARRAY_SIZE(s3c_csis1_resource),
 	.resource	= s3c_csis1_resource,
 };
@@ -485,6 +487,8 @@ void __init s3c_csis1_set_platdata(struct s3c_platform_csis *pd)
 
 	npd->cfg_gpio = s3c_csis1_cfg_gpio;
 	npd->cfg_phy_global = s3c_csis1_cfg_phy_global;
+	npd->clk_on = s3c_csis_clk_on;
+	npd->clk_off = s3c_csis_clk_off;
 	s3c_device_csis1.dev.platform_data = npd;
 }
 #else
@@ -527,6 +531,8 @@ void __init s3c_csis_set_platdata(struct s3c_platform_csis *pd)
 
 	npd->cfg_gpio = s3c_csis_cfg_gpio;
 	npd->cfg_phy_global = s3c_csis_cfg_phy_global;
+	npd->clk_on = s3c_csis_clk_on;
+	npd->clk_off = s3c_csis_clk_off;
 
 	s3c_device_csis.dev.platform_data = npd;
 }
