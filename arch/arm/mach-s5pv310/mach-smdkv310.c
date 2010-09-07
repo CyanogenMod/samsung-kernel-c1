@@ -1114,6 +1114,18 @@ EXPORT_SYMBOL(otg_phy_off);
 
 void usb_host_phy_init(void)
 {
+	struct clk *usb_clk;
+
+	/*  Must be enable usbhost & usbotg clk  */
+	usb_clk = clk_get(NULL, "usbotg");
+
+	if (IS_ERR(usb_clk)) {
+		printk("cannot get usb-otg clock\n");
+		return ;
+	}
+
+	clk_enable(usb_clk);
+
 	if (__raw_readl(S5P_USBHOST_PHY_CONTROL) & (0x1<<0)) {
 		printk("[usb_host_phy_init]Already power on PHY\n");
 		return;
