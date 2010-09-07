@@ -1,7 +1,7 @@
 /* linux/drivers/media/video/samsung/csis.c
  *
  * Copyright (c) 2010 Samsung Electronics Co,. Ltd.
- * 		http://www.samsung.com/
+ * 	http://www.samsung.com/
  *
  * MIPI-CSI2 Support file for FIMC driver
  *
@@ -27,61 +27,63 @@
 #include <plat/regs-csis.h>
 #include <plat/csis.h>
 
-#if !defined(CONFIG_CPU_S5PV310)
-#include <mach/pd.h>
-#endif
-
 #include "csis.h"
 
-static struct s3c_csis_info *s3c_csis;
-
+static struct s3c_csis_info *s3c_csis[S3C_CSIS_CH_NUM];
+#if 0
 static struct s3c_platform_csis *to_csis_plat(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 
 	return (struct s3c_platform_csis *) pdev->dev.platform_data;
 }
-
-static int s3c_csis_set_info(void)
+#endif
+static int s3c_csis_set_info(struct platform_device *pdev)
 {
-	s3c_csis = (struct s3c_csis_info *) \
+	s3c_csis[pdev->id] = (struct s3c_csis_info *) \
 			kmalloc(sizeof(struct s3c_csis_info), GFP_KERNEL);
-	if (!s3c_csis) {
+	if (!s3c_csis[pdev->id]) {
 		err("no memory for configuration\n");
 		return -ENOMEM;
 	}
 
-	strcpy(s3c_csis->name, S3C_CSIS_NAME);
-	s3c_csis->nr_lanes = S3C_CSIS_NR_LANES;
+	sprintf(s3c_csis[pdev->id]->name, "%s%d", S3C_CSIS_NAME, pdev->id);
+	s3c_csis[pdev->id]->nr_lanes = S3C_CSIS_NR_LANES;
 
 	return 0;
 }
 
-static void s3c_csis_reset(void)
+static void s3c_csis_reset(struct platform_device *pdev)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg |= S3C_CSIS_CONTROL_RESET;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_set_nr_lanes(int lanes)
+static void s3c_csis_set_nr_lanes(struct platform_device *pdev, int lanes)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONFIG);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONFIG);
 	cfg &= ~S3C_CSIS_CONFIG_NR_LANE_MASK;
 
 	if (lanes == 1)
 		cfg |= S3C_CSIS_CONFIG_NR_LANE_1;
-	else
+	else if (lanes == 2)
 		cfg |= S3C_CSIS_CONFIG_NR_LANE_2;
+	else if (lanes == 3)
+		cfg |= S3C_CSIS_CONFIG_NR_LANE_3;
+	else if (lanes == 4)
+		cfg |= S3C_CSIS_CONFIG_NR_LANE_4;
+	else
+		err("%d is not supported lane\n", lanes);
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONFIG);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONFIG);
 }
 
-static void s3c_csis_enable_interrupt(void)
+static void s3c_csis_enable_interrupt(struct platform_device *pdev)
 {
 	u32 cfg = 0;
 
@@ -97,65 +99,65 @@ static void s3c_csis_enable_interrupt(void)
 		S3C_CSIS_INTMSK_ERR_CRC_ENABLE | \
 		S3C_CSIS_INTMSK_ERR_ID_ENABLE;
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_INTMSK);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_INTMSK);
 }
 
-static void s3c_csis_disable_interrupt(void)
+static void s3c_csis_disable_interrupt(struct platform_device *pdev)
 {
 	/* disable all interrupts */
-	writel(0, s3c_csis->regs + S3C_CSIS_INTMSK);
+	writel(0, s3c_csis[pdev->id]->regs + S3C_CSIS_INTMSK);
 }
 
-static void s3c_csis_system_on(void)
+static void s3c_csis_system_on(struct platform_device *pdev)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg |= S3C_CSIS_CONTROL_ENABLE;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_system_off(void)
+static void s3c_csis_system_off(struct platform_device *pdev)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg &= ~S3C_CSIS_CONTROL_ENABLE;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_phy_on(void)
+static void s3c_csis_phy_on(struct platform_device *pdev)
 {
 	u32 cfg;
-	cfg = readl(s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 	cfg |= S3C_CSIS_DPHYCTRL_ENABLE;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 }
 
-static void s3c_csis_phy_off(void)
+static void s3c_csis_phy_off(struct platform_device *pdev)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 	cfg &= ~S3C_CSIS_DPHYCTRL_ENABLE;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 }
 
 #ifdef CONFIG_MIPI_CSI_ADV_FEATURE
-static void s3c_csis_update_shadow(void)
+static void s3c_csis_update_shadow(struct platform_device *pdev)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg |= S3C_CSIS_CONTROL_UPDATE_SHADOW;
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_set_data_align(int align)
+static void s3c_csis_set_data_align(struct platform_device *pdev, int align)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg &= ~S3C_CSIS_CONTROL_ALIGN_MASK;
 
 	if (align == 24)
@@ -163,14 +165,14 @@ static void s3c_csis_set_data_align(int align)
 	else
 		cfg |= S3C_CSIS_CONTROL_ALIGN_32BIT;
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_set_wclk(int extclk)
+static void s3c_csis_set_wclk(struct platform_device *pdev, int extclk)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONTROL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 	cfg &= ~S3C_CSIS_CONTROL_WCLK_MASK;
 
 	if (extclk)
@@ -178,167 +180,107 @@ static void s3c_csis_set_wclk(int extclk)
 	else
 		cfg |= S3C_CSIS_CONTROL_WCLK_PCLK;
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONTROL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONTROL);
 }
 
-static void s3c_csis_set_format(enum mipi_format fmt)
+static void s3c_csis_set_format(struct platform_device *pdev, enum mipi_format fmt)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_CONFIG);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_CONFIG);
 	cfg &= ~S3C_CSIS_CONFIG_FORMAT_MASK;
 	cfg |= (fmt << S3C_CSIS_CONFIG_FORMAT_SHIFT);
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_CONFIG);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_CONFIG);
 }
 
-static void s3c_csis_set_resol(int width, int height)
+static void s3c_csis_set_resol(struct platform_device *pdev, int width, int height)
 {
 	u32 cfg = 0;
 
 	cfg |= width << S3C_CSIS_RESOL_HOR_SHIFT;
 	cfg |= height << S3C_CSIS_RESOL_VER_SHIFT;
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_RESOL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_RESOL);
 }
 
-static void s3c_csis_set_hs_settle(int settle)
+static void s3c_csis_set_hs_settle(struct platform_device *pdev, int settle)
 {
 	u32 cfg;
 
-	cfg = readl(s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 	cfg &= ~S3C_CSIS_DPHYCTRL_HS_SETTLE_MASK;
 	cfg |= (settle << S3C_CSIS_DPHYCTRL_HS_SETTLE_SHIFT);
 
-	writel(cfg, s3c_csis->regs + S3C_CSIS_DPHYCTRL);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_DPHYCTRL);
 }
 #endif
 
-static int s3c_csis_clk_on(struct device *dev)
+void s3c_csis_start(int csis_id, int lanes, int settle, int align, int width, \
+				int height, int pixel_format)
 {
-	struct s3c_platform_csis *pdata;
-	struct clk *parent, *mout_csis;
-	int ret;
-
-	/* power domain enable for mipi-csis */
-#if !defiend(CONFIG_CPU_S5PV310)
-	ret = s5pv210_pd_enable("csis_pd");
-	if (ret < 0) {
-		err("failed to enable csis power domain\n");
-		return -EINVAL;
-	}
-#endif
-	pdata = to_csis_plat(dev);
-
-	/* mout_mpll */
-	parent = clk_get(dev, pdata->srclk_name);
-	if (IS_ERR(parent)) {
-		err("failed to get parent clock for csis\n");
-		return -EINVAL;
-	}
-
-	/* mout_csis */
-	mout_csis = clk_get(dev, "mout_csis");
-
-	/* sclk_csis */
-	s3c_csis->clock = clk_get(dev, pdata->clk_name);
-	if (IS_ERR(s3c_csis->clock)) {
-		err("failed to get csis clock source\n");
-		return -EINVAL;
-	}
-
-	clk_set_parent(mout_csis, parent);
-	clk_set_parent(s3c_csis->clock, mout_csis);
-
-	/* clock enable for csis */
-	clk_enable(s3c_csis->clock);
-
-	return 0;
-}
-
-static int s3c_csis_clk_off(struct device *dev)
-{
-	struct s3c_platform_csis *plat;
-	int ret;
-
-	plat = to_csis_plat(dev);
-
-	/* sclk_csis */
-	s3c_csis->clock = clk_get(dev, plat->clk_name);
-	if (IS_ERR(s3c_csis->clock)) {
-		err("failed to get csis clock source\n");
-		return -EINVAL;
-	}
-
-	/* clock disable for csis */
-	clk_disable(s3c_csis->clock);
-#if !defined(CONFIG_CPU_S5PV310)
-	/* power domain disable for mipi-csis */
-	ret = s5pv210_pd_disable("csis_pd");
-	if (ret < 0) {
-		err("failed to enable csis power domain\n");
-		return -EINVAL;
-	}
-#endif
-	return 0;
-}
-
-void s3c_csis_start(int lanes, int settle, int align, int width, int height, int pixel_format)
-{
-	struct s3c_platform_csis *pdata;
+	struct platform_device *pdev = NULL;
+	struct s3c_platform_csis *pdata = NULL;
 
 	/* clock & power on */
-	s3c_csis_clk_on(s3c_csis->dev);
+	pdev = to_platform_device(s3c_csis[csis_id]->dev);
+	pdata = to_csis_plat(&pdev->dev);
 
-	pdata = to_csis_plat(s3c_csis->dev);
+	if (pdata->clk_on)
+		pdata->clk_on(to_platform_device(s3c_csis[csis_id]->dev), \
+			&s3c_csis[csis_id]->clock);
 	if (pdata->cfg_phy_global)
 		pdata->cfg_phy_global(1);
 
-	s3c_csis_reset();
-	s3c_csis_set_nr_lanes(lanes);
+	s3c_csis_reset(pdev);
+	s3c_csis_set_nr_lanes(pdev, lanes);
 
 #ifdef CONFIG_MIPI_CSI_ADV_FEATURE
 	/* FIXME: how configure the followings with FIMC dynamically? */
-	s3c_csis_set_hs_settle(settle);	/* s5k6aa */
-	s3c_csis_set_data_align(align);
-	s3c_csis_set_wclk(0);
+	s3c_csis_set_hs_settle(pdev, settle);	/* s5k6aa */
+	s3c_csis_set_data_align(pdev, align);
+	s3c_csis_set_wclk(pdev, 0);
 	if (pixel_format == V4L2_PIX_FMT_JPEG)
-		s3c_csis_set_format(MIPI_USER_DEF_PACKET_1);
+		s3c_csis_set_format(pdev, MIPI_USER_DEF_PACKET_1);
 	else
-		s3c_csis_set_format(MIPI_CSI_YCBCR422_8BIT);
-	s3c_csis_set_resol(width, height);
-	s3c_csis_update_shadow();
+		s3c_csis_set_format(pdev, MIPI_CSI_YCBCR422_8BIT);
+	s3c_csis_set_resol(pdev, width, height);
+	s3c_csis_update_shadow(pdev);
 #endif
 
-	s3c_csis_enable_interrupt();
-	s3c_csis_system_on();
-	s3c_csis_phy_on();
+	s3c_csis_enable_interrupt(pdev);
+	s3c_csis_system_on(pdev);
+	s3c_csis_phy_on(pdev);
 
-	info("Samsung MIPI-CSI2 operation started\n");
+	info("Samsung MIPI-CSIS%d operation started\n", pdev->id);
 }
 
-void s3c_csis_stop(void)
+void s3c_csis_stop(int csis_id)
 {
-	struct s3c_platform_csis *plat;
+	struct platform_device *pdev = NULL;
+	struct s3c_platform_csis *pdata = NULL;
 
-	s3c_csis_disable_interrupt();
-	s3c_csis_system_off();
-	s3c_csis_phy_off();
+	pdev = to_platform_device(s3c_csis[csis_id]->dev);
+	pdata = to_csis_plat(&pdev->dev);
 
-	plat = to_csis_plat(s3c_csis->dev);
-	if (plat->cfg_phy_global)
-		plat->cfg_phy_global(0);
+	s3c_csis_disable_interrupt(pdev);
+	s3c_csis_system_off(pdev);
+	s3c_csis_phy_off(pdev);
 
-	s3c_csis_clk_off(s3c_csis->dev);
+	if (pdata->cfg_phy_global)
+		pdata->cfg_phy_global(0);
+
+	if (pdata->clk_off)
+		pdata->clk_off(pdev, &s3c_csis[csis_id]->clock);
 }
 
 static irqreturn_t s3c_csis_irq(int irq, void *dev_id)
 {
 	u32 cfg;
-
+	struct platform_device *pdev = (struct platform_device *) dev_id;
 	/* just clearing the pends */
-	cfg = readl(s3c_csis->regs + S3C_CSIS_INTSRC);
-	writel(cfg, s3c_csis->regs + S3C_CSIS_INTSRC);
+	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
+	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
 
 	return IRQ_HANDLED;
 }
@@ -348,10 +290,10 @@ static int s3c_csis_probe(struct platform_device *pdev)
 	struct s3c_platform_csis *pdata;
 	struct resource *res;
 
-	s3c_csis_set_info();
+	s3c_csis_set_info(pdev);
 
-	s3c_csis->dev = &pdev->dev;
-	
+	s3c_csis[pdev->id]->dev = &pdev->dev;
+
 	pdata = to_csis_plat(&pdev->dev);
 	if (pdata->cfg_gpio)
 		pdata->cfg_gpio();
@@ -371,27 +313,27 @@ static int s3c_csis_probe(struct platform_device *pdev)
 	}
 
 	/* ioremap for register block */
-	s3c_csis->regs = ioremap(res->start, res->end - res->start + 1);
-	if (!s3c_csis->regs) {
+	s3c_csis[pdev->id]->regs = ioremap(res->start, res->end - res->start + 1);
+	if (!s3c_csis[pdev->id]->regs) {
 		err("failed to remap io region\n");
 		return -EINVAL;
 	}
 
 	/* irq */
-	s3c_csis->irq = platform_get_irq(pdev, 0);
-	if (request_irq(s3c_csis->irq, s3c_csis_irq, IRQF_DISABLED, \
-		s3c_csis->name, s3c_csis))
+	s3c_csis[pdev->id]->irq = platform_get_irq(pdev, 0);
+	if (request_irq(s3c_csis[pdev->id]->irq, s3c_csis_irq, IRQF_DISABLED, \
+		s3c_csis[pdev->id]->name, pdev))
 		err("request_irq failed\n");
 
-	info("Samsung MIPI-CSI2 driver probed successfully\n");
+	info("Samsung MIPI-CSIS%d driver probed successfully\n", pdev->id);
 
 	return 0;
 }
 
 static int s3c_csis_remove(struct platform_device *pdev)
 {
-	s3c_csis_stop();
-	kfree(s3c_csis);
+	s3c_csis_stop(pdev->id);
+	kfree(s3c_csis[pdev->id]);
 
 	return 0;
 }
@@ -399,14 +341,21 @@ static int s3c_csis_remove(struct platform_device *pdev)
 /* sleep */
 int s3c_csis_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	s3c_csis_clk_off(&pdev->dev);
+	struct s3c_platform_csis *pdata = NULL;
+	pdata = to_csis_plat(&pdev->dev);
+
+	pdata->clk_off(pdev, &s3c_csis[pdev->id]->clock);
 	return 0;
 }
 
 /* wakeup */
 int s3c_csis_resume(struct platform_device *pdev)
 {
-	s3c_csis_clk_on(&pdev->dev);
+	struct s3c_platform_csis *pdata = NULL;
+	pdata = to_csis_plat(&pdev->dev);
+
+	pdata->clk_on(pdev, &s3c_csis[pdev->id]->clock);
+
 	return 0;
 }
 
@@ -438,5 +387,6 @@ module_exit(s3c_csis_unregister);
 
 MODULE_AUTHOR("Jinsung, Yang <jsgood.yang@samsung.com>");
 MODULE_AUTHOR("Sewoon, Park <seuni.park@samsung.com>");
+MODULE_AUTHOR("Sungchun, Kang<sungchun.kang@samsung.com>");
 MODULE_DESCRIPTION("MIPI-CSI2 support for FIMC driver");
 MODULE_LICENSE("GPL");
