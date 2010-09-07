@@ -1081,11 +1081,13 @@ struct video_device fimc_video_device[FIMC_DEVICES] = {
 		.ioctl_ops = &fimc_v4l2_ops,
 		.release = fimc_vdev_release,
 	},
+#ifdef CONFIG_CPU_S5PV310
 	[3] = {
 		.fops = &fimc_fops,
 		.ioctl_ops = &fimc_v4l2_ops,
 		.release = fimc_vdev_release,
 	},
+#endif
 };
 
 static int fimc_init_global(struct platform_device *pdev)

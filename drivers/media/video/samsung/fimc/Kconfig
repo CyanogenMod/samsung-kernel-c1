@@ -17,6 +17,27 @@ config VIDEO_FIMC_MIPI
 	bool "MIPI-CSI2 Slave Interface support"
 	depends on VIDEO_FIMC && (ARCH_S5PV210 || ARCH_S5PV310)
 	default y
+choice
+depends on VIDEO_FIMC && ARCH_S5PV310
+prompt "Select ITU / MIPI Camera port"
+default ITU_A
+config ITU_A
+	bool "ITU Camera A port"
+	help
+	  This enables support for ITU A port
+config ITU_B
+	bool "ITU Camera B port"
+	help
+	  This enables support for ITU B port
+config CSI_C
+	bool "CSI Camera A port"
+	help
+	  This enables support for CSI A port
+config CSI_D
+	bool "CSI Camera B port"
+	help
+	  This enables support for CSI B port
+endchoice
 
 choice
 depends on VIDEO_FIMC

@@ -1,7 +1,7 @@
 /* linux/drivers/media/video/samsung/fimc_capture.c
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
- * 		http://www.samsung.com/
+ *	http://www.samsung.com/
  *
  * V4L2 Capture device support file for Samsung Camera Interface (FIMC) driver
  *
@@ -182,8 +182,9 @@ const static struct v4l2_queryctrl fimc_controls[] = {
 };
 
 #ifndef CONFIG_VIDEO_FIMC_MIPI
-void s3c_csis_start(int lanes, int settle, int align, int width, int height, int pixel_format) {}
-void s3c_csis_stop(){}
+void s3c_csis_start(int csis_id, int lanes, int settle, \
+	int align, int width, int height, int pixel_format) {}
+void s3c_csis_stop(int csis_id) {}
 #endif
 
 static int fimc_init_camera(struct fimc_control *ctrl)
@@ -248,8 +249,7 @@ static int fimc_init_camera(struct fimc_control *ctrl)
 	if (ctrl->cap->fmt.pixelformat == V4L2_PIX_FMT_JPEG) {
 		ret = v4l2_subdev_call(cam->sd, core, init, 1);
 		pixelformat = V4L2_PIX_FMT_JPEG;
-	}
-	else {
+	} else {
 		ret = v4l2_subdev_call(cam->sd, core, init, 0);
 		pixelformat = cam->pixelformat;
 	}
@@ -265,8 +265,13 @@ static int fimc_init_camera(struct fimc_control *ctrl)
 		 * no error although no s_stream api support
 		*/
 		v4l2_subdev_call(cam->sd, video, s_stream, 0);
-		s3c_csis_start(cam->mipi_lanes, cam->mipi_settle, \
+		if (cam->id == CAMERA_CSI_C) {
+			s3c_csis_start(CSI_CH_0, cam->mipi_lanes, cam->mipi_settle, \
 				cam->mipi_align, cam->width, cam->height, pixelformat);
+		} else {
+			s3c_csis_start(CSI_CH_1, cam->mipi_lanes, cam->mipi_settle, \
+				cam->mipi_align, cam->width, cam->height, pixelformat);
+		}
 		v4l2_subdev_call(cam->sd, video, s_stream, 1);
 	}
 
@@ -720,12 +725,13 @@ int fimc_s_fmt_vid_capture(struct file *file, void *fh, struct v4l2_format *f)
 	}
 
 	/* WriteBack doesn't have subdev_call */
-	if ((ctrl->cam->id == CAMERA_WB) || (ctrl->cam->id == CAMERA_WB_B)){
+	if ((ctrl->cam->id == CAMERA_WB) || (ctrl->cam->id == CAMERA_WB_B)) {
 		mutex_unlock(&ctrl->v4l2_lock);
 		return 0;
 	}
-
+	printk(KERN_INFO "aaa\n");
 	ret = subdev_call(ctrl, video, s_fmt, f);
+	printk(KERN_INFO "bbb\n");
 
 	mutex_unlock(&ctrl->v4l2_lock);
 
@@ -748,29 +754,29 @@ static int fimc_alloc_buffers(struct fimc_control *ctrl,
 		return -ENOMEM;
 
 	switch (plane) {
-		case 1:
-			plane_length[0] = PAGE_ALIGN((size*bpp) >> 3);
-			plane_length[1] = 0;
-			plane_length[2] = 0;
-			break;
-		/* In case of 2, only NV12 and NV12T is supported. */
-		case 2:
-			plane_length[0] = PAGE_ALIGN((size*8) >> 3);
-			plane_length[1] = PAGE_ALIGN((size*(bpp-8)) >> 3);
-			plane_length[2] = 0;
-			break;
-		/* In case of 3
-		 * YUV422 : 8 / 4 / 4 (bits)
-		 * YUV420 : 8 / 2 / 2 (bits)
-		 * 3rd plane have to consider page align for mmap */
-		case 3:
-			plane_length[0] = (size*8) >> 3;
-			plane_length[1] = (size*((bpp-8)/2)) >> 3;
-			plane_length[2] = PAGE_ALIGN((size*bpp)>>3) - plane_length[0] - plane_length[1];
-			break;
-		default:
-			fimc_err("impossible!\n");
-			return -ENOMEM;
+	case 1:
+		plane_length[0] = PAGE_ALIGN((size*bpp) >> 3);
+		plane_length[1] = 0;
+		plane_length[2] = 0;
+		break;
+	/* In case of 2, only NV12 and NV12T is supported. */
+	case 2:
+		plane_length[0] = PAGE_ALIGN((size*8) >> 3);
+		plane_length[1] = PAGE_ALIGN((size*(bpp-8)) >> 3);
+		plane_length[2] = 0;
+		break;
+	/* In case of 3
+	 * YUV422 : 8 / 4 / 4 (bits)
+	 * YUV420 : 8 / 2 / 2 (bits)
+	 * 3rd plane have to consider page align for mmap */
+	case 3:
+		plane_length[0] = (size*8) >> 3;
+		plane_length[1] = (size*((bpp-8)/2)) >> 3;
+		plane_length[2] = PAGE_ALIGN((size*bpp)>>3) - plane_length[0] - plane_length[1];
+		break;
+	default:
+		fimc_err("impossible!\n");
+		return -ENOMEM;
 	}
 
 	for (i = 0; i < cap->nr_bufs; i++) {
@@ -841,7 +847,7 @@ int fimc_reqbufs_capture(void *fh, struct v4l2_requestbuffers *b)
 		fimc_hwset_output_buf_sequence(ctrl, i, 1);
 	fimc_info1("%s: requested %d buffers\n", __func__, b->count);
 	fimc_info1("%s : sequence[%d]\n", __func__, fimc_hwget_output_buf_sequence(ctrl));
-	if(pdata->hw_ver != 0x51){
+	if (pdata->hw_ver != 0x51) {
 		INIT_LIST_HEAD(&cap->inq);
 	}
 	for (i = 0; i < cap->nr_bufs; i++) {
@@ -851,7 +857,7 @@ int fimc_reqbufs_capture(void *fh, struct v4l2_requestbuffers *b)
 		cap->bufs[i].state = VIDEOBUF_NEEDS_INIT;
 
 		/* initialize list */
-	if(pdata->hw_ver != 0x51)
+	if (pdata->hw_ver != 0x51)
 		INIT_LIST_HEAD(&cap->bufs[i].list);
 	}
 
@@ -1143,9 +1149,12 @@ int fimc_stop_capture(struct fimc_control *ctrl)
 
 	fimc_hwset_stop_scaler(ctrl);
 
-	if (ctrl->cam->type == CAM_TYPE_MIPI)
-		s3c_csis_stop();
-
+	if (ctrl->cam->type == CAM_TYPE_MIPI) {
+		if (ctrl->cam->id == CAMERA_CSI_C)
+			s3c_csis_stop(CSI_CH_0);
+		else
+			s3c_csis_stop(CSI_CH_1);
+	}
 	return 0;
 }
 
@@ -1258,8 +1267,7 @@ int fimc_qbuf_capture(void *fh, struct v4l2_buffer *b)
 	if (pdata->hw_ver >= 0x51) {
 		fimc_info1("%s[%d]\n", __func__, b->index);
 		fimc_hwset_output_buf_sequence(ctrl, b->index, 1);
-	}
-	else
+	} else
 		fimc_add_inqueue(ctrl, b->index);
 
 	mutex_unlock(&ctrl->v4l2_lock);

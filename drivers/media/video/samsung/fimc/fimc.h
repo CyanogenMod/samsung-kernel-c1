@@ -66,6 +66,8 @@
 
 #define FIMC_HCLK		0
 #define FIMC_SCLK		1
+#define CSI_CH_0		0
+#define CSI_CH_1		1
 #if defined(CONFIG_VIDEO_FIMC_FIFO)
 #define FIMC_OVLY_MODE FIMC_OVLY_FIFO
 #elif defined(CONFIG_VIDEO_FIMC_DMA_AUTO)
@@ -350,7 +352,8 @@ struct fimc_prv_data {
 };
 
 /* debug macro */
-#define FIMC_LOG_DEFAULT	(FIMC_LOG_WARN | FIMC_LOG_ERR)
+#define FIMC_LOG_DEFAULT	(FIMC_LOG_WARN | FIMC_LOG_ERR | FIMC_LOG_DEBUG | \
+					FIMC_LOG_INFO_L1 | FIMC_LOG_INFO_L2)
 
 #define FIMC_DEBUG(fmt, ...)						\
 	do {								\
@@ -412,8 +415,8 @@ extern int s3cfb_open_fifo(int id, int ch, int (*do_priv)(void *), void *param);
 extern int s3cfb_close_fifo(int id, int (*do_priv)(void *), void *param);
 
 /* general */
-extern void s3c_csis_start(int lanes, int settle, int align, int width, int height, int pixel_format);
-extern void s3c_csis_stop(void);
+extern void s3c_csis_start(int csis_id, int lanes, int settle, int align, int width, int height, int pixel_format);
+extern void s3c_csis_stop(int csis_id);
 extern int fimc_dma_alloc(struct fimc_control *ctrl, struct fimc_buf_set *bs, int i, int align);
 extern void fimc_dma_free(struct fimc_control *ctrl, struct fimc_buf_set *bs, int i);
 extern u32 fimc_mapping_rot_flip(u32 rot, u32 flip);
