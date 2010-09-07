@@ -129,10 +129,10 @@
 #define S5P_MXR_LAYER_CFG_GRP0_PRIORITY(x)	(((x) & 0xF) << 4)
 #define S5P_MXR_LAYER_CFG_GRP0_PRIORITY_CLR(x)	((x) & (~(0xF << 4)))
 #define S5P_MXR_LAYER_CFG_GRP0_PRIORITY_INFO(x)	((x) & (0xF << 4))
-#define S5P_MXR_LAYER_CFG_VID_HIDE		(0 << 0)
-#define S5P_MXR_LAYER_CFG_VID_PRIORITY(x)	(((x) & 0xF) << 0)
-#define S5P_MXR_LAYER_CFG_VID_PRIORITY_CLR(x)	((x) & (~(0xF << 0)))
-#define S5P_MXR_LAYER_CFG_VID_PRIORITY_INFO(x)	((x) & (0xF << 0))
+#define S5P_MXR_LAYER_CFG_VP_HIDE		(0 << 0)
+#define S5P_MXR_LAYER_CFG_VP_PRIORITY(x)	(((x) & 0xF) << 0)
+#define S5P_MXR_LAYER_CFG_VP_PRIORITY_CLR(x)	((x) & (~(0xF << 0)))
+#define S5P_MXR_LAYER_CFG_VP_PRIORITY_INFO(x)	((x) & (0xF << 0))
 
 /* MIXER_VIDEO_CFG */
 #define S5P_MXR_VIDEO_CFG_BLEND_DIS		(0 << 16)
@@ -169,8 +169,6 @@
 #define S5P_MXR_GRP_SPAN(x)			((x) & 0x7FFF)
 
 /* MIXER_GRAPHIC0_WH */
-#define S5P_MXR_GRP_H_SCALE(x)			(((x) & 0x1) << 28)
-#define S5P_MXR_GRP_V_SCALE(x)			(((x) & 0x1) << 12)
 #define S5P_MXR_GRP_WIDTH(x)			(((x) & 0x7FF) << 16)
 #define S5P_MXR_GRP_HEIGHT(x)			(((x) & 0x7FF) << 0)
 
