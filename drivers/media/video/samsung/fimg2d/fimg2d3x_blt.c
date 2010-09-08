@@ -145,7 +145,7 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 
 		info->run(info);
 
-		ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
+		ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 1000);
 		if (ret == 0)
 			printk(KERN_ERR "pattern: wait timeout\n");
 	}
@@ -202,7 +202,7 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 #endif
 			info->run(info);
 
-			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 10000);
+			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 1000);
 			if (ret == 0)
 				printk(KERN_ERR "bitblt: wait timeout\n");
 		}
