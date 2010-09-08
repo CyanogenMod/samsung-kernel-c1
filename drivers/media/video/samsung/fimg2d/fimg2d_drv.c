@@ -34,6 +34,8 @@
 #include <plat/sysmmu.h>
 #ifdef CONFIG_S5P_VMEM
 extern void *s5p_getaddress(unsigned int cookie);
+extern void s5p_vmem_dmac_map_area(const void *start_addr, unsigned long size, int dir);
+extern struct page *s5p_vmem_va2page(const void *virt_addr);
 #endif
 #endif
 
@@ -192,6 +194,58 @@ static void fimg2d_wait(struct fimg2d_control *info, struct fimg2d_context *ctx)
 	}
 }
 
+#ifdef CONFIG_OUTER_CACHE
+/*
+ * @sta_addr: virtual address for s5p-vmem, physical address for others
+ */
+static void outer_cache_opr(unsigned long sta_addr, int size, int opr)
+{
+	unsigned long phy_addr;
+	unsigned long cur_addr;
+	unsigned long end_addr;
+
+	cur_addr = sta_addr & PAGE_MASK;
+	end_addr = cur_addr + PAGE_ALIGN(size);
+
+	if (opr == DMA_TO_DEVICE) {
+		while (cur_addr < end_addr) {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+			phy_addr = (unsigned long)page_to_pfn(s5p_vmem_va2page((void *)cur_addr));
+			phy_addr <<= PAGE_SHIFT;
+#else
+			phy_addr = cur_addr;
+#endif
+			outer_clean_range(phy_addr, phy_addr + PAGE_SIZE);
+			cur_addr += PAGE_SIZE;
+		}
+	}
+	else if (opr == DMA_FROM_DEVICE) {
+		while (cur_addr < end_addr) {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+			phy_addr = (unsigned long)page_to_pfn(s5p_vmem_va2page((void *)cur_addr));
+			phy_addr <<= PAGE_SHIFT;
+#else
+			phy_addr = cur_addr;
+#endif
+			outer_inv_range(phy_addr, phy_addr + PAGE_SIZE);
+			cur_addr += PAGE_SIZE;
+		}
+	}
+	else { // DMA_BIDIRECTIONAL
+		while (cur_addr < end_addr) {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+			phy_addr = (unsigned long)page_to_pfn(s5p_vmem_va2page((void *)cur_addr));
+			phy_addr <<= PAGE_SHIFT;
+#else
+			phy_addr = cur_addr;
+#endif
+			outer_flush_range(phy_addr, phy_addr + PAGE_SIZE);
+			cur_addr += PAGE_SIZE;
+		}
+	}
+}
+#endif
+
 /**
  * fimg2d_do_cache_op - [INTERNAL] performs cache operation
  * @cmd: ioctl command
@@ -201,7 +255,7 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 {
 	struct fimg2d_dma_info dma;
 	void *vaddr;
-	int op;
+	int opr;
 
 	fimg2d_debug("do cache op\n");
 
@@ -225,23 +279,35 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 		return -1;
 	}
 
-	switch (cmd) {
-	case FIMG2D_DMA_CACHE_INVAL:
-		dmac_unmap_area(vaddr, dma.size, DMA_FROM_DEVICE);
-		break;
-
-	case FIMG2D_DMA_CACHE_CLEAN:
-		dmac_map_area(vaddr, dma.size, DMA_TO_DEVICE);
-		break;
-
-	case FIMG2D_DMA_CACHE_FLUSH:
-		dmac_flush_range(vaddr, vaddr + dma.size);
-		break;
-
-	case FIMG2D_DMA_CACHE_FLUSH_ALL:
+	if (cmd == FIMG2D_DMA_CACHE_CLEAN)
+		opr = DMA_TO_DEVICE;
+	else if (cmd == FIMG2D_DMA_CACHE_INVAL)
+		opr = DMA_FROM_DEVICE;
+	else if (cmd == FIMG2D_DMA_CACHE_FLUSH)
+		opr = DMA_BIDIRECTIONAL;
+	else if (cmd == FIMG2D_DMA_CACHE_FLUSH_ALL) {
 		__cpuc_flush_kern_all();
-		break;
+		fimg2d_debug("currently, does not support flush all for outer cache\n");
+		return 0;
 	}
+	else {
+		fimg2d_debug("invalid cmd\n");
+		return -1;
+	}
+
+	if (opr == DMA_TO_DEVICE || opr == DMA_FROM_DEVICE)
+		dmac_map_area(vaddr, dma.size, opr);
+	else  // DMA_BIDIRECTIONAL
+		dmac_flush_range(vaddr, vaddr + dma.size);
+
+#ifdef CONFIG_OUTER_CACHE
+	/* outer L2 cache */
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
+	outer_cache_opr((unsigned long)vaddr, dma.size, opr);
+#else
+	outer_cache_opr(dam.addr, dma.size, opr);
+#endif
+#endif
 
 	return 0;
 }
