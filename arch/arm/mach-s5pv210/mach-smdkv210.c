@@ -181,12 +181,11 @@ static int smdkv210_mipi_cam_rstn(int enabled)
 /* MIPI-CSI Camera module Power up/down sequence */
 static int smdkv210_mipi_cam_power(int on)
 {
-	if(on) {
+	if (on) {
 		smdkv210_mipi_cam_pwr_en(1);
 		mdelay(5);
 		smdkv210_mipi_cam_rstn(1);
-	}
-	else {
+	} else {
 		smdkv210_mipi_cam_rstn(0);
 		mdelay(5);
 		smdkv210_mipi_cam_pwr_en(0);
@@ -675,7 +674,6 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_fimc1,
 	&s3c_device_fimc2,
 	&s3c_device_csis,
-	&s3c_device_ipc,
 #endif
 
 #ifdef CONFIG_VIDEO_MFC50
@@ -891,7 +889,7 @@ void usb_host_phy_init(void)
 {
 	struct clk *otg_clk;
 
-	otg_clk = clk_get(NULL, "otg");
+	otg_clk = clk_get(NULL, "usbotg");
 	clk_enable(otg_clk);
 
 	if (__raw_readl(S5P_USB_PHY_CONTROL) & (0x1<<1))

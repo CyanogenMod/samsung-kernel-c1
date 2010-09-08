@@ -430,6 +430,58 @@ int fimc43_hwset_camera_type(struct fimc_control *ctrl)
 	return 0;
 }
 
+int fimc51_hwset_camera_type(struct fimc_control *ctrl)
+{
+	struct s3c_platform_camera *cam = ctrl->cam;
+	u32 cfg;
+
+	if (!cam) {
+		fimc_err("%s: no active camera\n", __func__);
+		return -ENODEV;
+	}
+
+	cfg = readl(ctrl->regs + S3C_CIGCTRL);
+	cfg &= ~(S3C_CIGCTRL_TESTPATTERN_MASK | S3C_CIGCTRL_SELCAM_ITU_MASK |
+		S3C_CIGCTRL_SELCAM_MIPI_MASK | S3C_CIGCTRL_SELCAM_FIMC_MASK |
+		S3C_CIGCTRL_SELWB_CAMIF_MASK | S3C_CIGCTRL_SELWRITEBACK_MASK);
+
+	/* Interface selection */
+	if (cam->id == CAMERA_WB) {
+		cfg |= S3C_CIGCTRL_SELWB_CAMIF_WRITEBACK;
+		cfg |= S3C_CIGCTRL_SELWRITEBACK_A;
+	} else if (cam->id == CAMERA_WB_B) {
+		cfg |= S3C_CIGCTRL_SELWB_CAMIF_WRITEBACK;
+		cfg |= S3C_CIGCTRL_SELWRITEBACK_B;
+	} else if (cam->type == CAM_TYPE_MIPI) {
+		cfg |= S3C_CIGCTRL_SELCAM_FIMC_MIPI;
+
+		/* V310 Support MIPI A/B support */
+		if (cam->id == CAMERA_CSI_C)
+			cfg |= S3C_CIGCTRL_SELCAM_MIPI_A;
+		else
+			cfg |= S3C_CIGCTRL_SELCAM_MIPI_B;
+
+		/* FIXME: Temporary MIPI CSIS Data 32 bit aligned */
+		if (ctrl->cap->fmt.pixelformat == V4L2_PIX_FMT_JPEG)
+			writel((MIPI_USER_DEF_PACKET_1 | (0x1 << 8)), ctrl->regs + S3C_CSIIMGFMT);
+		else
+			writel(cam->fmt | (0x1 << 8), ctrl->regs + S3C_CSIIMGFMT);
+	} else if (cam->type == CAM_TYPE_ITU) {
+		if (cam->id == CAMERA_PAR_A)
+			cfg |= S3C_CIGCTRL_SELCAM_ITU_A;
+		else
+			cfg |= S3C_CIGCTRL_SELCAM_ITU_B;
+		/* switch to ITU interface */
+		cfg |= S3C_CIGCTRL_SELCAM_FIMC_ITU;
+	} else {
+		fimc_err("%s: invalid camera bus type selected\n", __func__);
+		return -EINVAL;
+	}
+
+	writel(cfg, ctrl->regs + S3C_CIGCTRL);
+
+	return 0;
+}
 int fimc_hwset_camera_type(struct fimc_control *ctrl)
 {
 	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
@@ -441,6 +493,9 @@ int fimc_hwset_camera_type(struct fimc_control *ctrl)
 	case 0x43:
 	case 0x45:
 		fimc43_hwset_camera_type(ctrl);
+		break;
+	case 0x51:
+		fimc51_hwset_camera_type(ctrl);
 		break;
 	default:
 		fimc43_hwset_camera_type(ctrl);

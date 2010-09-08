@@ -51,7 +51,7 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMC2
 
 config VIDEO_SAMSUNG_MEMSIZE_FIMC3
 	int "Memory size in kbytes for FIMC3"
-	depends on VIDEO_FIMC
+	depends on VIDEO_FIMC && CPU_S5PV310
 	default "5120"
 
 config VIDEO_SAMSUNG_MEMSIZE_MFC

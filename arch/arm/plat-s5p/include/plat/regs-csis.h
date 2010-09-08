@@ -1,9 +1,9 @@
 /* linux/arch/arm/plat-s5p/include/plat/regs-csis.h
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
- * 		http://www.samsung.com/
+ *	http://www.samsung.com/
  *
- * S5PV210 - Register definition file for MIPI-CSI2 Driver
+ * Register definition file for MIPI-CSI2 Driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,7 +15,7 @@
 
 /*
  * Registers
-*/ 
+*/
 #define S3C_CSIS_CONTROL	(0x00)
 #define S3C_CSIS_DPHYCTRL	(0x04)
 #define S3C_CSIS_CONFIG		(0x08)
@@ -52,6 +52,8 @@
 #define S3C_CSIS_CONFIG_FORMAT_MASK		(0x1f << 2)
 #define S3C_CSIS_CONFIG_NR_LANE_1		(0 << 0)
 #define S3C_CSIS_CONFIG_NR_LANE_2		(1 << 0)
+#define S3C_CSIS_CONFIG_NR_LANE_3		(1 << 1)
+#define S3C_CSIS_CONFIG_NR_LANE_4		(0x3 << 0)
 #define S3C_CSIS_CONFIG_NR_LANE_MASK		(1 << 0)
 
 /* D-PHY Status Register */

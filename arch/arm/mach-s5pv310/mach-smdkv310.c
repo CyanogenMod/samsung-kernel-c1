@@ -124,6 +124,8 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
 	},
 };
 
+#undef WRITEBACK_ENABLED
+
 #ifdef CONFIG_VIDEO_FIMC
 /*
  * External camera reset
@@ -132,7 +134,7 @@ static struct s3c2410_uartcfg smdkv310_uartcfgs[] __initdata = {
  * This function also called at fimc_init_camera()
  * Do optimization for cameras on your platform.
 */
-#ifdef CAM_ITU_CH_A
+#ifdef CONFIG_ITU_A
 static int smdkv310_cam0_reset(int dummy)
 {
 	int err;
@@ -148,7 +150,8 @@ static int smdkv310_cam0_reset(int dummy)
 
 	return 0;
 }
-#else
+#endif
+#ifdef CONFIG_ITU_B
 static int smdkv310_cam1_reset(int dummy)
 {
 	int err;
@@ -200,8 +203,8 @@ static int smdkv310_cam1_standby(void)
 }
 #endif
 
-#ifdef CONFIG_VIDEO_FIMC_MIPI
 /* Set for MIPI-CSI Camera module Reset */
+#ifdef CONFIG_CSI_C
 static int smdkv310_mipi_cam0_reset(int dummy)
 {
 	int err;
@@ -217,7 +220,8 @@ static int smdkv310_mipi_cam0_reset(int dummy)
 
 	return 0;
 }
-
+#endif
+#ifdef CONFIG_CSI_D
 static int smdkv310_mipi_cam1_reset(int dummy)
 {
 	int err;
@@ -234,37 +238,8 @@ static int smdkv310_mipi_cam1_reset(int dummy)
 	return 0;
 }
 #endif
-/*
- * Guide for Camera Configuration for smdkv210
- * ITU channel must be set as A or B
- * ITU CAM CH A: S5K3BA only
- * ITU CAM CH B: one of S5K3BA and S5K4BA
- * MIPI: one of S5K4EA and S5K6AA
- *
- * NOTE1: if the S5K4EA is enabled, all other cameras must be disabled
- * NOTE2: currently, only 1 MIPI camera must be enabled
- * NOTE3: it is possible to use both one ITU cam and
- *	one MIPI cam except for S5K4EA case
- *
-*/
-#undef CAM_ITU_CH_A
-#undef WRITEBACK_ENABLED
 
 #ifdef CONFIG_VIDEO_S5K3BA
-#define S5K3BA_ENABLED
-#endif
-#ifdef CONFIG_VIDEO_S5K4BA
-#define S5K4BA_ENABLED
-#endif
-#ifdef CONFIG_VIDEO_S5K4EA
-#define S5K4EA_ENABLED
-#endif
-#ifdef CONFIG_VIDEO_S5K6AA
-#define S5K6AA_ENABLED
-#endif
-/* External camera module setting */
-/* 2 ITU Cameras */
-#ifdef S5K3BA_ENABLED
 static struct s5k3ba_platform_data s5k3ba_plat = {
 	.default_width = 640,
 	.default_height = 480,
@@ -279,15 +254,24 @@ static struct i2c_board_info  s5k3ba_i2c_info = {
 };
 
 static struct s3c_platform_camera s5k3ba = {
+#ifdef CONFIG_ITU_A
 	.id		= CAMERA_PAR_A,
+	.clk_name	= "sclk_cam0",
+	.i2c_busnum	= 0,
+	.cam_power	= smdkv310_cam0_reset,
+#endif
+#ifdef CONFIG_ITU_B
+	.id		= CAMERA_PAR_B,
+	.clk_name	= "sclk_cam1",
+	.i2c_busnum	= 1,
+	.cam_power	= smdkv310_cam1_reset,
+#endif
 	.type		= CAM_TYPE_ITU,
 	.fmt		= ITU_601_YCBCR422_8BIT,
 	.order422	= CAM_ORDER422_8BIT_CRYCBY,
-	.i2c_busnum	= 0,
 	.info		= &s5k3ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_VYUY,
 	.srclk_name	= "xusbxti",
-	.clk_name	= "sclk_cam0",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
 	.width		= 640,
@@ -306,15 +290,10 @@ static struct s3c_platform_camera s5k3ba = {
 	.inv_hsync	= 0,
 
 	.initialized	= 0,
-#ifdef CAM_ITU_CH_A
-	.cam_power	= smdkv310_cam0_reset,
-#else
-	.cam_power	= smdkv310_cam1_reset,
-#endif
 };
 #endif
 
-#ifdef S5K4BA_ENABLED
+#ifdef CONFIG_VIDEO_S5K4BA
 static struct s5k4ba_platform_data s5k4ba_plat = {
 	.default_width = 800,
 	.default_height = 600,
@@ -329,19 +308,24 @@ static struct i2c_board_info  s5k4ba_i2c_info = {
 };
 
 static struct s3c_platform_camera s5k4ba = {
-#ifdef CAM_ITU_CH_A
+#ifdef CONFIG_ITU_A
 	.id		= CAMERA_PAR_A,
-#else
+	.clk_name	= "sclk_cam0",
+	.i2c_busnum	= 0,
+	.cam_power	= smdkv310_cam0_reset,
+#endif
+#ifdef CONFIG_ITU_B
 	.id		= CAMERA_PAR_B,
+	.clk_name	= "sclk_cam1",
+	.i2c_busnum	= 1,
+	.cam_power	= smdkv310_cam1_reset,
 #endif
 	.type		= CAM_TYPE_ITU,
 	.fmt		= ITU_601_YCBCR422_8BIT,
 	.order422	= CAM_ORDER422_8BIT_CBYCRY,
-	.i2c_busnum	= 1,
 	.info		= &s5k4ba_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_UYVY,
 	.srclk_name	= "xusbxti",
-	.clk_name	= "sclk_cam1",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
 	.width		= 1600,
@@ -360,16 +344,11 @@ static struct s3c_platform_camera s5k4ba = {
 	.inv_hsync	= 0,
 
 	.initialized	= 0,
-#ifdef CAM_ITU_CH_A
-	.cam_power	= smdkv310_cam0_reset,
-#else
-	.cam_power	= smdkv310_cam1_reset,
-#endif
 };
 #endif
 
 /* 2 MIPI Cameras */
-#ifdef S5K4EA_ENABLED
+#ifdef CONFIG_VIDEO_S5K4EA
 static struct s5k4ea_platform_data s5k4ea_plat = {
 	.default_width = 1920,
 	.default_height = 1080,
@@ -384,15 +363,24 @@ static struct i2c_board_info  s5k4ea_i2c_info = {
 };
 
 static struct s3c_platform_camera s5k4ea = {
+#ifdef CONFIG_CSI_C
 	.id		= CAMERA_CSI_C,
+	.clk_name	= "sclk_cam0",
+	.i2c_busnum	= 0,
+	.cam_power	= smdkv310_mipi_cam0_reset,
+#endif
+#ifdef CONFIG_CSI_D
+	.id		= CAMERA_CSI_D,
+	.clk_name	= "sclk_cam1",
+	.i2c_busnum	= 1,
+	.cam_power	= smdkv310_mipi_cam1_reset,
+#endif
 	.type		= CAM_TYPE_MIPI,
 	.fmt		= MIPI_CSI_YCBCR422_8BIT,
 	.order422	= CAM_ORDER422_8BIT_CBYCRY,
-	.i2c_busnum	= 0,
 	.info		= &s5k4ea_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_UYVY,
 	.srclk_name	= "mout_mpll",
-	.clk_name	= "sclk_cam",
 	.clk_rate	= 48000000,
 	.line_length	= 1920,
 	.width		= 1920,
@@ -415,11 +403,10 @@ static struct s3c_platform_camera s5k4ea = {
 	.inv_hsync	= 0,
 
 	.initialized	= 0,
-	.cam_power	= smdkv310_mipi_cam0_reset,
 };
 #endif
 
-#ifdef S5K6AA_ENABLED
+#ifdef CONFIG_VIDEO_S5K6AA
 static struct s5k6aa_platform_data s5k6aa_plat = {
 	.default_width = 640,
 	.default_height = 480,
@@ -434,15 +421,24 @@ static struct i2c_board_info  s5k6aa_i2c_info = {
 };
 
 static struct s3c_platform_camera s5k6aa = {
+#ifdef CONFIG_CSI_C
+	.id		= CAMERA_CSI_C,
+	.clk_name	= "sclk_cam0",
+	.i2c_busnum	= 0,
+	.cam_power	= smdkv310_mipi_cam0_reset,
+#endif
+#ifdef CONFIG_CSI_D
 	.id		= CAMERA_CSI_D,
+	.clk_name	= "sclk_cam1",
+	.i2c_busnum	= 1,
+	.cam_power	= smdkv310_mipi_cam1_reset,
+#endif
 	.type		= CAM_TYPE_MIPI,
 	.fmt		= MIPI_CSI_YCBCR422_8BIT,
 	.order422	= CAM_ORDER422_8BIT_CBYCRY,
-	.i2c_busnum	= 0,
 	.info		= &s5k6aa_i2c_info,
 	.pixelformat	= V4L2_PIX_FMT_UYVY,
 	.srclk_name	= "xusbxti",
-	.clk_name	= "sclk_cam",
 	.clk_rate	= 24000000,
 	.line_length	= 1920,
 	/* default resol for preview kind of thing */
@@ -466,7 +462,6 @@ static struct s3c_platform_camera s5k6aa = {
 	.inv_hsync	= 0,
 
 	.initialized	= 0,
-	.cam_power	= smdkv310_mipi_cam1_reset,
 };
 #endif
 
@@ -498,30 +493,32 @@ static struct s3c_platform_camera writeback = {
 
 /* Interface setting */
 static struct s3c_platform_fimc fimc_plat = {
-#if defined(S5K4EA_ENABLED) || defined(S5K6AA_ENABLED)
-	.default_cam	= CAMERA_CSI_C,
-#else
-
-#ifdef WRITEBACK_ENABLED
-	.default_cam	= CAMERA_WB,
-#elif defined (CAM_ITU_CH_A)
+#ifdef CONFIG_ITU_A
 	.default_cam	= CAMERA_PAR_A,
-#else
+#endif
+#ifdef CONFIG_ITU_B
 	.default_cam	= CAMERA_PAR_B,
 #endif
-
+#ifdef CONFIG_CSI_C
+	.default_cam	= CAMERA_CSI_C,
+#endif
+#ifdef CONFIG_CSI_D
+	.default_cam	= CAMERA_CSI_D,
+#endif
+#ifdef WRITEBACK_ENABLED
+	.default_cam	= CAMERA_WB,
 #endif
 	.camera		= {
-#ifdef S5K3BA_ENABLED
+#ifdef CONFIG_VIDEO_S5K3BA
 		&s5k3ba,
 #endif
-#ifdef S5K4BA_ENABLED
+#ifdef CONFIG_VIDEO_S5K4BA
 		&s5k4ba,
 #endif
-#ifdef S5K4EA_ENABLED
+#ifdef CONFIG_VIDEO_S5K4EA
 		&s5k4ea,
 #endif
-#ifdef S5K6AA_ENABLED
+#ifdef CONFIG_VIDEO_S5K6AA
 		&s5k6aa,
 #endif
 #ifdef WRITEBACK_ENABLED
