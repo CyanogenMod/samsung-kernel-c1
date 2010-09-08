@@ -889,7 +889,7 @@ void usb_host_phy_init(void)
 {
 	struct clk *otg_clk;
 
-	otg_clk = clk_get(NULL, "otg");
+	otg_clk = clk_get(NULL, "usbotg");
 	clk_enable(otg_clk);
 
 	if (__raw_readl(S5P_USB_PHY_CONTROL) & (0x1<<1))
