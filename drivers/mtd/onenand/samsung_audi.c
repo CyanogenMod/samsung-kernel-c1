@@ -53,6 +53,9 @@
 #define S5PC210_EVT0	// Temp definition, which will be replaced.
 
 //#define ONENAND_SUPERLOAD			// Enable Superload command (4KB page only)
+#define ONENAND_CMD_SUPERLOAD		(0x03)		// 4 KB page
+#define ONENAND_UNCORRECTABLE_ERROR	(1 << 0)
+#define ONENAND_CORRECTABLE_ERROR	(1 << 1)
 
 #ifdef CONFIG_PM
 #define ONENAND_CLOCK_GATING
@@ -3512,7 +3515,7 @@ static int onenand_lock_user_prot_reg(struct mtd_info *mtd, loff_t from,
 	 *       Both      : 0xXXF0 (If chip support)
 	 */
 	if (OTP_LOCK_IN_MAIN(this))
-		buf[ONENAND_OTP_LOCK_OFFSET_MAIN] = 0xFC;
+		buf[FLEXONENAND_OTP_LOCK_OFFSET] = 0xFC;
 	else
 		buf[ONENAND_OTP_LOCK_OFFSET] = 0xFC;
 
@@ -4024,7 +4027,7 @@ static int onenand_probe(struct mtd_info *mtd)
 
 	if (ONENAND_IS_SINGLE_DATARAM(this)) {
 		this->ecc_registers = 4;
-		this->error_mask = ONENAND_ECC_5BIT_ALL;
+		this->error_mask = ONENAND_ECC_4BIT_UNCORRECTABLE;
 	} else {
 		this->ecc_registers = 1;
 		this->error_mask = ONENAND_ECC_2BIT_ALL;
