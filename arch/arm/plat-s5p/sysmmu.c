@@ -1,6 +1,5 @@
 #include <linux/module.h>
 #include <linux/delay.h>
-
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/irq.h>
@@ -11,27 +10,25 @@
 #include <plat/sysmmu.h>
 #include <plat/map-s5p.h>
 
+/*  1 : S5P_PA_SYSMMU_MDMA		(0x10A40000),
+ *  1 : S5P_PA_SYSMMU_SSS		(0x10A50000),
+ *  2 : S5P_PA_SYSMMU_FIMC0		(0x11A20000),
+ *  3 : S5P_PA_SYSMMU_FIMC1		(0x11A30000),
+ *  4 : S5P_PA_SYSMMU_FIMC2		(0x11A40000),
+ *  5 : S5P_PA_SYSMMU_FIMC3		(0x11A50000),
+ *  6 : S5P_PA_SYSMMU_JPEG		(0x11A60000),
+ *  7 : S5P_PA_SYSMMU_FIMD0		(0x11E20000),
+ *  8 : S5P_PA_SYSMMU_FIMD1		(0x12220000),
+ *  9 : S5P_PA_SYSMMU_PCIe		(0x12620000),
+ * 10 : S5P_PA_SYSMMU_G2D		(0x12A20000),
+ * 11 : S5P_PA_SYSMMU_ROTATOR		(0x12A30000),
+ * 12 : S5P_PA_SYSMMU_MDMA2		(0x12A40000),
+ * 13 : S5P_PA_SYSMMU_TV		(0x12E20000),
+ * 14 : S5P_PA_SYSMMU_MFC_L		(0x13620000),
+ * 15 : S5P_PA_SYSMMU_MFC_R		(0x13630000)
+*/
+
 sysmmu_controller_t s5p_sysmmu_cntlrs[S5P_SYSMMU_TOTAL_IPNUM];
-
-const unsigned int SYSMMU_IPS_BASEADDRESS[S5P_SYSMMU_TOTAL_IPNUM] = {
-
-	/*  0 : S5P_PA_SYSMMU_MDMA */		(0x10A40000),
-	/*  1 : S5P_PA_SYSMMU_SSS */		(0x10A50000),
-	/*  2 : S5P_PA_SYSMMU_FIMC0 */		(0x11A20000),
-	/*  3 : S5P_PA_SYSMMU_FIMC1 */		(0x11A30000),
-	/*  4 : S5P_PA_SYSMMU_FIMC2 */		(0x11A40000),
-	/*  5 : S5P_PA_SYSMMU_FIMC3 */		(0x11A50000),
-	/*  6 : S5P_PA_SYSMMU_JPEG */		(0x11A60000),
-	/*  7 : S5P_PA_SYSMMU_FIMD0 */		(0x11E20000),
-	/*  8 : S5P_PA_SYSMMU_FIMD1 */		(0x12220000),
-	/*  9 : S5P_PA_SYSMMU_PCIe */		(0x12620000),
-	/* 10 : S5P_PA_SYSMMU_G2D */		(0x12A20000),
-	/* 11 : S5P_PA_SYSMMU_ROTATOR */	(0x12A30000),
-	/* 12 : S5P_PA_SYSMMU_MDMA2 */		(0x12A40000),
-	/* 13 : S5P_PA_SYSMMU_TV */		(0x12E20000),
-	/* 14 : S5P_PA_SYSMMU_MFC_L */		(0x13620000),
-	/* 15 : S5P_PA_SYSMMU_MFC_R */		(0x13630000)
-};
 
 /**
  * sysmmu_irq - [GENERIC] irq service routine
@@ -89,16 +86,21 @@ int sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd)
 {
 	sysmmu_controller_t *sysmmuconp = NULL;
 
+	sysmmu_debug("Start\n");
+
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
 
 	writel(pgd, sysmmuconp->regs + S5P_PT_BASE_ADDR);	/* Set sysmmu TTBase */
 
-	printk(KERN_INFO "%s: Done\n", __func__);
+	if (sysmmu_tlb_invalidate(ips) != 0)
+		printk(KERN_ERR "%s: failed sysmmu_tlb_invalidate\n", __func__);
+
+	sysmmu_debug("Done\n");
 
 	return 0;
 }
 
-int sysmmu_set_tablebase(sysmmu_ips ips)
+static int sysmmu_set_tablebase(sysmmu_ips ips)
 {
 	unsigned int pg;
 	sysmmu_controller_t *sysmmuconp;
@@ -122,7 +124,7 @@ int sysmmu_set_tablebase(sysmmu_ips ips)
 		writel(sysmmuconp->tt_info->pgd_paddr, sysmmuconp->regs + S5P_PT_BASE_ADDR);	/* Set sysmmu TTBase */
 	}
 
-	printk(KERN_INFO "%s: Done\n", __func__);
+	sysmmu_debug("Done\n");
 
 	return 0;
 }
@@ -133,7 +135,7 @@ int sysmmu_on(sysmmu_ips ips)
 
 	sysmmu_controller_t *sysmmuconp;
 
-	printk(KERN_INFO "%s: Start\n", __func__);
+	sysmmu_debug("Start\n");
 
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
 
@@ -153,7 +155,8 @@ int sysmmu_on(sysmmu_ips ips)
 
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
 
-	printk(KERN_INFO "%s: Done\n", __func__);
+	sysmmu_debug("Done\n");
+
 	return 0;
 }
 
@@ -162,6 +165,8 @@ int sysmmu_off(sysmmu_ips ips)
 	unsigned int reg;
 
 	sysmmu_controller_t *sysmmuconp = NULL;
+
+	sysmmu_debug("Start\n");
 
 	if (ips > S5P_SYSMMU_TOTAL_IPNUM)
 		printk(KERN_ERR "%s: failed to get ips parameter\n", __func__);
@@ -177,15 +182,17 @@ int sysmmu_off(sysmmu_ips ips)
 
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
 
-	printk(KERN_INFO "%s: Done\n", __func__);
+	sysmmu_debug("Done\n");
 
 	return 0;
 }
 
-int sysmmu_tlb_invlaidate(sysmmu_ips ips)
+int sysmmu_tlb_invalidate(sysmmu_ips ips)
 {
 	unsigned int reg;
 	sysmmu_controller_t *sysmmuconp = NULL;
+
+	sysmmu_debug("Start\n");
 
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
 
@@ -199,7 +206,34 @@ int sysmmu_tlb_invlaidate(sysmmu_ips ips)
 	reg &= ~(0x1<<1);
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);	/* Un-block MMU */
 
-	printk(KERN_INFO "%s: Done\n", __func__);
+	sysmmu_debug("Done\n");
+
+	return 0;
+}
+
+int sysmmu_get_TLB_data(sysmmu_ips ips, unsigned int v_addr)
+{
+	unsigned int reg;
+	int ppba;	/* Physical page base address */
+	int page_size;
+	int ns;		/* Non-secure */
+	int ap;		/* Access permission */
+
+	sysmmu_controller_t *sysmmuconp = NULL;
+
+	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
+
+	reg = (v_addr&0xfffff000) | (0x1<<0);
+	writel(reg, sysmmuconp->regs + S5P_TLB_READ);	/* Read a TLB entry by VPN */
+
+	reg = readl(sysmmuconp->regs + S5P_TLB_DATA);	/* Get a TLB entry */
+
+	ppba = ((reg & 0xfffff000)>>12);
+	page_size = ((reg & 0x00000060)>>5);
+	ns = ((reg & 0x00000010)>>4);
+	ap = ((reg & 0x0000000E)>>1);
+
+	printk(KERN_INFO "%s: PPBA:0x%x, PageSize:0x%x, NS:0x%x, AP:0x%x\n", __func__, ppba, page_size, ns, ap);
 
 	return 0;
 }
@@ -213,7 +247,8 @@ static int sysmmu_probe(struct platform_device *pdev)
 	sysmmu_table_type_t table_type;
 	sysmmu_ips ips;
 
-	sysmmu_debug("before loop \n");
+	sysmmu_debug("Start\n");
+
 	for (i = 0; i < S5P_SYSMMU_TOTAL_IPNUM; i++) {
 		sysmmuconp = &s5p_sysmmu_cntlrs[i];
 
@@ -242,7 +277,7 @@ static int sysmmu_probe(struct platform_device *pdev)
 			goto err_map;
 		}
 
-		printk(KERN_INFO "%s: loop - i:%d res->start:0x%x, res->end:0x%x, sysmmuconp->regs:0x%x\n", __func__, i, res->start, res->end, (unsigned int)(sysmmuconp->regs));
+		sysmmu_debug("loop - i:%d res->start:0x%x, res->end:0x%x, sysmmuconp->regs:0x%x\n", i, res->start, res->end, (unsigned int)(sysmmuconp->regs));
 
 		/* irq */
 		sysmmuconp->irq = platform_get_irq(pdev, i);
@@ -270,10 +305,10 @@ static int sysmmu_probe(struct platform_device *pdev)
 			sysmmu_init_table(sysmmuconp); */
 	}
 
-	printk(KERN_INFO "%s: Done!!\n", __func__);
+	sysmmu_debug("Done\n");
 
 	/* sysmmu_on(SYSMMU_G2D); */
-	/* sysmmu_tlb_invlaidate(SYSMMU_G2D); */
+	/* sysmmu_tlb_invalidate(SYSMMU_G2D); */
 	/* sysmmu_off(SYSMMU_G2D); */
 
 	return 0;
@@ -282,7 +317,8 @@ err_res:
 err_region:
 err_map:
 err_irq:
-	return 0;
+	sysmmu_debug("Fail!!\n");
+	return ret;
 }
 
 static int sysmmu_remove(struct platform_device *pdev)

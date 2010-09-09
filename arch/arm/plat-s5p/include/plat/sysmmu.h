@@ -14,7 +14,7 @@
 
 /* debug macro */
 #ifdef CONFIG_S5P_SYSMMU_DEBUG
-#define sysmmu_debug(fmt, arg...)	printk(KERN_DEBUG "[%s] " fmt, __FUNCTION__, ## arg)
+#define sysmmu_debug(fmt, arg...)	printk(KERN_INFO "[%s] " fmt, __FUNCTION__, ## arg)
 #else
 #define sysmmu_debug(fmt, arg...)	do { } while (0)
 #endif
@@ -83,7 +83,8 @@ struct sysmmu_controller {
 int sysmmu_on(sysmmu_ips ips);
 int sysmmu_off(sysmmu_ips ips);
 int sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd);
-int sysmmu_tlb_invlaidate(sysmmu_ips ips);
+int sysmmu_tlb_invalidate(sysmmu_ips ips);
+int sysmmu_get_TLB_data(sysmmu_ips ips, unsigned int v_addr);
 
 #endif /* __SYSMMU_H__ */
 

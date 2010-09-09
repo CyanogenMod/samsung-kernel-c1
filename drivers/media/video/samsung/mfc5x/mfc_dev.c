@@ -90,8 +90,8 @@ static int mfc_open(struct inode *inode, struct file *file)
 	}
 
 #ifdef SYSMMU_MFC_ON
-	//sysmmu_tlb_invlaidate(SYSMMU_MFC_L);
-	//sysmmu_tlb_invlaidate(SYSMMU_MFC_R);
+	//sysmmu_tlb_invalidate(SYSMMU_MFC_L);
+	//sysmmu_tlb_invalidate(SYSMMU_MFC_R);
 
 	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_L, mfc_ctx->pgd);
 	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_R, mfc_ctx->pgd);
@@ -182,8 +182,8 @@ static int mfc_release(struct inode *inode, struct file *file)
 	mfc_cmd_inst_close(mfc_ctx);
 
 #ifdef SYSMMU_MFC_ON
-	sysmmu_tlb_invlaidate(SYSMMU_MFC_L);
-	sysmmu_tlb_invlaidate(SYSMMU_MFC_R);
+	sysmmu_tlb_invalidate(SYSMMU_MFC_L);
+	sysmmu_tlb_invalidate(SYSMMU_MFC_R);
 #endif
 
 	/*
