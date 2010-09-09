@@ -690,6 +690,11 @@ static struct clk init_clocks[] = {
 		.parent		= &clk_aclk_100.clk,
 		.enable		= s5pv310_clk_ip_peril_ctrl,
 		.ctrlbit	= (1 << 13),
+	}, {
+		.name		= "mfc",
+		.id		= -1,
+		.enable		= s5pv310_clk_ip_mfc_ctrl,
+		.ctrlbit	= (1 << 0),
 	},
 };
 
@@ -927,6 +932,54 @@ static struct clksrc_clk clk_dout_mmc4 = {
 	.sources = &clkset_group,
 	.reg_src = { .reg = S5P_CLKSRC_FSYS, .shift = 16, .size = 4 },
 	.reg_div = { .reg = S5P_CLKDIV_FSYS3, .shift = 0, .size = 4 },
+};
+
+static struct clk *clkset_mout_mfc0_list[] = {
+	[0] = &clk_mout_mpll.clk,
+	[1] = &clk_sclk_apll.clk,
+};
+
+static struct clksrc_sources clkset_mout_mfc0 = {
+	.sources	= clkset_mout_mfc0_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_mfc0_list),
+};
+
+static struct clksrc_clk clk_mout_mfc0 = {
+	.clk	= {
+		.name		= "mout_mfc0",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_mfc0,
+	.reg_src	= { .reg = S5P_CLKSRC_MFC, .shift = 0, .size = 1 },
+};
+
+static struct clk *clkset_mout_mfc1_list[] = {
+	[0] = &clk_mout_epll.clk,
+	[1] = &clk_sclk_vpll.clk,
+};
+
+static struct clksrc_sources clkset_mout_mfc1 = {
+	.sources	= clkset_mout_mfc1_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_mfc1_list),
+};
+
+static struct clksrc_clk clk_mout_mfc1 = {
+	.clk	= {
+		.name		= "mout_mfc1",
+		.id		= -1,
+	},
+	.sources	= &clkset_mout_mfc1,
+	.reg_src	= { .reg = S5P_CLKSRC_MFC, .shift = 4, .size = 1 },
+};
+
+static struct clk *clkset_mout_mfc_list[] = {
+	[0] = &clk_mout_mfc0.clk,
+	[1] = &clk_mout_mfc1.clk,
+};
+
+static struct clksrc_sources clkset_mout_mfc = {
+	.sources	= clkset_mout_mfc_list,
+	.nr_sources	= ARRAY_SIZE(clkset_mout_mfc_list),
 };
 
 
@@ -1211,6 +1264,14 @@ static struct clksrc_clk clksrcs[] = {
 		.sources = &clkset_mout_g2d,
 		.reg_src = { .reg = S5P_CLKSRC_IMAGE, .shift = 8, .size = 1 },
 		.reg_div = { .reg = S5P_CLKDIV_IMAGE, .shift = 0, .size = 4 },
+	},  {
+		.clk		= {
+			.name		= "sclk_mfc",
+			.id		= -1,
+		},
+		.sources = &clkset_mout_mfc,
+		.reg_src = { .reg = S5P_CLKSRC_MFC, .shift = 8, .size = 1 },
+		.reg_div = { .reg = S5P_CLKDIV_MFC, .shift = 0, .size = 4 },
 	},
 };
 
@@ -1246,6 +1307,8 @@ static struct clksrc_clk *sysclks[] = {
 	&clk_sclk_dac,
 	&clk_sclk_pixel,
 	&clk_sclk_hdmi,
+	&clk_mout_mfc0,
+	&clk_mout_mfc1,
 };
 
 static int s5pv310_epll_enable(struct clk *clk, int enable)
