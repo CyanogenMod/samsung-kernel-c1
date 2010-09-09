@@ -109,9 +109,11 @@ int gibdev_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 	switch ( cmd ) {
 		case SET_BB_RESET_LOW:
 			gib_dev->g_reset->core_reset(0);
+                        return 1;
 			break;
 		case SET_BB_RESET_HIGH:
 			gib_dev->g_reset->core_reset(1);
+                        return 1;
 			break;
 		case SET_UBP_DEBUG_MODE:
 			gib_dev->ubp_debug_flag = 1;
