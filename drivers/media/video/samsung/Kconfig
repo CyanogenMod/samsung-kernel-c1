@@ -16,15 +16,16 @@ config VIDEO_SAMSUNG_V4L2
 if CPU_S5PV210 || CPU_S5P6450 || CPU_S5PV310
 source "drivers/media/video/samsung/fimc/Kconfig"
 source "drivers/media/video/samsung/rotator/Kconfig"
-source "drivers/media/video/samsung/mfc50/Kconfig"
 endif
 
 if CPU_S5PV210
 source "drivers/media/video/samsung/tv20/Kconfig"
+source "drivers/media/video/samsung/mfc50/Kconfig"
 endif
 
 if CPU_S5PV310
 source "drivers/media/video/samsung/tv30/Kconfig"
+source "drivers/media/video/samsung/mfc5x/Kconfig"
 endif
 
 if CPU_S5PV210 || CPU_S5PV310
@@ -56,17 +57,17 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMC3
 
 config VIDEO_SAMSUNG_MEMSIZE_MFC
 	int "Memory size in kbytes for MFC"
-	depends on VIDEO_MFC50 && ( VIDEO_MFC_MEM_PORT_COUNT = 1)
+	depends on (VIDEO_MFC50 || VIDEO_MFC5X) && ( VIDEO_MFC_MEM_PORT_COUNT = 1)
 	default "65536"
 
 config VIDEO_SAMSUNG_MEMSIZE_MFC0
 	int "Memory size in kbytes for MFC port0"
-	depends on VIDEO_MFC50 && (!VIDEO_MFC_MEM_PORT_COUNT = 1)
+	depends on (VIDEO_MFC50 || VIDEO_MFC5X) && (!VIDEO_MFC_MEM_PORT_COUNT = 1)
 	default "32768"
 
 config VIDEO_SAMSUNG_MEMSIZE_MFC1
 	int "Memory size in kbytes for MFC port1"
-	depends on VIDEO_MFC50 && (!VIDEO_MFC_MEM_PORT_COUNT = 1)
+	depends on (VIDEO_MFC50 || VIDEO_MFC5X) && (!VIDEO_MFC_MEM_PORT_COUNT = 1)
 	default "32768"
 
 config VIDEO_SAMSUNG_MEMSIZE_JPEG

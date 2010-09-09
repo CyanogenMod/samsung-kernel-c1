@@ -5,6 +5,7 @@ obj-$(CONFIG_VIDEO_TV30)        += tv30/
 obj-$(CONFIG_VIDEO_ROTATOR)    += rotator/
 obj-$(CONFIG_VIDEO_MFC50)	+= mfc50/
 obj-$(CONFIG_VIDEO_FIMG2D)	+= fimg2d/
+obj-$(CONFIG_VIDEO_MFC5X)	+= mfc5x/
 
 EXTRA_CFLAGS += -Idrivers/media/video
 
