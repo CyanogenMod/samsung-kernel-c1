@@ -39,7 +39,7 @@
 #define S3C_VA_OTGSFR	S3C_ADDR(0x00F00000)    /* OTG PHY */
 #define S3C_VA_UART	S3C_ADDR(0x01000000)	/* UART */
 #define S3C_VA_UART5	S3C_ADDR(0x00800000)    /* UART5 */
-#define S3C_VA_GPS	S3C_ADDR(0x00900000)    /* GPS */
+#define S3C_VA_GPS	S3C_ADDR(0x00850000)    /* GPS */
 
 /* This is used for the CPU specific mappings that may be needed, so that
  * they do not need to directly used S3C_ADDR() and thus make it easier to

@@ -11,3 +11,8 @@ ifeq ($(CONFIG_MACH_SMDK6450),y)
 obj-$(CONFIG_GIB_S5P64XX)	+= gib-dev.o s3c-gib.o
 endif
 
+
+ifeq ($(CONFIG_MACH_SMDKV310),y)
+obj-$(CONFIG_GIB_S5PV3XX)	+= gib-dev.o s5p-gib.o
+endif
+

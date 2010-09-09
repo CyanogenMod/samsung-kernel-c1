@@ -15,8 +15,8 @@
 
 static struct resource s3c_gib_resource[] = {
 	[0] = {
-		.start = S5P6450_PA_GPS,
-		.end   = S5P6450_PA_GPS + S5P6450_SZ_GPS,
+		.start = S5P_PA_GPS,
+		.end   = S5P_PA_GPS + S5P_SZ_GPS,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {

@@ -870,6 +870,11 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_S5P_SYSMMU
 	&s5p_device_sysmmu,
 #endif
+
+#ifdef CONFIG_S3C_DEV_GIB
+	&s3c_device_gib, 
+#endif
+
 };
 
 #ifdef CONFIG_S3C_DEV_HSMMC

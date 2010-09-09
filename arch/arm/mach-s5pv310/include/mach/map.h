@@ -75,6 +75,10 @@
 
 #define S5PV310_PA_SROMC		(0x12570000)
 
+#define S5PV310_PA_GPS 	        	(0x12700000)
+#define S5P_PA_GPS 	        	S5PV310_PA_GPS
+#define S5P_SZ_GPS		SZ_256
+
 #define S5PV310_PA_MFC			(0x13400000)
 #define S5P_PA_MFC			S5PV310_PA_MFC
 #define S5P_SZ_MFC			SZ_64K
