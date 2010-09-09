@@ -35,7 +35,7 @@
 #include <plat/csis.h>
 #include <plat/fimg2d.h>
 
-#if defined(CONFIG_VIDEO_MFC51) || defined(CONFIG_VIDEO_MFC50)
+#if defined(CONFIG_VIDEO_MFC5X) || defined(CONFIG_VIDEO_MFC50)
 static struct resource s5p_mfc_resources[] = {
 	[0] = {
 		.start	= S5P_PA_MFC,
