@@ -54,6 +54,7 @@ enum jpeg_stream_format {
 struct jpeg_dec_param {
 	unsigned int width;
 	unsigned int height;
+	unsigned int size;
 	enum jpeg_stream_format in_fmt;
 	enum jpeg_frame_format out_fmt;
 };
@@ -88,7 +89,7 @@ enum jpeg_log {
 };
 
 /* debug macro */
-#define JPEG_LOG_DEFAULT	(JPEG_LOG_INFO | JPEG_LOG_ERR)
+#define JPEG_LOG_DEFAULT	(JPEG_LOG_WARN | JPEG_LOG_ERR)
 
 #define JPEG_DEBUG(fmt, ...)						\
 	do {								\

@@ -33,7 +33,7 @@ int jpeg_set_dec_param(struct jpeg_control *ctrl)
 	if (ctrl) {
 		jpeg_sw_reset(ctrl->reg_base);
 	} else {
-		jpeg_err("jpg ctrl is NULL\n");
+		jpeg_err("jpeg ctrl is NULL\n");
 		return -1;
 	}
 
@@ -59,7 +59,7 @@ int jpeg_set_enc_param(struct jpeg_control *ctrl)
 	if (ctrl) {
 		jpeg_sw_reset(ctrl->reg_base);
 	} else {
-		jpeg_err("jpg ctrl is NULL\n");
+		jpeg_err("jpeg ctrl is NULL\n");
 		return -1;
 	}
 
@@ -91,17 +91,18 @@ int jpeg_exe_dec(struct jpeg_control *ctrl)
 
 
 	if (ctrl->irq_ret != OK_ENC_OR_DEC) {
-		jpeg_err("jpg decode error(%d)\n", ctrl->irq_ret);
+		jpeg_err("jpeg decode error(%d)\n", ctrl->irq_ret);
 		return -1;
 	}
 
 	jpeg_get_frame_size(ctrl->reg_base,
 		&ctrl->dec_param.width, &ctrl->dec_param.height);
 
-	ctrl->dec_param.out_fmt = jpeg_get_stream_fmt(ctrl->reg_base);
+	ctrl->dec_param.in_fmt = jpeg_get_stream_fmt(ctrl->reg_base);
 
-	jpeg_info("decode img width(%d) height(%d)\n",
-			ctrl->dec_param.width, ctrl->dec_param.height);
+	jpeg_info("decode img in_fmt(%d) width(%d) height(%d)\n",
+			ctrl->dec_param.in_fmt , ctrl->dec_param.width,
+			ctrl->dec_param.height);
 	return 0;
 }
 
@@ -114,7 +115,7 @@ int jpeg_exe_enc(struct jpeg_control *ctrl)
 		jpeg_err("waiting for interrupt is timeout\n");
 
 	if (ctrl->irq_ret != OK_ENC_OR_DEC) {
-		jpeg_err("jpg encode error(%d)\n", ctrl->irq_ret);
+		jpeg_err("jpeg encode error(%d)\n", ctrl->irq_ret);
 		return -1;
 	}
 

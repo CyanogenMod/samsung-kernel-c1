@@ -22,7 +22,10 @@
 /* jpeg frame buf */
 #define JPEG_F_BUF_SIZE	(((MAX_JPEG_RES * 3) / PAGE_SIZE + 1) * PAGE_SIZE)
 
+#define JPEG_MEM_SIZE		(JPEG_S_BUF_SIZE + JPEG_F_BUF_SIZE)
 #define JPEG_MAIN_START		0x00
+
+#define SYSMMU_JPEG_ON
 
 /* for reserved memory */
 struct jpeg_mem {
@@ -36,11 +39,18 @@ struct jpeg_mem {
 	unsigned int	frame_data_size;
 };
 
-
-unsigned long jpeg_get_stream_buf(unsigned long base);
-unsigned long jpeg_get_frame_buf(unsigned long base);
+int jpeg_init_mem(unsigned int *base);
+int jpeg_mem_free(void);
+unsigned long jpeg_get_stream_buf(unsigned long arg);
+unsigned long jpeg_get_frame_buf(unsigned long arg);
 void jpeg_set_stream_buf(unsigned int *str_buf, unsigned int base);
 void jpeg_set_frame_buf(unsigned int *fra_buf, unsigned int base);
+
+#if defined(CONFIG_S5P_SYSMMU_JPEG) && defined(CONFIG_S5P_VMEM)
+extern unsigned int *s5p_vmalloc(size_t size);
+extern void *s5p_getaddress(unsigned int cookie);
+extern void s5p_vfree(unsigned int cookie);
+#endif
 
 #endif /* __JPEG_MEM_H__ */
 
