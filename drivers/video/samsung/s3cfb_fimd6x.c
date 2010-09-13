@@ -555,13 +555,12 @@ int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id)
 {
 	struct fb_fix_screeninfo *fix = &ctrl->fb[id]->fix;
 	struct fb_var_screeninfo *var = &ctrl->fb[id]->var;
-	struct s3cfb_window *win = ctrl->fb[id]->par;
 	struct s3c_platform_fb *pdata = to_fb_plat(ctrl->dev);
 	dma_addr_t start_addr = 0, end_addr = 0;
 	u32 shw;
 
-	if (win->fb_paddr) {
-		start_addr = win->fb_paddr + ((var->xres_virtual *
+	if (fix->smem_start) {
+		start_addr = fix->smem_start + ((var->xres_virtual *
 				var->yoffset + var->xoffset) *
 				(var->bits_per_pixel / 8));
 

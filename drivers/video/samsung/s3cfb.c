@@ -215,15 +215,13 @@ static int s3cfb_map_video_memory(struct fb_info *fb)
 	fb->screen_base = dma_alloc_writecombine(fbdev->dev,
 						 PAGE_ALIGN(fix->smem_len),
 						 (unsigned int *)
-						 &win->fb_paddr, GFP_KERNEL);
-	fix->smem_start = (unsigned int)fb->screen_base;
-
+						 &fix->smem_start, GFP_KERNEL);
 	if (!fb->screen_base)
 		return -ENOMEM;
 	else
 		dev_info(fbdev->dev, "[fb%d] dma: 0x%08x, cpu: 0x%08x, "
 			 "size: 0x%08x\n", win->id,
-			 (unsigned int)win->fb_paddr,
+			 (unsigned int)fix->smem_start,
 			 (unsigned int)fb->screen_base, fix->smem_len);
 
 	memset(fb->screen_base, 0, fix->smem_len);
@@ -241,17 +239,16 @@ static int s3cfb_map_default_video_memory(struct fb_info *fb)
 	if (win->owner == DMA_MEM_OTHER)
 		return 0;
 
-	win->fb_paddr = s5p_get_media_memory_bank(S5P_MDEV_FIMD, 1);
+	fix->smem_start = s5p_get_media_memory_bank(S5P_MDEV_FIMD, 1);
 	reserved_size = s5p_get_media_memsize_bank(S5P_MDEV_FIMD, 1);
-	fb->screen_base = ioremap_wc(win->fb_paddr, reserved_size);
-	fix->smem_start = (unsigned int)fb->screen_base;
+	fb->screen_base = ioremap_wc(fix->smem_start, reserved_size);
 
 	if (!fb->screen_base)
 		return -ENOMEM;
 	else
 		dev_info(fbdev->dev, "[fb%d] dma: 0x%08x, cpu: 0x%08x, "
 			"size: 0x%08x\n", win->id,
-			(unsigned int)win->fb_paddr,
+			(unsigned int)fix->smem_start,
 			(unsigned int)fb->screen_base, fix->smem_len);
 
 	memset(fb->screen_base, 0, fix->smem_len);
@@ -265,10 +262,10 @@ static int s3cfb_unmap_video_memory(struct fb_info *fb)
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
 
-	if (win->fb_paddr) {
+	if (fix->smem_start) {
 		dma_free_writecombine(fbdev->dev, fix->smem_len,
-				      fb->screen_base, win->fb_paddr);
-		win->fb_paddr = 0;
+				      fb->screen_base, fix->smem_start);
+		fix->smem_start = 0;
 		fix->smem_len = 0;
 		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
 	}
@@ -281,9 +278,9 @@ static int s3cfb_unmap_default_video_memory(struct fb_info *fb)
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
 
-	if (win->fb_paddr) {
+	if (fix->smem_start) {
 		iounmap(fb->screen_base);
-		win->fb_paddr = 0;
+		fix->smem_start = 0;
 		fix->smem_len = 0;
 		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
 	}
@@ -437,7 +434,7 @@ static int s3cfb_set_par(struct fb_info *fb)
 
 	dev_dbg(fbdev->dev, "[fb%d] set_par\n", win->id);
 
-	if ((win->id != pdata->default_win) && win->fb_paddr)
+	if ((win->id != pdata->default_win) && fb->fix.smem_start)
 		s3cfb_unmap_video_memory(fb);
 
 	/* modify the fix info */
@@ -468,7 +465,7 @@ static int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
-		if (!win->fb_paddr) {
+		if (!fb->fix.smem_start) {
 			dev_info(fbdev->dev,
 				"[fb%d] no allocated memory for	\
 				unblank\n", win->id);
