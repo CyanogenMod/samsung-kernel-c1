@@ -3,6 +3,7 @@
 #
 ifeq ($(CONFIG_FB_S3C),y)
 obj-y				+= s3cfb.o
+s3cfb-y				:= s3cfb_main.o s3cfb_ops.o
 obj-$(CONFIG_ARCH_S5PV210)	+= s3cfb_fimd6x.o
 obj-$(CONFIG_ARCH_S5PV310)	+= s3cfb_fimd6x.o
 
