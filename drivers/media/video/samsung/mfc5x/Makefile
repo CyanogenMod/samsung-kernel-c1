@@ -1,5 +1,6 @@
 obj-$(CONFIG_VIDEO_MFC5X) += mfc_dev.o
 obj-$(CONFIG_VIDEO_MFC5X) += mfc_dec.o
+obj-$(CONFIG_VIDEO_MFC5X) += mfc_enc.o
 obj-$(CONFIG_VIDEO_MFC5X) += mfc_inst.o
 obj-$(CONFIG_VIDEO_MFC5X) += mfc_cmd.o
 obj-$(CONFIG_VIDEO_MFC5X) += mfc_shm.o

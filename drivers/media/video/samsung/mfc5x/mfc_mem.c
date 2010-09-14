@@ -343,14 +343,13 @@ int mfc_init_mem_mgr(struct mfc_dev *dev)
 		dev->mem_infos[1].addr = (unsigned char *)dev->mem_infos[1].base;
 	}
 
-	dev->fw_vmem_cookie = s5p_vmem_vmemmap(MFC_FW_SYSTEM_SIZE,
+	dev->fw.vmem_cookie = s5p_vmem_vmemmap(MFC_FW_SYSTEM_SIZE,
 		dev->mem_infos[0].base,
 		dev->mem_infos[0].base + MFC_FW_SYSTEM_SIZE);
 
-	if (!dev->fw_vmem_cookie)
+	if (!dev->fw.vmem_cookie)
 		return -ENOMEM;
 #else
-	/* FIXME: when driver release, the vfree must be called (vmalloc_addr) */
 	dev->mem_infos[0].vmalloc_addr = vmalloc(MFC_MEMSIZE_PORT_A);
 	if (dev->mem_infos[0].vmalloc_addr == NULL)
 		return -ENOMEM;
@@ -410,5 +409,20 @@ int mfc_init_mem_mgr(struct mfc_dev *dev)
 		memcpy(&mem_infos[i], &dev->mem_infos[i], sizeof(struct mfc_mem));
 
 	return 0;
+}
+
+void mfc_final_mem_mgr(struct mfc_dev *dev)
+{
+#ifdef SYSMMU_MFC_ON
+#ifdef CONFIG_S5P_VMEM
+	s5p_vfree(dev->fw.vmem_cookie);
+#else
+	vfree(dev->mem_infos[0].vmalloc_addr);
+	if (dev->mem_ports == 2)
+		vfree(dev->mem_infos[1].vmalloc_addr);
+#endif	/* CONFIG_S5P_VMEM */
+#else
+	/* no action */
+#endif /* SYSMMU_MFC_ON */
 }
 

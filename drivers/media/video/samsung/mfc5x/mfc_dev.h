@@ -1,4 +1,4 @@
-/* 
+/*
  * linux/drivers/media/video/samsung/mfc5x/mfc_dev.h
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
@@ -40,6 +40,15 @@ struct mfc_mem {
 	void		*vmalloc_addr;	/* not aligned vmalloc alloc. addr */
 };
 
+struct mfc_fw {
+	const struct firmware	*info;
+	int			state;
+	int			ver;
+#ifdef CONFIG_S5P_VMEM
+	int 			vmem_cookie;
+#endif
+};
+
 struct mfc_dev {
 	char			name[16];
 	struct mfc_reg		reg;
@@ -57,10 +66,7 @@ struct mfc_dev {
 	wait_queue_head_t	wait_codec[2];
 	int			irq_codec[2];
 
-	struct firmware		fw_info;
-	int			fw_state;
-	int			fw_ver;
-	int 			fw_vmem_cookie;
+	struct mfc_fw		fw;
 
 	struct device		*device;
 };

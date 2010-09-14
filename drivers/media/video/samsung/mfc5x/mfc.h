@@ -57,4 +57,8 @@
 #define SYSMMU_MFC_ON
 #endif
 
+#if defined(CONFIG_S5P_VMEM) && !defined(SYSMMU_MFC_ON)
+#error In order to use S5PVEM, you must configure System MMU for MFC_L and MFC_R!
+#endif
+
 #endif /* __MFC_H_ */

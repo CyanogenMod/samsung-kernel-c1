@@ -86,6 +86,7 @@ struct mfc_free_buffer {
 };
 
 int mfc_init_buf(void);
+void mfc_final_buf(void);
 void mfc_merge_buf(void);
 struct mfc_alloc_buffer *_mfc_alloc_buf(
 	struct mfc_inst_ctx *ctx, int size, int align, int port);

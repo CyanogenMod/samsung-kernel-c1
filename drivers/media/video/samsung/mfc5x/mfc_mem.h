@@ -40,5 +40,6 @@ void mfc_mem_cache_clean(const void *start_addr, unsigned long size);
 void mfc_mem_cache_inv(const void *start_addr, unsigned long size);
 
 int mfc_init_mem_mgr(struct mfc_dev *dev);
+void mfc_final_mem_mgr(struct mfc_dev *dev);
 
 #endif /* __MFC_MEM_H_ */

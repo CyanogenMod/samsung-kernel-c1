@@ -33,6 +33,8 @@
 #define MFC_MAX_EXTRA_DPB		(5)
 
 enum codec_type {
+	UNKNOWN,
+
 	H264_DEC = 0x80,
 	MPEG4_DEC,
 	XVID_DEC,
@@ -284,6 +286,12 @@ struct mfc_dec_init_arg {
 	struct mfc_frame_buf_arg out_u_addr;
 	struct mfc_frame_buf_arg out_p_addr;
 	struct mfc_frame_buf_arg out_frame_buf_size;
+
+	/* FIXME: are they need? */
+	int out_crop_right_offset;
+	int out_crop_left_offset;
+	int out_crop_bottom_offset;
+	int out_crop_top_offset;
 };
 
 struct mfc_dec_exe_arg {

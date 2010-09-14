@@ -15,8 +15,10 @@
 #define __MFC_PM_H __FILE__
 
 int mfc_init_pm(struct mfc_dev *mfcdev);
+void mfc_final_pm(struct mfc_dev *mfcdev);
+
 int mfc_clock_on(void);
-int mfc_clock_off(void);
+void mfc_clock_off(void);
 int mfc_power_on(void);
 int mfc_power_off(void);
 

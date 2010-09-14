@@ -17,11 +17,24 @@
 #include "mfc_inst.h"
 #include "mfc_log.h"
 #include "mfc_buf.h"
+#include "mfc_cmd.h"
+#include "mfc_pm.h"
 #include "mfc_dec.h"
 
 #ifdef SYSMMU_MFC_ON
 #include <linux/interrupt.h>
 #endif
+
+/*
+ * the sematic both of mfc_create_inst() and mfc_destory_inst()
+ * be symmetric, but MFC channel open operation will be execute
+ * while init. sequence. (decoding and encoding)
+ * create -  	just allocate context memory and initialize state
+ *
+ * destory - 	execute channel closer operation
+ *		free allocated buffer for instance
+ *		free allocated context memory
+ */
 
 struct mfc_inst_ctx *mfc_create_inst(void)
 {
@@ -37,19 +50,33 @@ struct mfc_inst_ctx *mfc_create_inst(void)
 	ctx->state = INST_STATE_CREATED;
 
 #ifdef SYSMMU_MFC_ON
-	//ctx->pgd = __pa(current->mm->pgd);
+	/*
+	ctx->pgd = __pa(current->mm->pgd);
+	*/
 	ctx->pgd = __pa(swapper_pg_dir);
 #endif
 
 	return ctx;
 }
 
-int mfc_destroy_inst(struct mfc_inst_ctx* ctx)
+void mfc_destroy_inst(struct mfc_inst_ctx* ctx)
 {
-	if (!ctx)
-		kfree(ctx);
+	int ret = 0;
 
-	return 0;
+	if (ctx) {
+		if (ctx->state >= INST_STATE_OPENED) {
+			mfc_clock_on();
+			/* FIXME: meaningless return value */
+			ret = mfc_cmd_inst_close(ctx);
+			mfc_clock_off();
+		}
+
+		mfc_free_buf_inst(ctx->id);
+
+		/* FIXME: free ctx->c_priv */
+
+		kfree(ctx);
+	}
 }
 
 int mfc_set_inst_state(struct mfc_inst_ctx *ctx, enum instance_state state)

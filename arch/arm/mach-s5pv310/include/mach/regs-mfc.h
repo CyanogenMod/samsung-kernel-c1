@@ -1,9 +1,10 @@
-/* linux/arch/arm/mach-s5pv310/include/mach/regs-mfc.h
+/*
+ * linux/arch/arm/mach-s5pv310/include/mach/regs-mfc.h
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * Register definition file for MFC (V5.x) driver
+ * Register definition for Samsung MFC (Multi Function Codec - FIMV) driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -126,8 +127,8 @@
 #define MFC_SI_CH2_HOST_WR_ADR		S5P_MFCREG(0x20a4) /* Shared memory address */
 #define MFC_SI_CH2_DPB_CONF_CTRL	S5P_MFCREG(0x20a8) /* DPB Configuration Control Register */
 
-#define MFC_SI_DIVX311_VRESOL		S5P_MFCREG(0x2050) /* vertical resolution */
-#define MFC_SI_DIVX311_HRESOL		S5P_MFCREG(0x2054) /* horizontal resolution */
+#define MFC_SI_FIMV1_VRESOL		S5P_MFCREG(0x2050) /* vertical resolution */
+#define MFC_SI_FIMV1_HRESOL		S5P_MFCREG(0x2054) /* horizontal resolution */
 #define MFC_CRC_LUMA0			S5P_MFCREG(0x2030) /* luma crc data per frame(or top field) */
 #define MFC_CRC_CHROMA0			S5P_MFCREG(0x2034) /* chroma crc data per frame(or top field) */
 #define MFC_CRC_LUMA1			S5P_MFCREG(0x2038) /* luma crc data per bottom field */

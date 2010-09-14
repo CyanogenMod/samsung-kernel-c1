@@ -43,16 +43,19 @@ int mfc_init_pm(struct mfc_dev *mfcdev)
 	return ret;
 }
 
+void mfc_final_pm(struct mfc_dev *mfcdev)
+{
+	clk_put(pm.clock);
+}
+
 int mfc_clock_on(void)
 {
 	return clk_enable(pm.clock);
 }
 
-int mfc_clock_off(void)
+void mfc_clock_off(void)
 {
 	clk_disable(pm.clock);
-
-	return 0;
 }
 
 int mfc_power_on(void)
@@ -95,6 +98,7 @@ int mfc_init_pm(struct mfc_dev *mfcdev)
 	}
 
 	clk_set_parent(sclk, parent);
+	/* FIXME : */
 	clk_set_rate(sclk, 200 * 1000000);
 
 	/* clock for gating */
@@ -115,16 +119,19 @@ err_p_clk:
 	return ret;
 }
 
+void mfc_final_pm(struct mfc_dev *mfcdev)
+{
+	clk_put(pm.clock);
+}
+
 int mfc_clock_on(void)
 {
 	return clk_enable(pm.clock);
 }
 
-int mfc_clock_off(void)
+void mfc_clock_off(void)
 {
 	clk_disable(pm.clock);
-
-	return 0;
 }
 
 int mfc_power_on(void)
@@ -144,14 +151,19 @@ int mfc_init_pm(struct mfc_dev *mfcdev)
 	return -1;
 }
 
+void mfc_final_pm(struct mfc_dev *mfcdev)
+{
+	/* NOP */
+}
+
 int mfc_clock_on(void)
 {
 	return -1;
 }
 
-int mfc_clock_off(void)
+void mfc_clock_off(void)
 {
-	return -1;
+	/* NOP */
 }
 
 int mfc_power_on(void)

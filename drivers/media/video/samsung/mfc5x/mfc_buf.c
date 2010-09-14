@@ -21,7 +21,7 @@
 #include "mfc_log.h"
 #include "mfc_errno.h"
 
-#undef PRINT_BUF
+#define PRINT_BUF
 
 static struct list_head mfc_alloc_head[MFC_MAX_MEM_PORT_NUM];
 /* The free node list sorted by real address */
@@ -244,6 +244,73 @@ int mfc_init_buf(void)
 	mfc_print_buf();
 
 	return ret;
+}
+
+void mfc_final_buf(void)
+{
+	struct list_head *pos, *nxt;
+	struct mfc_alloc_buffer *alloc;
+	struct mfc_free_buffer *free;
+	int port;
+	/*
+	unsigned long flags;
+	*/
+
+	/*
+	spin_lock_irqsave(&lock, flags);
+	*/
+
+	for (port = 0; port < mfc_mem_count(); port++) {
+		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
+			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
+#ifdef CONFIG_S5P_VMEM
+			if (alloc->vmem_cookie)
+				s5p_vfree(alloc->vmem_cookie);
+
+			if (mfc_put_free_buf(alloc->vmem_addr,
+				alloc->vmem_size, port) < 0) {
+
+				mfc_err("failed to add free buffer\n");
+			} else {
+				list_del(&alloc->list);
+				kfree(alloc);
+			}
+#else
+			if (mfc_put_free_buf(alloc->real,
+				alloc->size, port) < 0) {
+
+				mfc_err("failed to add free buffer\n");
+			} else {
+				list_del(&alloc->list);
+				kfree(alloc);
+			}
+#endif
+		}
+	}
+
+	/*
+	spin_unlock_irqrestore(&lock, flags);
+	*/
+
+	mfc_print_buf();
+
+	/*
+	spin_lock_irqsave(&lock, flags);
+	*/
+
+	for (port = 0; port < mfc_mem_count(); port++) {
+		list_for_each_safe(pos, nxt, &mfc_free_head[port]) {
+			free = list_entry(pos, struct mfc_free_buffer, list);
+			list_del(&free->list);
+			kfree(free);
+		}
+	}
+
+	/*
+	spin_unlock_irqrestore(&lock, flags);
+	*/
+
+	mfc_print_buf();
 }
 
 void mfc_merge_buf(void)

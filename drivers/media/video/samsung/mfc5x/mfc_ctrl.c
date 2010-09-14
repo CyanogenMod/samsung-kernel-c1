@@ -42,7 +42,7 @@ static bool mfc_reset(void)
 	timeo += msecs_to_jiffies(MC_STATUS_TIMEOUT);
 
 	/* Stop procedure */
-	/* FIXME :  */
+	/* FIXME: F/W can be access invalid address */
 	/* Reset VI */
 	/*
 	write_reg(0x3F7, MFC_SW_RESET);
@@ -59,6 +59,7 @@ static bool mfc_reset(void)
 			break;
 
 		schedule_timeout_uninterruptible(1);
+		/* FiXME: cpu_relax() */
 	} while (time_before(jiffies, timeo));
 
 	if (mc_status != 0)
@@ -114,8 +115,10 @@ int mfc_start(struct mfc_dev *dev)
 {
 	int ret;
 
-	/* FIXME: */
-	dev->fw_state = mfc_load_firmware(dev->fw_info.data, dev->fw_info.size);
+	/* FIXME: when MFC start, load firmware again */
+	/*
+	dev->fw.state = mfc_load_firmware(dev->fw.info->data, dev->fw.info->size);
+	*/
 
 	mfc_clock_on();
 
@@ -140,3 +143,42 @@ int mfc_start(struct mfc_dev *dev)
 	return ret;
 }
 
+int mfc_sleep(struct mfc_dev *dev)
+{
+	int ret;
+
+	mfc_clock_on();
+
+	/* FIXME: add SFR backup? */
+
+	ret = mfc_cmd_sys_sleep(dev);
+
+	mfc_clock_off();
+
+	/* FIXME: add mfc_power_off()? */
+
+	return ret;
+}
+
+int mfc_wakeup(struct mfc_dev *dev)
+{
+	int ret;
+
+	/* FIXME: add mfc_power_on()? */
+
+	mfc_clock_on();
+
+	if (mfc_reset() == false) {
+		mfc_clock_off();
+		return MFC_FAIL;
+	}
+
+	mfc_init_memctrl();
+	mfc_clear_cmds();
+
+	ret = mfc_cmd_sys_wakeup(dev);
+
+	mfc_clock_off();
+
+	return ret;
+}

@@ -36,12 +36,6 @@ static int framecnt = 0;
 struct timeval tv1, tv2;
 #endif
 
-static void mfc_clear_int(void)
-{
-	write_reg(0, MFC_RISC_HOST_INT);
-	write_reg(0, MFC_RISC2HOST_CMD);
-}
-
 irqreturn_t mfc_irq(int irq, void *dev_id)
 {
 	struct mfc_dev *dev = (struct mfc_dev *)dev_id;
@@ -93,6 +87,7 @@ irqreturn_t mfc_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#if 0
 static bool mfc_wait_codec(struct mfc_inst_ctx *ctx, enum mfc_r2h_ret ret)
 {
 	/*
@@ -117,6 +112,7 @@ static bool mfc_wait_codec(struct mfc_inst_ctx *ctx, enum mfc_r2h_ret ret)
 	*/
 	return true;
 }
+#endif
 
 static bool
 mfc_wait_sys(struct mfc_dev *dev, enum mfc_r2h_ret ret, long timeout)
@@ -160,6 +156,7 @@ static bool write_h2r_cmd(enum mfc_h2r_cmd cmd, struct mfc_cmd_args *args)
 			break;
 
 		schedule_timeout_uninterruptible(1);
+		/* FiXME: cpu_relax() */
 	} while (time_before(jiffies, timeo));
 
 	if (pending_cmd != H2R_NOP)
@@ -218,12 +215,49 @@ int mfc_cmd_sys_init(struct mfc_dev *dev)
 	return MFC_OK;
 }
 
+int mfc_cmd_sys_sleep(struct mfc_dev *dev)
+{
+	struct mfc_cmd_args h2r_args;
+
+	memset(&h2r_args, 0, sizeof(struct mfc_cmd_args));
+
+	if (write_h2r_cmd(SLEEP, &h2r_args) == false)
+		return MFC_CMD_FAIL;
+
+	if (mfc_wait_sys(dev, SLEEP_RET,
+		msecs_to_jiffies(H2R_INT_TIMEOUT)) == false) {
+		mfc_err("failed to sleep\n");
+		return MFC_SLEEP_FAIL;
+	}
+
+	return MFC_OK;
+}
+
+int mfc_cmd_sys_wakeup(struct mfc_dev *dev)
+{
+	struct mfc_cmd_args h2r_args;
+
+	memset(&h2r_args, 0, sizeof(struct mfc_cmd_args));
+
+	if (write_h2r_cmd(WAKEUP, &h2r_args) == false)
+		return MFC_CMD_FAIL;
+
+	if (mfc_wait_sys(dev, WAKEUP_RET,
+		msecs_to_jiffies(H2R_INT_TIMEOUT)) == false) {
+		mfc_err("failed to wakeup\n");
+		return MFC_WAKEUP_FAIL;
+	}
+
+	return MFC_OK;
+}
+
 int mfc_cmd_inst_open(struct mfc_inst_ctx *ctx)
 {
 	struct mfc_cmd_args h2r_args;
 	struct mfc_dec_ctx *dec_ctx;
 	struct mfc_enc *enc;
-	unsigned int crc, pixelcache;
+	unsigned int crc = 0;
+	unsigned int pixelcache = 0;
 
 	if (ctx->type == DECODER) {
 		dec_ctx = ctx->c_priv;
@@ -266,7 +300,6 @@ int mfc_cmd_inst_open(struct mfc_inst_ctx *ctx)
 int mfc_cmd_inst_close(struct mfc_inst_ctx *ctx)
 {
 	struct mfc_cmd_args h2r_args;
-	struct mfc_dec_ctx *dec_ctx;
 
 	memset(&h2r_args, 0, sizeof(struct mfc_cmd_args));
 	h2r_args.arg[0] = ctx->id;

@@ -37,15 +37,18 @@
 #include "mfc_log.h"
 #include "mfc_ctrl.h"
 #include "mfc_buf.h"
-#include "mfc_cmd.h"
 #include "mfc_inst.h"
 #include "mfc_pm.h"
 #include "mfc_dec.h"
 #include "mfc_mem.h"
+#include "mfc_cmd.h"
 
 #ifdef SYSMMU_MFC_ON
 #include <plat/sysmmu.h>
 #endif
+
+#define MFC_MINOR	252
+#define MFC_FW_NAME	"mfc_fw.bin"
 
 static struct mfc_dev *mfcdev;
 
@@ -55,31 +58,36 @@ static int mfc_open(struct inode *inode, struct file *file)
 	int ret;
 	enum mfc_ret_code retcode;
 
-#ifdef SYSMMU_MFC_ON
-	//unsigned long pgd;
-#endif
 	mutex_lock(&mfcdev->lock);
 
-#ifdef SYSMMU_MFC_ON
-	//pgd = __pa(current->mm->pgd);
-	//pgd = __pa(swapper_pg_dir);
+	if (!mfcdev->fw.state) {
+		mfc_err("MFC F/W not load yet\n");
+		ret = -ENODEV;
+		goto err_fw_state;
+	}
 
-	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_L, pgd);
-	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_R, pgd);
-#endif
 	if (atomic_read(&mfcdev->inst_cnt) == 0) {
 		ret = mfc_power_on();
 		if (ret < 0) {
 			mfc_err("power enable failed\n");
 			goto err_pwr_enable;
 		}
-		/* MFC Hardware Initialization */
+		/* MFC hardware initialization */
 		retcode = mfc_start(mfcdev);
 		if (retcode != MFC_OK) {
 			mfc_err("MFC H/W init failed: %d\n", retcode);
 			ret = -ENODEV;
 			goto err_start_hw;
 		}
+/* FIMXE: TLB flush position. first instance open or every instance release */
+#ifdef SYSMMU_MFC_ON
+		mfc_clock_on();
+
+		sysmmu_tlb_invalidate(SYSMMU_MFC_L);
+		sysmmu_tlb_invalidate(SYSMMU_MFC_R);
+
+		mfc_clock_off();
+#endif
 	}
 
 	mfc_ctx = mfc_create_inst();
@@ -89,13 +97,6 @@ static int mfc_open(struct inode *inode, struct file *file)
 		goto err_inst_ctx;
 	}
 
-#ifdef SYSMMU_MFC_ON
-	//sysmmu_tlb_invalidate(SYSMMU_MFC_L);
-	//sysmmu_tlb_invalidate(SYSMMU_MFC_R);
-
-	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_L, mfc_ctx->pgd);
-	//sysmmu_set_tablebase_pgd(SYSMMU_MFC_R, mfc_ctx->pgd);
-#endif
 	atomic_inc(&mfcdev->inst_cnt);
 	mfc_ctx->dev = mfcdev;
 	file->private_data = (struct mfc_inst_ctx *)mfc_ctx;
@@ -113,6 +114,7 @@ err_start_hw:
 	}
 
 err_pwr_enable:
+err_fw_state:
 	mutex_unlock(&mfcdev->lock);
 
 	return ret;
@@ -120,83 +122,33 @@ err_pwr_enable:
 
 static int mfc_release(struct inode *inode, struct file *file)
 {
-	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)file->private_data;
-	//struct mfc_alloc_mem *node, *tmp_node;
-	//int port_no = 0;
+	struct mfc_inst_ctx *mfc_ctx;
+	struct mfc_dev *dev;
 	int ret;
 
-	struct mfc_dev *dev = mfc_ctx->dev;
+	mfc_ctx = (struct mfc_inst_ctx *)file->private_data;
+	dev = mfc_ctx->dev;
 
-	/*
-	mfc_ctx = (s3c_mfc_inst_ctx *)file->private_data;
-	if (!mfc_ctx) {
-		mfc_err("MFC_RET_INVALID_PARAM_FAIL\n");
-		//ret = -EIO;
-		//goto out_release;
-		return -EIO;
-	}
-	*/
-
-	/*
-	ctrl = mfc_ctx->ctrl;
-	if (!ctrl) {
-		mfc_err("cannot get MFC control.\n");
-		return -ENODEV;
-	}
-	*/
-
-	//mutex_lock(&s3c_mfc_mutex);
 	mutex_lock(&dev->lock);
-	//clk_enable(g_dev->clock);
 
-	//mfc_ctx = (s3c_mfc_inst_ctx *)file->private_data;
-	//if (mfc_ctx == NULL) {
-	//	mfc_err("MFC_RET_INVALID_PARAM_FAIL\n");
-	//	ret = -EIO;
-	//	goto out_release;
-	//}
+	/*
+	 * FIXME: consider the calling sequence
+	 * TLB flush -> destroy instance or destory instance -> TLB Flush
+	 */
 
-	//ctrl = mfc_ctx->ctrl;
-
-	#if 0
-	for (port_no = 0; port_no < 2; port_no++) {
-		for (node = mfc_get_alloc_mem_head(port_no);
-		     node != mfc_get_alloc_mem_tail(port_no);
-		     node = node->next) {
-			if (node->inst_no == mfc_ctx->mem_inst_no) {
-				tmp_node = node;
-				node = node->prev;
-				mfc_ctx->port_no = port_no;
-				mfc_release_alloc_mem(mfc_ctx, tmp_node);
-			}
-		}
-	}
-	mfc_merge_frag(mfc_ctx->mem_inst_no);
-
-	mfc_put_mem_inst_no(mfc_ctx->mem_inst_no);
-	#endif
-
-	mfc_free_buf_inst(mfc_ctx->id);
-
-	/* FIXME: call if instance opened already */
-	mfc_cmd_inst_close(mfc_ctx);
-
+/* FIMXE: TLB flush position. first instance open or every instance release */
 #ifdef SYSMMU_MFC_ON
+	mfc_clock_on();
+
 	sysmmu_tlb_invalidate(SYSMMU_MFC_L);
 	sysmmu_tlb_invalidate(SYSMMU_MFC_R);
+
+	mfc_clock_off();
 #endif
 
-	/*
-	if ((mfc_ctx->MfcState >= MFCINST_STATE_DEC_INITIALIZE) ||
-		(mfc_ctx->MfcState >= MFCINST_STATE_ENC_INITIALIZE)) {
-		clk_enable(dev->clock);
-		s3c_mfc_return_inst_no(mfc_ctx->InstNo, mfc_ctx->MfcCodecType);
-		clk_disable(g_dev->clock);
-	}
-	*/
+	mfc_destroy_inst(mfc_ctx);
 
 	atomic_dec(&dev->inst_cnt);
-	kfree(mfc_ctx);
 
 	if (atomic_read(&dev->inst_cnt) == 0) {
 		ret = mfc_power_off();
@@ -214,18 +166,14 @@ err_pwr_disable:
 	return ret;
 }
 
+/* FIXME: add request firmware ioctl */
 static int mfc_ioctl(struct inode *inode, struct file *file,
 		unsigned int cmd, unsigned long arg)
 {
 
 	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)file->private_data;
 	int ret, ex_ret;
-	//struct mfc_frame_buf_arg frame_buf_size;
 	struct mfc_common_args in_param;
-	//struct mfc_alloc_mem *node;
-	//int port_no = 0;
-	//int matched_u_addr = 0;
-
 	struct mfc_buf_alloc_arg buf_arg;
 	int port;
 
@@ -236,7 +184,7 @@ static int mfc_ioctl(struct inode *inode, struct file *file,
 
 	mutex_lock(&dev->lock);
 
-	mfc_clock_on();
+	//mfc_clock_on();
 
 	ret = copy_from_user(&in_param, (struct mfc_common_args *)arg,
 			sizeof(struct mfc_common_args));
@@ -276,8 +224,10 @@ static int mfc_ioctl(struct inode *inode, struct file *file,
 			break;
 		}
 
+		mfc_clock_on();
 		in_param.ret_code = mfc_init_decoding(mfc_ctx, &(in_param.args));
 		ret = in_param.ret_code;
+		mfc_clock_off();
 
 		mfc_set_inst_state(mfc_ctx, INST_STATE_DEC_INIT);
 
@@ -343,9 +293,10 @@ static int mfc_ioctl(struct inode *inode, struct file *file,
 		break;
 
 	case IOCTL_MFC_DEC_EXE:
+		mfc_clock_on();
 		in_param.ret_code = mfc_exec_decoding(mfc_ctx, &(in_param.args));
-
 		ret = in_param.ret_code;
+		mfc_clock_off();
 
 		mfc_set_inst_state(mfc_ctx, INST_STATE_DEC_EXE);
 
@@ -499,7 +450,7 @@ static int mfc_ioctl(struct inode *inode, struct file *file,
 	}
 
 out_ioctl:
-	mfc_clock_off();
+	//mfc_clock_off();
 
 	ex_ret = copy_to_user((struct mfc_common_args *)arg,
 			&in_param,
@@ -516,18 +467,22 @@ out_ioctl:
 
 static void mfc_vm_open(struct vm_area_struct *vma)
 {
+	/*
 	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)vma->vm_private_data;
 
 	mfc_dbg("id: %d\n", mfc_ctx->id);
+	*/
 
 	/* FIXME: atomic_inc(mapped count) */
 }
 
 static void mfc_vm_close(struct vm_area_struct *vma)
 {
+	/*
 	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)vma->vm_private_data;
 
 	mfc_dbg("id: %d\n", mfc_ctx->id);
+	*/
 
 	/* FIXME: atomic_dec(mapped count) */
 }
@@ -535,7 +490,7 @@ static void mfc_vm_close(struct vm_area_struct *vma)
 static int mfc_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)vma->vm_private_data;
-	struct page *test = NULL;
+	struct page *pg = NULL;
 
 	mfc_dbg("id: %d, pgoff: 0x%08lx, user: 0x%08lx\n",
 		mfc_ctx->id, vmf->pgoff, (unsigned long)(vmf->virtual_address));
@@ -543,17 +498,16 @@ static int mfc_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	if (mfc_ctx == NULL)
 		return VM_FAULT_SIGBUS;
 
-	mfc_dbg("addr: 0x%08lx\n", (unsigned long)(_mfc_get_buf_addr(mfc_ctx->id, vmf->virtual_address)));
+	mfc_dbg("addr: 0x%08lx\n", 
+		(unsigned long)(_mfc_get_buf_addr(mfc_ctx->id, vmf->virtual_address)));
 
-	test = vmalloc_to_page(_mfc_get_buf_addr(mfc_ctx->id, vmf->virtual_address));
+	pg = vmalloc_to_page(_mfc_get_buf_addr(mfc_ctx->id, vmf->virtual_address));
 
-	if (!test)
-		//return VM_FAULT_NOPAGE;
+	if (!pg)
 		return VM_FAULT_SIGBUS;
 
-	vmf->page = test;
+	vmf->page = pg;
 
-	//return VM_FAULT_NOPAGE;
 	return 0;
 }
 
@@ -568,14 +522,15 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 	unsigned long user_size = vma->vm_end - vma->vm_start;
 	unsigned long real_size;
 	struct mfc_inst_ctx *mfc_ctx = (struct mfc_inst_ctx *)filp->private_data;
-
-	/* FIXME: remove unused variables */	
-	char *ptr;
-	unsigned long start, size;
+#ifndef CONFIG_S5P_VMEM
 	unsigned long pfn;
 	unsigned long remap_offset, remap_size;
 	struct mfc_dev *dev = mfc_ctx->dev;
-
+#ifdef SYSMMU_MFC_ON
+	char *ptr;
+	unsigned long start, size;
+#endif
+#endif
 	mfc_dbg("vm_start: 0x%08lx, vm_end: 0x%08lx, size: %ld(%ldMB)\n",
 		vma->vm_start, vma->vm_end, user_size, (user_size >> 20));
 
@@ -605,8 +560,6 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 	mfc_ctx->userbase = vma->vm_start;
 #else
 	if (dev->mem_ports == 1) {
-		/* FIXME: change to remap_vmalloc_range */
-
 		remap_offset = 0;
 		remap_size = user_size;
 
@@ -712,7 +665,7 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 			remap_size, vma->vm_page_prot)) {
 
 			mfc_err("failed to remap port 0\n");
-			return -EAGAIN;
+			return -EINVAL;
 		}
 	} else {
 		remap_offset = 0;
@@ -729,7 +682,7 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 			remap_size, vma->vm_page_prot)) {
 
 			mfc_err("failed to remap port 0\n");
-			return -EAGAIN;
+			return -EINVAL;
 		}
 
 		remap_offset = remap_size;
@@ -747,7 +700,7 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 			remap_size, vma->vm_page_prot)) {
 
 			mfc_err("failed to remap port 1\n");
-			return -EAGAIN;
+			return -EINVAL;
 		}
 	}
 
@@ -772,35 +725,25 @@ static const struct file_operations mfc_fops = {
 };
 
 static struct miscdevice mfc_miscdev = {
-	.minor	= 252,
+	.minor	= MFC_MINOR,
 	.name	= "mfc",
 	.fops	= &mfc_fops,
 };
 
-#define FIRMWARE_HOTPLUG
-#ifdef FIRMWARE_HOTPLUG
 static void mfc_firmware_request_complete_handler(const struct firmware *fw,
 						  void *context)
 {
 	if (fw != NULL) {
-		mfcdev->fw_state = mfc_load_firmware(fw->data, fw->size);
+		mfcdev->fw.state = mfc_load_firmware(fw->data, fw->size);
 		printk(KERN_INFO "MFC F/W loaded successfully (size: %d)\n", fw->size);
 
-		mfcdev->fw_info.data = kzalloc(fw->size, GFP_KERNEL);
-		if (mfcdev->fw_info.data) {
-			memcpy(mfcdev->fw_info.data, fw->data, fw->size);
-			mfcdev->fw_info.size = fw->size;
-		} else {
-			printk(KERN_ERR "failed to keep MFC F/W\n");
-			mfcdev->fw_info.size = 0;
-		}
-
+		mfcdev->fw.info = fw;
 	} else {
 		printk(KERN_ERR "failed to load MFC F/W, MFC will not working\n");
 	}
 }
-#endif
 
+/* FIXME: check every exception case (goto) */
 static int __devinit mfc_probe(struct platform_device *pdev)
 {
 	struct resource *res;
@@ -890,28 +833,28 @@ static int __devinit mfc_probe(struct platform_device *pdev)
 	/*
 	 * loading firmware
 	 */
-#ifdef FIRMWARE_HOTPLUG
 	ret = request_firmware_nowait(THIS_MODULE,
 				      FW_ACTION_HOTPLUG,
-				      "mfc_fw.bin",
+				      MFC_FW_NAME,
 				      &pdev->dev,
 				      GFP_KERNEL,
 				      pdev,
 				      mfc_firmware_request_complete_handler);
 	if (ret) {
 		dev_err(&pdev->dev, "could not load firmware (err=%d)\n", ret);
-		goto err_req_fw;
+		goto err_fw_req;
 	}
-#else
-	mfcdev->fw_state = mfc_load_firmware(mfc_fw_code, mfc_fw_code_len);
-#endif
 
 #ifdef SYSMMU_MFC_ON
+	mfc_clock_on();
+
 	sysmmu_on(SYSMMU_MFC_L);
 	sysmmu_on(SYSMMU_MFC_R);
 
 	sysmmu_set_tablebase_pgd(SYSMMU_MFC_L, __pa(swapper_pg_dir));
 	sysmmu_set_tablebase_pgd(SYSMMU_MFC_R, __pa(swapper_pg_dir));
+
+	mfc_clock_off();
 #endif
 	/*
 	 * initialize buffer manager
@@ -922,14 +865,35 @@ static int __devinit mfc_probe(struct platform_device *pdev)
 
 	ret = misc_register(&mfc_miscdev);
 
+	if (ret) {
+		mfc_err("MFC can't misc register on minor=%d\n", MFC_MINOR);
+		goto err_misc_reg;
+	}
+
 	mfc_info("MFC(Multi Function Codec - FIMV v5.x) registered successfully\n");
 
 	return 0;
 
-#ifdef FIRMWARE_HOTPLUG
-err_req_fw:
+err_misc_reg:
+	mfc_final_buf();
+
+#ifdef SYSMMU_MFC_ON
+	mfc_clock_on();
+
+	sysmmu_off(SYSMMU_MFC_L);
+	sysmmu_off(SYSMMU_MFC_R);
+
+	mfc_clock_off();
 #endif
+	if (mfcdev->fw.info)
+		release_firmware(mfcdev->fw.info);
+
+err_fw_req:
+	mfc_final_mem_mgr(mfcdev);
+
 err_mem_mgr:
+	mfc_final_pm(mfcdev);
+
 err_pm_if:
 	free_irq(mfcdev->irq, mfcdev);
 
@@ -949,107 +913,70 @@ err_mem_res:
 	return ret;
 }
 
-
+/* FIXME: check mfc_remove funtionalilty */
 static int __devexit mfc_remove(struct platform_device *pdev)
 {
-	/*
-	struct mfc_control *ctrl = platform_get_drvdata(pdev);
+	struct mfc_dev *dev = platform_get_drvdata(pdev);
 
-	clk_disable(g_dev->clock);
+	/* FIXME: close all instance? or check active instance? */
 
-	free_irq(dev->irq, ctrl);
-	iounmap(dev->regs);
-	release_mem_region(dev->rsrc_start, dev->rsrc_len);
-	platform_set_drvdata(pdev, NULL);
-	mutex_destroy(&dev->lock);
-	kfree(ctrl);
-	*/
+	misc_deregister(&mfc_miscdev);
 
-	/*
-	iounmap(s3c_mfc_sfr_virt_base);
-	iounmap(s3c_mfc_virt_buf);
-	*/
-
-	/* remove memory region */
-	/*
-	if (s3c_mfc_mem != NULL) {
-		release_resource(s3c_mfc_mem);
-		kfree(s3c_mfc_mem);
-		s3c_mfc_mem = NULL;
-	}
-	*/
-
-	/*
-	free_irq(dev->irq, ctrl);
-	mutex_destroy(&dev->lock);
-
-	mutex_destroy(&s3c_mfc_mutex);
-
-	release firmware
-	*/
+	mfc_final_buf();
 #ifdef SYSMMU_MFC_ON
+	mfc_clock_on();
+
 	sysmmu_off(SYSMMU_MFC_L);
 	sysmmu_off(SYSMMU_MFC_R);
+
+	mfc_clock_off();
 #endif
-	misc_deregister(&mfc_miscdev);
+	if (dev->fw.info)
+		release_firmware(dev->fw.info);
+	mfc_final_mem_mgr(dev);
+	mfc_final_pm(dev);
+	free_irq(dev->irq, dev);
+	iounmap(dev->reg.base);
+	release_mem_region(dev->reg.rsrc_start, dev->reg.rsrc_len);
+	platform_set_drvdata(pdev, NULL);
+	mutex_destroy(&dev->lock);
+	kfree(dev);
 
 	return 0;
 }
 
 static int mfc_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	/*
+	struct mfc_dev *dev = platform_get_drvdata(pdev);
 	int ret;
 
-	mfc_dbg("s3c_mfc_suspend\n");
-
-	mutex_lock(&s3c_mfc_mutex);
-
-	if (!s3c_mfc_is_running()) {
-		mutex_unlock(&s3c_mfc_mutex);
+	if (atomic_read(&dev->inst_cnt) == 0)
 		return 0;
-	}
 
-	clk_enable(g_dev->clock);
+	mutex_lock(&dev->lock);
 
-	ret = s3c_mfc_set_sleep();
-	if (ret != MFC_RET_OK)
-		return ret;
+	ret = mfc_sleep(dev);
 
-	clk_disable(g_dev->clock);
+	mutex_unlock(&dev->lock);
 
-	mutex_unlock(&s3c_mfc_mutex);
-	*/
-
-	return 0;
+	return ret;
 }
 
 static int mfc_resume(struct platform_device *pdev)
 {
-	/*
+	struct mfc_dev *dev = platform_get_drvdata(pdev);
 	int ret;
 
-	mfc_dbg("s3c_mfc_resume\n");
-
-	mutex_lock(&s3c_mfc_mutex);
-
-	clk_enable(g_dev->clock);
-
-	if (!s3c_mfc_is_running()) {
-		mutex_unlock(&s3c_mfc_mutex);
+	if (atomic_read(&dev->inst_cnt) == 0)
 		return 0;
-	}
 
-	ret = s3c_mfc_set_wakeup();
-	if (ret != MFC_RET_OK)
-		return ret;
+	mutex_lock(&dev->lock);
 
-	clk_disable(g_dev->clock);
+	ret = mfc_wakeup(dev);
 
-	mutex_unlock(&s3c_mfc_mutex);
-	*/
+	mutex_unlock(&dev->lock);
 
-	return 0;
+	return ret;
 }
 
 static struct platform_driver mfc_driver = {

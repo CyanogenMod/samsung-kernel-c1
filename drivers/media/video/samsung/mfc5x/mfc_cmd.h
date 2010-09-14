@@ -74,6 +74,8 @@ irqreturn_t mfc_irq(int irq, void *dev_id);
 
 int mfc_cmd_fw_start(struct mfc_dev *dev);
 int mfc_cmd_sys_init(struct mfc_dev *dev);
+int mfc_cmd_sys_sleep(struct mfc_dev *dev);
+int mfc_cmd_sys_wakeup(struct mfc_dev *dev);
 
 int mfc_cmd_inst_open(struct mfc_inst_ctx *ctx);
 int mfc_cmd_inst_close(struct mfc_inst_ctx *ctx);

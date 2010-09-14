@@ -16,5 +16,7 @@
 
 int mfc_load_firmware(const unsigned char *data, size_t size);
 int mfc_start(struct mfc_dev *dev);
+int mfc_sleep(struct mfc_dev *dev);
+int mfc_wakeup(struct mfc_dev *dev);
 
 #endif /* __MFC_CTRL_H */

@@ -17,16 +17,18 @@
 #include "mfc.h"
 #include "mfc_user.h"
 
+/* FIXME: instance state should be more specific */
 enum instance_state {
 	INST_STATE_NULL		= 0,
 
 	INST_STATE_CREATED	= 10,
+	INST_STATE_OPENED	= 20,
 
-	INST_STATE_DEC_INIT	= 20,
+	INST_STATE_DEC_INIT	= 40,
 	INST_STATE_DEC_EXE,
 	INST_STATE_DEC_EXE_DONE,
 
-	INST_STATE_ENC_INIT	= 40,
+	INST_STATE_ENC_INIT	= 80,
 	INST_STATE_ENC_EXE,
 	INST_STATE_ENC_EXE_DONE,
 };
@@ -41,10 +43,12 @@ struct codec_operations {
 	int (*alloc_ctx_buf) (struct mfc_inst_ctx *ctx);
 	int (*alloc_desc_buf) (struct mfc_inst_ctx *ctx);
 	int (*set_codec_bufs) (struct mfc_inst_ctx *ctx);
-	int (*set_dpbs)  (struct mfc_inst_ctx *ctx);
-	int (*pre_exec) (struct mfc_inst_ctx *ctx);
-	int (*post_exec) (struct mfc_inst_ctx *ctx);
-	int (*multi_exec) (struct mfc_inst_ctx *ctx);
+	int (*set_dpbs) (struct mfc_inst_ctx *ctx);
+	int (*pre_seq_start) (struct mfc_inst_ctx *ctx);
+	int (*post_seq_start) (struct mfc_inst_ctx *ctx);
+	int (*pre_frame_start) (struct mfc_inst_ctx *ctx);
+	int (*post_frame_start) (struct mfc_inst_ctx *ctx);
+	int (*multi_data_frame) (struct mfc_inst_ctx *ctx);
 };
 
 struct mfc_dec_init_cfg {
@@ -124,7 +128,7 @@ struct mfc_inst_ctx {
 };
 
 struct mfc_inst_ctx *mfc_create_inst(void);
-int mfc_destroy_inst(struct mfc_inst_ctx* ctx);
+void mfc_destroy_inst(struct mfc_inst_ctx* ctx);
 int mfc_set_inst_state(struct mfc_inst_ctx *ctx, enum instance_state state);
 int mfc_chk_inst_state(struct mfc_inst_ctx *ctx, enum instance_state state);
 int mfc_set_inst_cfg(struct mfc_inst_ctx *ctx, unsigned int type, int *value);
