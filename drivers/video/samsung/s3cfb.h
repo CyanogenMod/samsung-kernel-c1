@@ -235,6 +235,8 @@ extern int s3cfb_setcolreg(unsigned int regno, unsigned int red,
 			unsigned int transp, struct fb_info *fb);
 extern int s3cfb_cursor(struct fb_info *fb, struct fb_cursor *cursor);
 extern int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg);
+extern int s3cfb_enable_localpath(struct s3cfb_global *fbdev, int id);
+extern int s3cfb_disable_localpath(struct s3cfb_global *fbdev, int id);
 
 /* FIMD */
 extern int s3cfb_clear_interrupt(struct s3cfb_global *ctrl);
@@ -262,6 +264,8 @@ extern int s3cfb_set_window_size(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_buffer_size(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_chroma_key(struct s3cfb_global *ctrl, int id);
+extern int s3cfb_channel_localpath_on(struct s3cfb_global *ctrl, int id);
+extern int s3cfb_channel_localpath_off(struct s3cfb_global *ctrl, int id);
 
 /* LCD */
 extern void s3cfb_set_lcd_info(struct s3cfb_global *ctrl);

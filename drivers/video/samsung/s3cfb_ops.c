@@ -891,6 +891,94 @@ int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+int s3cfb_enable_localpath(struct s3cfb_global *fbdev, int id)
+{
+	struct s3cfb_window *win = fbdev->fb[id]->par;
+
+	if (s3cfb_channel_localpath_on(fbdev, id)) {
+		win->enabled = 0;
+		return -EFAULT;
+	} else {
+		win->enabled = 1;
+		return 0;
+	}
+}
+
+int s3cfb_disable_localpath(struct s3cfb_global *fbdev, int id)
+{
+	struct s3cfb_window *win = fbdev->fb[id]->par;
+
+	if (s3cfb_channel_localpath_off(fbdev, id)) {
+		win->enabled = 1;
+		return -EFAULT;
+	} else {
+		win->enabled = 0;
+		return 0;
+	}
+}
+
+int s3cfb_open_fifo(int id, int ch, int (*do_priv) (void *), void *param)
+{
+	struct s3cfb_global *fbdev = get_fimd_global(id);
+	struct s3cfb_window *win = fbdev->fb[id]->par;
+
+	dev_dbg(fbdev->dev, "[fb%d] open fifo\n", win->id);
+
+	if (win->path == DATA_PATH_DMA) {
+		dev_err(fbdev->dev, "WIN%d is busy.\n", id);
+		return -EFAULT;
+	}
+
+	win->local_channel = ch;
+
+	if (do_priv) {
+		if (do_priv(param)) {
+			dev_err(fbdev->dev, "failed to run for "
+				"private fifo open\n");
+			s3cfb_enable_window(fbdev, id);
+			return -EFAULT;
+		}
+	}
+
+	s3cfb_set_window_control(fbdev, id);
+	s3cfb_enable_window(fbdev, id);
+	s3cfb_enable_localpath(fbdev, id);
+
+	return 0;
+}
+EXPORT_SYMBOL(s3cfb_open_fifo);
+
+int s3cfb_close_fifo(int id, int (*do_priv) (void *), void *param)
+{
+	struct s3cfb_global *fbdev = get_fimd_global(id);
+	struct s3cfb_window *win = fbdev->fb[id]->par;
+	win->path = DATA_PATH_DMA;
+
+	dev_dbg(fbdev->dev, "[fb%d] close fifo\n", win->id);
+
+	if (do_priv) {
+		s3cfb_display_off(fbdev);
+
+		if (do_priv(param)) {
+			dev_err(fbdev->dev, "failed to run for"
+				"private fifo close\n");
+			s3cfb_enable_window(fbdev, id);
+			s3cfb_display_on(fbdev);
+			return -EFAULT;
+		}
+
+		s3cfb_disable_window(fbdev, id);
+		s3cfb_disable_localpath(fbdev, id);
+		s3cfb_display_on(fbdev);
+	} else {
+		s3cfb_disable_window(fbdev, id);
+		s3cfb_disable_localpath(fbdev, id);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(s3cfb_close_fifo);
+
 int s3cfb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 {
 	struct s3cfb_global *fbdev = get_fimd_global(id);

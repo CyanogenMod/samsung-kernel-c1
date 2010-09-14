@@ -160,9 +160,9 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	maxclk = 86 * 1000000;
 
 	cfg = readl(ctrl->regs + S3C_VIDCON0);
-	cfg &= ~( S3C_VIDCON0_CLKVALUP_MASK |
+	cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
 		S3C_VIDCON0_VCLKEN_MASK);
-	cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL );
+	cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL);
 
 	src_clk = clk_get_rate(ctrl->clock);
 	printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
