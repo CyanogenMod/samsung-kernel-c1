@@ -184,7 +184,6 @@ static void __init s5p6450_clockevent_init(void)
 	clk_set_parent(tin4, tdiv4);
 
 	clock_rate = clk_get_rate(tin4);
-	
 	clock_count_per_tick = clock_rate / HZ;
 
 	pwm_event_device.mult =
@@ -206,7 +205,7 @@ static cycle_t s5p6450_pwm2_read(struct clocksource *cs)
 }
 
 
-static void __init s5p6450_clocksource_pwm_start(void)
+static void s5p6450_clocksource_pwm_start(void)
 {
 	s5p6450_pwm_init(2, ~0);
 	s5p6450_pwm_start(2, 1);
@@ -218,8 +217,8 @@ struct clocksource pwm_clocksource = {
 	.read		= s5p6450_pwm2_read,
 	.mask		= CLOCKSOURCE_MASK(32),
 	.shift		= 20,
-	.flags		= CLOCK_SOURCE_IS_CONTINUOUS ,
-	.resume		= s5p6450_clocksource_pwm_start, 
+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+	.resume		= s5p6450_clocksource_pwm_start,
 };
 
 static void __init s5p6450_clocksource_init(void)
