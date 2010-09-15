@@ -242,11 +242,11 @@ static int ehci_hcd_s5pv210_drv_probe(struct platform_device *pdev)
 	ehci->hcs_params = readl(&ehci->caps->hcs_params);
 
 #if defined(CONFIG_ARCH_S5PV210) || defined(CONFIG_ARCH_S5P6450)
-	writel(0x000E0000, hcd->regs + 0x90);
+	writel(0x000F0000, hcd->regs + 0x90);
 #endif
 
 #if defined(CONFIG_ARCH_S5PV310)
-	writel(0x03800000, hcd->regs + 0x90);
+	writel(0x03C00000, hcd->regs + 0x90);
 #endif
 
 	retval = usb_add_hcd(hcd, pdev->resource[1].start,
