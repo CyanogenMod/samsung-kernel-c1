@@ -31,30 +31,35 @@ config S5PV310_SETUP_FB_S3C
 
 config S5PV310_SETUP_FIMC0
 	bool
+	depends on VIDEO_FIMC
 	default y
 	help
 	  Common setup code for FIMC controller 0.
 
 config S5PV310_SETUP_FIMC1
 	bool
+	depends on VIDEO_FIMC
 	default y
 	help
 	  Common setup code for FIMC controller 1.
 
 config S5PV310_SETUP_FIMC2
 	bool
+	depends on VIDEO_FIMC
 	default y
 	help
 	  Common setup code for FIMC controller 2.
 
 config S5PV310_SETUP_FIMC3
 	bool
+	depends on VIDEO_FIMC
 	default y
 	help
 	  Common setup code for FIMC controller 3.
 
 config S5PV310_SETUP_CSIS
 	bool
+	depends on VIDEO_FIMC_MIPI
 	default y
 	help
 	  Common setup code for MIPI-CSIS
