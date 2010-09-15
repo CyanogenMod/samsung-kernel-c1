@@ -119,7 +119,9 @@ struct fimc_limit fimc51_limits[FIMC_DEVICES] = {
 		.trg_h_rot	= 1920,
 		.real_w_no_rot	= 8192,
 		.real_h_rot	= 1920,
-	}, {
+	},
+#ifdef CONFIG_CPU_S5PV310	
+	{
 
 		.pre_dst_w	= 1920,
 		.bypass_w	= 8192,
@@ -128,6 +130,7 @@ struct fimc_limit fimc51_limits[FIMC_DEVICES] = {
 		.real_w_no_rot	= 8192,
 		.real_h_rot	= 1280,
 	},
+#endif
 };
 
 int fimc_hwset_camera_source(struct fimc_control *ctrl)
