@@ -165,6 +165,14 @@ config TOUCHSCREEN_S3C2410
 	  To compile this driver as a module, choose M here: the
 	  module will be called s3c2410_ts.
 
+config TOUCHSCREEN_S5PV310_MT
+	bool "Samsung S5PC210 10.1\" touchscreen input driver"
+	depends on ARCH_S5PC210 || SAMSUNG_DEV_TS
+	help
+	  Say Y here if you have the S5PC210 touchsecreen.
+
+	  If unsure, say N.
+
 config TOUCHSCREEN_GUNZE
 	tristate "Gunze AHL-51S touchscreen"
 	select SERIO
