@@ -58,7 +58,6 @@ void s3c_fimc0_cfg_gpio(struct platform_device *pdev)
 int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 {
 	struct clk *sclk_fimc_lclk = NULL;
-	struct clk *mout_fimc_lclk = NULL;
 	struct clk *mout_mpll = NULL;
 	int ret;
 
@@ -68,17 +67,10 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 		goto err_clk1;
 	}
 
-/*
-	mout_fimc_lclk = clk_get(&pdev->dev, "mout_fimc_lclk");
-	if (IS_ERR(mout_fimc_lclk)) {
-		dev_err(&pdev->dev, "failed to get mout_fimc_lclk\n");
-		goto err_clk2;
-	}
-*/
 	sclk_fimc_lclk = clk_get(&pdev->dev, "sclk_fimc");
 	if (IS_ERR(sclk_fimc_lclk)) {
 		dev_err(&pdev->dev, "failed to get sclk_fimc_lclk\n");
-		goto err_clk3;
+		goto err_clk2;
 	}
 
 	clk_set_parent(sclk_fimc_lclk, mout_mpll);
@@ -92,7 +84,6 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 	}
 
 	clk_put(mout_mpll);
-//	clk_put(mout_fimc_lclk);
 	clk_put(sclk_fimc_lclk);
 
 	ret = s5pv210_pd_enable("fimc_pd");
@@ -106,7 +97,7 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 	return 0;
 
 err_clk3:
-//	clk_put(mout_fimc_lclk);
+	clk_put(sclk_fimc_lclk);
 
 err_clk2:
 	clk_put(mout_mpll);

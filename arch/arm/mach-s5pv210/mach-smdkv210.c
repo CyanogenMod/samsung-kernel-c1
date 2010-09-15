@@ -115,7 +115,8 @@ static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
  * This function also called at fimc_init_camera()
  * Do optimization for cameras on your platform.
 */
-static int smdkv210_cam0_power(int onoff)
+
+int smdkv210_cam0_power(int onoff)
 {
 	int err;
 	/* Camera A */
@@ -130,7 +131,7 @@ static int smdkv210_cam0_power(int onoff)
 	return 0;
 }
 
-static int smdkv210_cam1_power(int onoff)
+int smdkv210_cam1_power(int onoff)
 {
 	int err;
 
@@ -147,7 +148,7 @@ static int smdkv210_cam1_power(int onoff)
 }
 
 /* Set for MIPI-CSI Camera module Power Enable */
-static int smdkv210_mipi_cam_pwr_en(int enabled)
+int smdkv210_mipi_cam_pwr_en(int enabled)
 {
 	int err;
 
@@ -163,7 +164,7 @@ static int smdkv210_mipi_cam_pwr_en(int enabled)
 }
 
 /* Set for MIPI-CSI Camera module Reset */
-static int smdkv210_mipi_cam_rstn(int enabled)
+int smdkv210_mipi_cam_rstn(int enabled)
 {
 	int err;
 
@@ -179,7 +180,7 @@ static int smdkv210_mipi_cam_rstn(int enabled)
 }
 
 /* MIPI-CSI Camera module Power up/down sequence */
-static int smdkv210_mipi_cam_power(int on)
+int smdkv210_mipi_cam_power(int on)
 {
 	if (on) {
 		smdkv210_mipi_cam_pwr_en(1);
@@ -673,6 +674,8 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s3c_device_fimc0,
 	&s3c_device_fimc1,
 	&s3c_device_fimc2,
+#endif
+#ifdef CONFIG_VIDEO_FIMC_MIPI
 	&s3c_device_csis,
 #endif
 
@@ -822,6 +825,8 @@ static void __init smdkv210_machine_init(void)
 	s3c_fimc0_set_platdata(&fimc_plat);
 	s3c_fimc1_set_platdata(&fimc_plat);
 	s3c_fimc2_set_platdata(&fimc_plat);
+#endif
+#ifdef CONFIG_VIDEO_FIMC_MIPI
 	s3c_csis_set_platdata(NULL);
 #endif
 	/* spi */
