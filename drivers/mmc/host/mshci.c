@@ -1328,7 +1328,7 @@ int mshci_suspend_host(struct mshci_host *host, pm_message_t state)
 
 	mshci_disable_card_detection(host);
 
-	ret = mmc_suspend_host(host->mmc, state);
+	ret = mmc_suspend_host(host->mmc);
 	if (ret)
 		return ret;
 
