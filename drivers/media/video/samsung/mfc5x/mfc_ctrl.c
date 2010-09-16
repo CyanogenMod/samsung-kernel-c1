@@ -16,9 +16,9 @@
 #include <linux/string.h>
 #include <linux/delay.h>
 
-#ifdef CONFIG_ARCH_S5PV310
+#if defined(CONFIG_ARCH_S5PV310)
 #include <mach/regs-mfc.h>
-#elif CONFIG_ARCH_S5PV210
+#elif defined(CONFIG_ARCH_S5PV210)
 #include <plat/regs-mfc.h>
 #endif
 
