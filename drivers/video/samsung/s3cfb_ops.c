@@ -72,8 +72,9 @@ int s3cfb_draw_logo(struct fb_info *fb)
 #else
 int fb_is_primary_device(struct fb_info *fb)
 {
-	struct s3c_platform_fb *pdata = to_fb_plat(fbdev->dev);
 	struct s3cfb_window *win = fb->par;
+	struct s3cfb_global *fbdev = get_fimd_global(win->id);
+	struct s3c_platform_fb *pdata = to_fb_plat(fbdev->dev);
 
 	dev_dbg(fbdev->dev, "[fb%d] checking for primary device\n", win->id);
 
