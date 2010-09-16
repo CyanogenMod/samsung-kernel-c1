@@ -76,7 +76,7 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMD
 choice
 depends on FB_S3C
 prompt "Select LCD Type"
-default FB_S3C_WA101S
+default FB_S3C_TL2796
 config FB_S3C_LTE480WV
 	bool "LTE480WV"
 	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
