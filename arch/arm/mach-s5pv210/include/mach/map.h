@@ -136,6 +136,9 @@
 /* AC97 */
 #define S5PV210_PA_AC97		0xE2200000
 
+/* S/PDIF */
+#define S5PV210_PA_SPDIF	0xE1100000
+
 #define S5PV210_PA_ADC		(0xE1700000)
 
 /* mfc */

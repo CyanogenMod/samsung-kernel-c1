@@ -113,6 +113,7 @@ extern struct platform_device s5pv210_device_pcm2;
 extern struct platform_device s5pv210_device_iis0;
 extern struct platform_device s5pv210_device_iis1;
 extern struct platform_device s5pv210_device_iis2;
+extern struct platform_device s5pv210_device_spdif;
 extern struct platform_device s5pv310_device_iis0;
 extern struct platform_device s5pv310_device_pcm1;
 
