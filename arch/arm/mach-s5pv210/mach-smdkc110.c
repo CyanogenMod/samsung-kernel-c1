@@ -75,6 +75,10 @@ static struct platform_device *smdkc110_devices[] __initdata = {
 	&s5pv210_device_iis0,
 	&s5pv210_device_ac97,
 	&s3c_device_wdt,
+
+#ifdef CONFIG_SND_SAMSUNG_SOC_SPDIF
+	&s5pv210_device_spdif,
+#endif
 };
 
 static void __init smdkc110_map_io(void)
