@@ -47,6 +47,7 @@ snd-soc-smdkv2xx-wm8580-pcm-objs := smdkv2xx_wm8580pcm.o
 snd-soc-smdk64xx-wm8580-pcm-objs := smdk64xx_wm8580pcm.o
 snd-soc-smdk-wm8994-objs := smdk_wm8994.o
 snd-soc-smdk64xx-s5m8751-objs := smdk64xx_s5m8751.o
+snd-soc-smdk-spdif-objs := smdk_spdif.o
 
 obj-$(CONFIG_SND_S3C24XX_SOC_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_S3C24XX_SOC_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -65,3 +66,4 @@ obj-$(CONFIG_SND_SOC_SMDK_WM9713) += snd-soc-smdk-wm9713.o
 obj-$(CONFIG_SND_S5PV2XX_SOC_WM8580) += snd-soc-smdkv2xx-wm8580.o
 obj-$(CONFIG_SND_S5PV2XX_SOC_WM8580_PCM) += snd-soc-smdkv2xx-wm8580-pcm.o
 obj-$(CONFIG_SND_S3C64XX_SOC_S5M8751) += snd-soc-smdk64xx-s5m8751.o
+obj-$(CONFIG_SND_SOC_SMDK_SPDIF) += snd-soc-smdk-spdif.o
