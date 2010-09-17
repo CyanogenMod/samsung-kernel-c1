@@ -158,6 +158,7 @@ struct fimg2d_alpha {
  * @addr_type: physical, kernel virtual or user virtual address type
  * @width: image width
  * @height: image height
+ * @stride: 
  * @dx: -1 if negative direction of x
  * @dy: -1 if negative direction of y
  * @order: RGB order
@@ -170,6 +171,7 @@ struct fimg2d_param {
 	FIMG2D_ADDR_TYPE_T addr_type;
 	int width;
 	int height;
+	int stride;
 	int dx;
 	int dy;
 	FIMG2D_RGB_ORDER_T order;
