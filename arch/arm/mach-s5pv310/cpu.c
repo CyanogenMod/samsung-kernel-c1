@@ -181,9 +181,9 @@ static void __init s5p_l2x0_cache_init(void)
 	__raw_writel(0x110, S5P_VA_L2CC + L2X0_DATA_LATENCY_CTRL);
 
 	/*  L2 cache Prefetch Control Register setting */
-	__raw_writel(0x30000006, S5P_VA_L2CC + L2X0_PREFETCH_CTRL);
+	__raw_writel(0x30000007, S5P_VA_L2CC + L2X0_PREFETCH_CTRL);
 
-	l2x0_init(S5P_VA_L2CC, 0x3C070001, 0xC200ffff);
+	l2x0_init(S5P_VA_L2CC, 0x7C070001, 0xC200ffff);
 
 }
 early_initcall(s5p_l2x0_cache_init);
