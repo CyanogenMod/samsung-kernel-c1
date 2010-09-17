@@ -713,6 +713,10 @@ static struct platform_device *smdkv210_devices[] __initdata = {
 	&s5pv210_device_pcm0,
 #endif
 
+#ifdef CONFIG_SND_SAMSUNG_SOC_SPDIF
+	&s5pv210_device_spdif,
+#endif
+
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5pv210_device_spi0,
 	&s5pv210_device_spi1,
