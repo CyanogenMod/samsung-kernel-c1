@@ -10,6 +10,7 @@ snd-soc-s3c-pcm-objs := s3c-pcm.o
 snd-soc-s3c-idma-objs := s3c-idma.o
 snd-soc-s3c-dma-wrapper-objs := s3c-dma-wrapper.o
 snd-soc-s5p-i2s_sec-objs := s5p-i2s_sec.o
+snd-soc-samsung-spdif-objs := spdif.o
 
 obj-$(CONFIG_SND_S3C24XX_SOC) += snd-soc-s3c24xx.o
 obj-$(CONFIG_SND_S3C24XX_SOC_I2S) += snd-soc-s3c24xx-i2s.o
@@ -22,6 +23,7 @@ obj-$(CONFIG_SND_S3C_SOC_PCM) += snd-soc-s3c-pcm.o
 obj-$(CONFIG_SND_SAMSUNG_SOC_I2S_V5) += snd-soc-s3c-idma.o
 obj-$(CONFIG_SND_SAMSUNG_SOC_I2S_V5) += snd-soc-s3c-dma-wrapper.o
 obj-$(CONFIG_SND_SAMSUNG_SOC_I2S_V5) += snd-soc-s5p-i2s_sec.o
+obj-$(CONFIG_SND_SAMSUNG_SOC_SPDIF) += snd-soc-samsung-spdif.o
 
 # S3C24XX Machine Support
 snd-soc-jive-wm8750-objs := jive_wm8750.o
