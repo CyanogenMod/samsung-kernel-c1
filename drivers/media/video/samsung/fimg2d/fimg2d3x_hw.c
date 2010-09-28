@@ -164,7 +164,6 @@ void fimg2d3x_set_src_type(struct fimg2d_control *info, FIMG2D_IMG_T type)
 */
 void fimg2d3x_set_src_param(struct fimg2d_control *info, struct fimg2d_param *p)
 {
-	int bpp = 0;
 	unsigned long addr;
 	unsigned long cfg;
 
@@ -186,27 +185,6 @@ void fimg2d3x_set_src_param(struct fimg2d_control *info, struct fimg2d_param *p)
 #endif
 	fimg2d_debug("addr(0x%x) addr_type(%d)\n", (unsigned int)p->addr, p->addr_type);
 	writel(FIMG2D_ADDR(p->addr), info->regs + FIMG2D_SRC_BASE_ADDR_REG);
-
-	/* stride */
-	switch (p->fmt) {
-	default: 	/* fall through */
-	case XRGB8888:	/* fall through */
-	case ARGB8888:
-		bpp = 32;
-		break;
-
-	case RGB565:	/* fall through */
-	case XRGB1555:	/* fall through */
-	case ARGB1555:	/* fall through */
-	case XRGB4444:	/* fall through */
-	case ARGB4444:
-		bpp = 16;
-		break;
-
-	case RGB888:
-		bpp = 24;
-		break;
-	}
 
 	writel(FIMG2D_STRIDE(p->stride), info->regs + FIMG2D_SRC_STRIDE_REG);
 
