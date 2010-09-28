@@ -55,11 +55,16 @@ static struct map_desc s5p6450_iodesc[] __initdata = {
 		.length         = SZ_4K,
 		.type           = MT_DEVICE,
 	}, {
-		.virtual   	    = (unsigned long)S3C_VA_MEM,
+		.virtual   	= (unsigned long)S3C_VA_MEM,
 		.pfn        	= __phys_to_pfn(S5P6450_PA_DMC0),
 		.length     	= SZ_4K,
 		.type       	= MT_DEVICE,
-	}
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SROMC,
+		.pfn		= __phys_to_pfn(S5P6450_PA_SROMC),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	},
 };
 
 static void s5p6450_idle(void)

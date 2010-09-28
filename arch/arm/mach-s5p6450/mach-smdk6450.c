@@ -44,6 +44,7 @@
 #include <plat/clock.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-sys.h>
+#include <mach/regs-mem.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/iic.h>
@@ -370,6 +371,38 @@ static struct platform_device smdk6450_backlight_device = {
 };
 #endif
 
+#if defined(CONFIG_SMC911X)
+/* SMC9115 LAN via ROM interface */
+static struct resource s5p6450_smc911x_resources[] = {
+	[0] = {
+		.start  = S5P6450_PA_SMC9115,
+		.end    = S5P6450_PA_SMC9115 + S5P6450_SZ_SMC9115 - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start  = IRQ_EINT(10),
+		.end    = IRQ_EINT(10),
+		.flags  = IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device s5p6450_device_smc911x = {
+	.name           = "smc911x",
+	.id             =  -1,
+	.num_resources  = ARRAY_SIZE(s5p6450_smc911x_resources),
+	.resource       = s5p6450_smc911x_resources,
+};
+
+static void __init smdk6450_smc911x_set(void)
+{
+	__raw_writel(0xfffffff9, S5P_SROM_BW);
+	__raw_writel(0xff1ffff1, S5P_SROM_BC0);
+
+	__raw_writel(0xffffffff, (S5P_VA_GPIO + 0x100));
+	__raw_writel(0x55ffffff, (S5P_VA_GPIO + 0x120));
+}
+#endif
+
 static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
@@ -419,7 +452,7 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #endif
 
 #ifdef CONFIG_S3C_DEV_GIB
-	&s3c_device_gib, 
+	&s3c_device_gib,
 #endif
 #ifdef	CONFIG_S3C64XX_DEV_SPI
 	&s5p6450_device_spi0,
@@ -429,6 +462,10 @@ static struct platform_device *smdk6450_devices[] __initdata = {
 #ifdef CONFIG_HAVE_PWM
 	&s3c_device_timer[1],
 	&smdk6450_backlight_device,
+#endif
+
+#if defined(CONFIG_SMC911X)
+	&s5p6450_device_smc911x,
 #endif
 };
 
@@ -624,6 +661,9 @@ static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 
 static void __init smdk6450_machine_init(void)
 {
+#if defined(CONFIG_SMC911X)
+	smdk6450_smc911x_set();
+#endif
 #ifdef CONFIG_FB_S3C_V2
 	s3cfb_set_platdata(NULL);
 #endif
