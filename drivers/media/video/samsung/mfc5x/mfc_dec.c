@@ -657,6 +657,42 @@ static struct mfc_dec_info mpeg4_dec = {
 	},
 };
 
+static struct mfc_dec_info mpeg1_dec = {
+	.name		= "MPEG1",
+	.codectype	= MPEG1_DEC,
+	.codecid	= 3,
+	.d_priv_size	= 0,
+	.c_ops		= {
+		.alloc_ctx_buf		= alloc_ctx_buf,
+		.alloc_desc_buf 	= alloc_desc_buf,
+		.set_codec_bufs		= NULL,
+		.set_dpbs		= set_dpbs,
+		.pre_seq_start 		= pre_seq_start,
+		.post_seq_start 	= post_seq_start,
+		.pre_frame_start	= NULL,
+		.post_frame_start	= NULL,
+		.multi_data_frame	= NULL,
+	},
+};
+
+static struct mfc_dec_info mpeg2_dec = {
+	.name		= "MPEG2",
+	.codectype	= MPEG2_DEC,
+	.codecid	= 3,
+	.d_priv_size	= 0,
+	.c_ops		= {
+		.alloc_ctx_buf		= alloc_ctx_buf,
+		.alloc_desc_buf 	= alloc_desc_buf,
+		.set_codec_bufs		= NULL,
+		.set_dpbs		= set_dpbs,
+		.pre_seq_start 		= pre_seq_start,
+		.post_seq_start 	= post_seq_start,
+		.pre_frame_start	= NULL,
+		.post_frame_start	= NULL,
+		.multi_data_frame	= NULL,
+	},
+};
+
 static struct mfc_dec_info fimv1_dec = {
 	.name		= "FIMV1",
 	.codectype	= FIMV1_DEC,
@@ -681,6 +717,8 @@ void mfc_init_decoders(void)
 
 	list_add_tail(&h264_dec.list, &mfc_decoders);
 	list_add_tail(&mpeg4_dec.list, &mfc_decoders);
+	list_add_tail(&mpeg1_dec.list, &mfc_decoders);
+	list_add_tail(&mpeg2_dec.list, &mfc_decoders);
 	list_add_tail(&fimv1_dec.list, &mfc_decoders);
 }
 
