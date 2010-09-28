@@ -84,19 +84,28 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 	INIT_LIST_HEAD(&ctx->node);
 	INIT_LIST_HEAD(&ctx->reg_q);
 	init_waitqueue_head(&ctx->wq);
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
-	/* in case fimg2d hw uses (user) virtual address */
-	ctx->pgd = __pa(current->mm->pgd);
-#endif
 
 	fimg2d_enqueue(info, &ctx->node, &info->ctx_q);
 
 	file->private_data = ctx;
 	atomic_inc(&info->ref_count);
 
+	if (atomic_read(&info->ref_count) == 1) {
 #ifndef CONFIG_S5PV310_FPGA
-	if (atomic_read(&info->ref_count) == 1)
 		clk_enable(info->clock);
+#endif
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D)
+		sysmmu_on(SYSMMU_G2D);
+		fimg2d_debug("sysmmu on\n");
+		/* in case fimg2d hw uses (kernel) virtual address */
+		sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir));
+#endif
+
+	}
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D)
+	/* in case fimg2d hw uses (user) virtual address */
+	ctx->pgd = __pa(current->mm->pgd);
+	fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
 #endif
 	return 0;
 }
@@ -136,10 +145,15 @@ static int fimg2d_release(struct inode *inode, struct file *file)
 	kfree(ctx);
 	atomic_dec(&info->ref_count);
 
+	if (atomic_read(&info->ref_count) == 0) {
+#if defined(CONFIG_S5P_SYSMMU_FIMG2D)
+		sysmmu_off(SYSMMU_G2D);
+		fimg2d_debug("sysmmu off\n");
+#endif
 #ifndef CONFIG_S5PV310_FPGA
-	if (atomic_read(&info->ref_count) == 0)
 		clk_disable(info->clock);
 #endif
+	}
 	return 0;
 }
 
@@ -305,7 +319,7 @@ static int fimg2d_do_cache_op(unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) && defined(CONFIG_S5P_VMEM)
 	outer_cache_opr((unsigned long)vaddr, dma.size, opr);
 #else
-	outer_cache_opr(dam.addr, dma.size, opr);
+	outer_cache_opr(dma.addr, dma.size, opr);
 #endif
 #endif
 
@@ -423,12 +437,6 @@ static struct miscdevice fimg2d_dev = {
 */
 static int fimg2d_setup_controller(struct fimg2d_control *info)
 {
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
-	sysmmu_on(SYSMMU_G2D);
-	fimg2d_debug("sysmmu on\n");
-	/* in case fimg2d hw uses (kernel) virtual address */
-	sysmmu_set_tablebase_pgd(SYSMMU_G2D, __pa(swapper_pg_dir));
-#endif
 	spin_lock_init(&info->lock);
 	atomic_set(&info->ref_count, 0);
 	atomic_set(&info->busy, 0);
@@ -591,10 +599,6 @@ err_plat:
 */
 static int fimg2d_remove(struct platform_device *pdev)
 {
-#if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
-	sysmmu_off(SYSMMU_G2D);
-	fimg2d_debug("sysmmu off\n");
-#endif
 	free_irq(info->irq, NULL);
 
 	if (info->mem) {
