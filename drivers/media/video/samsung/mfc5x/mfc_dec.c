@@ -512,15 +512,15 @@ static int h264_post_seq_start(struct mfc_inst_ctx *ctx)
 	dec_ctx->profile = shm & 0x1F;
 
 	/* FIXME: which one will be use? */
-	dec_ctx->crop_r_ofs = read_shm(ctx, CROP_INFO1) >> 16;
-	dec_ctx->crop_l_ofs = read_shm(ctx, CROP_INFO1);
-	dec_ctx->crop_b_ofs = read_shm(ctx, CROP_INFO2) >> 16;
-	dec_ctx->crop_t_ofs = read_shm(ctx, CROP_INFO2);
+	dec_ctx->crop_r_ofs = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+	dec_ctx->crop_l_ofs = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+	dec_ctx->crop_b_ofs = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+	dec_ctx->crop_t_ofs = read_shm(ctx, CROP_INFO2) & 0xFFFF;
 
-	h264->crop_r_ofs = read_shm(ctx, CROP_INFO1) >> 16;
-	h264->crop_l_ofs = read_shm(ctx, CROP_INFO1);
-	h264->crop_b_ofs = read_shm(ctx, CROP_INFO2) >> 16;
-	h264->crop_t_ofs = read_shm(ctx, CROP_INFO2);
+	h264->crop_r_ofs = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+	h264->crop_l_ofs = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+	h264->crop_b_ofs = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+	h264->crop_t_ofs = read_shm(ctx, CROP_INFO2) & 0xFFFF;
 
 	return 0;
 }
@@ -959,10 +959,10 @@ static int mfc_decoding_frame(struct mfc_inst_ctx *ctx, struct mfc_dec_exe_arg *
 	exe_arg->out_consumed_byte = read_reg(MFC_SI_FRM_COUNT);
 
 	//if (ctx->codecid == H264_DEC) {
-		exe_arg->out_crop_right_offset = read_shm(ctx, CROP_INFO1) >> 16;
-		exe_arg->out_crop_left_offset = read_shm(ctx, CROP_INFO1);
-		exe_arg->out_crop_bottom_offset = read_shm(ctx, CROP_INFO2) >> 16;
-		exe_arg->out_crop_top_offset = read_shm(ctx, CROP_INFO2);
+		exe_arg->out_crop_right_offset = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+		exe_arg->out_crop_left_offset = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+		exe_arg->out_crop_bottom_offset = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+		exe_arg->out_crop_top_offset = read_shm(ctx, CROP_INFO2)  & 0xFFFF;
 	//}
 
 	mfc_dbg("frame type: %d\n", dec_ctx->frametype);
