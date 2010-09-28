@@ -397,12 +397,12 @@ static int h264_pre_seq_start(struct mfc_inst_ctx *ctx)
 		reg &= ~(1 << 31);
 
 	/* display delay */
-	if (h264->dispdelay >= 0) {
+	if (h264->dispdelay_en > 0) {
 		/* enable */
 		reg |= (1 << 30);
 		/* value */
 		reg &= ~(0x3FFF << 16);
-		reg |= ((h264->dispdelay & 0x3FFF) << 16);
+		reg |= ((h264->dispdelay_val & 0x3FFF) << 16);
 	} else {
 		/* disable & value clear */
 		reg &= ~(0x7FFF << 16);
@@ -503,8 +503,10 @@ static int h264_post_seq_start(struct mfc_inst_ctx *ctx)
 
 	/* FIXME: consider it */
 	/*
-	if (dec_ctx->numtotaldpb < h264->dispdelay)
-		dec_ctx->numtotaldpb = h264->dispdelay;
+	h264->dispdelay_en > 0
+
+	if (dec_ctx->numtotaldpb < h264->dispdelay_val)
+		dec_ctx->numtotaldpb = h264->dispdelay_val;
 	*/
 
 	shm = read_shm(ctx, DISP_PIC_PROFILE);
@@ -757,7 +759,7 @@ int mfc_init_decoding(struct mfc_inst_ctx *ctx, union mfc_args *args)
 	dec_ctx = (struct mfc_dec_ctx *)ctx->c_priv;
 
 	/* FIXME: fill the value */
-	dec_ctx->crc = 0;
+	dec_ctx->crc = ctx->deccfg.crc;
 	dec_ctx->pixelcache = 0;
 	dec_ctx->packedpb = 0;
 	dec_ctx->numextradpb = 0;
