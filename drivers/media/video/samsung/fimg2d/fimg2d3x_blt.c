@@ -55,7 +55,7 @@ static inline void fimg2d3x_pattern_blend_pre(struct fimg2d_context *ctx,
 	ctx->dst.height *= 2;
 
 	/* temporary buffer for pattern copy */
-	scratch_buf = kmalloc(ctx->dst.width * ctx->dst.height * 4, GFP_KERNEL);
+	scratch_buf = kmalloc(ctx->dst.width * ctx->dst.height * 4 + 8, GFP_KERNEL);
 	if (!scratch_buf) {
 		printk(KERN_ERR "[%s]: kmalloc failed\n", __func__);
 		return;
@@ -66,6 +66,7 @@ static inline void fimg2d3x_pattern_blend_pre(struct fimg2d_context *ctx,
 	ctx->dst.addr = (unsigned long)scratch_buf;
 	ctx->dst.addr_type = FIMG2D_ADDR_KERN;
 	fimg2d_debug("src.addr(0x%x) src.type(%d)\n", (unsigned int)ctx->src.addr, ctx->src.addr_type);
+
 #else
 	ctx->dst.addr = (unsigned long)virt_to_phys(scratch_buf);
 	ctx->dst.addr_type = FIMG2D_ADDR_PHYS;
@@ -120,16 +121,16 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 	reg->src.y2 = ctx->src.height;
 	memcpy(&reg->dst, &org_dst, sizeof(reg->dst));
 
-	reg->src.y1 = ctx->src.height / 2;
+	reg->src.y2 = ctx->src.height / 2;
 
 	info->finalize(info);
 	info->configure(info, ctx);
 	info->update(info, ctx, reg);
 
-	if ((ctx->src.addr_type && !ctx->src.addr) || 
+	if ((ctx->src.addr_type && !ctx->src.addr) ||
 		(ctx->dst.addr_type && !ctx->dst.addr)) {
 		/* avoid system hang-up */
-		printk(KERN_ERR "[%s]: invalid addr: src.addr(0x%x) dst.addr(0x%x)\n", 
+		printk(KERN_ERR "[%s]: invalid addr: src.addr(0x%x) dst.addr(0x%x)\n",
 				__func__, (unsigned int)ctx->src.addr, (unsigned int)ctx->dst.addr);
 	}
 	else {
@@ -137,10 +138,9 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 		atomic_set(&info->busy, 1);
 
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D)
-		if (ctx->dst.addr_type == FIMG2D_ADDR_USER) {
-			/* in case fimg2d hw uses (user) virtual address */
-			sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
-		}
+		/* in case fimg2d hw uses (user) virtual address */
+		fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
+		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
 #endif
 
 		info->run(info);
@@ -184,7 +184,7 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 
 		info->update(info, ctx, reg);
 
-		if ((ctx->src.addr_type && !ctx->src.addr) || 
+		if ((ctx->src.addr_type && !ctx->src.addr) ||
 			(ctx->dst.addr_type && !ctx->dst.addr)) {
 			/* avoid system hang-up */
 			printk(KERN_ERR "[%s]: invalid addr: src.addr(0x%x) dst.addr(0x%x)\n", 
@@ -194,11 +194,9 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 			atomic_set(&info->busy, 1);
 
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
-			if ((ctx->src.addr_type == FIMG2D_ADDR_USER) ||
-				(ctx->dst.addr_type == FIMG2D_ADDR_USER)) {
-				/* in case fimg2d hw uses (user) virtual address */
-				sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
-			}
+			/* in case fimg2d hw uses (user) virtual address */
+			fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
+			sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
 #endif
 			info->run(info);
 
@@ -360,11 +358,57 @@ static void fimg2d3x_configure(struct fimg2d_control *info, struct fimg2d_contex
 static void fimg2d3x_update(struct fimg2d_control *info,
 			struct fimg2d_context *ctx, struct fimg2d_region *reg)
 {
+	int flipped = 0;
+
 	fimg2d_debug("context: %p\n", ctx);
 	fimg2d_debug("src: %d, %d => %d, %d\n", reg->src.x1, reg->src.y1,
 			reg->src.x2, reg->src.y2);
 	fimg2d_debug("dst: %d, %d => %d, %d\n", reg->dst.x1, reg->dst.y1,
 			reg->dst.x2, reg->dst.y2);
+
+	if (reg->src.x1 < 0 && reg->src.x2 == 0) {
+		reg->src.x2 = - (reg->src.x1);
+		reg->src.x1 = 0;
+		ctx->rot = YFLIP;
+		flipped++;
+	}
+	else if (reg->src.x1 == ctx->src.width && reg->src.x2 > ctx->src.width) {
+		reg->src.x1 = 2 * ctx->src.width - reg->src.x2;
+		reg->src.x2 = ctx->src.width;
+		ctx->rot = YFLIP;
+		flipped++;
+	}
+
+	if (reg->src.y1 < 0 && reg->src.y2 == 0) {
+		reg->src.y2 = - (reg->src.y1);
+		reg->src.y1 = 0;
+		ctx->rot = XFLIP;
+		flipped++;
+	}
+	else if (reg->src.y1 == ctx->src.height && reg->src.y2 > ctx->src.height) {
+		reg->src.y1 = 2 * ctx->src.height - reg->src.y2;
+		reg->src.y2 = ctx->src.height;
+		ctx->rot = XFLIP;
+		flipped++;
+	}
+
+	if (flipped == 2) ctx->rot = ROT180;
+
+	if (flipped) {
+		fimg2d3x_set_direction(info, ctx);
+
+		if (flipped == 1) {
+			fimg2d_debug("src(flip:%s): %d, %d => %d, %d\n",
+				ctx->rot == XFLIP? "XFLIP":"YFLIP",
+				reg->src.x1, reg->src.y1,
+				reg->src.x2, reg->src.y2);
+		}
+		else {
+			fimg2d_debug("src(flip:ROT180): %d, %d => %d, %d\n",
+				reg->src.x1, reg->src.y1,
+				reg->src.x2, reg->src.y2);
+		}
+	}
 
 	if (ctx->src.type == NORMAL)
 		fimg2d3x_set_src_coordinate(info, &reg->src);
