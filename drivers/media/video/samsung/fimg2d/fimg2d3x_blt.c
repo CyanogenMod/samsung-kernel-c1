@@ -22,6 +22,9 @@
 #include <plat/sysmmu.h>
 #endif
 
+// bitblt time measure
+#undef PERF
+
 /* for pattern blend */
 static void *scratch_buf;
 static int pat_height;
@@ -55,7 +58,7 @@ static inline void fimg2d3x_pattern_blend_pre(struct fimg2d_context *ctx,
 	ctx->dst.height *= 2;
 
 	/* temporary buffer for pattern copy */
-	scratch_buf = kmalloc(ctx->dst.width * ctx->dst.height * 4 + 8, GFP_KERNEL);
+	scratch_buf = kmalloc(ctx->dst.width * ctx->dst.height * 4, GFP_KERNEL);
 	if (!scratch_buf) {
 		printk(KERN_ERR "[%s]: kmalloc failed\n", __func__);
 		return;
@@ -198,11 +201,32 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 			fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
 			sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
 #endif
+
+#ifdef PERF
+			struct timeval start, end;
+			printk("[%s] start bitblt\n", __func__);
+			do_gettimeofday(&start);
+#endif
+
 			info->run(info);
 
 			ret = wait_event_timeout(info->wq, !atomic_read(&info->busy), 1000);
 			if (ret == 0)
 				printk(KERN_ERR "bitblt: wait timeout\n");
+
+#ifdef PERF
+			do_gettimeofday(&end);
+			long sec, usec, time;
+			sec = end.tv_sec - start.tv_sec;
+			if (end.tv_usec >= start.tv_usec) {
+				usec = end.tv_usec - start.tv_usec;
+			} else {
+				usec = end.tv_usec + 1000000 - start.tv_usec;
+				sec--;
+			}
+			time = sec * 1000000 + usec;
+			printk("[%s] end bitblt: %ld usec elapsed\n", __func__, time);
+#endif
 		}
 
 		/* pattern blend work around for 3.0 hardware */
