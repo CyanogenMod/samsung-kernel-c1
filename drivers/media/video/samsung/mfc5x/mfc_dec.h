@@ -131,7 +131,8 @@ struct mfc_dec_ctx {
 
 /* decoder private data */
 struct mfc_dec_h264 {
-	int dispdelay;			/* I,  == -1: disable, >= 0: enable */
+	unsigned int dispdelay_en;	/* I */
+	unsigned int dispdelay_val;	/* I */
 
 	unsigned int crop_r_ofs;	/* O */
 	unsigned int crop_l_ofs;	/* O */

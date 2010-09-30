@@ -245,7 +245,7 @@ static void smc911x_reset(struct net_device *dev)
 	 * Deassert IRQ for 1*10us for edge type interrupts
 	 * and drive IRQ pin push-pull
 	 */
-#if defined(CONFIG_ARCH_S5PV310)
+#if defined(CONFIG_ARCH_S5PV310)||defined(CONFIG_ARCH_S5P6450)
 	irq_cfg = (1 << 24) | INT_CFG_IRQ_EN_ | INT_CFG_IRQ_TYPE_|INT_CFG_IRQ_POL_;
 #else
 	irq_cfg = (1 << 24) | INT_CFG_IRQ_EN_ | INT_CFG_IRQ_TYPE_;

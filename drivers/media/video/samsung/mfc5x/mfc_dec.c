@@ -397,12 +397,12 @@ static int h264_pre_seq_start(struct mfc_inst_ctx *ctx)
 		reg &= ~(1 << 31);
 
 	/* display delay */
-	if (h264->dispdelay >= 0) {
+	if (h264->dispdelay_en > 0) {
 		/* enable */
 		reg |= (1 << 30);
 		/* value */
 		reg &= ~(0x3FFF << 16);
-		reg |= ((h264->dispdelay & 0x3FFF) << 16);
+		reg |= ((h264->dispdelay_val & 0x3FFF) << 16);
 	} else {
 		/* disable & value clear */
 		reg &= ~(0x7FFF << 16);
@@ -503,8 +503,10 @@ static int h264_post_seq_start(struct mfc_inst_ctx *ctx)
 
 	/* FIXME: consider it */
 	/*
-	if (dec_ctx->numtotaldpb < h264->dispdelay)
-		dec_ctx->numtotaldpb = h264->dispdelay;
+	h264->dispdelay_en > 0
+
+	if (dec_ctx->numtotaldpb < h264->dispdelay_val)
+		dec_ctx->numtotaldpb = h264->dispdelay_val;
 	*/
 
 	shm = read_shm(ctx, DISP_PIC_PROFILE);
@@ -512,15 +514,15 @@ static int h264_post_seq_start(struct mfc_inst_ctx *ctx)
 	dec_ctx->profile = shm & 0x1F;
 
 	/* FIXME: which one will be use? */
-	dec_ctx->crop_r_ofs = read_shm(ctx, CROP_INFO1) >> 16;
-	dec_ctx->crop_l_ofs = read_shm(ctx, CROP_INFO1);
-	dec_ctx->crop_b_ofs = read_shm(ctx, CROP_INFO2) >> 16;
-	dec_ctx->crop_t_ofs = read_shm(ctx, CROP_INFO2);
+	dec_ctx->crop_r_ofs = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+	dec_ctx->crop_l_ofs = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+	dec_ctx->crop_b_ofs = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+	dec_ctx->crop_t_ofs = read_shm(ctx, CROP_INFO2) & 0xFFFF;
 
-	h264->crop_r_ofs = read_shm(ctx, CROP_INFO1) >> 16;
-	h264->crop_l_ofs = read_shm(ctx, CROP_INFO1);
-	h264->crop_b_ofs = read_shm(ctx, CROP_INFO2) >> 16;
-	h264->crop_t_ofs = read_shm(ctx, CROP_INFO2);
+	h264->crop_r_ofs = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+	h264->crop_l_ofs = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+	h264->crop_b_ofs = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+	h264->crop_t_ofs = read_shm(ctx, CROP_INFO2) & 0xFFFF;
 
 	return 0;
 }
@@ -655,6 +657,42 @@ static struct mfc_dec_info mpeg4_dec = {
 	},
 };
 
+static struct mfc_dec_info mpeg1_dec = {
+	.name		= "MPEG1",
+	.codectype	= MPEG1_DEC,
+	.codecid	= 3,
+	.d_priv_size	= 0,
+	.c_ops		= {
+		.alloc_ctx_buf		= alloc_ctx_buf,
+		.alloc_desc_buf 	= alloc_desc_buf,
+		.set_codec_bufs		= NULL,
+		.set_dpbs		= set_dpbs,
+		.pre_seq_start 		= pre_seq_start,
+		.post_seq_start 	= post_seq_start,
+		.pre_frame_start	= NULL,
+		.post_frame_start	= NULL,
+		.multi_data_frame	= NULL,
+	},
+};
+
+static struct mfc_dec_info mpeg2_dec = {
+	.name		= "MPEG2",
+	.codectype	= MPEG2_DEC,
+	.codecid	= 3,
+	.d_priv_size	= 0,
+	.c_ops		= {
+		.alloc_ctx_buf		= alloc_ctx_buf,
+		.alloc_desc_buf 	= alloc_desc_buf,
+		.set_codec_bufs		= NULL,
+		.set_dpbs		= set_dpbs,
+		.pre_seq_start 		= pre_seq_start,
+		.post_seq_start 	= post_seq_start,
+		.pre_frame_start	= NULL,
+		.post_frame_start	= NULL,
+		.multi_data_frame	= NULL,
+	},
+};
+
 static struct mfc_dec_info fimv1_dec = {
 	.name		= "FIMV1",
 	.codectype	= FIMV1_DEC,
@@ -679,6 +717,8 @@ void mfc_init_decoders(void)
 
 	list_add_tail(&h264_dec.list, &mfc_decoders);
 	list_add_tail(&mpeg4_dec.list, &mfc_decoders);
+	list_add_tail(&mpeg1_dec.list, &mfc_decoders);
+	list_add_tail(&mpeg2_dec.list, &mfc_decoders);
 	list_add_tail(&fimv1_dec.list, &mfc_decoders);
 }
 
@@ -757,7 +797,7 @@ int mfc_init_decoding(struct mfc_inst_ctx *ctx, union mfc_args *args)
 	dec_ctx = (struct mfc_dec_ctx *)ctx->c_priv;
 
 	/* FIXME: fill the value */
-	dec_ctx->crc = 0;
+	dec_ctx->crc = ctx->deccfg.crc;
 	dec_ctx->pixelcache = 0;
 	dec_ctx->packedpb = 0;
 	dec_ctx->numextradpb = 0;
@@ -959,10 +999,10 @@ static int mfc_decoding_frame(struct mfc_inst_ctx *ctx, struct mfc_dec_exe_arg *
 	exe_arg->out_consumed_byte = read_reg(MFC_SI_FRM_COUNT);
 
 	//if (ctx->codecid == H264_DEC) {
-		exe_arg->out_crop_right_offset = read_shm(ctx, CROP_INFO1) >> 16;
-		exe_arg->out_crop_left_offset = read_shm(ctx, CROP_INFO1);
-		exe_arg->out_crop_bottom_offset = read_shm(ctx, CROP_INFO2) >> 16;
-		exe_arg->out_crop_top_offset = read_shm(ctx, CROP_INFO2);
+		exe_arg->out_crop_right_offset = (read_shm(ctx, CROP_INFO1) >> 16) & 0xFFFF;
+		exe_arg->out_crop_left_offset = read_shm(ctx, CROP_INFO1) & 0xFFFF;
+		exe_arg->out_crop_bottom_offset = (read_shm(ctx, CROP_INFO2) >> 16) & 0xFFFF;
+		exe_arg->out_crop_top_offset = read_shm(ctx, CROP_INFO2)  & 0xFFFF;
 	//}
 
 	mfc_dbg("frame type: %d\n", dec_ctx->frametype);

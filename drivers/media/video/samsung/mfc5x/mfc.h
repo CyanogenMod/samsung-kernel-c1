@@ -53,12 +53,22 @@
 #endif
 
 #if defined(CONFIG_S5P_SYSMMU_MFC_L) && defined(CONFIG_S5P_SYSMMU_MFC_R)
-#define MFC_FREEBASE	0xE0000000	/* if possible, the free virtual addr. for MFC be aligned with 128KB */
 #define SYSMMU_MFC_ON
 #endif
 
 #if defined(CONFIG_S5P_VMEM) && !defined(SYSMMU_MFC_ON)
 #error In order to use S5PVEM, you must configure System MMU for MFC_L and MFC_R!
+#endif
+
+/* if possible, the free virtual addr. for MFC be aligned with 128KB */
+#if defined(CONFIG_S5P_VMEM)
+#if defined(CONFIG_VMSPLIT_3G)
+#define MFC_FREEBASE	0xF0000000
+#elif defined(CONFIG_VMSPLIT_2G)
+#define MFC_FREEBASE	0xE0000000
+#else
+#error Not support current memory split configuration
+#endif
 #endif
 
 #endif /* __MFC_H_ */

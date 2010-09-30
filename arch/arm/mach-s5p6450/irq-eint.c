@@ -95,6 +95,10 @@ static int s3c_irq_eint_set_type(unsigned int irq, unsigned int type)
 
 	case IRQ_TYPE_LEVEL_LOW:
 		newvalue = S3C2410_EXTINT_LOWLEV;
+#if defined(CONFIG_SMC911X)
+		if (irq == IRQ_EINT(10))
+			newvalue = S3C2410_EXTINT_HILEV;
+#endif
 		break;
 
 	case IRQ_TYPE_LEVEL_HIGH:
