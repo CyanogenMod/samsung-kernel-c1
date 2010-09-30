@@ -1011,7 +1011,28 @@ static void __init smdkv310_machine_init(void)
 #endif
 
 #ifdef CONFIG_FB_S3C
+#ifdef CONFIG_FB_S3C_AMS369FG06
+	sclk = clk_get(spi_dev, "sclk_spi");
+	if (IS_ERR(sclk))
+		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
+	prnt = clk_get(spi_dev, "xusbxti");
+	if (IS_ERR(prnt))
+		dev_err(spi_dev, "failed to get prnt\n");
+	clk_set_parent(sclk, prnt);
+	clk_put(prnt);
+
+	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
+		gpio_direction_output(S5PV310_GPB(5), 1);
+		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
+		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
+			ARRAY_SIZE(spi1_csi));
+	}
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&ams369fg06_data);
+#else
 	s3cfb_set_platdata(NULL);
+#endif
 #endif
 
 #ifdef CONFIG_VIDEO_FIMC
@@ -1058,26 +1079,6 @@ static void __init smdkv310_machine_init(void)
 #endif
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
 
-#ifdef CONFIG_FB_S3C_AMS369FG06
-	sclk = clk_get(spi_dev, "sclk_spi");
-	if (IS_ERR(sclk))
-		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
-	prnt = clk_get(spi_dev, "xusbxti");
-	if (IS_ERR(prnt))
-		dev_err(spi_dev, "failed to get prnt\n");
-	clk_set_parent(sclk, prnt);
-	clk_put(prnt);
-
-	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
-		gpio_direction_output(S5PV310_GPB(5), 1);
-		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
-		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
-		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
-			ARRAY_SIZE(spi1_csi));
-	}
-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
-	s3cfb_set_platdata(&ams369fg06_data);
-#endif
 }
 
 #ifdef CONFIG_USB_SUPPORT
