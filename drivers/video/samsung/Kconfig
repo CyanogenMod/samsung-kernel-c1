@@ -75,18 +75,18 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMD
 choice
 depends on FB_S3C
 prompt "Select LCD Type"
-default FB_S3C_TL2796
+default FB_S3C_AMS369FG06
 config FB_S3C_LTE480WV
 	bool "LTE480WV"
 	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
 	help
-	  This enables support for Samsung LTE480WV 4.8\" WVGA LCD panel
+	  This enables support for Samsung LTE480WV 4.8" WVGA LCD panel
 
 config FB_S3C_HT101HD1
 	bool "HT101HD1"
 	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
 	help
-	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
+	  This enables support for HT101HD1 10.1" WXVGA(1366*768) LCD panel
 
 config FB_S3C_WA101S
 	bool "WA101S"
@@ -94,13 +94,13 @@ config FB_S3C_WA101S
 	help
 	  This enables support for 10.1" 1366*768 LCD panel
 
-config FB_S3C_TL2796
-	bool "TL2796"
+config FB_S3C_AMS369FG06
+	bool "AMS369FG06"
 	depends on MACH_SMDKV310
 	select SPI
 	select SPI_S3C64XX
 	help
-	  This enables support for Samsung TL2796 WVGA LCD panel
+	  This enables support for Samsung AMS369FG06 3.7" WVGA AMOLED panel
 endchoice
 
 config FB_S3C_V2

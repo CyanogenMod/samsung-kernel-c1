@@ -1,5 +1,5 @@
 /*
- * TL2796 LCD Panel Driver for the Samsung Universal board
+ * AMS369FG06 AMOLED Panel Driver
  *
  * Copyright (c) 2008 Samsung Electronics
  * Author: InKi Dae  <inki.dae@samsung.com>
@@ -37,7 +37,7 @@
 #define COMMAND_ONLY		0xFE
 #define DATA_ONLY		0xFF
 
-#ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
+#ifdef CONFIG_BACKLIGHT_AMS369FG06_AMOLED
 
 #define dbg(fmt...)
 
@@ -181,7 +181,7 @@ const unsigned short SEQ_SETTING[] = {
 #endif
 
 /* FIXME: will be moved to platform data */
-static struct s3cfb_lcd tl2796 = {
+static struct s3cfb_lcd ams369fg06 = {
 	.width = 480,
 	.height = 800,
 	.bpp = 24,
@@ -221,7 +221,7 @@ static struct s3cfb_lcd tl2796 = {
 	},
 };
 
-static int tl2796_spi_write_driver(int addr, int data)
+static int ams369fg06_spi_write_driver(int addr, int data)
 {
 	u16 buf[1];
 	struct spi_message msg;
@@ -236,7 +236,7 @@ static int tl2796_spi_write_driver(int addr, int data)
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
 
-#ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
+#ifdef CONFIG_BACKLIGHT_AMS369FG06_AMOLED
 	int ret;
 	locked  = 1;
 	ret = spi_sync(lcd.g_spi, &msg);
@@ -248,21 +248,21 @@ static int tl2796_spi_write_driver(int addr, int data)
 #endif
 }
 
-static void tl2796_spi_write(unsigned char address, unsigned char command)
+static void ams369fg06_spi_write(unsigned char address, unsigned char command)
 {
 	if (address != DATA_ONLY)
-		tl2796_spi_write_driver(0x70, address);
+		ams369fg06_spi_write_driver(0x70, address);
 
-	tl2796_spi_write_driver(0x72, command);
+	ams369fg06_spi_write_driver(0x72, command);
 }
 
-static void tl2796_panel_send_sequence(const unsigned short *wbuf)
+static void ams369fg06_panel_send_sequence(const unsigned short *wbuf)
 {
 	int i = 0;
 
 	while ((wbuf[i] & DEFMASK) != ENDDEF) {
 		if ((wbuf[i] & DEFMASK) != SLEEPMSEC)
-			tl2796_spi_write(wbuf[i], wbuf[i+1]);
+			ams369fg06_spi_write(wbuf[i], wbuf[i+1]);
 		else
 			msleep(wbuf[i+1]);
 			/* mdelay(wbuf[i+1]); */
@@ -270,33 +270,33 @@ static void tl2796_panel_send_sequence(const unsigned short *wbuf)
 	}
 }
 
-void tl2796_ldi_init(void)
+void ams369fg06_ldi_init(void)
 {
-	tl2796_panel_send_sequence(SEQ_SETTING);
-	tl2796_panel_send_sequence(SEQ_STANDBY_OFF);
+	ams369fg06_panel_send_sequence(SEQ_SETTING);
+	ams369fg06_panel_send_sequence(SEQ_STANDBY_OFF);
 }
 
-void tl2796_ldi_enable(void)
+void ams369fg06_ldi_enable(void)
 {
-	tl2796_panel_send_sequence(SEQ_DISPLAY_ON);
-	tl2796_panel_send_sequence(SEQ_STANDBY_OFF);
+	ams369fg06_panel_send_sequence(SEQ_DISPLAY_ON);
+	ams369fg06_panel_send_sequence(SEQ_STANDBY_OFF);
 }
 
-void tl2796_ldi_disable(void)
+void ams369fg06_ldi_disable(void)
 {
-	tl2796_panel_send_sequence(SEQ_DISPLAY_OFF);
+	ams369fg06_panel_send_sequence(SEQ_DISPLAY_OFF);
 	/* For fixing LCD suspend problem */
-	tl2796_panel_send_sequence(SEQ_STANDBY_ON);
+	ams369fg06_panel_send_sequence(SEQ_STANDBY_ON);
 }
 
 void s3cfb_set_lcd_info(struct s3cfb_global *ctrl)
 {
-	tl2796.init_ldi = NULL;
-	ctrl->lcd = &tl2796;
+	ams369fg06.init_ldi = NULL;
+	ctrl->lcd = &ams369fg06;
 }
 
 /* backlight operations and functions */
-#ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
+#ifdef CONFIG_BACKLIGHT_AMS369FG06_AMOLED
 static int s5p_bl_update_status(struct backlight_device *bd)
 {
 	int bl = bd->props.brightness;
@@ -318,7 +318,7 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 			level = 6;
 
 		if (level) {
-			tl2796_spi_write(0x39, ((bl/64 + 1)<<4)&(bl/64+1));
+			ams369fg06_spi_write(0x39, ((bl/64 + 1)<<4)&(bl/64+1));
 
 			switch (level) {
 			/* If bl is not halved, variation in brightness is
@@ -327,34 +327,34 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 			 * required that brightness increases gradually
 			 * from left to right.*/
 			case 1:
-				tl2796_spi_write(0x46, (bl/2)+6);
-				tl2796_spi_write(0x56, (bl/2)+4);
-				tl2796_spi_write(0x66, (bl/2)+30);
+				ams369fg06_spi_write(0x46, (bl/2)+6);
+				ams369fg06_spi_write(0x56, (bl/2)+4);
+				ams369fg06_spi_write(0x66, (bl/2)+30);
 				break;
 			case 2:
-				tl2796_spi_write(0x46, (bl/2)+4);
-				tl2796_spi_write(0x56, (bl/2)+2);
-				tl2796_spi_write(0x66, (bl/2)+28);
+				ams369fg06_spi_write(0x46, (bl/2)+4);
+				ams369fg06_spi_write(0x56, (bl/2)+2);
+				ams369fg06_spi_write(0x66, (bl/2)+28);
 				break;
 			case 3:
-				tl2796_spi_write(0x46, (bl/2)+6);
-				tl2796_spi_write(0x56, (bl/2)+1);
-				tl2796_spi_write(0x66, (bl/2)+32);
+				ams369fg06_spi_write(0x46, (bl/2)+6);
+				ams369fg06_spi_write(0x56, (bl/2)+1);
+				ams369fg06_spi_write(0x66, (bl/2)+32);
 				break;
 			case 4:
-				tl2796_spi_write(0x46, (bl/2)+6);
-				tl2796_spi_write(0x56, (bl/2)+1);
-				tl2796_spi_write(0x66, (bl/2)+38);
+				ams369fg06_spi_write(0x46, (bl/2)+6);
+				ams369fg06_spi_write(0x56, (bl/2)+1);
+				ams369fg06_spi_write(0x66, (bl/2)+38);
 				break;
 			case 5:
-				tl2796_spi_write(0x46, (bl/2)+7);
-				tl2796_spi_write(0x56, (bl/2));
-				tl2796_spi_write(0x66, (bl/2)+40);
+				ams369fg06_spi_write(0x46, (bl/2)+7);
+				ams369fg06_spi_write(0x56, (bl/2));
+				ams369fg06_spi_write(0x66, (bl/2)+40);
 				break;
 			case 6:
-				tl2796_spi_write(0x46, (bl/2)+10);
-				tl2796_spi_write(0x56, (bl/2));
-				tl2796_spi_write(0x66, (bl/2)+48);
+				ams369fg06_spi_write(0x46, (bl/2)+10);
+				ams369fg06_spi_write(0x56, (bl/2));
+				ams369fg06_spi_write(0x66, (bl/2)+48);
 				break;
 			default:
 				break;
@@ -379,13 +379,13 @@ static const struct backlight_ops s5p_bl_ops = {
 };
 #endif
 
-static int __init tl2796_probe(struct spi_device *spi)
+static int __init ams369fg06_probe(struct spi_device *spi)
 {
 	int ret;
 
 	spi->bits_per_word = 16;
 	ret = spi_setup(spi);
-#ifdef CONFIG_BACKLIGHT_TL2796_AMOLED
+#ifdef CONFIG_BACKLIGHT_AMS369FG06_AMOLED
 	lcd.g_spi = spi;
 
 	/* The node is named as pwm-backlight even though PWM
@@ -401,8 +401,8 @@ static int __init tl2796_probe(struct spi_device *spi)
 	g_spi = spi;
 #endif
 
-	tl2796_ldi_init();
-	tl2796_ldi_enable();
+	ams369fg06_ldi_init();
+	ams369fg06_ldi_enable();
 
 	if (ret < 0)
 		return 0;
@@ -410,41 +410,41 @@ static int __init tl2796_probe(struct spi_device *spi)
 	return ret;
 }
 #ifdef CONFIG_PM
-int tl2796_suspend(struct platform_device *pdev, pm_message_t state)
+int ams369fg06_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	tl2796_ldi_disable();
+	ams369fg06_ldi_disable();
 	return 0;
 }
 
-int tl2796_resume(struct platform_device *pdev, pm_message_t state)
+int ams369fg06_resume(struct platform_device *pdev, pm_message_t state)
 {
-	tl2796_ldi_init();
-	tl2796_ldi_enable();
+	ams369fg06_ldi_init();
+	ams369fg06_ldi_enable();
 
 	return 0;
 }
 #endif
 
-static struct spi_driver tl2796_driver = {
+static struct spi_driver ams369fg06_driver = {
 	.driver = {
-		.name	= "tl2796",
+		.name	= "ams369fg06",
 		.owner	= THIS_MODULE,
 	},
-	.probe		= tl2796_probe,
-	.remove		= __exit_p(tl2796_remove),
+	.probe		= ams369fg06_probe,
+	.remove		= __exit_p(ams369fg06_remove),
 	.suspend	= NULL,
 	.resume		= NULL,
 };
 
-static int __init tl2796_init(void)
+static int __init ams369fg06_init(void)
 {
-	return spi_register_driver(&tl2796_driver);
+	return spi_register_driver(&ams369fg06_driver);
 }
 
-static void __exit tl2796_exit(void)
+static void __exit ams369fg06_exit(void)
 {
-	spi_unregister_driver(&tl2796_driver);
+	spi_unregister_driver(&ams369fg06_driver);
 }
 
-module_init(tl2796_init);
-module_exit(tl2796_exit);
+module_init(ams369fg06_init);
+module_exit(ams369fg06_exit);
