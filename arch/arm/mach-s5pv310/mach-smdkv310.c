@@ -722,7 +722,7 @@ static struct fimg2d_platdata fimg2d_data __initdata = {
 #ifdef CONFIG_FB_S3C_AMS369FG06
 
 static struct s3c_platform_fb ams369fg06_data __initdata = {
-	.hw_ver = 0x62,
+	.hw_ver = 0x70,
 	.clk_name = "sclk_lcd",
 	.nr_wins = 5,
 	.default_win = CONFIG_FB_S3C_DEFAULT_WINDOW,
