@@ -1513,7 +1513,7 @@ static inline int fimc_suspend_out(struct fimc_control *ctrl)
 
 static inline int fimc_suspend_cap(struct fimc_control *ctrl)
 {
-	if ((ctrl->cam->id == CAMERA_WB) || (ctrl > cam->id == CAMERA_WB_B)
+	if ((ctrl->cam->id == CAMERA_WB) || (ctrl->cam->id == CAMERA_WB_B)
 		&& (ctrl->status == FIMC_STREAMON))
 		fimc_streamoff_capture((void *)ctrl);
 	ctrl->status = FIMC_ON_SLEEP;

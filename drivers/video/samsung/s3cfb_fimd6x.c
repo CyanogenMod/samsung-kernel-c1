@@ -160,12 +160,35 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	maxclk = 86 * 1000000;
 
 	cfg = readl(ctrl->regs + S3C_VIDCON0);
-	cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
-		S3C_VIDCON0_VCLKEN_MASK);
-	cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL);
 
-	src_clk = clk_get_rate(ctrl->clock);
-	printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
+	if (pdata->hw_ver == 0x70) {
+		cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
+			S3C_VIDCON0_VCLKEN_MASK);
+		cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS |
+			S3C_VIDCON0_VCLKEN_NORMAL);
+
+		src_clk = clk_get_rate(ctrl->clock);
+		printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
+	} else {
+		cfg &= ~(S3C_VIDCON0_CLKSEL_MASK |
+			S3C_VIDCON0_CLKVALUP_MASK |
+			S3C_VIDCON0_VCLKEN_MASK |
+			S3C_VIDCON0_CLKDIR_MASK);
+		cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS |
+			S3C_VIDCON0_VCLKEN_NORMAL |
+			S3C_VIDCON0_CLKDIR_DIVIDED);
+
+		if (strcmp(pdata->clk_name, "sclk_fimd") == 0) {
+			cfg |= S3C_VIDCON0_CLKSEL_SCLK;
+			src_clk = clk_get_rate(ctrl->clock);
+			printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
+
+		} else {
+			cfg |= S3C_VIDCON0_CLKSEL_HCLK;
+			src_clk = ctrl->clock->parent->rate;
+			printk(KERN_INFO "FIMD src hclk = %d\n", src_clk);
+		}
+	}
 
 	vclk = PICOS2KHZ(ctrl->fb[pdata->default_win]->var.pixclock) * 1000;
 
@@ -363,7 +386,7 @@ int s3cfb_channel_localpath_on(struct s3cfb_global *ctrl, int id)
 	struct s3c_platform_fb *pdata = to_fb_plat(ctrl->dev);
 	u32 cfg;
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		cfg = readl(ctrl->regs + S3C_WINSHMAP);
 		cfg |= S3C_WINSHMAP_LOCAL_ENABLE(id);
 		writel(cfg, ctrl->regs + S3C_WINSHMAP);
@@ -379,7 +402,7 @@ int s3cfb_channel_localpath_off(struct s3cfb_global *ctrl, int id)
 	struct s3c_platform_fb *pdata = to_fb_plat(ctrl->dev);
 	u32 cfg;
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		cfg = readl(ctrl->regs + S3C_WINSHMAP);
 		cfg &= ~S3C_WINSHMAP_LOCAL_DISABLE(id);
 		writel(cfg, ctrl->regs + S3C_WINSHMAP);
@@ -399,7 +422,7 @@ int s3cfb_window_on(struct s3cfb_global *ctrl, int id)
 	cfg |= S3C_WINCON_ENWIN_ENABLE;
 	writel(cfg, ctrl->regs + S3C_WINCON(id));
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		cfg = readl(ctrl->regs + S3C_WINSHMAP);
 		cfg |= S3C_WINSHMAP_CH_ENABLE(id);
 		writel(cfg, ctrl->regs + S3C_WINSHMAP);
@@ -420,7 +443,7 @@ int s3cfb_window_off(struct s3cfb_global *ctrl, int id)
 	cfg |= S3C_WINCON_DATAPATH_DMA;
 	writel(cfg, ctrl->regs + S3C_WINCON(id));
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		cfg = readl(ctrl->regs + S3C_WINSHMAP);
 		cfg &= ~S3C_WINSHMAP_CH_DISABLE(id);
 		writel(cfg, ctrl->regs + S3C_WINSHMAP);
@@ -567,7 +590,7 @@ int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id)
 		end_addr = start_addr + fix->line_length * var->yres;
 	}
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		shw = readl(ctrl->regs + S3C_WINSHMAP);
 		shw |= S3C_WINSHMAP_PROTECT(id);
 		writel(shw, ctrl->regs + S3C_WINSHMAP);
@@ -576,7 +599,7 @@ int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id)
 	writel(start_addr, ctrl->regs + S3C_VIDADDR_START0(id));
 	writel(end_addr, ctrl->regs + S3C_VIDADDR_END0(id));
 
-	if (pdata->hw_ver == 0x62) {
+	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		shw = readl(ctrl->regs + S3C_WINSHMAP);
 		shw &= ~(S3C_WINSHMAP_PROTECT(id));
 		writel(shw, ctrl->regs + S3C_WINSHMAP);

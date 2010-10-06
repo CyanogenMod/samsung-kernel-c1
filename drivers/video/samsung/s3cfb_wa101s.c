@@ -1,4 +1,4 @@
-/* linux/drivers/video/samsung/s3cfb_101wa01s.c
+/* linux/drivers/video/samsung/s3cfb_wa101s.c
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/

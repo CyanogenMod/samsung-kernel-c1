@@ -870,9 +870,9 @@ void __init_or_cpufreq s5p6450_setup_clocks(void)
 	hclk_low = clk_get_rate(&clk_hclk133.clk);
 	pclk_low = clk_get_rate(&clk_pclk66.clk);
 
-	printk(KERN_INFO "S5P6450: HCLK166=%ld.%ldMHz, HCLK133=%ld.%ldMHz," \
+	printk(KERN_INFO "S5P6450: ARM_CLK=%ld.%ldMHz, HCLK166=%ld.%ldMHz, HCLK133=%ld.%ldMHz," \
 			" PCLK83=%ld.%ldMHz, PCLK66=%ld.%ldMHz\n",
-			print_mhz(hclk), print_mhz(hclk_low),
+			print_mhz(fclk), print_mhz(hclk), print_mhz(hclk_low),
 			print_mhz(pclk), print_mhz(pclk_low));
 
 	clk_f.rate = fclk;

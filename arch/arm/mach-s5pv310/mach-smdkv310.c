@@ -719,10 +719,10 @@ static struct fimg2d_platdata fimg2d_data __initdata = {
 };
 #endif
 
-#ifdef CONFIG_FB_S3C_TL2796
+#ifdef CONFIG_FB_S3C_AMS369FG06
 
-static struct s3c_platform_fb tl2796_data __initdata = {
-	.hw_ver = 0x62,
+static struct s3c_platform_fb ams369fg06_data __initdata = {
+	.hw_ver = 0x70,
 	.clk_name = "sclk_lcd",
 	.nr_wins = 5,
 	.default_win = CONFIG_FB_S3C_DEFAULT_WINDOW,
@@ -740,7 +740,7 @@ static struct s3c64xx_spi_csinfo spi1_csi[] = {
 
 static struct spi_board_info spi_board_info[] __initdata = {
 	{
-		.modalias	= "tl2796",
+		.modalias	= "ams369fg06",
 		.max_speed_hz	= 1200000,
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,
@@ -863,7 +863,7 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_JPEG
 	&s5p_device_jpeg,
 #endif
-#ifdef CONFIG_FB_S3C_TL2796
+#ifdef CONFIG_FB_S3C_AMS369FG06
 	&s5pv310_device_spi1,
 #endif
 
@@ -874,7 +874,6 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_GIB
 	&s3c_device_gib, 
 #endif
-
 };
 
 #ifdef CONFIG_S3C_DEV_HSMMC
@@ -972,7 +971,7 @@ static void __init s5p_pmem_set_platdata(void)
 
 static void __init smdkv310_machine_init(void)
 {
-#ifdef CONFIG_FB_S3C_TL2796
+#ifdef CONFIG_FB_S3C_AMS369FG06
 	struct clk *sclk = NULL;
 	struct clk *prnt = NULL;
 	struct device *spi_dev = &s5pv310_device_spi1.dev;
@@ -1012,7 +1011,28 @@ static void __init smdkv310_machine_init(void)
 #endif
 
 #ifdef CONFIG_FB_S3C
+#ifdef CONFIG_FB_S3C_AMS369FG06
+	sclk = clk_get(spi_dev, "sclk_spi");
+	if (IS_ERR(sclk))
+		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
+	prnt = clk_get(spi_dev, "xusbxti");
+	if (IS_ERR(prnt))
+		dev_err(spi_dev, "failed to get prnt\n");
+	clk_set_parent(sclk, prnt);
+	clk_put(prnt);
+
+	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
+		gpio_direction_output(S5PV310_GPB(5), 1);
+		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
+		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
+		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
+			ARRAY_SIZE(spi1_csi));
+	}
+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+	s3cfb_set_platdata(&ams369fg06_data);
+#else
 	s3cfb_set_platdata(NULL);
+#endif
 #endif
 
 #ifdef CONFIG_VIDEO_FIMC
@@ -1059,26 +1079,6 @@ static void __init smdkv310_machine_init(void)
 #endif
 	platform_add_devices(smdkv310_devices, ARRAY_SIZE(smdkv310_devices));
 
-#ifdef CONFIG_FB_S3C_TL2796
-	sclk = clk_get(spi_dev, "sclk_spi");
-	if (IS_ERR(sclk))
-		dev_err(spi_dev, "failed to get sclk for SPI-1\n");
-	prnt = clk_get(spi_dev, "xusbxti");
-	if (IS_ERR(prnt))
-		dev_err(spi_dev, "failed to get prnt\n");
-	clk_set_parent(sclk, prnt);
-	clk_put(prnt);
-
-	if (!gpio_request(S5PV310_GPB(5), "LCD_CS")) {
-		gpio_direction_output(S5PV310_GPB(5), 1);
-		s3c_gpio_cfgpin(S5PV310_GPB(5), S3C_GPIO_SFN(1));
-		s3c_gpio_setpull(S5PV310_GPB(5), S3C_GPIO_PULL_UP);
-		s5pv310_spi_set_info(LCD_BUS_NUM, S5PV310_SPI_SRCCLK_SCLK,
-			ARRAY_SIZE(spi1_csi));
-	}
-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
-	s3cfb_set_platdata(&tl2796_data);
-#endif
 }
 
 #ifdef CONFIG_USB_SUPPORT

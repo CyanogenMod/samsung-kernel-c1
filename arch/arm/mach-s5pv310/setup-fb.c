@@ -319,7 +319,7 @@ int s3cfb_lcd_off(struct platform_device *pdev)
 {
 	return 0;
 }
-#elif defined(CONFIG_FB_S3C_TL2796)
+#elif defined(CONFIG_FB_S3C_AMS369FG06)
 int s3cfb_backlight_on(struct platform_device *pdev)
 {
 #if !defined(CONFIG_BACKLIGHT_PWM)
