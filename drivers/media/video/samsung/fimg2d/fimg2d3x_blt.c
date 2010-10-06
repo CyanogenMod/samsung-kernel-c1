@@ -35,6 +35,28 @@ static unsigned long org_addr;
 static FIMG2D_ADDR_TYPE_T org_type;
 
 /**
+ * fimg2d3x_is_valid_region - [3.x] check validity of src region
+ * @ctx: context info
+ * @reg: region info
+*/
+static inline int fimg2d3x_is_valid_region(struct fimg2d_context *ctx,
+						struct fimg2d_region *reg)
+{
+	if (ctx->src.addr_type) {
+		if (reg->src.x2 <= - ctx->src.width)
+			return -1;
+		if (reg->src.x1 >= 2 * ctx->src.width)
+			return -1;
+		if (reg->src.y1 <= - ctx->src.height)
+			return -1;
+		if (reg->src.y2 >= 2 * ctx->src.height)
+			return -1;
+	}
+
+	return 0;
+}
+
+/**
  * fimg2d3x_pattern_blend_pre - [3.x] Do pre-work for pattern blending
  * @ctx: context info
  * @reg: region info
@@ -142,7 +164,7 @@ static inline void fimg2d3x_pattern_blend_post(struct fimg2d_control *info,
 
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D)
 		/* in case fimg2d hw uses (user) virtual address */
-		fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
+		fimg2d_debug("ctx->pgd:0x%x\n", (unsigned int)ctx->pgd);
 		sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
 #endif
 
@@ -175,6 +197,17 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 
 	while (ctx) {
 		reg = fimg2d_get_first_region(ctx);
+		if (!reg) {
+			fimg2d_debug("region not found\n");
+			goto noreg;
+		}
+
+#if 0
+		if (fimg2d3x_is_valid_region(ctx, reg)) {
+			fimg2d_debug("region not valid");
+			goto noblt;
+		}
+#endif
 
 		/* pattern blend work around for 3.0 hardware */
 		if (ctx->op == OP_PAT_BLEND)
@@ -198,7 +231,7 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D) 
 			/* in case fimg2d hw uses (user) virtual address */
-			fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
+			fimg2d_debug("ctx->pgd:0x%x\n", (unsigned int)ctx->pgd);
 			sysmmu_set_tablebase_pgd(SYSMMU_G2D, ctx->pgd);
 #endif
 
@@ -235,9 +268,11 @@ void fimg2d3x_bitblt(struct fimg2d_control *info)
 			atomic_set(&configured, 0);
 		}
 
+noblt:
 		fimg2d_dequeue(info, &reg->node);
 		kfree(reg);
 
+noreg:
 		if (fimg2d_queue_is_empty(&ctx->reg_q)) {
 			spin_lock(&info->lock);
 			fimg2d_debug("done: %p\n", ctx);
@@ -382,7 +417,9 @@ static void fimg2d3x_configure(struct fimg2d_control *info, struct fimg2d_contex
 static void fimg2d3x_update(struct fimg2d_control *info,
 			struct fimg2d_context *ctx, struct fimg2d_region *reg)
 {
+	int tmp;
 	int flipped = 0;
+	int x1, y1, x2, y2, w, h;
 
 	fimg2d_debug("context: %p\n", ctx);
 	fimg2d_debug("src: %d, %d => %d, %d\n", reg->src.x1, reg->src.y1,
@@ -390,47 +427,56 @@ static void fimg2d3x_update(struct fimg2d_control *info,
 	fimg2d_debug("dst: %d, %d => %d, %d\n", reg->dst.x1, reg->dst.y1,
 			reg->dst.x2, reg->dst.y2);
 
-	if (reg->src.x1 < 0 && reg->src.x2 == 0) {
-		reg->src.x2 = - (reg->src.x1);
-		reg->src.x1 = 0;
+	x1 = reg->src.x1;
+	x2 = reg->src.x2;
+	y1 = reg->src.y1;
+	y2 = reg->src.y2;
+	w = ctx->src.width;
+	h = ctx->src.height;
+
+	if (x1 < 0 && x2 <= 0) {
+		tmp = x1;
+		reg->src.x1 = - x2;
+		reg->src.x2 = - tmp;
 		ctx->rot = YFLIP;
 		flipped++;
-	}
-	else if (reg->src.x1 == ctx->src.width && reg->src.x2 > ctx->src.width) {
-		reg->src.x1 = 2 * ctx->src.width - reg->src.x2;
-		reg->src.x2 = ctx->src.width;
+	} else if (x1 >= w && x2 > w) {
+		tmp = x1;
+		reg->src.x1 = 2 * w - x2;
+		reg->src.x2 = 2 * w - tmp;
 		ctx->rot = YFLIP;
 		flipped++;
 	}
 
-	if (reg->src.y1 < 0 && reg->src.y2 == 0) {
-		reg->src.y2 = - (reg->src.y1);
-		reg->src.y1 = 0;
+	if (y1 < 0 && y2 <= 0) {
+		tmp = y1;
+		reg->src.y2 = - y1;
+		reg->src.y1 = - tmp;
 		ctx->rot = XFLIP;
 		flipped++;
-	}
-	else if (reg->src.y1 == ctx->src.height && reg->src.y2 > ctx->src.height) {
-		reg->src.y1 = 2 * ctx->src.height - reg->src.y2;
-		reg->src.y2 = ctx->src.height;
+	} else if (y1 >= h && y2 > h) {
+		tmp = y1;
+		reg->src.y1 = 2 * h - y2;
+		reg->src.y2 = 2 * h - tmp;
 		ctx->rot = XFLIP;
 		flipped++;
 	}
 
-	if (flipped == 2) ctx->rot = ROT180;
+	if (flipped == 2)
+		ctx->rot = ROT180;
 
 	if (flipped) {
 		fimg2d3x_set_direction(info, ctx);
 
 		if (flipped == 1) {
 			fimg2d_debug("src(flip:%s): %d, %d => %d, %d\n",
-				ctx->rot == XFLIP? "XFLIP":"YFLIP",
-				reg->src.x1, reg->src.y1,
-				reg->src.x2, reg->src.y2);
-		}
-		else {
+			ctx->rot == XFLIP? "XFLIP":"YFLIP",
+			reg->src.x1, reg->src.y1,
+			reg->src.x2, reg->src.y2);
+		} else {
 			fimg2d_debug("src(flip:ROT180): %d, %d => %d, %d\n",
-				reg->src.x1, reg->src.y1,
-				reg->src.x2, reg->src.y2);
+			reg->src.x1, reg->src.y1,
+			reg->src.x2, reg->src.y2);
 		}
 	}
 

@@ -105,7 +105,7 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 #if defined(CONFIG_S5P_SYSMMU_FIMG2D)
 	/* in case fimg2d hw uses (user) virtual address */
 	ctx->pgd = __pa(current->mm->pgd);
-	fimg2d_debug("ctx->pgd:%p\n", ctx->pgd);
+	fimg2d_debug("ctx->pgd:0x%x\n", (unsigned int)ctx->pgd);
 #endif
 	return 0;
 }
