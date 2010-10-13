@@ -28,6 +28,7 @@
 
 struct platform_device; /* don't need the contents */
 
+#if defined(CONFIG_FB_S3C_WA101S) || defined(CONFIG_FB_S3C_LTE480WV)
 void s3cfb_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
@@ -62,6 +63,42 @@ void s3cfb_cfg_gpio(struct platform_device *pdev)
 	reg |= (1<<1);
 	__raw_writel(reg, S3C_VA_SYS + 0x0210);
 }
+#elif defined(CONFIG_FB_S3C_AMS369FG06)
+void s3cfb_cfg_gpio(struct platform_device *pdev)
+{
+	int i;
+	u32 reg;
+
+	for (i = 0; i < 8; i++) {
+		s3c_gpio_cfgpin(S5PV310_GPF0(i), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5PV310_GPF0(i), S3C_GPIO_PULL_NONE);
+		s5p_gpio_set_drvstr(S5PV310_GPF0(i), S5P_GPIO_DRVSTR_LV1);
+	}
+
+	for (i = 0; i < 8; i++) {
+		s3c_gpio_cfgpin(S5PV310_GPF1(i), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5PV310_GPF1(i), S3C_GPIO_PULL_NONE);
+		s5p_gpio_set_drvstr(S5PV310_GPF1(i), S5P_GPIO_DRVSTR_LV1);
+	}
+
+	for (i = 0; i < 8; i++) {
+		s3c_gpio_cfgpin(S5PV310_GPF2(i), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5PV310_GPF2(i), S3C_GPIO_PULL_NONE);
+		s5p_gpio_set_drvstr(S5PV310_GPF2(i), S5P_GPIO_DRVSTR_LV1);
+	}
+
+	for (i = 0; i < 4; i++) {
+		s3c_gpio_cfgpin(S5PV310_GPF3(i), S3C_GPIO_SFN(2));
+		s3c_gpio_setpull(S5PV310_GPF3(i), S3C_GPIO_PULL_NONE);
+		s5p_gpio_set_drvstr(S5PV310_GPF3(i), S5P_GPIO_DRVSTR_LV1);
+	}
+
+	/* Set FIMD0 bypass */
+	reg = __raw_readl(S3C_VA_SYS + 0x0210);
+	reg |= (1<<1);
+	__raw_writel(reg, S3C_VA_SYS + 0x0210);
+}
+#endif
 
 int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 {
