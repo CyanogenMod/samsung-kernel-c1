@@ -60,6 +60,7 @@ const unsigned short SEQ_DISPLAY_ON[] = {
 
 const unsigned short SEQ_DISPLAY_OFF[] = {
 	0x14, 0x00,
+
 	ENDDEF, 0x0000
 };
 

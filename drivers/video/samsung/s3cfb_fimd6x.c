@@ -19,6 +19,7 @@
 #include <plat/clock.h>
 #include <plat/fb.h>
 #include <plat/regs-fb.h>
+#include <mach/mipi_ddi.h>
 
 #include "s3cfb.h"
 
@@ -98,6 +99,139 @@ int s3cfb_set_output(struct s3cfb_global *ctrl)
 	return 0;
 }
 
+#ifdef CONFIG_FB_S3C_MIPI_LCD
+int s3cfb_set_free_run(struct s3cfb_global *ctrl, int onoff)
+{
+	__u32 cfg;
+
+	cfg = readl(ctrl->regs + S3C_VIDCON0);
+	cfg &= ~S3C_VIDCON0_VCLKEN_MASK;
+
+	if (onoff)
+		cfg |= S3C_VIDCON0_VCLKEN_FREERUN;
+	else
+		cfg |= S3C_VIDCON0_VCLKEN_NORMAL;
+
+	writel(cfg, ctrl->regs + S3C_VIDCON0);
+
+	dev_dbg(ctrl->dev, "free_run = 0x%x\n", readl(ctrl->regs + S3C_VIDCON0));
+
+	return 0;
+}
+
+int s3cfb_enable_mipi_dsi_mode(struct s3cfb_global *ctrl, unsigned int enable)
+{
+	unsigned int cfg;
+
+	cfg = readl(ctrl->regs + S3C_VIDCON0);
+
+	cfg &= ~(S3C_VIDCON0_DSI_ENABLE);
+
+	if (enable)
+		cfg |= S3C_VIDCON0_DSI_ENABLE;
+	else
+		cfg |= S3C_VIDCON0_DSI_DISABLE;
+
+	writel(cfg, ctrl->regs + S3C_VIDCON0);
+
+	dev_dbg(ctrl->dev, "0x%x\n", readl(ctrl->regs + S3C_VIDCON0));
+
+	return 0;
+}
+
+int s3cfb_set_cpu_interface_timing(struct s3cfb_global *ctrl, unsigned char ldi)
+{
+	unsigned int cpu_if_time_reg, cpu_if_time_val;
+	struct s3cfb_lcd *lcd = NULL;
+	struct s3cfb_cpu_timing *cpu_timing = NULL;
+
+	lcd = ctrl->lcd;
+	if (lcd == NULL) {
+		dev_err(ctrl->dev, "s3cfb_lcd is NULL.\n");
+		return -1;
+	}
+
+	cpu_timing = &lcd->cpu_timing;
+	if (cpu_timing == NULL) {
+		dev_err(ctrl->dev, "cpu_timing is NULL.\n");
+		return -1;
+	}
+
+	/* get offset of I80IFCON register. */
+	cpu_if_time_reg = (ldi == DDI_MAIN_LCD) ? S3C_I80IFCONA0 : S3C_I80IFCONA1;
+
+	cpu_if_time_val = readl(ctrl->regs + cpu_if_time_reg);
+
+	cpu_if_time_val = S3C_LCD_CS_SETUP(cpu_timing->cs_setup) |
+		S3C_LCD_WR_SETUP(cpu_timing->wr_setup) |
+		S3C_LCD_WR_ACT(cpu_timing->wr_act) |
+		S3C_LCD_WR_HOLD(cpu_timing->wr_hold) |
+		S3C_RSPOL_LOW | /* in case of LCD MIPI module */
+		/* S3C_RSPOL_HIGH | */
+		S3C_I80IFEN_ENABLE;
+
+	writel(cpu_if_time_val, ctrl->regs + cpu_if_time_reg);
+
+	return 0;
+}
+
+void s3cfb_set_trigger(struct s3cfb_global *ctrl)
+{
+	u32 reg = 0;
+
+	reg = readl(ctrl->regs + S3C_TRIGCON);
+
+	reg |= 1 << 0 | 1 << 1;
+
+	writel(reg, ctrl->regs + S3C_TRIGCON);
+}
+
+u8 s3cfb_is_frame_done(struct s3cfb_global *ctrl)
+{
+	u32 reg = 0;
+
+	reg = readl(ctrl->regs + S3C_TRIGCON);
+
+	/* frame done func is valid only when TRIMODE[0] is set to 1. */
+
+	return (((reg & (0x1 << 2)) == (0x1 << 2)) ? 1 : 0);
+}
+
+int s3cfb_set_auto_cmd_rate(struct s3cfb_global *ctrl,
+	unsigned char cmd_rate, unsigned char ldi)
+{
+	unsigned int cmd_rate_val;
+	unsigned int i80_if_con_reg, i80_if_con_reg_val;
+
+	i80_if_con_reg = (ldi == DDI_MAIN_LCD) ? S3C_I80IFCONB0 : S3C_I80IFCONB1;
+
+	cmd_rate_val = (cmd_rate == DISABLE_AUTO_FRM) ? (0x0 << 0) :
+		(cmd_rate == PER_TWO_FRM) ? (0x1 << 0) :
+		(cmd_rate == PER_FOUR_FRM) ? (0x2 << 0) :
+		(cmd_rate == PER_SIX_FRM) ? (0x3 << 0) :
+		(cmd_rate == PER_EIGHT_FRM) ? (0x4 << 0) :
+		(cmd_rate == PER_TEN_FRM) ? (0x5 << 0) :
+		(cmd_rate == PER_TWELVE_FRM) ? (0x6 << 0) :
+		(cmd_rate == PER_FOURTEEN_FRM) ? (0x7 << 0) :
+		(cmd_rate == PER_SIXTEEN_FRM) ? (0x8 << 0) :
+		(cmd_rate == PER_EIGHTEEN_FRM) ? (0x9 << 0) :
+		(cmd_rate == PER_TWENTY_FRM) ? (0xa << 0) :
+		(cmd_rate == PER_TWENTY_TWO_FRM) ? (0xb << 0) :
+		(cmd_rate == PER_TWENTY_FOUR_FRM) ? (0xc << 0) :
+		(cmd_rate == PER_TWENTY_SIX_FRM) ? (0xd << 0) :
+		(cmd_rate == PER_TWENTY_EIGHT_FRM) ? (0xe << 0) : (0xf << 0);
+
+	i80_if_con_reg_val = readl(ctrl->regs + i80_if_con_reg);
+	i80_if_con_reg_val &= ~(0xf << 0);
+	i80_if_con_reg_val |= cmd_rate_val;
+	writel(i80_if_con_reg_val, ctrl->regs + i80_if_con_reg);
+
+	dev_dbg(ctrl->dev, "0x%x\n", ((u32) ctrl->regs) + i80_if_con_reg);
+
+	return 0;
+}
+#endif
+
 int s3cfb_set_display_mode(struct s3cfb_global *ctrl)
 {
 	u32 cfg;
@@ -161,6 +295,24 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 
 	cfg = readl(ctrl->regs + S3C_VIDCON0);
 
+#ifdef CONFIG_FB_S3C_MIPI_LCD
+	if (pdata->hw_ver == 0x70) {
+		cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
+			S3C_VIDCON0_VCLKEN_MASK);
+		cfg |= (S3C_VIDCON0_CLKVALUP_START_FRAME |
+			S3C_VIDCON0_VCLKEN_NORMAL);
+
+		src_clk = clk_get_rate(ctrl->clock);
+		printk(KERN_INFO "FIMD src sclk = %d\n", src_clk);
+	} else {
+		cfg &= ~(S3C_VIDCON0_CLKSEL_MASK |
+			S3C_VIDCON0_CLKVALUP_MASK |
+			S3C_VIDCON0_VCLKEN_MASK |
+			S3C_VIDCON0_CLKDIR_MASK);
+		cfg |= (S3C_VIDCON0_CLKVALUP_START_FRAME |
+			S3C_VIDCON0_VCLKEN_NORMAL |
+			S3C_VIDCON0_CLKDIR_DIVIDED);
+#else
 	if (pdata->hw_ver == 0x70) {
 		cfg &= ~(S3C_VIDCON0_CLKVALUP_MASK |
 			S3C_VIDCON0_VCLKEN_MASK);
@@ -177,7 +329,7 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 		cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS |
 			S3C_VIDCON0_VCLKEN_NORMAL |
 			S3C_VIDCON0_CLKDIR_DIVIDED);
-
+#endif
 		if (strcmp(pdata->clk_name, "sclk_fimd") == 0) {
 			cfg |= S3C_VIDCON0_CLKSEL_SCLK;
 			src_clk = clk_get_rate(ctrl->clock);
@@ -199,8 +351,10 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	}
 
 	div = src_clk / vclk;
+#ifndef CONFIG_FB_S3C_MIPI_LCD
 	if (src_clk % vclk)
 		div++;
+#endif
 
 	if ((src_clk/div) > maxclk)
 		dev_info(ctrl->dev, "vclk(%d) should be smaller than %d Hz\n",
@@ -222,6 +376,10 @@ int s3cfb_set_polarity(struct s3cfb_global *ctrl)
 
 	pol = &ctrl->lcd->polarity;
 	cfg = 0;
+
+	/* Set VCLK hold scheme */
+	cfg &= S3C_VIDCON1_FIXVCLK_MASK;
+	cfg |= S3C_VIDCON1_FIXVCLK_VCLK_RUN;
 
 	if (pol->rise_vclk)
 		cfg |= S3C_VIDCON1_IVCLK_RISING_EDGE;
@@ -271,7 +429,12 @@ int s3cfb_set_lcd_size(struct s3cfb_global *ctrl)
 {
 	u32 cfg = 0;
 
+#ifdef CONFIG_FB_S3C_WA101S
+	cfg |= S3C_VIDTCON2_HOZVAL(ctrl->lcd->width - 1 + 6);
+#else
 	cfg |= S3C_VIDTCON2_HOZVAL(ctrl->lcd->width - 1);
+#endif
+
 	cfg |= S3C_VIDTCON2_LINEVAL(ctrl->lcd->height - 1);
 
 	writel(cfg, ctrl->regs + S3C_VIDTCON2);
@@ -418,15 +581,15 @@ int s3cfb_window_on(struct s3cfb_global *ctrl, int id)
 	struct s3c_platform_fb *pdata = to_fb_plat(ctrl->dev);
 	u32 cfg;
 
-	cfg = readl(ctrl->regs + S3C_WINCON(id));
-	cfg |= S3C_WINCON_ENWIN_ENABLE;
-	writel(cfg, ctrl->regs + S3C_WINCON(id));
-
 	if ((pdata->hw_ver == 0x62) || (pdata->hw_ver == 0x70)) {
 		cfg = readl(ctrl->regs + S3C_WINSHMAP);
 		cfg |= S3C_WINSHMAP_CH_ENABLE(id);
 		writel(cfg, ctrl->regs + S3C_WINSHMAP);
 	}
+
+	cfg = readl(ctrl->regs + S3C_WINCON(id));
+	cfg |= S3C_WINCON_ENWIN_ENABLE;
+	writel(cfg, ctrl->regs + S3C_WINCON(id));
 
 	dev_dbg(ctrl->dev, "[fb%d] turn on\n", id);
 
@@ -607,6 +770,13 @@ int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id)
 
 	dev_dbg(ctrl->dev, "[fb%d] start_addr: 0x%08x, end_addr: 0x%08x\n",
 		id, start_addr, end_addr);
+
+	return 0;
+}
+
+int s3cfb_set_alpha_value(struct s3cfb_global *ctrl, int value)
+{
+	writel(value, ctrl->regs + S3C_BLENDCON);
 
 	return 0;
 }

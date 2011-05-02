@@ -11,7 +11,15 @@ obj-$(CONFIG_FB_S3C_LTE480WV)	+= s3cfb_lte480wv.o
 obj-$(CONFIG_FB_S3C_HT101HD1)	+= s3cfb_ht101hd1.o
 obj-$(CONFIG_FB_S3C_WA101S)	+= s3cfb_wa101s.o
 obj-$(CONFIG_FB_S3C_AMS369FG06)	+= s3cfb_ams369fg06.o
+obj-$(CONFIG_FB_S3C_TL2796)	+= s3cfb_tl2796.o
+obj-$(CONFIG_FB_S3C_MDNIE)      += s3cfb_mdnie.o s3cfb_ielcd.o
+obj-$(CONFIG_FB_S3C_LD9040)	+= ld9040.o
+obj-$(CONFIG_FB_S3C_S6E8AA0)	+= s3cfb_s6e8aa0.o
+obj-$(CONFIG_FB_S3C_S6D6AA0)	+= s3cfb_s6d6aa0.o
+obj-$(CONFIG_FB_S3C_MIPI_LCD)   += s5p_dsim_lowlevel.o
+obj-$(CONFIG_FB_S3C_MIPI_LCD)   += s5p-dsim.o
 endif
+
 
 ifeq ($(CONFIG_FB_S3C_DEBUG),y)
 EXTRA_CFLAGS += -DDEBUG
@@ -33,3 +41,8 @@ ifeq ($(CONFIG_FB_S3C_V2_DEBUG),y)
 EXTRA_CFLAGS += -DDEBUG
 endif
 
+ifeq ($(CONFIG_SUPPORT_UMP),y)
+EXTRA_CFLAGS += -DMALI_USE_UNIFIED_MEMORY_PROVIDER=1 -Idrivers/media/video/samsung/ump/include
+else
+EXTRA_CFLAGS += -DMALI_USE_UNIFIED_MEMORY_PROVIDER=0
+endif

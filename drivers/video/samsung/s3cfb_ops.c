@@ -13,8 +13,29 @@
 #include <linux/poll.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
+
+#if defined(CONFIG_S5P_MEM_CMA)
+#include <linux/cma.h>
+#elif defined(CONFIG_S5P_MEM_BOOTMEM)
 #include <plat/media.h>
 #include <mach/media.h>
+#endif
+
+#if MALI_USE_UNIFIED_MEMORY_PROVIDER
+#include "ump_kernel_interface_ref_drv.h"
+#define UMP_HANDLE_DD_INVALID ((void *)-1)
+#endif
+
+#ifdef CONFIG_HAS_WAKELOCK
+#include <linux/wakelock.h>
+#include <linux/earlysuspend.h>
+#include <linux/suspend.h>
+#endif
+#include <linux/serial_core.h>
+#include <plat/regs-serial.h>
+#include <plat/s5pv310.h>
+#include <mach/sec_debug.h>
 #include "s3cfb.h"
 
 struct s3c_platform_fb *to_fb_plat(struct device *dev)
@@ -25,16 +46,29 @@ struct s3c_platform_fb *to_fb_plat(struct device *dev)
 }
 
 #ifndef CONFIG_FRAMEBUFFER_CONSOLE
+#define LPDDR0_BASE_ADDR		0x40000000
+#define LPDDR0_SIZE				0x10000000	/* 256MB */
+#define LPDDR1_BASE_ADDR		0x50000000
+#define LPDDR1_SIZE				0x10000000	/* 256MB */
+#define SDRAM_SIZE				(LPDDR0_SIZE + LPDDR1_SIZE)
+#define BOOT_FB_BASE_ADDR		(LPDDR1_BASE_ADDR   + 0x0EC00000)	/* 0x5EC00000 from Bootloader */
+
+static unsigned int bootloaderfb;
+module_param_named(bootloaderfb, bootloaderfb, uint, 0444);
+MODULE_PARM_DESC(bootloaderfb, "Address of booting logo image in Bootloader");
+
 int s3cfb_draw_logo(struct fb_info *fb)
 {
 #ifdef CONFIG_FB_S3C_SPLASH_SCREEN
+#if 0
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct fb_var_screeninfo *var = &fb->var;
-#if 0
 	struct s3c_platform_fb *pdata = to_fb_plat(fbdev->dev);
 	memcpy(fbdev->fb[pdata->default_win]->screen_base,
 	       LOGO_RGB24, fix->line_length * var->yres);
 #else
+
+#ifdef RGB_BOOTSCREEN
 	u32 height = var->yres / 3;
 	u32 line = fix->line_length;
 	u32 i, j;
@@ -65,8 +99,28 @@ int s3cfb_draw_logo(struct fb_info *fb)
 			memset(fb->screen_base + i * line + j * 4 + 3, 0x00, 1);
 		}
 	}
-#endif
-#endif
+
+#else // #ifdef RGB_BOOTSCREEN
+
+	if (bootloaderfb) {
+		printk("Bootloader sent 'bootloaderfb' to Kernel Successfully : %d", bootloaderfb);
+	}
+	else {
+		bootloaderfb = BOOT_FB_BASE_ADDR;
+		printk("Fail to get 'bootloaderfb' from Bootloader. so we must set  this value as %d", bootloaderfb);
+	}
+
+	{
+		u8 *logo_virt_buf;
+		logo_virt_buf = ioremap_nocache(bootloaderfb, fb->var.yres * fb->fix.line_length);
+		memcpy(fb->screen_base, logo_virt_buf, fb->var.yres * fb->fix.line_length);
+		iounmap(logo_virt_buf);
+	}
+
+#endif // #ifdef RGB_BOOTSCREEN	
+#endif // 0
+#endif // #ifdef CONFIG_FB_S3C_SPLASH_SCREEN
+
 	return 0;
 }
 #else
@@ -129,6 +183,10 @@ int s3cfb_init_global(struct s3cfb_global *fbdev)
 {
 	fbdev->output = OUTPUT_RGB;
 	fbdev->rgb_mode = MODE_RGB_P;
+#ifndef CONFIG_FB_S3C_MDNIE
+	fbdev->wq_count = 0;
+	init_waitqueue_head(&fbdev->wq);
+#endif
 
 	fbdev->wq_count = 0;
 	init_waitqueue_head(&fbdev->wq);
@@ -143,11 +201,132 @@ int s3cfb_init_global(struct s3cfb_global *fbdev)
 	return 0;
 }
 
+int s3cfb_unmap_video_memory(struct s3cfb_global *fbdev, struct fb_info *fb)
+{
+	struct fb_fix_screeninfo *fix = &fb->fix;
+	struct s3cfb_window *win = fb->par;
+#ifdef CONFIG_VCM
+	struct fb_var_screeninfo *var = &fb->var;
+	int frame_num = var->yres_virtual / var->yres;
+	int i;
+#endif
+
+	if (fix->smem_start) {
+
+#ifdef CONFIG_VCM
+		vcm_unmap(win->s5p_vcm_res);
+		cma_free(fix->smem_start);
+		for (i = 0; i < frame_num; i++)
+			kfree(win->s3cfb_vcm[i].dev_vcm_res);
+#endif
+
+		fix->smem_start = 0;
+		fix->smem_len = 0;
+		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
+	}
+	return 0;
+}
+
+#ifdef CONFIG_VCM
+static const struct s5p_vcm_driver s3cfb_vcm_driver = {
+	.tlb_invalidator = NULL,
+	.pgd_base_specifier = NULL,
+	.phys_alloc = NULL,
+	.phys_free = NULL,
+};
+
+#if MALI_USE_UNIFIED_MEMORY_PROVIDER
+int s3cfb_ump_wrapper(struct fb_fix_screeninfo *fix, int arg, int id,
+			struct s3cfb_window *win)
+{
+	ump_dd_physical_block ump_memory_description;
+	unsigned int buffer_size;
+	buffer_size = fix->smem_len / CONFIG_FB_S3C_NR_BUFFERS;
+
+	ump_memory_description.addr = fix->smem_start + (buffer_size * id);
+	ump_memory_description.size = buffer_size;
+
+	win->ump_wrapped_buffer[id] =
+		ump_dd_handle_create_from_phys_blocks
+		(&ump_memory_description, 1);
+
+	if (ump_dd_vcm_attribute_set(win->ump_wrapped_buffer[id], arg))
+		return -ENOMEM;
+
+	return 0;
+}
+#endif
+#endif
+
 int s3cfb_map_video_memory(struct s3cfb_global *fbdev, struct fb_info *fb)
 {
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
 
+#ifdef CONFIG_VCM
+	struct fb_var_screeninfo *var = &fb->var;
+	struct cma_info mem_info;
+	unsigned int reserved_size;
+	int err;
+	struct vcm_phys *phys = NULL;
+	unsigned int device_virt_start = 0;
+	int frame_num = var->yres_virtual / var->yres;
+	int frame_size = fix->smem_len / frame_num;
+	struct  vcm_res *fb_dev_vcm_res[frame_num];
+
+	enum vcm_dev_id id;
+
+	struct ump_vcm ump_vcm;
+	unsigned int arg = 0;
+
+	int i;
+	ump_dd_physical_block ump_memory_description;
+
+	if (win->owner == DMA_MEM_OTHER)
+		return 0;
+
+	phys = kmalloc(sizeof(*phys) + sizeof(*phys->parts), GFP_KERNEL);
+	memset(phys, 0, sizeof(*phys) + sizeof(*phys->parts));
+
+	if (win->id < 5)
+		id = VCM_DEV_FIMD0;
+	else
+		id = VCM_DEV_FIMD1;
+
+	err = cma_info(&mem_info, fbdev->dev, 0);
+	if (ERR_PTR(err))
+		return -ENOMEM;
+	reserved_size = fix->smem_len;
+	fix->smem_start = (dma_addr_t)cma_alloc
+		(fbdev->dev, "fimd", (size_t)reserved_size, 0);
+	fb->screen_base = cma_get_virt(fix->smem_start, reserved_size, 1);
+
+	phys->count = 1;
+	phys->size = fix->smem_len;
+	phys->free = NULL;
+	phys->parts[0].size = fix->smem_len;
+	phys->parts[0].start = fix->smem_start;
+
+	win->s5p_vcm_res = vcm_map(fbdev->s5p_vcm, phys, 0);
+	device_virt_start = win->s5p_vcm_res->start;
+
+	for (i = 0; i < frame_num; i++) {
+		fb_dev_vcm_res[i] = kzalloc(sizeof(struct vcm_res), GFP_KERNEL);
+		win->s3cfb_vcm[i].dev_vcm_res = fb_dev_vcm_res[i];
+
+		win->s3cfb_vcm[i].dev_vcm_res->start = device_virt_start
+							+ frame_size * i;
+		win->s3cfb_vcm[i].dev_vcm_res->bound_size = frame_size;
+		win->s3cfb_vcm[i].dev_vcm_res->res_size = frame_size;
+		win->s3cfb_vcm[i].dev_vcm = fbdev->s5p_vcm;
+		win->s3cfb_vcm[i].dev_vcm_res->vcm = fbdev->s5p_vcm;
+		if (IS_ERR(win->s3cfb_vcm[i].dev_vcm_res))
+			return -ENOMEM;
+	}
+
+	memset(fb->screen_base, 0, (fix->smem_len / frame_num));
+	win->owner = DMA_MEM_FIMD;
+#else
 	if (win->owner == DMA_MEM_OTHER)
 		return 0;
 
@@ -166,41 +345,173 @@ int s3cfb_map_video_memory(struct s3cfb_global *fbdev, struct fb_info *fb)
 
 	memset(fb->screen_base, 0, fix->smem_len);
 	win->owner = DMA_MEM_FIMD;
+#endif
+
+#if MALI_USE_UNIFIED_MEMORY_PROVIDER
+#ifdef CONFIG_VCM
+#ifdef CONFIG_UMP_VCM_ALLOC
+	for (i = 0; i < frame_num; i++) {
+		ump_vcm.vcm = win->s3cfb_vcm[i].dev_vcm;
+		ump_vcm.vcm_res = win->s3cfb_vcm[i].dev_vcm_res;
+		ump_vcm.dev_id = id;
+		arg = (unsigned int)&ump_vcm;
+
+		ump_memory_description.addr = fix->smem_start + ((fix->smem_len / frame_num) * i);
+		ump_memory_description.size = fix->smem_len / frame_num;
+
+		win->ump_wrapped_buffer[i] =
+			ump_dd_handle_create_from_phys_blocks
+			(&ump_memory_description, 1);
+
+		if (ump_dd_vcm_attribute_set(win->ump_wrapped_buffer[i], arg))
+			return -ENOMEM;
+
+	}
+#else
+	if (s3cfb_ump_wrapper(fix, arg, 0, win)) {
+		dev_info(fbdev->dev, "[fb%d] : Wrapped UMP memory : %x\n"
+				, win->id, (unsigned int)ump_wrapped_buffer);
+		s3cfb_unmap_video_memory(fbdev, fb);
+		return -ENOMEM;
+	}
+#endif
+#endif
+#endif
 
 	return 0;
 }
 
-int s3cfb_map_default_video_memory(struct fb_info *fb)
+int s3cfb_map_default_video_memory(struct s3cfb_global *fbdev,
+					struct fb_info *fb, int fimd_id)
 {
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
-	int reserved_size = 0;
+
+#ifdef CONFIG_VCM
+	struct cma_info mem_info;
+	unsigned int reserved_size;
+	int err;
+	struct vcm_phys *phys = NULL;
+	ump_dd_physical_block ump_memory_description;
+	unsigned int device_virt_start = 0;
+	int frame_size = fix->smem_len / CONFIG_FB_S3C_NR_BUFFERS;
+	struct  vcm_res *fb_dev_vcm_res[CONFIG_FB_S3C_NR_BUFFERS];
+
+	enum vcm_dev_id id;
+#else
+#ifdef CONFIG_S5P_MEM_CMA
+	struct cma_info mem_info;
+	unsigned int reserved_size;
+	int err;
+#endif
+#endif
+
+#ifdef MALI_USE_UNIFIED_MEMORY_PROVIDER
+#ifdef CONFIG_VCM
+	int i;
+	unsigned int arg = 0;
+#ifdef CONFIG_UMP_VCM_ALLOC
+	struct ump_vcm ump_vcm;
+#endif
+	unsigned int arg = 0;
+#endif
+#endif
 
 	if (win->owner == DMA_MEM_OTHER)
 		return 0;
 
+#ifdef CONFIG_VCM
+	phys = kmalloc(sizeof(*phys) + sizeof(*phys->parts), GFP_KERNEL);
+	memset(phys, 0, sizeof(*phys) + sizeof(*phys->parts));
+
+	if (fimd_id == 0)
+		id = VCM_DEV_FIMD0;
+	else
+		id = VCM_DEV_FIMD1;
+
+	err = cma_info(&mem_info, fbdev->dev, 0);
+	if (ERR_PTR(err))
+		return -ENOMEM;
+	reserved_size = fix->smem_len;
+	fix->smem_start = (dma_addr_t)cma_alloc
+		(fbdev->dev, "fimd", (size_t)reserved_size, 0);
+	fb->screen_base = cma_get_virt(fix->smem_start, reserved_size, 1);
+
+	fbdev->s5p_vcm = vcm_create_unified((SZ_64M), id, &s3cfb_vcm_driver);
+	if (IS_ERR(fbdev->s5p_vcm))
+		return PTR_ERR(fbdev->s5p_vcm);
+	if (vcm_activate(fbdev->s5p_vcm))
+		dev_info(fbdev->dev, "[fb%d] : VCM activated", win->id);
+
+	phys->count = 1;
+	phys->size = fix->smem_len;
+	phys->free = NULL;
+	phys->parts[0].size = fix->smem_len;
+	phys->parts[0].start = fix->smem_start;
+
+	win->s5p_vcm_res = vcm_map(fbdev->s5p_vcm, phys, 0);
+	device_virt_start = win->s5p_vcm_res->start;
+
+	for (i = 0; i < CONFIG_FB_S3C_NR_BUFFERS; i++) {
+		fb_dev_vcm_res[i] = kzalloc(sizeof(struct vcm_res), GFP_KERNEL);
+		win->s3cfb_vcm[i].dev_vcm_res = fb_dev_vcm_res[i];
+
+		win->s3cfb_vcm[i].dev_vcm_res->start = device_virt_start
+							+ frame_size * i;
+		win->s3cfb_vcm[i].dev_vcm_res->bound_size = frame_size;
+		win->s3cfb_vcm[i].dev_vcm_res->res_size = frame_size;
+		win->s3cfb_vcm[i].dev_vcm = fbdev->s5p_vcm;
+		win->s3cfb_vcm[i].dev_vcm_res->vcm = fbdev->s5p_vcm;
+		if (IS_ERR(win->s3cfb_vcm[i].dev_vcm_res))
+			return -ENOMEM;
+	}
+#else
+#ifdef CONFIG_S5P_MEM_CMA
+	err = cma_info(&mem_info, fbdev->dev, 0);
+	if (ERR_PTR(err))
+		return -ENOMEM;
+	reserved_size = mem_info.total_size;
+	fix->smem_start = (dma_addr_t)cma_alloc
+		(fbdev->dev, "fimd", (size_t)reserved_size, 0);
+	fb->screen_base = cma_get_virt(fix->smem_start, reserved_size, 1);
+#elif defined(CONFIG_S5P_MEM_BOOTMEM)
 	fix->smem_start = s5p_get_media_memory_bank(S5P_MDEV_FIMD, 1);
-	reserved_size = s5p_get_media_memsize_bank(S5P_MDEV_FIMD, 1);
-	fb->screen_base = ioremap_wc(fix->smem_start, reserved_size);
+	fix->smem_len = s5p_get_media_memsize_bank(S5P_MDEV_FIMD, 1);
+	fb->screen_base = ioremap_wc(fix->smem_start, fix->smem_len);
+#endif
+#endif
 
 	memset(fb->screen_base, 0, fix->smem_len);
 	win->owner = DMA_MEM_FIMD;
 
-	return 0;
-}
+#if MALI_USE_UNIFIED_MEMORY_PROVIDER
+#ifdef CONFIG_VCM
+#ifdef CONFIG_UMP_VCM_ALLOC
+	for (i = 0; i < CONFIG_FB_S3C_NR_BUFFERS; i++) {
+		ump_vcm.vcm = win->s3cfb_vcm[i].dev_vcm;
+		ump_vcm.vcm_res = win->s3cfb_vcm[i].dev_vcm_res;
+		ump_vcm.dev_id = id;
+		arg = (unsigned int)&ump_vcm;
+		ump_memory_description.addr = fix->smem_start + ((fix->smem_len / CONFIG_FB_S3C_NR_BUFFERS) * i);
+		ump_memory_description.size = fix->smem_len / CONFIG_FB_S3C_NR_BUFFERS;
 
-int s3cfb_unmap_video_memory(struct s3cfb_global *fbdev, struct fb_info *fb)
-{
-	struct fb_fix_screeninfo *fix = &fb->fix;
-	struct s3cfb_window *win = fb->par;
+		win->ump_wrapped_buffer[i] =
+			ump_dd_handle_create_from_phys_blocks
+			(&ump_memory_description, 1);
 
-	if (fix->smem_start) {
-		dma_free_writecombine(fbdev->dev, fix->smem_len,
-				      fb->screen_base, fix->smem_start);
-		fix->smem_start = 0;
-		fix->smem_len = 0;
-		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
+		if (ump_dd_vcm_attribute_set(win->ump_wrapped_buffer[i], arg))
+			return -ENOMEM;
 	}
+#else
+	if (s3cfb_ump_wrapper(fix, arg, 0, win)) {
+		dev_info(fbdev->dev, "[fb%d] : Wrapped UMP memory : %x\n"
+				, win->id, (unsigned int)ump_wrapped_buffer);
+		s3cfb_unmap_video_memory(fbdev, fb);
+		return -ENOMEM;
+	}
+#endif
+#endif
+#endif
 
 	return 0;
 }
@@ -210,9 +521,20 @@ int s3cfb_unmap_default_video_memory(struct s3cfb_global *fbdev,
 {
 	struct fb_fix_screeninfo *fix = &fb->fix;
 	struct s3cfb_window *win = fb->par;
+#ifdef CONFIG_VCM
+	int i;
+#endif
 
 	if (fix->smem_start) {
+
+#ifdef CONFIG_VCM
+		vcm_unmap(win->s5p_vcm_res);
+		cma_free(fix->smem_start);
+		for (i = 0; i < CONFIG_FB_S3C_NR_BUFFERS; i++)
+			kfree(win->s3cfb_vcm[i].dev_vcm_res);
+#else
 		iounmap(fb->screen_base);
+#endif
 		fix->smem_start = 0;
 		fix->smem_len = 0;
 		dev_info(fbdev->dev, "[fb%d] video memory released\n", win->id);
@@ -271,6 +593,7 @@ int s3cfb_set_bitfield(struct fb_var_screeninfo *var)
 		var->blue.offset = 0;
 		var->blue.length = 8;
 		var->transp.offset = 24;
+		var->transp.length = 8; //added for LCD RGB32
 		break;
 	}
 
@@ -337,8 +660,7 @@ int s3cfb_check_var_window(struct s3cfb_global *fbdev,
 
 	if (var->pixclock != fbdev->fb[pdata->default_win]->var.pixclock) {
 		dev_info(fbdev->dev, "pixclk is changed from %d Hz to %d Hz\n",
-			fbdev->fb[pdata->default_win]->var.pixclock,
-			var->pixclock);
+			fbdev->fb[pdata->default_win]->var.pixclock, var->pixclock);
 	}
 
 	s3cfb_set_bitfield(var);
@@ -378,8 +700,10 @@ int s3cfb_set_par_window(struct s3cfb_global *fbdev, struct fb_info *fb)
 
 	dev_dbg(fbdev->dev, "[fb%d] set_par\n", win->id);
 
+#if 0	/* In android scenario, this routine is not required */
 	if ((win->id != pdata->default_win) && fb->fix.smem_start)
 		s3cfb_unmap_video_memory(fbdev, fb);
+#endif
 
 	/* modify the fix info */
 	if (win->id != pdata->default_win) {
@@ -388,8 +712,10 @@ int s3cfb_set_par_window(struct s3cfb_global *fbdev, struct fb_info *fb)
 		fb->fix.smem_len = fb->fix.line_length * fb->var.yres_virtual;
 	}
 
+#if 0	/* In android scenario, this routine is not required */
 	if (win->id != pdata->default_win)
 		s3cfb_map_video_memory(fbdev, fb);
+#endif
 
 	s3cfb_set_win_params(fbdev, win->id);
 
@@ -454,8 +780,8 @@ int s3cfb_init_fbinfo(struct s3cfb_global *fbdev, int id)
 	var->bits_per_pixel = 32;
 	var->xoffset = 0;
 	var->yoffset = 0;
-	var->width = 0;
-	var->height = 0;
+	var->width = lcd->p_width;
+	var->height = lcd->p_height;
 	var->transp.length = 0;
 
 	fix->line_length = var->xres_virtual * var->bits_per_pixel / 8;
@@ -483,7 +809,7 @@ int s3cfb_init_fbinfo(struct s3cfb_global *fbdev, int id)
 	return 0;
 }
 
-int s3cfb_alloc_framebuffer(struct s3cfb_global *fbdev)
+int s3cfb_alloc_framebuffer(struct s3cfb_global *fbdev, int fimd_id)
 {
 	struct s3c_platform_fb *pdata = to_fb_plat(fbdev->dev);
 	int ret = 0;
@@ -515,13 +841,18 @@ int s3cfb_alloc_framebuffer(struct s3cfb_global *fbdev)
 		}
 
 		if (i == pdata->default_win)
-			if (s3cfb_map_default_video_memory(fbdev->fb[i])) {
+			if (s3cfb_map_default_video_memory(fbdev,
+						fbdev->fb[i], fimd_id)) {
 				dev_err(fbdev->dev,
 				"failed to map video memory "
 				"for default window (%d)\n", i);
 			ret = -ENOMEM;
 			goto err_alloc_fb;
 		}
+		sec_getlog_supply_fbinfo((void *)fbdev->fb[i]->fix.smem_start,
+					 fbdev->fb[i]->var.xres,
+					 fbdev->fb[i]->var.yres,
+					 fbdev->fb[i]->var.bits_per_pixel, 2);
 	}
 
 	return 0;
@@ -687,8 +1018,7 @@ int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_NORMAL:
 		if (win->power_state == FB_BLANK_NORMAL) {
-			dev_info(fbdev->dev, "[fb%d] already in	\
-				FB_BLANK_NORMAL\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_NORMAL\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(fbdev, win->id,
@@ -729,8 +1059,7 @@ int s3cfb_blank(int blank_mode, struct fb_info *fb)
 
 	case FB_BLANK_POWERDOWN:
 		if (win->power_state == FB_BLANK_POWERDOWN) {
-			dev_info(fbdev->dev, "[fb%d] already in	\
-				FB_BLANK_POWERDOWN\n", win->id);
+			dev_info(fbdev->dev, "[fb%d] already in FB_BLANK_POWERDOWN\n", win->id);
 			break;
 		} else {
 			s3cfb_update_power_state(fbdev, win->id,
@@ -808,6 +1137,9 @@ int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg)
 	struct s3cfb_lcd *lcd = fbdev->lcd;
 	int ret = 0;
 
+	dma_addr_t start_addr = 0;
+	struct fb_fix_screeninfo *fix = &fb->fix;
+
 	union {
 		struct s3cfb_user_window user_window;
 		struct s3cfb_user_plane_alpha user_alpha;
@@ -881,11 +1213,78 @@ int s3cfb_ioctl(struct fb_info *fb, unsigned int cmd, unsigned long arg)
 		if (get_user(p.vsync, (int __user *)arg))
 			ret = -EFAULT;
 		else {
-			if (p.vsync)
-				s3cfb_set_global_interrupt(fbdev, 1);
-
+			s3cfb_set_global_interrupt(fbdev, p.vsync);
 			s3cfb_set_vsync_interrupt(fbdev, p.vsync);
 		}
+		break;
+
+#if MALI_USE_UNIFIED_MEMORY_PROVIDER
+#ifdef CONFIG_VCM
+	case S3CFB_GET_FB_UMP_SECURE_ID_0:
+		{
+			u32 __user *psecureid = (u32 __user *) arg;
+			ump_secure_id secure_id;
+
+			dev_info(fbdev->dev, "ump_dd_secure_id_get\n");
+			secure_id = ump_dd_secure_id_get(win->ump_wrapped_buffer[0]);
+			dev_info(fbdev->dev,
+				"Saving secure id 0x%x in userptr %p\n"
+				, (unsigned int)secure_id, psecureid);
+			dev_dbg(fbdev->dev,
+				"Saving secure id 0x%x in userptr %p\n"
+				, (unsigned int)secure_id, psecureid);
+			return put_user((unsigned int)secure_id, psecureid);
+		}
+		break;
+
+	case S3CFB_GET_FB_UMP_SECURE_ID_1:
+		{
+			u32 __user *psecureid = (u32 __user *) arg;
+			ump_secure_id secure_id;
+
+			dev_info(fbdev->dev, "ump_dd_secure_id_get\n");
+			secure_id = ump_dd_secure_id_get(win->ump_wrapped_buffer[1]);
+			dev_info(fbdev->dev,
+					"Saving secure id 0x%x in userptr %p\n"
+					, (unsigned int)secure_id, psecureid);
+			dev_dbg(fbdev->dev,
+					"Saving secure id 0x%x in userptr %p\n"
+					, (unsigned int)secure_id, psecureid);
+			return put_user((unsigned int)secure_id, psecureid);
+		}
+		break;
+
+	case S3CFB_GET_FB_UMP_SECURE_ID_2:
+		{
+			u32 __user *psecureid = (u32 __user *) arg;
+			ump_secure_id secure_id;
+
+			dev_info(fbdev->dev, "ump_dd_secure_id_get\n");
+			secure_id = ump_dd_secure_id_get(win->ump_wrapped_buffer[2]);
+			dev_info(fbdev->dev,
+					"Saving secure id 0x%x in userptr %p\n"
+					, (unsigned int)secure_id, psecureid);
+			dev_dbg(fbdev->dev,
+					"Saving secure id 0x%x in userptr %p\n"
+					, (unsigned int)secure_id, psecureid);
+			return put_user((unsigned int)secure_id, psecureid);
+		}
+		break;
+#endif
+#endif
+	case S3CFB_GET_FB_PHY_ADDR:
+		start_addr = fix->smem_start + ((var->xres_virtual *
+				var->yoffset + var->xoffset) *
+				(var->bits_per_pixel / 8));
+
+		dev_dbg(fbdev->dev, "framebuffer_addr: 0x%08x\n", start_addr);
+
+		if (copy_to_user((void *)arg, &start_addr, sizeof(unsigned int)))
+		{
+			dev_err(fbdev->dev, "copy_to_user error\n");
+			return -EFAULT;
+		}
+
 		break;
 	}
 
@@ -989,8 +1388,33 @@ int s3cfb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 	struct s3cfb_window *win = fb->par;
 	struct s3cfb_lcd *lcd = fbdev->lcd;
 	struct s3cfb_user_window user_win;
+	struct platform_device *pdev = to_platform_device(fbdev->dev);
 	void *argp = (void *)arg;
 	int ret = 0;
+
+#ifdef CONFIG_S5PV310_DEV_PD
+	/* enable the power domain */
+	if (fbdev->system_state == POWER_OFF) {
+		/* This IOCTLs are came from fimc irq.
+		 * To avoid scheduling problem in irq mode,
+		 * runtime get/put sync shold be not called.
+		 */
+		switch (cmd) {
+		case S3CFB_SET_WIN_ADDR:
+			fix->smem_start = (unsigned long)argp;
+			return ret;
+
+		case S3CFB_SET_WIN_ON:
+			if (!win->enabled)
+				atomic_inc(&fbdev->enabled_win);
+			win->enabled = 1;
+
+			return ret;
+		}
+
+		pm_runtime_get_sync(&pdev->dev);
+	}
+#endif
 
 	switch (cmd) {
 	case FBIOGET_FSCREENINFO:
@@ -1112,6 +1536,12 @@ int s3cfb_direct_ioctl(int id, unsigned int cmd, unsigned long arg)
 		ret = s3cfb_ioctl(fb, cmd, arg);
 		break;
 	}
+
+#ifdef CONFIG_S5PV310_DEV_PD
+	/* disable the power domain */
+	if (fbdev->system_state == POWER_OFF)
+		pm_runtime_put(&pdev->dev);
+#endif
 
 	return ret;
 }

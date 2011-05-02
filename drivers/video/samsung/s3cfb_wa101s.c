@@ -13,7 +13,8 @@
 #include "s3cfb.h"
 
 static struct s3cfb_lcd wa101 = {
-	.width	= 1366,
+//	.width	= 1366,
+	.width	= 1360,
 	.height	= 768,
 	.bpp	= 24,
 	.freq	= 60,

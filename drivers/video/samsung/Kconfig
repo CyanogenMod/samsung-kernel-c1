@@ -72,35 +72,78 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMD
 	depends on FB_S3C
 	default "24576"
 
+config FB_S3C_MDNIE
+	bool "Samsung MDNIE"
+	depends on FB_S3C
+	depends on MACH_C1
+	default "0"
+	---help---
+	  This enables support for Samsung MDNIE feature
+
+config SUPPORT_UMP
+	bool "Support UMP (Unified Memory Provider) for FIMD "
+	depends on FB_S3C && VIDEO_UMP
+	default y
+
 choice
 depends on FB_S3C
 prompt "Select LCD Type"
-default FB_S3C_AMS369FG06
+default FB_S3C_TL2796
 config FB_S3C_LTE480WV
 	bool "LTE480WV"
-	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
+	depends on MACH_SMDKV310 || MACH_SMDKC210 || MACH_SMDKV210 || MACH_SMDKC110
 	help
 	  This enables support for Samsung LTE480WV 4.8" WVGA LCD panel
 
 config FB_S3C_HT101HD1
 	bool "HT101HD1"
-	depends on MACH_SMDKV310 || MACH_SMDKV210 || MACH_SMDKC110
+	depends on MACH_SMDKV310 || MACH_SMDKC210 || MACH_SMDKV210 || MACH_SMDKC110
 	help
 	  This enables support for HT101HD1 10.1" WXVGA(1366*768) LCD panel
 
 config FB_S3C_WA101S
 	bool "WA101S"
-	depends on MACH_SMDKV310
+	depends on MACH_SMDKV310 || MACH_SMDKC210
 	help
 	  This enables support for 10.1" 1366*768 LCD panel
 
 config FB_S3C_AMS369FG06
 	bool "AMS369FG06"
-	depends on MACH_SMDKV310
+	depends on MACH_SMDKV310 || MACH_SMDKC210
 	select SPI
 	select SPI_S3C64XX
 	help
 	  This enables support for Samsung AMS369FG06 3.7" WVGA AMOLED panel
+
+config FB_S3C_LD9040
+        bool "LD9040"
+	depends on MACH_C1
+	select LCD_CLASS_DEVICE
+	select SPI
+	select SPI_GPIO
+	select SPI_BITBANG
+	help
+	  This enables support for Samsung LD9040 LCD panel
+
+config FB_S3C_MIPI_LCD
+	bool "MIPI LCD"
+	depends on MACH_C1
+	---help---
+	  This enables support for Samsung MIPI LCD
+
+config FB_S3C_S6D6AA0
+        bool "S6D6AA0 MIPI LCD"
+       depends on MACH_C1
+       depends on MACH_C1 && FB_S3C_MIPI_LCD
+        ---help---
+          This enables support for Samsung S6D6AA0 MIPI LCD
+ 
+config FB_S3C_S6E8AA0
+       bool "S6E8AA0 MIPI LCD"
+       depends on MACH_C1 && FB_S3C_MIPI_LCD
+       ---help---
+         This enables support for Samsung S6E8AA0 MIPI LCD
+
 endchoice
 
 config FB_S3C_V2

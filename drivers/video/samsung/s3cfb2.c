@@ -30,7 +30,12 @@
 #include <linux/memory.h>
 #include <plat/clock.h>
 
+#ifdef CONFIG_TARGET_LOCALE_NTT
+#include "logo_rgb24_ntt.h"
+#else
 #include "logo_rgb24.h"
+#endif
+
 #include "s3cfb2.h"
 
 static struct s3cfb_global *ctrl;
@@ -973,7 +978,7 @@ static int s3cfb_sysfs_store_win_power(struct device *dev,
 	return len;
 }
 
-static DEVICE_ATTR(win_power, 0644,
+static DEVICE_ATTR(win_power, 0664,
 			s3cfb_sysfs_show_win_power,
 			s3cfb_sysfs_store_win_power);
 
