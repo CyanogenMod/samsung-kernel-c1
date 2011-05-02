@@ -94,6 +94,8 @@ connector/
 	- docs on the netlink based userspace<->kernel space communication mod.
 console/
 	- documentation on Linux console drivers.
+contiguous-memory.txt
+	- documentation on physically-contiguous memory allocation framework.
 cpu-freq/
 	- info on CPU frequency and voltage scaling.
 cpu-hotplug.txt
@@ -342,6 +344,8 @@ video-output.txt
 	- sysfs class driver interface to enable/disable a video output device.
 video4linux/
 	- directory with info regarding video/TV/radio cards and linux.
+virtual-contiguous-memory.txt
+	- documentation on virtual contiguous memory manager framework.
 vm/
 	- directory with info on the Linux vm code.
 volatile-considered-harmful.txt

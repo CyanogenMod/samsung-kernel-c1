@@ -43,6 +43,7 @@ parameter is applicable:
 	AVR32	AVR32 architecture is enabled.
 	AX25	Appropriate AX.25 support is enabled.
 	BLACKFIN Blackfin architecture is enabled.
+	CMA	Contiguous Memory Allocator is enabled.
 	DRM	Direct Rendering Management support is enabled.
 	EDD	BIOS Enhanced Disk Drive Services (EDD) is enabled
 	EFI	EFI Partitioning (GPT) is enabled
@@ -500,6 +501,12 @@ and is between 256 and 4096 characters. It is defined in the file
 			being used by the kernel or shown in /proc/cpuinfo.
 			Also note the kernel might malfunction if you disable
 			some critical bits.
+
+	cma=		[CMA] List of CMA regions.
+			See Documentation/contiguous-memory.txt for details.
+
+	cma.map=	[CMA] CMA mapping
+			See Documentation/contiguous-memory.txt for details.
 
 	cmo_free_hint=	[PPC] Format: { yes | no }
 			Specify whether pages are marked as being inactive
