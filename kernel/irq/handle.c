@@ -22,6 +22,8 @@
 #include <linux/radix-tree.h>
 #include <trace/events/irq.h>
 
+#include <mach/sec_debug.h>
+
 #include "internals.h"
 
 /*
@@ -371,9 +373,11 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
 	unsigned int status = 0;
 
 	do {
+		sec_debug_irq_sched_log(irq, (void *)action->handler, 1);
 		trace_irq_handler_entry(irq, action);
 		ret = action->handler(irq, action->dev_id);
 		trace_irq_handler_exit(irq, action, ret);
+		/* sec_debug_irq_sched_log(irq, (void *)action->handler, 2); */
 
 		switch (ret) {
 		case IRQ_WAKE_THREAD:
@@ -464,6 +468,7 @@ unsigned int __do_IRQ(unsigned int irq)
 			if (!noirqdebug)
 				note_interrupt(irq, desc, action_ret);
 		}
+
 		desc->chip->end(irq);
 		return 1;
 	}
@@ -496,8 +501,10 @@ unsigned int __do_IRQ(unsigned int irq)
 	 * a different instance of this same irq, the other processor
 	 * will take care of it.
 	 */
-	if (unlikely(!action))
+	if (unlikely(!action)) {
+		sec_debug_irq_sched_log(irq, 0, 0);
 		goto out;
+	}
 
 	/*
 	 * Edge triggered interrupts need to remember

@@ -117,7 +117,7 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
 				   const char namefmt[],
 				   ...)
 {
-	struct kthread_create_info create;
+	struct kthread_create_info create = {0};
 
 	create.threadfn = threadfn;
 	create.data = data;

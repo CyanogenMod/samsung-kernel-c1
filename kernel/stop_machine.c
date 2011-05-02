@@ -300,8 +300,10 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
 	case CPU_UP_PREPARE:
 		BUG_ON(stopper->thread || stopper->enabled ||
 		       !list_empty(&stopper->works));
+		printk(">");
 		p = kthread_create(cpu_stopper_thread, stopper, "migration/%d",
 				   cpu);
+		printk("made stopper\n");
 		if (IS_ERR(p))
 			return NOTIFY_BAD;
 		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);

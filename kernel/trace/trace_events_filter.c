@@ -381,7 +381,7 @@ static void filter_build_regex(struct filter_pred *pred)
 int filter_match_preds(struct event_filter *filter, void *rec)
 {
 	int match, top = 0, val1 = 0, val2 = 0;
-	int stack[MAX_FILTER_PRED];
+	int stack[MAX_FILTER_PRED]={0};
 	struct filter_pred *pred;
 	int i;
 

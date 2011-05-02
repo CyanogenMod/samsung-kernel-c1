@@ -28,7 +28,7 @@ static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
 static DEFINE_PER_CPU(bool, softlock_touch_sync);
 
 static int __read_mostly did_panic;
-int __read_mostly softlockup_thresh = 60;
+int __read_mostly softlockup_thresh = 30;
 
 /*
  * Should we panic (and reboot, if panic_timeout= is set) when a
@@ -67,10 +67,8 @@ static unsigned long get_timestamp(int this_cpu)
 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
 }
 
-static void __touch_softlockup_watchdog(void)
+static void __touch_softlockup_watchdog(int this_cpu)
 {
-	int this_cpu = raw_smp_processor_id();
-
 	__raw_get_cpu_var(softlockup_touch_ts) = get_timestamp(this_cpu);
 }
 
@@ -108,9 +106,8 @@ int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
  * This callback runs from the timer interrupt, and checks
  * whether the watchdog thread has hung or not:
  */
-void softlockup_tick(void)
+static inline void softlockup_tick_per_cpu(int this_cpu)
 {
-	int this_cpu = smp_processor_id();
 	unsigned long touch_ts = per_cpu(softlockup_touch_ts, this_cpu);
 	unsigned long print_ts;
 	struct pt_regs *regs = get_irq_regs();
@@ -133,7 +130,7 @@ void softlockup_tick(void)
 			per_cpu(softlock_touch_sync, this_cpu) = false;
 			sched_clock_tick();
 		}
-		__touch_softlockup_watchdog();
+		__touch_softlockup_watchdog(this_cpu);
 		return;
 	}
 
@@ -145,7 +142,7 @@ void softlockup_tick(void)
 
 	/* do not print during early bootup: */
 	if (unlikely(system_state != SYSTEM_RUNNING)) {
-		__touch_softlockup_watchdog();
+		__touch_softlockup_watchdog(this_cpu);
 		return;
 	}
 
@@ -155,29 +152,46 @@ void softlockup_tick(void)
 	 * Wake up the high-prio watchdog task twice per
 	 * threshold timespan.
 	 */
-	if (time_after(now - softlockup_thresh/2, touch_ts))
+	if (time_after(now - softlockup_thresh / 2, touch_ts))
 		wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
 
 	/* Warn about unreasonable delays: */
-	if (time_before_eq(now - softlockup_thresh, touch_ts))
+	if (time_before_eq
+	    (now - softlockup_thresh * (this_cpu == smp_processor_id() ? 1 : 2),
+	     touch_ts))
 		return;
 
 	per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
 
 	spin_lock(&print_lock);
-	printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %lus! [%s:%d]\n",
-			this_cpu, now - touch_ts,
-			current->comm, task_pid_nr(current));
-	print_modules();
-	print_irqtrace_events(current);
-	if (regs)
-		show_regs(regs);
-	else
-		dump_stack();
+	if (this_cpu == smp_processor_id()) {
+		printk(KERN_ERR
+		       "BUG: soft lockup - CPU#%d stuck for %lus! [%s:%d]\n",
+		       this_cpu, now - touch_ts, current->comm,
+		       task_pid_nr(current));
+		print_modules();
+		print_irqtrace_events(current);
+		if (regs)
+			show_regs(regs);
+		else
+			dump_stack();
+	} else {
+		printk(KERN_ERR "BUG: hard lockup - CPU#%d stuck for %lus!\n",
+		       this_cpu, now - touch_ts);
+		printk(KERN_ERR "Reported by CPU#%d\n", smp_processor_id());
+		print_modules();
+	}
 	spin_unlock(&print_lock);
 
 	if (softlockup_panic)
 		panic("softlockup: hung tasks");
+}
+
+void softlockup_tick(void)
+{
+	int cpu;
+	for_each_online_cpu(cpu)
+		softlockup_tick_per_cpu(cpu);
 }
 
 /*
@@ -186,11 +200,12 @@ void softlockup_tick(void)
 static int watchdog(void *__bind_cpu)
 {
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+	int this_cpu = raw_smp_processor_id();
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 
 	/* initialize timestamp */
-	__touch_softlockup_watchdog();
+	__touch_softlockup_watchdog(this_cpu);
 
 	set_current_state(TASK_INTERRUPTIBLE);
 	/*
@@ -199,7 +214,7 @@ static int watchdog(void *__bind_cpu)
 	 * debug-printout triggers in softlockup_tick().
 	 */
 	while (!kthread_should_stop()) {
-		__touch_softlockup_watchdog();
+		__touch_softlockup_watchdog(this_cpu);
 		schedule();
 
 		if (kthread_should_stop())

@@ -39,6 +39,7 @@
 #include <linux/syslog.h>
 
 #include <asm/uaccess.h>
+#include <mach/sec_debug.h>
 
 /*
  * for_each_console() allows you to iterate on each console
@@ -209,6 +210,85 @@ out:
 }
 
 __setup("log_buf_len=", log_buf_len_setup);
+
+#ifdef CONFIG_SEC_LOG
+/*
+ * Example usage: sec_log=256K@0x45000000
+ *
+ * In above case, log_buf size is 256KB and its physical base address
+ * is 0x45000000. Actually, *(int *)(base - 8) is log_magic and *(int
+ * *)(base - 4) is log_ptr. Therefore we reserve (size + 8) bytes from
+ * (base - 8)
+ */
+#define LOG_MAGIC 0x4d474f4c /* "LOGM" */
+
+/* These variables are also protected by logbuf_lock */
+static unsigned *sec_log_ptr;
+static char *sec_log_buf;
+static unsigned sec_log_size;
+
+static inline void emit_sec_log_char(char c)
+{
+	if (sec_log_buf && sec_log_ptr) {
+		sec_log_buf[*sec_log_ptr & (sec_log_size - 1)] = c;
+		(*sec_log_ptr)++;
+	}
+}
+
+static int __init sec_log_setup(char *str)
+{
+	unsigned size = memparse(str, &str);
+	unsigned long flags;
+
+	if (size && (size == roundup_pow_of_two(size)) && (*str == '@')) {
+		unsigned long long base = 0;
+		unsigned *sec_log_mag;
+		unsigned start;
+
+		base = simple_strtoul(++str, &str, 0);
+		if (reserve_bootmem(base - 8, size + 8, BOOTMEM_EXCLUSIVE)) {
+			pr_err("%s: failed reserving size %d + 8 "
+			       "at base 0x%llx - 8\n", __func__, size, base);
+			goto out;
+		}
+		sec_log_mag = phys_to_virt(base) - 8;
+		sec_log_ptr = phys_to_virt(base) - 4;
+		sec_log_buf = phys_to_virt(base);
+		sec_log_size = size;
+		pr_info("%s: *sec_log_mag:%x *sec_log_ptr:%x "
+			"sec_log_buf:%p sec_log_size:%d\n",
+			__func__, *sec_log_mag, *sec_log_ptr, sec_log_buf,
+			sec_log_size);
+
+		spin_lock_irqsave(&logbuf_lock, flags);
+
+		if (*sec_log_mag != LOG_MAGIC) {
+			*sec_log_ptr = 0;
+			*sec_log_mag = LOG_MAGIC;
+		}
+
+		start = min(con_start, log_start);
+		while (start != log_end) {
+			emit_sec_log_char(__log_buf
+					  [start++ & (__LOG_BUF_LEN - 1)]);
+		}
+		spin_unlock_irqrestore(&logbuf_lock, flags);
+	}
+	sec_getlog_supply_kloginfo(sec_log_buf);
+
+ out:
+	return 1;
+}
+
+__setup("sec_log=", sec_log_setup);
+
+#else
+
+static inline void emit_sec_log_char(char c)
+{
+}
+
+#endif
 
 #ifdef CONFIG_BOOT_PRINTK_DELAY
 
@@ -600,6 +680,8 @@ static void emit_log_char(char c)
 		con_start = log_end - log_buf_len;
 	if (logged_chars < log_buf_len)
 		logged_chars++;
+
+	emit_sec_log_char(c);
 }
 
 /*
@@ -1103,6 +1185,8 @@ void printk_tick(void)
 
 int printk_needs_cpu(int cpu)
 {
+	if (unlikely(cpu_is_offline(cpu)))
+		printk_tick();
 	return per_cpu(printk_pending, cpu);
 }
 

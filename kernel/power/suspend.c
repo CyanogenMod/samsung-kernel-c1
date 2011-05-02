@@ -168,6 +168,9 @@ static int suspend_enter(suspend_state_t state)
 	if (!error) {
 		if (!suspend_test(TEST_CORE))
 			error = suspend_ops->enter(state);
+		/* Workaround for possible L2 cache coherency issue
+		   where preempt_count remains zero */ 
+		preempt_count() = 0;
 		sysdev_resume();
 	}
 

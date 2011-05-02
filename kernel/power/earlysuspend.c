@@ -30,10 +30,15 @@ enum {
 static int debug_mask = DEBUG_USER_STATE;
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
+extern struct wake_lock sync_wake_lock;
+extern struct workqueue_struct *sync_work_queue;
+
 static DEFINE_MUTEX(early_suspend_lock);
 static LIST_HEAD(early_suspend_handlers);
+static void sync_system(struct work_struct *work);
 static void early_suspend(struct work_struct *work);
 static void late_resume(struct work_struct *work);
+static DECLARE_WORK(sync_system_work, sync_system);
 static DECLARE_WORK(early_suspend_work, early_suspend);
 static DECLARE_WORK(late_resume_work, late_resume);
 static DEFINE_SPINLOCK(state_lock);
@@ -43,6 +48,15 @@ enum {
 	SUSPEND_REQUESTED_AND_SUSPENDED = SUSPEND_REQUESTED | SUSPENDED,
 };
 static int state;
+
+static void sync_system(struct work_struct *work)
+{
+    pr_info("%s +\n", __func__);
+    wake_lock(&sync_wake_lock);
+   	sys_sync();
+    wake_unlock(&sync_wake_lock);
+    pr_info("%s -\n", __func__);
+}
 
 void register_early_suspend(struct early_suspend *handler)
 {
@@ -102,7 +116,9 @@ static void early_suspend(struct work_struct *work)
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("early_suspend: sync\n");
 
-	sys_sync();
+	/* sys_sync(); */
+	queue_work(sync_work_queue, &sync_system_work);
+
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
@@ -132,8 +148,14 @@ static void late_resume(struct work_struct *work)
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("late_resume: call handlers\n");
 	list_for_each_entry_reverse(pos, &early_suspend_handlers, link)
-		if (pos->resume != NULL)
+		if (pos->resume != NULL) {
 			pos->resume(pos);
+			if (in_atomic()) {
+				pr_err("%s: became atomic after executing %p(%p)\n",
+				       __func__, pos->resume, pos);
+				BUG();
+			}
+		}
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("late_resume: done\n");
 abort:

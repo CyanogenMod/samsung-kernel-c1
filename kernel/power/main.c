@@ -13,6 +13,12 @@
 #include <linux/resume-trace.h>
 #include <linux/workqueue.h>
 
+#define CONFIG_DVFS_LIMIT
+
+#ifdef CONFIG_DVFS_LIMIT
+#include <mach/cpufreq.h>
+#endif
+
 #include "power.h"
 
 DEFINE_MUTEX(pm_mutex);
@@ -245,6 +251,81 @@ power_attr(wake_lock);
 power_attr(wake_unlock);
 #endif
 
+#ifdef CONFIG_DVFS_LIMIT
+static int dvfsctrl_locked;
+static int gdDvfsctrl;
+
+static void do_dvfsunlock_timer(struct work_struct *work);
+static DECLARE_DELAYED_WORK(dvfslock_ctrl_unlock_work, do_dvfsunlock_timer);
+
+static ssize_t dvfslock_ctrl(const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int dlevel;
+	int dtime_msec;
+
+	ret = sscanf(buf, "%u", &gdDvfsctrl);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (gdDvfsctrl ==0) {
+		if (dvfsctrl_locked) {
+			s5pv310_cpufreq_lock_free(DVFS_LOCK_ID_APP);
+			dvfsctrl_locked = 0;
+		}
+		return -EINVAL;
+	}
+	if (dvfsctrl_locked) {
+		printk(KERN_ERR "%s - already locked\n", __func__);
+		return 0;
+	}
+
+	dlevel = gdDvfsctrl & 0xffff0000;
+	dtime_msec = gdDvfsctrl & 0x0000ffff;
+
+	if (dtime_msec < 16)
+		dtime_msec = 16;
+
+	if (dtime_msec == 0)
+		return -EINVAL;
+
+	if (dlevel)
+		dlevel = CPU_L1;
+	else
+		dlevel = CPU_L0;
+
+	printk(KERN_DEBUG "%s: level = %d, time =%d\n", __func__, dlevel, dtime_msec);
+
+	s5pv310_cpufreq_lock(DVFS_LOCK_ID_APP, dlevel);
+	dvfsctrl_locked = 1;
+
+	schedule_delayed_work(&dvfslock_ctrl_unlock_work, msecs_to_jiffies(dtime_msec));
+
+	return -EINVAL;
+}
+
+static void do_dvfsunlock_timer(struct work_struct *work)
+{
+	dvfsctrl_locked = 0;
+	s5pv310_cpufreq_lock_free(DVFS_LOCK_ID_APP);
+}
+
+static ssize_t dvfslock_ctrl_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "0x%08x\n", gdDvfsctrl);
+}
+
+static ssize_t dvfslock_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
+					const char *buf, size_t n)
+{
+	dvfslock_ctrl(buf, 0);
+	return n;
+}
+
+power_attr(dvfslock_ctrl);
+#endif
+
 static struct attribute * g[] = {
 	&state_attr.attr,
 #ifdef CONFIG_PM_TRACE
@@ -255,10 +336,13 @@ static struct attribute * g[] = {
 #ifdef CONFIG_PM_DEBUG
 	&pm_test_attr.attr,
 #endif
+#endif
 #ifdef CONFIG_USER_WAKELOCK
 	&wake_lock_attr.attr,
 	&wake_unlock_attr.attr,
 #endif
+#ifdef CONFIG_DVFS_LIMIT
+	&dvfslock_ctrl_attr.attr,
 #endif
 	NULL,
 };
