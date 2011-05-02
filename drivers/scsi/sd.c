@@ -2087,6 +2087,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
 	 * react badly if we do.
 	 */
 	if (sdkp->media_present) {
+		disk -> media_present = 1;
 		sd_read_capacity(sdkp, buffer);
 
 		if (sd_try_extended_inquiry(sdp)) {
@@ -2360,6 +2361,7 @@ static int sd_remove(struct device *dev)
 
 	async_synchronize_full();
 	sdkp = dev_get_drvdata(dev);
+	sdkp -> disk -> media_present = 0;
 	blk_queue_prep_rq(sdkp->device->request_queue, scsi_prep_fn);
 	device_del(&sdkp->dev);
 	del_gendisk(sdkp->disk);

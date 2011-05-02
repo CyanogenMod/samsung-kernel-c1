@@ -25,6 +25,7 @@
 #include <linux/mutex.h>
 #include <linux/freezer.h>
 #include <linux/pm_runtime.h>
+#include <linux/host_notify.h>
 
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
@@ -593,7 +594,7 @@ static int hub_hub_status(struct usb_hub *hub,
 			"%s failed (err = %d)\n", __func__, ret);
 	else {
 		*status = le16_to_cpu(hub->status->hub.wHubStatus);
-		*change = le16_to_cpu(hub->status->hub.wHubChange); 
+		*change = le16_to_cpu(hub->status->hub.wHubChange);
 		ret = 0;
 	}
 	mutex_unlock(&hub->status_mutex);
@@ -717,6 +718,13 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 			return;		/* Continues at init2: below */
 		} else {
 			hub_power_on(hub, true);
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+			if (type == HUB_RESET_RESUME) {
+				struct usb_hcd *hcd = bus_to_hcd(hdev->bus);
+				if (hcd->driver->wait_for_device)
+					hcd->driver->wait_for_device(hcd);
+			}
+#endif
 		}
 	}
  init2:
@@ -817,7 +825,11 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 	 * If any port-status changes do occur during this delay, khubd
 	 * will see them later and handle them normally.
 	 */
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+	if (need_debounce_delay && type != HUB_RESET_RESUME) {
+#else
 	if (need_debounce_delay) {
+#endif
 		delay = HUB_DEBOUNCE_STABLE;
 
 		/* Don't do a long sleep inside a workqueue routine */
@@ -1647,6 +1659,9 @@ static inline void announce_device(struct usb_device *udev) { }
 #ifdef	CONFIG_USB_OTG
 #include "otg_whitelist.h"
 #endif
+#ifdef	CONFIG_USB_SEC_WHITELIST
+#include "sec_whitelist.h"
+#endif
 
 /**
  * usb_enumerate_device_otg - FIXME (usbcore-internal)
@@ -1657,7 +1672,15 @@ static inline void announce_device(struct usb_device *udev) { }
 static int usb_enumerate_device_otg(struct usb_device *udev)
 {
 	int err = 0;
-
+#ifdef	CONFIG_USB_SEC_WHITELIST
+	struct usb_hcd *hcd = bus_to_hcd(udev->bus);
+	if (hcd->sec_whlist_table_num) {
+		if (!is_seclist(udev, hcd->sec_whlist_table_num)) {
+			err = -ENOTSUPP;
+			goto sec_fail;
+		}
+	}
+#endif
 #ifdef	CONFIG_USB_OTG
 	/*
 	 * OTG-aware devices on OTG-capable root hubs may be able to use SRP,
@@ -1719,6 +1742,9 @@ static int usb_enumerate_device_otg(struct usb_device *udev)
 		goto fail;
 	}
 fail:
+#endif
+#ifdef	CONFIG_USB_SEC_WHITELIST
+sec_fail:
 #endif
 	return err;
 }
@@ -2037,7 +2063,11 @@ static int hub_port_reset(struct usb_hub *hub, int port1,
 		switch (status) {
 		case 0:
 			/* TRSTRCY = 10 ms; plus some extra */
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+			msleep(10);
+#else
 			msleep(10 + 40);
+#endif
 			update_address(udev, 0);
 			if (hcd->driver->reset_device) {
 				status = hcd->driver->reset_device(hcd, udev);
@@ -2359,7 +2389,12 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 		/* drive resume for at least 20 msec */
 		dev_dbg(&udev->dev, "usb %sresume\n",
 				(msg.event & PM_EVENT_AUTO ? "auto-" : ""));
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+		/* Add the 5msec delay for XMM6260 resume fail case*/
+		msleep(30);
+#else
 		msleep(25);
+#endif
 
 		/* Virtual root hubs can trigger on GET_PORT_STATUS to
 		 * stop resume signaling.  Then finish the resume
@@ -2369,9 +2404,16 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 
 		/* TRSMRCY = 10 msec */
 		msleep(10);
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+		/* If portstatus's still resuming, retry GET_PORT_STATUS */
+		if (portstatus & USB_PORT_STAT_SUSPEND)
+			status = hub_port_status(hub, port1, &portstatus,
+				&portchange);
+#endif
 	}
 
  SuspendCleared:
+	printk(KERN_DEBUG "%s = %d, %d \n", __func__, portstatus, portchange);
 	if (status == 0) {
 		if (portchange & USB_PORT_STAT_C_SUSPEND)
 			clear_port_feature(hub->hdev, port1,
@@ -2385,7 +2427,9 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	if (status == 0)
 		status = finish_port_resume(udev);
 	if (status < 0) {
-		dev_dbg(&udev->dev, "can't resume, status %d\n", status);
+		/*dev_dbg(&udev->dev, "can't resume, status %d\n", status);*/
+		printk(KERN_DEBUG "%s: can't resume, status %d\n", __func__,
+			status);
 		hub_port_logical_disconnect(hub, port1);
 	}
 	return status;
@@ -2516,7 +2560,7 @@ EXPORT_SYMBOL_GPL(usb_root_hub_lost_power);
  * Between connect detection and reset signaling there must be a delay
  * of 100ms at least for debounce and power-settling.  The corresponding
  * timer shall restart whenever the downstream port detects a disconnect.
- * 
+ *
  * Apparently there are some bluetooth and irda-dongles and a number of
  * low-speed devices for which this debounce period may last over a second.
  * Not covered by the spec - but easy to deal with.
@@ -2694,7 +2738,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 	default:
 		goto fail;
 	}
- 
+
 	type = "";
 	switch (udev->speed) {
 	case USB_SPEED_LOW:	speed = "low";	break;
@@ -2724,7 +2768,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->tt = &hub->tt;
 		udev->ttport = port1;
 	}
- 
+
 	/* Why interleave GET_DESCRIPTOR and SET_ADDRESS this way?
 	 * Because device hardware and firmware is sometimes buggy in
 	 * this area, and this is how Linux has done it for ages.
@@ -2783,10 +2827,11 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 			udev->descriptor.bMaxPacketSize0 =
 					buf->bMaxPacketSize0;
 			kfree(buf);
-
+#if !defined(CONFIG_SAMSUNG_PHONE_SVNET)
 			retval = hub_port_reset(hub, port1, udev, delay);
 			if (retval < 0)		/* error or disconnect */
 				goto fail;
+#endif
 			if (oldspeed != udev->speed) {
 				dev_dbg(&udev->dev,
 					"device reset changed speed!\n");
@@ -2869,7 +2914,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 		udev->ep0.desc.wMaxPacketSize = cpu_to_le16(i);
 		usb_ep0_reinit(udev);
 	}
-  
+
 	retval = usb_get_device_descriptor(udev, USB_DT_DEVICE_SIZE);
 	if (retval < (signed)sizeof(udev->descriptor)) {
 		dev_err(&udev->dev, "device descriptor read/all, error %d\n",
@@ -3148,7 +3193,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 				goto loop_disable;
 			}
 		}
- 
+
 		/* check for devices running slower than they could */
 		if (le16_to_cpu(udev->descriptor.bcdUSB) >= 0x0200
 				&& udev->speed == USB_SPEED_FULL
@@ -3179,6 +3224,10 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 				spin_lock_irq(&device_state_lock);
 				hdev->children[port1-1] = NULL;
 				spin_unlock_irq(&device_state_lock);
+#ifdef CONFIG_USB_HOST_NOTIFY
+				if(hcd->host_notify)
+					host_state_notify(&hcd->ndev, NOTIFY_HOST_UNKNOWN);
+#endif		
 			}
 		}
 
@@ -3206,7 +3255,7 @@ loop:
 			!(hcd->driver->port_handed_over)(hcd, port1))
 		dev_err(hub_dev, "unable to enumerate USB device on port %d\n",
 				port1);
- 
+
 done:
 	hub_port_disable(hub, port1, 1);
 	if (hcd->driver->relinquish_port && !hub->hdev->parent)
@@ -3332,7 +3381,7 @@ static void hub_events(void)
 				 * EM interference sometimes causes badly
 				 * shielded USB devices to be shutdown by
 				 * the hub, this hack enables them again.
-				 * Works at least with mouse driver. 
+				 * Works at least with mouse driver.
 				 */
 				if (!(portstatus & USB_PORT_STAT_ENABLE)
 				    && !connect_change
@@ -3370,7 +3419,7 @@ static void hub_events(void)
 					"resume on port %d, status %d\n",
 					i, ret);
 			}
-			
+
 			if (portchange & USB_PORT_STAT_C_OVERCURRENT) {
 				dev_err (hub_dev,
 					"over-current change on port %d\n",
@@ -3649,7 +3698,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
 	if (ret < 0)
 		goto re_enumerate;
- 
+
 	/* Device might have changed firmware (DFU or similar) */
 	if (descriptors_changed(udev, &descriptor)) {
 		dev_info(&udev->dev, "device firmware changed\n");
@@ -3722,7 +3771,7 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
 
 done:
 	return 0;
- 
+
 re_enumerate:
 	hub_port_logical_disconnect(parent_hub, port1);
 	return -ENODEV;

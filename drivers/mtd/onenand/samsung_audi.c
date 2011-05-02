@@ -50,18 +50,14 @@
 
 #define DRIVER_NAME	"s5p-onenand"
 
-#define S5PC210_EVT0	// Temp definition, which will be replaced.
-
 //#define ONENAND_SUPERLOAD			// Enable Superload command (4KB page only)
-#define ONENAND_CMD_SUPERLOAD		(0x03)		// 4 KB page
-#define ONENAND_UNCORRECTABLE_ERROR	(1 << 0)
-#define ONENAND_CORRECTABLE_ERROR	(1 << 1)
 
 #ifdef CONFIG_PM
 #define ONENAND_CLOCK_GATING
 #endif
 
 static phys_addr_t onenand_pbase = 0;
+static void __iomem * onenandctl_vbase = NULL;
 
 // To Do: The below definitions should be moved to a header file defining platform SFRs.
 #define ONENAND_CTRL_OFFSET		(0x00600000)
@@ -114,9 +110,11 @@ static const char *part_probes[] = { "cmdlinepart", NULL };
 #endif
 
 struct onenand_info {
-	struct mtd_info			mtd;
-	struct mtd_partition		*parts;
-	struct onenand_chip		onenand;
+	struct mtd_info		mtd;
+	struct mtd_partition	*parts;
+	struct onenand_chip	onenand;
+	struct resource		*base_res;
+	struct resource		*ctl_res;
 };
 
 struct mtd_partition s3c_partition_info[] = {
@@ -858,8 +856,8 @@ static inline int onenand_bufferram_offset(struct mtd_info *mtd, int area)
 static int onenand_dma_transfer(struct mtd_info *mtd, void __iomem *src,
 		void __iomem *dest, u32 length, u32 direction)
 {
-	struct onenand_chip *this = mtd->priv;
-	void __iomem *CTRL_DMA_BASE = this->base + ONENAND_CTRL_OFFSET;
+	//struct onenand_chip *this = mtd->priv;
+	void __iomem *CTRL_DMA_BASE = onenandctl_vbase;
 	u32 status;
 
 	writel(src, CTRL_DMA_BASE + CTRL_DMA_SRC_ADDR_OFFSET);
@@ -975,7 +973,7 @@ static int onenand_sync_read_bufferram(struct mtd_info *mtd, int area,
 	void __iomem *dest_addr = NULL;
 
 	/* physical address */
-#if defined(S5PC210_EVT0)
+#ifndef CONFIG_CPU_S5PV310_EVT1
 	src_addr = (void __iomem *)area;
 #else
 	src_addr = (void __iomem *)onenand_pbase + area;
@@ -1007,7 +1005,7 @@ static int onenand_sync_read_bufferram(struct mtd_info *mtd, int area,
 		int point_max = ((offset + count + ONENAND_DMA_ALIGN - 1)
 		                 / ONENAND_DMA_ALIGN) * ONENAND_DMA_ALIGN;
 
-#if defined(S5PC210_EVT0)
+#ifndef CONFIG_CPU_S5PV310_EVT1
 		src_addr = (void __iomem *)area;
 #else
 		src_addr = (void __iomem *)onenand_pbase + area;
@@ -1210,7 +1208,7 @@ static int onenand_sync_write_bufferram(struct mtd_info *mtd, int area,
 	}
 #endif
 
-#if defined(S5PC210_EVT0)
+#ifndef CONFIG_CPU_S5PV310_EVT1
 	dest_addr = (void __iomem *)area;
 #else
 	dest_addr = (void __iomem *)onenand_pbase + area;
@@ -3515,7 +3513,7 @@ static int onenand_lock_user_prot_reg(struct mtd_info *mtd, loff_t from,
 	 *       Both      : 0xXXF0 (If chip support)
 	 */
 	if (OTP_LOCK_IN_MAIN(this))
-		buf[FLEXONENAND_OTP_LOCK_OFFSET] = 0xFC;
+		buf[ONENAND_OTP_LOCK_OFFSET_MAIN] = 0xFC;
 	else
 		buf[ONENAND_OTP_LOCK_OFFSET] = 0xFC;
 
@@ -4027,7 +4025,7 @@ static int onenand_probe(struct mtd_info *mtd)
 
 	if (ONENAND_IS_SINGLE_DATARAM(this)) {
 		this->ecc_registers = 4;
-		this->error_mask = ONENAND_ECC_4BIT_UNCORRECTABLE;
+		this->error_mask = ONENAND_ECC_5BIT_ALL;
 	} else {
 		this->ecc_registers = 1;
 		this->error_mask = ONENAND_ECC_2BIT_ALL;
@@ -4317,12 +4315,10 @@ void onenand_release(struct mtd_info *mtd)
 
 static int __devinit s5p_onenand_probe(struct platform_device *dev)
 {
-	//struct platform_device *pdev = to_platform_device(dev);
 	struct platform_device *pdev = dev;
 	struct onenand_info *info;
-	struct flash_platform_data *pdata = pdev->dev.platform_data;
-	struct resource *res = pdev->resource;
-	unsigned long size = res->end - res->start + 1;
+	//struct flash_platform_data *pdata = pdev->dev.platform_data;
+	struct resource *res;
 	int err;
 #ifdef CONFIG_MTD_PARTITIONS
 	struct mtd_partition *partitions = NULL;
@@ -4333,32 +4329,61 @@ static int __devinit s5p_onenand_probe(struct platform_device *dev)
 	if (!info)
 		return -ENOMEM;
 
-	// TO DO:
-	//	 6M => 128KB & 128KB
-	if (!request_mem_region(res->start, size, pdev->dev.driver->name)) {
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		printk(KERN_ERR "OneNAND: no memory resource (0) defined\n");
+		err = -ENOENT;
+		goto out_free_info;
+	}
+
+	info->base_res = request_mem_region(res->start, resource_size(res),
+				pdev->dev.driver->name);
+	if (!info->base_res) {
+		printk(KERN_ERR "OneNAND: Failed to request memory resource (0)\n");
 		err = -EBUSY;
 		goto out_free_info;
 	}
 
 	onenand_pbase = res->start;
 
-	info->onenand.base = ioremap(res->start, size);
+	info->onenand.base = ioremap(res->start, resource_size(res));
 	if (!info->onenand.base) {
+		printk(KERN_ERR "OneNAND: Failed to map memory resource (0)\n");
 		err = -ENOMEM;
 		goto out_release_mem_region;
 	}
 
-	printk(KERN_DEBUG "OneNAND: s5p_onenand_probe - (Virt) Base Address: 0x%08X\n",
-			(unsigned int)info->onenand.base);
-
-#ifdef ONENAND_CLOCK_GATING
-	onenand_clk = clk_get(&pdev->dev, "nandxl");
-	if (onenand_clk == NULL) {
-		printk(KERN_ERR "Failed to find onenand clock source\n");
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	if (!res) {
+		printk(KERN_ERR "OneNAND: no memory resource (1) defined\n");
 		err = -ENOENT;
 		goto out_iounmap;
 	}
+
+	info->ctl_res = request_mem_region(res->start, resource_size(res),
+				pdev->dev.driver->name);
+	if (!info->ctl_res) {
+		printk(KERN_ERR "OneNAND: Failed to request memory resource (1)\n");
+		err = -EBUSY;
+		goto out_iounmap;
+	}
+
+	onenandctl_vbase = ioremap(res->start, resource_size(res));
+	if (!onenandctl_vbase) {
+		printk(KERN_ERR "OneNAND: Failed to map memory resource (1)\n");
+		err = -ENOMEM;
+		goto out_release_mem_region2;
+	}
+
+#ifdef ONENAND_CLOCK_GATING
+	onenand_clk = clk_get(&pdev->dev, "onenand");
+	if (onenand_clk == NULL) {
+		printk(KERN_ERR "OneNAND: Failed to find clock source\n");
+		err = -ENOENT;
+		goto out_iounmap2;
+	}
 	printk(KERN_INFO "OneNAND: Clock gating is enabled.\n");
+	onenand_clock_gating(ONENAND_CLOCK_ON);
 #endif
 
 	//info->onenand.mmcontrol = pdata->mmcontrol;
@@ -4370,7 +4395,7 @@ static int __devinit s5p_onenand_probe(struct platform_device *dev)
 
 	if (onenand_scan(&info->mtd, 1)) {
 		err = -ENXIO;
-		goto out_iounmap;
+		goto out_iounmap2;
 	}
 
 #ifdef CONFIG_MTD_PARTITIONS
@@ -4394,14 +4419,22 @@ static int __devinit s5p_onenand_probe(struct platform_device *dev)
 
 	dev_set_drvdata(&pdev->dev, info);
 
+#ifdef ONENAND_CLOCK_GATING
+	onenand_clock_gating(ONENAND_CLOCK_OFF);
+#endif
+
 	return 0;
 
 out_release_onenand:
 	onenand_release(&info->mtd);
+out_iounmap2:
+	iounmap(onenandctl_vbase);
+out_release_mem_region2:
+	release_mem_region(info->ctl_res->start, resource_size(info->ctl_res));
 out_iounmap:
 	iounmap(info->onenand.base);
 out_release_mem_region:
-	release_mem_region(res->start, size);
+	release_mem_region(info->base_res->start, resource_size(info->base_res));
 out_free_info:
 	kfree(info);
 
@@ -4437,11 +4470,8 @@ static int s5p_onenand_resume(struct platform_device *pdev)
 
 static int __devexit s5p_onenand_remove(struct platform_device *dev)
 {
-	//struct platform_device *pdev = to_platform_device(dev);
 	struct platform_device *pdev = dev;
 	struct onenand_info *info = dev_get_drvdata(&pdev->dev);
-	struct resource *res = pdev->resource;
-	unsigned long size = res->end - res->start + 1;
 
 	dev_set_drvdata(&pdev->dev, NULL);
 
@@ -4452,7 +4482,9 @@ static int __devexit s5p_onenand_remove(struct platform_device *dev)
 			del_mtd_device(&info->mtd);
 
 		onenand_release(&info->mtd);
-		release_mem_region(res->start, size);
+		release_mem_region(info->ctl_res->start, resource_size(info->ctl_res));
+		iounmap(onenandctl_vbase);
+		release_mem_region(info->base_res->start, resource_size(info->base_res));
 		iounmap(info->onenand.base);
 		kfree(info);
 	}

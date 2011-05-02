@@ -30,9 +30,11 @@
 #undef debug
 #define debug
 #ifdef debug
+#define DBG(x...)       printk(x)
 #define CRDEBUG	printk("%s :: %d\n",__FUNCTION__,__LINE__)
 #else
 #define CRDEBUG
+#define DBG(x...)       do { } while (0)
 #endif
 
 #define GIB_MINORS	0
@@ -90,7 +92,7 @@ struct gib_dev *gib_dev_get_by_minor(unsigned index)
 {
 	struct gib_dev *gib_dev;
 
-//	CRDEBUG;
+	CRDEBUG;
 	gib_dev = gib_dev_array[index];
 
 	return gib_dev;
@@ -98,13 +100,12 @@ struct gib_dev *gib_dev_get_by_minor(unsigned index)
 
 
 
-int gibdev_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
+int gibdev_ioctl (struct file *file, unsigned int cmd,
                   unsigned long arg)
 {
 	struct gib_dev *gib_dev = (struct gib_dev *)file->private_data;
 
 	CRDEBUG;
-	dev_dbg(&gib_dev->dev, "gib-%d ioctl, cmd: 0x%x, arg: %lx.\n",	iminor(inode),cmd, arg);
 
 	switch ( cmd ) {
 		case SET_BB_RESET_LOW:
@@ -124,12 +125,11 @@ int gibdev_ioctl (struct inode *inode, struct file *file, unsigned int cmd,
 			gib_dev->g_udp_debug->ubp_debug(gib_dev->ubp_debug_flag);
 			break;
 		default:
-			printk("Invalid ioctl option\n");
+			printk(KERN_WARNING "Invalid ioctl option\n");
 			break;
 	}
 	return 0;
 }
-
 static int gibdev_open(struct inode *inode, struct file *file)
 {
 	unsigned int minor = iminor(inode);
@@ -178,7 +178,7 @@ static int gib_dev_init(void)
 	int res;
 
 	CRDEBUG;
-	printk("GPS Interface Block(GIB) entries driver\n");
+	DBG("GPS Interface Block(GIB) entries driver\n");
 
 	res = register_chrdev(GIB_MAJOR, "gib", &gibdev_fops);
 	if (res)

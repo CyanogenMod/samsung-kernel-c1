@@ -19,6 +19,7 @@
 #include <linux/init.h>
 #include <linux/serial_core.h>
 #include <linux/serial.h>
+#include <linux/delay.h>
 
 #include <asm/irq.h>
 #include <mach/hardware.h>
@@ -83,6 +84,12 @@ static int s5pv210_serial_resetport(struct uart_port *port,
 	/* reset both fifos */
 	wr_regl(port, S3C2410_UFCON, cfg->ufcon | S3C2410_UFCON_RESETBOTH);
 	wr_regl(port, S3C2410_UFCON, cfg->ufcon);
+
+	wr_regl(port, S3C64XX_UINTM, 0xf);
+	wr_regl(port, S3C64XX_UINTP, 0xf);
+
+	/* It is need to delay When reset FIFO register */
+	udelay(1);
 
 	return 0;
 }

@@ -189,11 +189,12 @@ static int i2c_device_pm_suspend(struct device *dev)
 {
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
 
-	if (pm_runtime_suspended(dev))
-		return 0;
-
-	if (pm)
-		return pm->suspend ? pm->suspend(dev) : 0;
+	if (pm) {
+		if (pm_runtime_suspended(dev))
+			return 0;
+		else
+			return pm->suspend ? pm->suspend(dev) : 0;
+	}
 
 	return i2c_legacy_suspend(dev, PMSG_SUSPEND);
 }
@@ -221,11 +222,12 @@ static int i2c_device_pm_freeze(struct device *dev)
 {
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
 
-	if (pm_runtime_suspended(dev))
-		return 0;
-
-	if (pm)
-		return pm->freeze ? pm->freeze(dev) : 0;
+	if (pm) {
+		if (pm_runtime_suspended(dev))
+			return 0;
+		else
+			return pm->freeze ? pm->freeze(dev) : 0;
+	}
 
 	return i2c_legacy_suspend(dev, PMSG_FREEZE);
 }
@@ -234,11 +236,12 @@ static int i2c_device_pm_thaw(struct device *dev)
 {
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
 
-	if (pm_runtime_suspended(dev))
-		return 0;
-
-	if (pm)
-		return pm->thaw ? pm->thaw(dev) : 0;
+	if (pm) {
+		if (pm_runtime_suspended(dev))
+			return 0;
+		else
+			return pm->thaw ? pm->thaw(dev) : 0;
+	}
 
 	return i2c_legacy_resume(dev);
 }
@@ -247,11 +250,12 @@ static int i2c_device_pm_poweroff(struct device *dev)
 {
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
 
-	if (pm_runtime_suspended(dev))
-		return 0;
-
-	if (pm)
-		return pm->poweroff ? pm->poweroff(dev) : 0;
+	if (pm) {
+		if (pm_runtime_suspended(dev))
+			return 0;
+		else
+			return pm->poweroff ? pm->poweroff(dev) : 0;
+	}
 
 	return i2c_legacy_suspend(dev, PMSG_HIBERNATE);
 }
@@ -762,7 +766,7 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
 		goto out_list;
 	}
 
-	rt_mutex_init(&adap->bus_lock);
+	mutex_init(&adap->bus_lock);
 	INIT_LIST_HEAD(&adap->userspace_clients);
 
 	/* Set default timeout to 1 second if not already set */
@@ -1229,12 +1233,12 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 #endif
 
 		if (in_atomic() || irqs_disabled()) {
-			ret = rt_mutex_trylock(&adap->bus_lock);
+			ret = mutex_trylock(&adap->bus_lock);
 			if (!ret)
 				/* I2C activity is ongoing. */
 				return -EAGAIN;
 		} else {
-			rt_mutex_lock(&adap->bus_lock);
+			mutex_lock_nested(&adap->bus_lock, adap->level);
 		}
 
 		/* Retry automatically on arbitration loss */
@@ -1246,7 +1250,7 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 			if (time_after(jiffies, orig_jiffies + adap->timeout))
 				break;
 		}
-		rt_mutex_unlock(&adap->bus_lock);
+		mutex_unlock(&adap->bus_lock);
 
 		return ret;
 	} else {
@@ -1993,7 +1997,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
 	flags &= I2C_M_TEN | I2C_CLIENT_PEC;
 
 	if (adapter->algo->smbus_xfer) {
-		rt_mutex_lock(&adapter->bus_lock);
+		mutex_lock(&adapter->bus_lock);
 
 		/* Retry automatically on arbitration loss */
 		orig_jiffies = jiffies;
@@ -2007,7 +2011,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
 				       orig_jiffies + adapter->timeout))
 				break;
 		}
-		rt_mutex_unlock(&adapter->bus_lock);
+		mutex_unlock(&adapter->bus_lock);
 	} else
 		res = i2c_smbus_xfer_emulated(adapter, addr, flags, read_write,
 					      command, protocol, data);

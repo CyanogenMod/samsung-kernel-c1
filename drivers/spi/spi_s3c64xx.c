@@ -236,6 +236,12 @@ static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
 	unsigned long loops;
 	u32 val;
 
+#if defined(CONFIG_TDMB) || defined(CONFIG_ISDBT_FC8100)
+        val = readl(regs + S3C64XX_SPI_CH_CFG);
+        val &= ~(S3C64XX_SPI_CH_RXCH_ON | S3C64XX_SPI_CH_TXCH_ON);
+        writel(val, regs + S3C64XX_SPI_CH_CFG);
+#endif
+
 	writel(0, regs + S3C64XX_SPI_PACKET_CNT);
 
 	val = readl(regs + S3C64XX_SPI_CH_CFG);
@@ -458,7 +464,10 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 
 	if (sdd->cur_mode & SPI_CPHA)
 		val |= S3C64XX_SPI_CPHA_B;
-
+#if defined(CONFIG_ISDBT_FC8100)
+	/* Set Slave Mode */
+	val |= S3C64XX_SPI_CH_SLAVE;
+#endif
 	writel(val, regs + S3C64XX_SPI_CH_CFG);
 
 	/* Set Channel & DMA Mode */

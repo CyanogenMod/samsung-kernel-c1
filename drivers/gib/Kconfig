@@ -4,7 +4,7 @@
 
 menuconfig GPS
         tristate "GPS support"
-        depends on MACH_SMDK6450 || MACH_SMDKC210 || MACH_SMDKV310
+        depends on MACH_SMDK6450 || MACH_SMDKC210 || MACH_SMDKV310 || MACH_C1
 if GPS
 config GIB
 	bool "GIB support"
@@ -29,7 +29,7 @@ config GIB_S5P64XX
 
 config GIB_S5PV3XX
         tristate "S5PV3XX GIB Driver"
-        depends on GIB && MACH_SMDKV310
+        depends on GIB && (MACH_SMDKV310 || MACH_SMDKC210 || MACH_C1)
         help
           Say Y here to include support for GIB controller in the
           Samsung S5PV310 based System-on-Chip devices.

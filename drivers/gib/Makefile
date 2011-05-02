@@ -16,3 +16,6 @@ ifeq ($(CONFIG_MACH_SMDKV310),y)
 obj-$(CONFIG_GIB_S5PV3XX)	+= gib-dev.o s5p-gib.o
 endif
 
+ifeq ($(CONFIG_MACH_C1),y)
+obj-$(CONFIG_GIB_S5PV3XX)	+= gib-dev.o s5p-gib.o
+endif

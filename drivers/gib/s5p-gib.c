@@ -49,7 +49,6 @@
 #include "s3c-gib.h"
 
 #undef debug
-#define debug
 #ifdef debug
 #define DBG(x...)       printk(x)
 #define GIB_DBG		printk("%s :: %d\n",__FUNCTION__,__LINE__)
@@ -114,10 +113,12 @@ static void s3c_gibgpio_init(struct bit_data *gpio)
 	gpio->gps_bb_mclk= S5PV310_GPL0(5);
 	gpio->rf_reset= S5PV310_GPL0(6);
 	gpio->clkreq= S5PV310_GPL0(7);
-
 	gpio->bb_scl= S5PV310_GPL1(0);
 	gpio->bb_sda= S5PV310_GPL1(1);
 	gpio->gps_bb_epoch= S5PV310_GPL1(2);
+
+
+
 
 	gpio->gps_gpio0 = S5PV310_GPL2(0);
 	gpio->gps_gpio1 = S5PV310_GPL2(1);
@@ -139,7 +140,7 @@ static void s3c_gibgpio_init(struct bit_data *gpio)
 	s3c_gpio_cfgpin(gpio->bb_scl, S3C_GPIO_SFN(2));
 	s3c_gpio_cfgpin(gpio->bb_sda, S3C_GPIO_SFN(2));
 	s3c_gpio_cfgpin(gpio->gps_bb_epoch, S3C_GPIO_SFN(2));
-	
+
 	s3c_gpio_cfgpin(gpio->gps_gpio0, S3C_GPIO_SFN(2));
 	s3c_gpio_cfgpin(gpio->gps_gpio1, S3C_GPIO_SFN(2));
 	s3c_gpio_cfgpin(gpio->gps_gpio2, S3C_GPIO_SFN(2));
@@ -156,11 +157,13 @@ static void s3c_gibgpio_init(struct bit_data *gpio)
 	s3c_gpio_setpull(gpio->bb_scl, 0x1);	
 	s3c_gpio_setpull(gpio->bb_sda, 0x1);
 	s3c_gpio_setpull(gpio->gps_bb_epoch, 0x1);
+
 	
 }
 
-//Set MUX
-//0: Connect debug, 1: Connect BB
+/*Set MUX
+0: Connect debug, 1: Connect BB
+*/
 static void s3c_gib_ubp_debug( unsigned int flag)
 {
 	unsigned int  tmp;
@@ -169,60 +172,33 @@ static void s3c_gib_ubp_debug( unsigned int flag)
 	tmp = __raw_readl(S5PV310_GPS_CON);
 	if (flag) {
 		tmp &= ~(GPS_MUX_SEL);
-		printk("Changed to UBP Debug Mode\n");
+		DBG("Changed to UBP Debug Mode\n");
 	}else {
 		tmp |= (GPS_MUX_SEL);
-		printk("Connected: BB_UART\n");
+		DBG("Connected: BB_UART1-->AP_UART4\n");
 	}
 	__raw_writel(tmp, S5PV310_GPS_CON);
 }
 
 
-//GPS RF + BB SW Reset
+/*GPS RF + BB SW Reset
+*/
 static void s3c_gib_core_reset(unsigned int flag)
 {
 	unsigned int  tmp;
 	GIB_DBG;
 
 	tmp = __raw_readl(S5PV310_GPS_CON);
-	printk("S5P6450_GPS_CON Val was:%x\n",tmp);
 
 	if(flag == 0) {
 		tmp |= (GPS_SRST);
-		printk("low\n");
+		DBG("low\n");
 	} else if (flag == 1) {
 		tmp &= ~(GPS_SRST);
-		printk("high\n");
+		DBG("high\n");
 	}
 	__raw_writel(tmp, S5PV310_GPS_CON);
 }
-
-#if 0
-//Enable RTC
-static void s3c_gib_timer_reset(unsigned int flag)
-{
-//	struct resource *res;
-//	res  = &s3c_device_rtc.resource;
-	static void __iomem *s3c_rtc_base;
-//	s3c_rtc_base = ioremap(res->start, res->end - res->start + 1);
-	s3c_rtc_base = ioremap(0x10070000, 0xff + 1);
-	printk("s3c_rtc_base: %x\n", s3c_rtc_base);
-	
-	if (s3c_rtc_base == NULL) {
-		printk("Error: no memory mapping for rtc\n");
-//		goto err_nortc;
-	}
-	__raw_writel(0x200, s3c_rtc_base + 0x40);
-	iounmap(s3c_rtc_base);
-	
-	
-/*	
- err_nortc:
-	iounmap(s3c_rtc_base);
-*/	
-
-}
-#endif
 
 #if 0
 static int s3c_gib_close(struct gib_dev *gib_dev)
@@ -337,21 +313,28 @@ static int s3c_gib_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM
 static int s3c_gib_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	unsigned int tmp;
-//	struct s3c_gib *hw = platform_get_drvdata(pdev);
+	unsigned int tmp, val, ctr;
 
+	s5p_gpio_set_conpdn(g_gpio->rf_reset,1);
+	
 	tmp = __raw_readl(S5PV310_GPS_GPSIO);
-
-       if ( tmp|(0x1<<18) ) {
-
+        val = tmp & GPS_OUT10;
+       if (val) {
+		DBG("\nGPS BB is now in sleep state. \n");
 	 }else {
-	 	printk("GPS BB has not been in sleep state. Please wait. \n");
-
+	 	printk(KERN_WARNING "\n[WARNING] GPS BB has not been in sleep state. Please wait 3 seconds. \n");
+                ctr = 0;
 	 	do {
 			tmp = __raw_readl(S5PV310_GPS_GPSIO);
-	 	} while ( (tmp|(0x1<<18)) );
+        		val = tmp & GPS_OUT10;
+                        msleep(100);
+                        ctr++;
+	 	} while ( (!val) & (ctr < 30) );
 	 	     
-		printk("GPS BB is now in sleep state. \n");
+		if (val)     
+			DBG("GPS BB is now in sleep state after %d tries. \n", ctr);
+		else if (ctr >= 30)     
+			printk(KERN_ERR "[ERROR] GPS sleep is failed because GPS BB is not in sleep state. \n");
 	 }
 	 
 	return 0;
@@ -359,8 +342,6 @@ static int s3c_gib_suspend(struct platform_device *pdev, pm_message_t msg)
 
 static int s3c_gib_resume(struct platform_device *pdev)
 {
-//	struct s3c_gib *hw = platform_get_drvdata(pdev);
-
 	s3c_gib_ubp_debug(0);
 	
 	return 0;

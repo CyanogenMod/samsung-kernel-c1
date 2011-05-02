@@ -352,6 +352,18 @@ static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
 {
 	/* todo - possibly remove AFC and do manual CTS */
+	unsigned int umcon = 0;
+	umcon = rd_regl(port, S3C2410_UMCON);
+
+	if(mctrl & TIOCM_RTS) {
+		if(port->line != CONFIG_DEBUG_S3C_UART)
+			umcon |= S3C2410_UMCOM_AFC;
+		else
+			printk("DEBUG_PORT must not use AFC!\n");
+	} else
+		umcon &= ~S3C2410_UMCOM_AFC;
+
+	wr_regl(port, S3C2410_UMCON, umcon);
 }
 
 static void s3c24xx_serial_break_ctl(struct uart_port *port, int break_state)
@@ -378,12 +390,14 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
 
 	if (ourport->tx_claimed) {
+		disable_irq(ourport->tx_irq);
 		free_irq(ourport->tx_irq, ourport);
 		tx_enabled(port) = 0;
 		ourport->tx_claimed = 0;
 	}
 
 	if (ourport->rx_claimed) {
+		disable_irq(ourport->rx_irq);
 		free_irq(ourport->rx_irq, ourport);
 		ourport->rx_claimed = 0;
 		rx_enabled(port) = 0;
@@ -677,7 +691,8 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	 * Ask the core to calculate the divisor for us.
 	 */
 
-	baud = uart_get_baud_rate(port, termios, old, 0, 115200*8);
+	/* set 4Mbps for high speed baud rate */
+	baud = uart_get_baud_rate(port, termios, old, 0, 4000000);
 
 	if (baud == 38400 && (port->flags & UPF_SPD_MASK) == UPF_SPD_CUST)
 		quot = port->custom_divisor;
@@ -850,6 +865,14 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return 0;
 }
 
+static void
+s3c24xx_serial_wake_peer(struct uart_port *port)
+{
+	struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
+ 
+	if(cfg->wake_peer)
+		cfg->wake_peer(port);
+}
 
 #ifdef CONFIG_SERIAL_SAMSUNG_CONSOLE
 
@@ -878,6 +901,7 @@ static struct uart_ops s3c24xx_serial_ops = {
 	.request_port	= s3c24xx_serial_request_port,
 	.config_port	= s3c24xx_serial_config_port,
 	.verify_port	= s3c24xx_serial_verify_port,
+	.wake_peer		= s3c24xx_serial_wake_peer,	
 };
 
 
@@ -944,7 +968,7 @@ static struct s3c24xx_uart_port s3c24xx_serial_ports[CONFIG_SERIAL_SAMSUNG_UARTS
 		}
 	},
 #endif
-#if CONFIG_SERIAL_SAMSUNG_UARTS > 4 
+#if CONFIG_SERIAL_SAMSUNG_UARTS > 4
 	[4] = {
 		.port = {
 			.lock		= __SPIN_LOCK_UNLOCKED(s3c24xx_serial_ports[4].port.lock),
@@ -1137,7 +1161,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		ourport->rx_irq = ret;
 		ourport->tx_irq = ret + 1;
 	}
-	
+
 	ret = platform_get_irq(platdev, 1);
 	if (ret > 0)
 		ourport->tx_irq = ret;
@@ -1150,6 +1174,13 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 
 	/* reset the fifos (and setup the uart) */
 	s3c24xx_serial_resetport(port, cfg);
+
+	/* configure gpio */
+	if (cfg->cfg_gpio)
+		(*cfg->cfg_gpio)(platdev);
+	else
+		WARN(1, "cfg_gpio is NULL!");
+
 	return 0;
 }
 
@@ -1193,11 +1224,11 @@ int s3c24xx_serial_probe(struct platform_device *dev,
 	ret = device_create_file(&dev->dev, &dev_attr_clock_source);
 	if (ret < 0)
 		printk(KERN_ERR "%s: failed to add clksrc attr.\n", __func__);
-
+#if 0
 	ret = s3c24xx_serial_cpufreq_register(ourport);
 	if (ret < 0)
 		dev_err(&dev->dev, "failed to add cpufreq notifier\n");
-
+#endif
 	return 0;
 
  probe_err:

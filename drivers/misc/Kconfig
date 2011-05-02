@@ -13,18 +13,6 @@ menuconfig MISC_DEVICES
 
 if MISC_DEVICES
 
-config S5P_SAMSUNG_PMEM
-        bool "Samsung PMEM allocator"
-	help
-	  This option enables pmem driver support for physically linear memory allocation
-
-config S5P_PMEM_MEMSIZE_PMEM
-        int "Memory size in kbytes for PMEM"
-        depends on S5P_SAMSUNG_PMEM
-        default "32768"
-	help
-	  This option set default reserved physical memory to be used by pmem driver
-
 config AD525X_DPOT
 	tristate "Analog Devices Digital Potentiometers"
 	depends on (I2C || SPI) && SYSFS
@@ -68,6 +56,23 @@ config AD525X_DPOT_SPI
 config ANDROID_PMEM
 	bool "Android pmem allocator"
 	default y
+
+if  ANDROID_PMEM
+   comment "Reserved memory configurations"
+
+config ANDROID_PMEM_MEMSIZE_PMEM
+        int "Memory size in kbytes for android surface using pmem"
+        default "65536"
+
+config ANDROID_PMEM_MEMSIZE_PMEM_GPU1
+        int "Memory size in kbytes for android surface using pmem_gpu1"
+        default "10240"
+
+config ANDROID_PMEM_MEMSIZE_PMEM_ADSP
+        int "Memory size in kbytes for saving last frame for video play using pmem_adsp"
+        default "3600"
+
+endif
 
 config ATMEL_PWM
 	tristate "Atmel AT32/AT91 PWM support"
@@ -335,6 +340,13 @@ config SENSORS_AK8975
 	  If you say yes here you get support for Asahi Kasei's
 	  orientation sensor AK8975.
 
+config SENSORS_K3DH
+	tristate "K3DH acceleration sensor support"
+	depends on I2C
+        default n
+	help
+	  Driver for STMicroelectronic K3DH accelerometer.
+
 config EP93XX_PWM
 	tristate "EP93xx PWM support"
 	depends on ARCH_EP93XX
@@ -370,10 +382,6 @@ config TI_DAC7512
 
 config UID_STAT
 	bool "UID based statistics tracking exported to /proc/uid_stat"
-	default n
-
-config IFACE_STAT
-	bool "Persistent interface statistics tracking exported to /proc/iface_stat"
 	default n
 
 config VMWARE_BALLOON
@@ -415,9 +423,47 @@ config APANIC_PLABEL
 	 If your platform uses a different flash partition label for storing
  	 crashdumps, enter it here.
 
+config SEC_DEV_JACK
+        bool "Earjack detection driver for Samsung devices"
+	depends on INPUT
+	default n
+        ---help---
+	 This is Earjack detection driver for Samsung devices.
+
+config USB_SWITCH_FSA9480
+	tristate "FSA9480 USB Switch"
+	depends on I2C
+	help
+	  The FSA9480 is a USB port accessory detector and switch.
+	  The FSA9480 is fully controlled using I2C and enables USB data,
+	  stereo and mono audio, video, microphone and UART data to use
+	  a common connector port.
+
+config MUIC_MAX8997
+	tristate "Maxim MAX8997 MUIC"
+	depends on MFD_MAX8997
+	help
+	  If you say yes here you will get support for the MUIC of
+	  Maxim MAX8997 PMIC.
+	  The MAX8997 MUIC is a USB port accessory detector and switch.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
 source "drivers/misc/iwmc3200top/Kconfig"
+
+config CMA_DEVICE
+	tristate "CMA misc device (DEVELOPEMENT)"
+	depends on CMA_DEVELOPEMENT
+	help
+	  The CMA misc device allows allocating contiguous memory areas
+	  from user space.  This is mostly for testing of the CMA
+	  framework.
+
+config PN544
+        bool "NXP PN544 NFC Controller Driver"
+        default n
+        help
+          NXP PN544 Near Field Communication controller support.
 
 endif # MISC_DEVICES

@@ -26,8 +26,12 @@
 #include <linux/slab.h>
 #include <linux/time.h>
 #include "logger.h"
+/* for DB file corruption debugging
+#include "extendop.h"
+*/
 
 #include <asm/ioctls.h>
+#include <mach/sec_debug.h>
 
 /*
  * struct logger_log - represents a specific log, such as 'main' or 'radio'
@@ -61,6 +65,42 @@ struct logger_reader {
 
 /* logger_offset - returns index 'n' into the log via (optimized) modulus */
 #define logger_offset(n)	((n) & (log->size - 1))
+
+#ifdef BOOTPARAM_FILEIO
+
+int modify_bootparam()
+{
+	struct file *j4fs_file;
+	status_t *st;	
+	//loff_t offset = 84;
+	loff_t offset = ((char *)&(st->param_int_list.param_list[9].value) - (char *)st);
+	int res = 0;
+	char value = REBOOT_MODE;
+	mm_segment_t fs;
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	j4fs_file = filp_open(PARAM_FILE, O_WRONLY, 0);
+	if (IS_ERR(j4fs_file))
+	{
+		printk("%s, file open error\n", __FUNCTION__);
+		res = -1;
+		goto out;
+	}
+	res = j4fs_file->f_op->write(j4fs_file, &value, 1, &offset);
+	if (res != 1)
+	{
+		printk("%s, file write error, res : %d\n", __FUNCTION__, res);
+		res = -1;
+	}
+	filp_close(j4fs_file, NULL);
+
+out:
+	set_fs(fs);
+	return res;
+}
+#endif
 
 /*
  * file_get_log - Given a file structure, return the associated log
@@ -302,6 +342,10 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
 				      const void __user *buf, size_t count)
 {
 	size_t len;
+#ifdef BOOTPARAM_FILEIO
+	int matching = 0;
+	char *log_ch = STOP_LOG;
+#endif
 
 	len = min(count, log->size - log->w_off);
 	if (len && copy_from_user(log->buffer + log->w_off, buf, len))
@@ -311,6 +355,36 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
 		if (copy_from_user(log->buffer, buf + len, count - len))
 			return -EFAULT;
 
+	/* print as kernel log if the log string starts with "!@" */
+	if (count >= 2) {
+		if (log->buffer[log->w_off] == '!'
+		    && log->buffer[logger_offset(log->w_off + 1)] == '@') {
+			char tmp[256];
+			int i;
+			for (i = 0; i < min(count, sizeof(tmp) - 1); i++)
+			{
+				tmp[i] =
+				    log->buffer[logger_offset(log->w_off + i)];
+#ifdef BOOTPARAM_FILEIO
+				/* if log string is special, set a flag */
+				if (matching == i && i < STOP_LOG_LEN + 1 && tmp[i] == *(log_ch + i))
+					matching++;
+#endif
+			}
+			tmp[i] = '\0';
+			printk("%s\n", tmp);
+#ifdef BOOTPARAM_FILEIO
+			if (matching == STOP_LOG_LEN + 1) // + 1 for NULL
+			{
+				printk("got an only-kernel-boot log!!\n");
+				if (modify_bootparam() < 0)
+					printk("modifying file error - boot param\n");
+				BUG(); /* to prevent writing /data partition */
+			}
+			printk("count : %d, matching : %d\n", count, matching);
+#endif
+		}
+	}
 	log->w_off = logger_offset(log->w_off + count);
 
 	return count;
@@ -555,10 +629,10 @@ static struct logger_log VAR = { \
 	.size = SIZE, \
 };
 
-DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 64*1024)
+DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 512*1024)
 DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
-DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 64*1024)
-DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 64*1024)
+DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
+DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
 
 static struct logger_log *get_log_from_minor(int minor)
 {
@@ -610,6 +684,8 @@ static int __init logger_init(void)
 	if (unlikely(ret))
 		goto out;
 
+	sec_getlog_supply_loggerinfo(_buf_log_main, _buf_log_radio,
+				     _buf_log_events, _buf_log_system);
 out:
 	return ret;
 }

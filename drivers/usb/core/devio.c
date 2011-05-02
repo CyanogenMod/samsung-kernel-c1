@@ -694,10 +694,14 @@ static int usbdev_open(struct inode *inode, struct file *file)
 	if (dev->state == USB_STATE_NOTATTACHED)
 		goto out_unlock_device;
 
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+	printk(KERN_DEBUG "svn usbdev_open, skip usb_autoresume_device\n");
+	ret = 0;
+#else
 	ret = usb_autoresume_device(dev);
 	if (ret)
 		goto out_unlock_device;
-
+#endif
 	ps->dev = dev;
 	ps->file = file;
 	spin_lock_init(&ps->lock);
@@ -746,7 +750,11 @@ static int usbdev_release(struct inode *inode, struct file *file)
 			releaseintf(ps, ifnum);
 	}
 	destroy_all_async(ps);
+#if defined(CONFIG_SAMSUNG_PHONE_SVNET)
+	printk(KERN_DEBUG "svn usbdev_open, skip usb_autosuspend_device\n");
+#else
 	usb_autosuspend_device(dev);
+#endif
 	usb_unlock_device(dev);
 	usb_put_dev(dev);
 	put_pid(ps->disc_pid);

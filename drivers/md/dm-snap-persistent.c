@@ -249,7 +249,8 @@ static int chunk_io(struct pstore *ps, void *area, chunk_t chunk, int rw,
 
 	req.where = &where;
 	req.io_req = &io_req;
-
+	req.result = 0; 	
+  
 	/*
 	 * Issue the synchronous I/O from a different thread
 	 * to avoid generic_make_request recursion.

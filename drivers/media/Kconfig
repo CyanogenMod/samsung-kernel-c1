@@ -143,4 +143,60 @@ config USB_DABUSB
 	  module will be called dabusb.
 endif # DAB
 
+#klaatu TDMB
+config TDMB
+        boolean "T-DMB"
+                ---help---
+                        This allows T-DMB support for Korea.
+                        This module is designed for SPI.
+
+if TDMB
+choice
+        prompt "Select TDMB chip"
+        default TDMB_T3900
+                ---help---
+                        This option selects TDMB Chip.
+                        You have to choose only one chip.
+
+config TDMB_T3900
+        boolean "I&C T3900 chip"
+                ---help---
+                        This allows TDMB using I&C T3900.
+
+config TDMB_T3700
+        boolean "I&C T3700 chip"
+                ---help---
+                        This allows TDMB using I&C T3700.
+
+config TDMB_FC8050
+        boolean "FCI FC8050 chip"
+                ---help---
+                        This allows TDMB using FCI FC8050.
+
+endchoice
+
+choice
+        prompt "Select TDMB Interface"
+        default TDMB_SPI
+                ---help---
+                        This option selects TDMB Interface.
+                        You have to choose only one Interface.
+
+config TDMB_SPI
+        boolean "Serial Peripheral Interface"
+                ---help---
+                        This allows TDMB using Serial Peripheral Interface.
+
+config TDMB_EBI
+        boolean "External Bus Interface"
+                ---help---
+                        This allows TDMB using External Bus Interface.
+
+endchoice
+
+endif # TDMB
+
+# ISDBT
+source "drivers/media/isdbt/Kconfig"
+
 endif # MEDIA_SUPPORT

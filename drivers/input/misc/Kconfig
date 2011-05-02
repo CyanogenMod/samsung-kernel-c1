@@ -12,6 +12,12 @@ menuconfig INPUT_MISC
 
 if INPUT_MISC
 
+config GYRO_K3G
+	tristate "K3G driver for s5pc210"
+	default n
+	help
+	  This option enables gyro sensors using K3G driver.
+
 config INPUT_88PM860X_ONKEY
 	tristate "88PM860x ONKEY support"
 	depends on MFD_88PM860X
@@ -406,4 +412,11 @@ config INPUT_PCAP
 	  To compile this driver as a module, choose M here: the
 	  module will be called pcap_keys.
 
+config OPTICAL_CM3663
+	depends on I2C && GENERIC_GPIO
+	tristate "CM3663 ambient light and proximity input device"
+	default n
+	help
+	  This option enables proximity & light sensors using cm3663 driver.
+	
 endif
