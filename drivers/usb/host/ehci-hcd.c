@@ -43,6 +43,8 @@
 #include <asm/system.h>
 #include <asm/unaligned.h>
 
+#include <plat/devs.h>
+
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -66,7 +68,8 @@ static const char	hcd_name [] = "ehci_hcd";
 
 
 #undef VERBOSE_DEBUG
-#undef EHCI_URB_TRACE
+//#undef EHCI_URB_TRACE
+#define EHCI_URB_TRACE
 
 #ifdef DEBUG
 #define EHCI_STATS
@@ -1230,6 +1233,10 @@ static int __init ehci_hcd_init(void)
 #endif
 
 #ifdef PLATFORM_DRIVER
+	retval = platform_device_register(&s3c_device_usb_ehci);
+	if (retval < 0)
+		goto clean0;
+
 	retval = platform_driver_register(&PLATFORM_DRIVER);
 	if (retval < 0)
 		goto clean0;
@@ -1288,7 +1295,8 @@ err_debug:
 	clear_bit(USB_EHCI_LOADED, &usb_hcds_loaded);
 	return retval;
 }
-module_init(ehci_hcd_init);
+late_initcall(ehci_hcd_init);
+/*module_init(ehci_hcd_init);*/
 
 static void __exit ehci_hcd_cleanup(void)
 {

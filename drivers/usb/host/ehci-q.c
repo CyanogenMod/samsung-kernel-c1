@@ -289,6 +289,12 @@ __acquires(ehci->lock)
 		urb->actual_length, urb->transfer_buffer_length);
 #endif
 
+#ifdef CONFIG_HOST_COMPLIANT_TEST
+	if (likely (urb->transfer_flags == URB_HCD_DRIVER_TEST)) {
+		ehci_dbg(ehci, "USB_TEST : transfer_flags = URB_HCD_DRIVER_TEST so... return!\n");
+		return;
+	}
+#endif
 	/* complete() can reenter this HCD */
 	usb_hcd_unlink_urb_from_ep(ehci_to_hcd(ehci), urb);
 	spin_unlock (&ehci->lock);

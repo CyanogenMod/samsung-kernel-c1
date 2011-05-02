@@ -359,7 +359,7 @@ config USB_SL811_HCD
 	help
 	  The SL811HS is a single-port USB controller that supports either
 	  host side or peripheral side roles.  Enable this option if your
-	  board has this chip, and you want to use it as a host controller. 
+	  board has this chip, and you want to use it as a host controller.
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here: the
@@ -425,3 +425,17 @@ config USB_IMX21_HCD
          To compile this driver as a module, choose M here: the
          module will be called "imx21-hcd".
 
+config USB_S3C_OTG_HOST
+        tristate "S3C USB OTG Host support"
+        depends on USB && (PLAT_S3C64XX || PLAT_S5P)
+        help
+          Samsung's S3C64XX processors include high speed USB OTG2.0
+          controller. It has 15 configurable endpoints, as well as
+          endpoint zero (for control transfers).
+
+          This driver support only OTG Host role. If you want to use
+          OTG Device role, select USB Gadget support and S3C OTG Device.
+
+          Say "y" to link the driver statically, or "m" to build a
+          dynamically linked module called "s3c_otg_hcd" and force all
+          drivers to also be dynamically linked.
