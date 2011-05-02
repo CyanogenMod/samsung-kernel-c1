@@ -285,3 +285,6 @@ config SND_SOC_WM9090
 
 config SND_SOC_S5M8751
 	tristate
+
+source "sound/soc/codecs/mc1n2/Kconfig"
+
