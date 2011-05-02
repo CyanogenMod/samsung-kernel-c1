@@ -1230,6 +1230,81 @@ static struct clk_ops s5pv210_epll_ops = {
 	.set_rate = s5pv210_epll_set_rate,
 };
 
+static int s5pv210_vpll_enable(struct clk *clk, int enable)
+{
+	unsigned int ctrlbit	= clk->ctrlbit;
+	unsigned int vpll_con	= __raw_readl(S5P_VPLL_CON) & ~ctrlbit;
+
+	if (enable)
+		__raw_writel(vpll_con | ctrlbit, S5P_VPLL_CON);
+	else
+		__raw_writel(vpll_con, S5P_VPLL_CON);
+
+	return 0;
+}
+
+struct vpll_div_data {
+	u32 rate;
+	u32 vsel;
+	u32 pdiv;
+	u32 mdiv;
+	u32 sdiv;
+};
+
+static struct vpll_div_data vpll_div[] = {
+	{  54000000, 0, 6, 108, 3 },
+	{ 108000000, 0, 6, 108, 2 },
+};
+
+static unsigned long s5pv210_vpll_get_rate(struct clk *clk)
+{
+	return clk->rate;
+}
+
+static int s5pv210_vpll_set_rate(struct clk *clk, unsigned long rate)
+{
+	unsigned int vpll_con;
+	unsigned int i;
+
+	/* Return if nothing changed */
+	if (clk->rate == rate)
+		return 0;
+
+	vpll_con = __raw_readl(S5P_VPLL_CON);
+
+	vpll_con &= ~(0x1 << 27 |					\
+			PLL90XX_MDIV_MASK << PLL90XX_MDIV_SHIFT |	\
+			PLL90XX_PDIV_MASK << PLL90XX_PDIV_SHIFT |	\
+			PLL90XX_SDIV_MASK << PLL90XX_SDIV_SHIFT);
+
+	for (i = 0; i < ARRAY_SIZE(vpll_div); i++) {
+		if (vpll_div[i].rate == rate) {
+			vpll_con |= vpll_div[i].vsel << 27;
+			vpll_con |= vpll_div[i].pdiv << PLL90XX_PDIV_SHIFT;
+			vpll_con |= vpll_div[i].mdiv << PLL90XX_MDIV_SHIFT;
+			vpll_con |= vpll_div[i].sdiv << PLL90XX_SDIV_SHIFT;
+			break;
+		}
+	}
+
+	if (i == ARRAY_SIZE(vpll_div)) {
+		printk(KERN_ERR "%s: Invalid Clock VPLL Frequency\n",
+				__func__);
+		return -EINVAL;
+	}
+
+	__raw_writel(vpll_con, S5P_VPLL_CON);
+
+	clk->rate = rate;
+
+	return 0;
+}
+
+static struct clk_ops s5pv210_vpll_ops = {
+	.get_rate = s5pv210_vpll_get_rate,
+	.set_rate = s5pv210_vpll_set_rate,
+};
+
 void __init_or_cpufreq s5pv210_setup_clocks(void)
 {
 	struct clk *xtal_clk;
@@ -1253,6 +1328,9 @@ void __init_or_cpufreq s5pv210_setup_clocks(void)
 	clk_fout_epll.ops = &s5pv210_epll_ops;
 
 	printk(KERN_DEBUG "%s: registering clocks\n", __func__);
+
+	clk_fout_vpll.enable = s5pv210_vpll_enable;
+	clk_fout_vpll.ops = &s5pv210_vpll_ops;
 
 	clkdiv0 = __raw_readl(S5P_CLK_DIV0);
 	clkdiv1 = __raw_readl(S5P_CLK_DIV1);

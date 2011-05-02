@@ -74,6 +74,29 @@ static struct s3c2410_uartcfg smdkv210_uartcfgs[] __initdata = {
 static struct platform_device *smdkc110_devices[] __initdata = {
 	&s5pv210_device_iis0,
 	&s5pv210_device_ac97,
+	&s3c_device_adc,
+	&s3c_device_cfcon,
+#ifdef CONFIG_S3C_DEV_HSMMC	
+	&s3c_device_hsmmc0,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC1	
+	&s3c_device_hsmmc1,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC2	
+	&s3c_device_hsmmc2,
+#endif
+#ifdef CONFIG_S3C_DEV_HSMMC3	
+	&s3c_device_hsmmc3,
+#endif
+#ifdef CONFIG_MTD_ONENAND
+        &s5p_device_onenand,
+#endif
+	&s3c_device_i2c0,
+	&s3c_device_i2c1,
+	&s3c_device_i2c2,
+	&s3c_device_rtc,
+	&s3c_device_ts,
+#ifdef CONFIG_S3C2410_WATCHDOG
 	&s3c_device_wdt,
 
 #ifdef CONFIG_SND_SAMSUNG_SOC_SPDIF

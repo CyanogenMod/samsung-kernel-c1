@@ -249,6 +249,20 @@ void __ref cpu_die(void)
 #endif /* CONFIG_HOTPLUG_CPU */
 
 /*
+ * Skip the secondary calibration on architectures sharing clock
+ * with primary cpu. Archs can use ARCH_SKIP_SECONDARY_CALIBRATE
+ * for this.
+ */
+static inline int skip_secondary_calibrate(void)
+{
+#ifdef CONFIG_ARCH_SKIP_SECONDARY_CALIBRATE
+	return 0;
+#else
+	return -ENXIO;
+#endif
+}
+
+/*
  * This is the secondary CPU boot entry.  We're using this CPUs
  * idle thread stack, but a set of temporary page tables.
  */
@@ -291,7 +305,8 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	 */
 	percpu_timer_setup();
 
-	calibrate_delay();
+	if (skip_secondary_calibrate())
+		calibrate_delay();
 
 	smp_store_cpu_info(cpu);
 
@@ -694,4 +709,14 @@ void flush_tlb_kernel_range(unsigned long start, unsigned long end)
 		on_each_cpu(ipi_flush_tlb_kernel_range, &ta, 1);
 	} else
 		local_flush_tlb_kernel_range(start, end);
+}
+
+static void flush_all_cpu_cache(void *info)
+{
+	flush_cache_all();
+}
+
+void flush_all_cpu_caches(void)
+{
+	on_each_cpu(flush_all_cpu_cache, NULL, 1);
 }

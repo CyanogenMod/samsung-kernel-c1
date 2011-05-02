@@ -273,13 +273,13 @@ s5p_gpio_drvstr_t s5p_gpio_get_drvstr(unsigned int pin)
 	if (!chip)
 		return -EINVAL;
 
-	off = chip->chip.base - pin;
+	off = pin - chip->chip.base;
 	shift = off * 2;
 	reg = chip->base + 0x0C;
 
 	drvstr = __raw_readl(reg);
-	drvstr = 0xffff & (0x3 << shift);
 	drvstr = drvstr >> shift;
+	drvstr &= 0x3;
 
 	return (__force s5p_gpio_drvstr_t)drvstr;
 }
@@ -296,11 +296,12 @@ int s5p_gpio_set_drvstr(unsigned int pin, s5p_gpio_drvstr_t drvstr)
 	if (!chip)
 		return -EINVAL;
 
-	off = chip->chip.base - pin;
+	off = pin - chip->chip.base;
 	shift = off * 2;
 	reg = chip->base + 0x0C;
 
 	tmp = __raw_readl(reg);
+	tmp &= ~(0x3 << shift);
 	tmp |= drvstr << shift;
 
 	__raw_writel(tmp, reg);
@@ -309,3 +310,103 @@ int s5p_gpio_set_drvstr(unsigned int pin, s5p_gpio_drvstr_t drvstr)
 }
 EXPORT_SYMBOL(s5p_gpio_set_drvstr);
 #endif	/* CONFIG_S5P_GPIO_DRVSTR */
+
+#ifdef CONFIG_S5P_GPIO_CONPDN
+s5p_gpio_conpdn_t s5p_gpio_get_conpdn(unsigned int pin)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	unsigned int off;
+	void __iomem *reg;
+	int shift;
+	u32 conpdn;
+
+	if (!chip)
+		return -EINVAL;
+
+	off = pin - chip->chip.base;
+	shift = off * 2;
+	reg = chip->base + 0x10;
+
+	conpdn = __raw_readl(reg);
+	conpdn = conpdn >> shift;
+	conpdn &= 0x3;
+
+	return (__force s5p_gpio_conpdn_t)conpdn;
+}
+EXPORT_SYMBOL(s5p_gpio_get_conpdn);
+
+int s5p_gpio_set_conpdn(unsigned int pin, s5p_gpio_conpdn_t conpdn)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	unsigned int off;
+	void __iomem *reg;
+	int shift;
+	u32 tmp;
+
+	if (!chip)
+		return -EINVAL;
+
+	off = pin - chip->chip.base;
+	shift = off * 2;
+	reg = chip->base + 0x10;
+
+	tmp = __raw_readl(reg);
+	tmp &= ~(0x3 << shift);
+	tmp |= conpdn << shift;
+
+	__raw_writel(tmp, reg);
+
+	return 0;
+}
+EXPORT_SYMBOL(s5p_gpio_set_conpdn);
+#endif	/* CONFIG_S5P_GPIO_CONPDN */
+
+#ifdef CONFIG_S5P_GPIO_PUDPDN
+s5p_gpio_pudpdn_t s5p_gpio_get_pudpdn(unsigned int pin)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	unsigned int off;
+	void __iomem *reg;
+	int shift;
+	u32 pudpdn;
+
+	if (!chip)
+		return -EINVAL;
+
+	off = pin - chip->chip.base;
+	shift = off * 2;
+	reg = chip->base + 0x14;
+
+	pudpdn = __raw_readl(reg);
+	pudpdn = pudpdn >> shift;
+	pudpdn &= 0x3;
+
+	return (__force s5p_gpio_pudpdn_t)pudpdn;
+}
+EXPORT_SYMBOL(s5p_gpio_get_pudpdn);
+
+int s5p_gpio_set_pudpdn(unsigned int pin, s5p_gpio_pudpdn_t pudpdn)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	unsigned int off;
+	void __iomem *reg;
+	int shift;
+	u32 tmp;
+
+	if (!chip)
+		return -EINVAL;
+
+	off = pin - chip->chip.base;
+	shift = off * 2;
+	reg = chip->base + 0x14;
+
+	tmp = __raw_readl(reg);
+	tmp &= ~(0x3 << shift);
+	tmp |= pudpdn << shift;
+
+	__raw_writel(tmp, reg);
+
+	return 0;
+}
+EXPORT_SYMBOL(s5p_gpio_set_pudpdn);
+#endif	/* CONFIG_S5P_GPIO_PUDPDN */

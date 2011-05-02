@@ -65,3 +65,10 @@ struct s3c2410_platform_nand {
  * it with the s3c_device_nand. This allows @nand to be __initdata.
 */
 extern void s3c_nand_set_platdata(struct s3c2410_platform_nand *nand);
+
+/* tmp - for s3c_nand.c */
+struct s3c_nand_mtd_info {
+        uint chip_nr;
+        uint mtd_part_nr;
+        struct mtd_partition *partition;
+};

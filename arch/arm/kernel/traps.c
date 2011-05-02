@@ -205,6 +205,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 void dump_stack(void)
 {
 	dump_backtrace(NULL, NULL);
+	flush_cache_all();
 }
 
 EXPORT_SYMBOL(dump_stack);

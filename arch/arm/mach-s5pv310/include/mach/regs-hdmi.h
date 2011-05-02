@@ -1,7 +1,7 @@
 /* linux/arch/arm/mach-s5pv310/include/mach/regs-hdmi.h
  *
  * Copyright (c) 2010 Samsung Electronics
- * 	http://www.samsung.com/
+ *		http://www.samsung.com/
  *
  * HDMI register header file for Samsung TVOUT driver
  *
@@ -10,11 +10,14 @@
  * published by the Free Software Foundation.
 */
 
-#ifndef __ASM_ARCH_REGS_HDMI_H
+#ifndef __ARCH_ARM_REGS_HDMI_H
+#define __ARCH_ARM_REGS_HDMI_H
 
-#include <mach/map.h>
+/*
+ * Register part
+*/
 
-#define S5P_HDMI_I2C_PHY_BASE(x) 	(x)
+#define S5P_HDMI_I2C_PHY_BASE(x) 		(x)
 
 #define HDMI_I2C_CON				S5P_HDMI_I2C_PHY_BASE(0x0000)
 #define HDMI_I2C_STAT				S5P_HDMI_I2C_PHY_BASE(0x0004)
@@ -22,9 +25,6 @@
 #define HDMI_I2C_DS				S5P_HDMI_I2C_PHY_BASE(0x000c)
 #define HDMI_I2C_LC				S5P_HDMI_I2C_PHY_BASE(0x0010)
 
-/*
- * Register part
-*/
 #define S5P_HDMI_CTRL_BASE(x) 			(x)
 #define S5P_HDMI_BASE(x) 			((x) + 0x00010000)
 #define S5P_HDMI_SPDIF_BASE(x) 			((x) + 0x00030000)
@@ -676,10 +676,10 @@
 
 /* GCP_BYTE2 */
 #define S5P_HDMI_GCP_BYTE2_PP_MASK		(0xF << 4)
-#define S5P_HDMI_GCP_BYTE2_CD_24BPP		(1 << 2)
-#define S5P_HDMI_GCP_BYTE2_CD_30BPP		(1 << 0 | 1 << 2)
-#define S5P_HDMI_GCP_BYTE2_CD_36BPP		(1 << 1 | 1 << 2)
-#define S5P_HDMI_GCP_BYTE2_CD_48BPP		(1 << 0 | 1 << 1 | 1 << 2)
+#define S5P_HDMI_GCP_24BPP			(1 << 2)
+#define S5P_HDMI_GCP_30BPP			(1 << 0 | 1 << 2)
+#define S5P_HDMI_GCP_36BPP			(1 << 1 | 1 << 2)
+#define S5P_HDMI_GCP_48BPP			(1 << 0 | 1 << 1 | 1 << 2)
 
 
 /* GCP_BYTE3 */
@@ -1205,4 +1205,4 @@
 #define S5P_HDMI_DC_CTL_12			(1 << 1)
 #define S5P_HDMI_DC_CTL_8 			(0)
 #define S5P_HDMI_DC_CTL_10			(1)
-#endif // __ASM_ARCH_REGS_HDMI_H
+#endif	/* __ARCH_ARM_REGS_HDMI_H */

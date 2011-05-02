@@ -18,6 +18,8 @@ config ARM
 	select HAVE_KPROBES if (!XIP_KERNEL)
 	select HAVE_KRETPROBES if (HAVE_KPROBES)
 	select HAVE_FUNCTION_TRACER if (!XIP_KERNEL)
+	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
+	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
 	select HAVE_GENERIC_DMA_COHERENT
 	select HAVE_KERNEL_GZIP
 	select HAVE_KERNEL_LZO
@@ -56,6 +58,11 @@ config GENERIC_CLOCKEVENTS_BROADCAST
 	bool
 	depends on GENERIC_CLOCKEVENTS
 	default y if SMP && !LOCAL_TIMERS
+
+config ARCH_HAS_CPU_IDLE_WAIT
+	bool
+	depends on CPU_IDLE
+	default y if SMP
 
 config HAVE_TCM
 	bool
@@ -103,7 +110,6 @@ config STACKTRACE_SUPPORT
 
 config HAVE_LATENCYTOP_SUPPORT
 	bool
-	depends on !SMP
 	default y
 
 config LOCKDEP_SUPPORT
@@ -720,6 +726,8 @@ config ARCH_S5PV310
 	select GENERIC_GPIO
 	select HAVE_CLK
 	select GENERIC_CLOCKEVENTS
+	select HAVE_S3C2410_I2C
+	select HAVE_S3C_RTC
 	help
 	  Samsung S5PV310 series based systems
 
@@ -983,6 +991,13 @@ config CPU_HAS_PMU
 	default y
 	bool
 
+config CPU_DYNAMIC_CLOCK_GATING
+	bool "Enable dynamic clock gating for Cortex-A9"
+	depends on CPU_V7
+	help
+	   Enable dynamic high level clock gating of the integer core,
+	   the system control block and the Data Engine, if implemented.
+
 if !MMU
 source "arch/arm/Kconfig-nommu"
 endif
@@ -1037,6 +1052,32 @@ config ARM_ERRATA_460075
 	  ACTLR register. Note that setting specific bits in the ACTLR register
 	  may not be available in non-secure mode.
 
+config ARM_ERRATA_742230
+	bool "ARM errata: DMB operation may be faulty"
+	depends on CPU_V7 && SMP
+	help
+	  This option enables the workaround for the 742230 Cortex-A9
+	  (r1p0..r2p2) erratum. Under rare circumstances, a DMB instruction
+	  between two write operations may not ensure the correct visibility
+	  ordering of the two writes. This workaround sets a specific bit in
+	  the diagnostic register of the Cortex-A9 which causes the DMB
+	  instruction to behave as a DSB, ensuring the correct behaviour of
+	  the two writes.
+
+config ARM_ERRATA_742231
+	bool "ARM errata: Incorrect hazard handling in the SCU may lead to data corruption"
+	depends on CPU_V7 && SMP
+	help
+	  This option enables the workaround for the 742231 Cortex-A9
+	  (r2p0..r2p2) erratum. Under certain conditions, specific to the
+	  Cortex-A9 MPCore micro-architecture, two CPUs working in SMP mode,
+	  accessing some data located in the same cache line, may get corrupted
+	  data due to bad handling of the address hazard when the line gets
+	  replaced from one of the CPUs at the same time as another CPU is
+	  accessing it. This workaround sets specific bits in the diagnostic
+	  register of the Cortex-A9 which reduces the linefill issuing
+	  capabilities of the processor.
+
 config PL310_ERRATA_588369
 	bool "Clean & Invalidate maintenance operations do not invalidate clean lines"
 	depends on CACHE_L2X0 && ARCH_OMAP4
@@ -1051,24 +1092,6 @@ config PL310_ERRATA_588369
 	   invalidated as a result of these operations. Note that this errata
 	   uses Texas Instrument's secure monitor api.
 
-config ARM_ERRATA_742230
-	bool "ARM errata: DMB behaviour may be faulty"
-	depends on CPU_V7
-	help
-	   DMB instruction between 2 write operations may not ensure the correct
-	   visibility ordering of the 2 writes.
-	   This option Set Diagnostic register[4] to make DMB to behave as a DSB.
-
-config ARM_ERRATA_742231
-	bool "ARM errata: Bad eviction hazards reset"
-	depends on CPU_V7
-	help
-	   2 or more coherent agents in SMP mode, accessing some data located in
-	   the same cache line, may get corrupted data due to bad handling of the
-	   address hazard when the line gets replaced from one of the CPU at the same
-	   time as the 2nd CPU is accessing it.
-	   This option set Diagnostic register[12] and [22] to disable the
-	   outstanding access capabilities of Cortex-A9 MPCore.
 config ARM_ERRATA_720789
 	bool "ARM errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID"
 	depends on CPU_V7 && SMP
@@ -1080,6 +1103,44 @@ config ARM_ERRATA_720789
 	  invalidated are not, resulting in an incoherency in the system page
 	  tables. The workaround changes the TLB flushing routines to invalidate
 	  entries regardless of the ASID.
+
+config ARM_ERRATA_743622
+	bool "ARM errata: Faulty hazard checking in the Store Buffer may lead to data corruption"
+	depends on CPU_V7
+	help
+	  This option enables the workaround for the 743622 Cortex-A9
+	  (r2p0..r2p2) erratum. Under very rare conditions, a faulty
+	  optimisation in the Cortex-A9 Store Buffer may lead to data
+	  corruption. This workaround sets a specific bit in the diagnostic
+	  register of the Cortex-A9 which disables the Store Buffer
+	  optimisation, preventing the defect from occurring. This has no
+	  visible impact on the overall performance or power consumption of the
+	  processor.
+
+config ARM_ERRATA_751472
+	bool "ARM errata: An interrupted ICIALLUIS operation may prevent the completion of a following broadcasted operation"
+	depends on CPU_V7
+	help
+	  This option enables the workaround for the 751472 Cortex-A9
+	  (r2p0..r2p2) erratum. In an MPCore configuration with 2 processors
+	  or more working in SMP mode with maintenance operation broadcast enabled,
+	  if a processor is interrupted while executing an ICIALLUIS operation,
+	  and performs another broadcasted maintenance operation during its
+	  Interrupt Service Routine, then this second operation may not be executed
+	  on the other processors in the cluster. This workaround sets a specific bit
+	  in the diagnostic register of the Cortex-A9 which preventing
+	  CP15 maintenance operations to be interrupted.
+
+config PL310_ERRATA_727915
+	bool "PL310 errata: Background Clean & Invalidate by Way operation can cause data corruption"
+	depends on CACHE_L2X0
+	help
+	  PL310 implements the Clean & Invalidate by Way L2 cache maintenance
+	  operation (offset 0x7FC). This operation runs in background so that
+	  PL310 can handle normal accesses while it is in progress.
+	  Under very rare circumstances, due to this erratum, write data can be
+	  lost when PL310 treats a cacheable write transaction
+	  during a Clean & Invalidate by Way operation.
 
 endmenu
 
@@ -1230,7 +1291,7 @@ config LOCAL_TIMERS
 		REALVIEW_EB_A9MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
 		ARCH_U8500 || ARCH_S5PV310)
 	default y
-	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_U8500 || ARCH_S5PV310)
+	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_U8500)
 	help
 	  Enable support for local timers on SMP platforms, rather then the
 	  legacy IPI broadcast method.  Local timers allows the system
@@ -1316,6 +1377,16 @@ config NODES_SHIFT
 	default "4" if ARCH_LH7A40X
 	default "2"
 	depends on NEED_MULTIPLE_NODES
+
+config ARCH_SKIP_SECONDARY_CALIBRATE
+	bool "Skip secondary CPU calibration"
+	depends on SMP
+	help
+	  On some architectures, secondary cores shares clock with primiary
+	  core and hence scale together. Hence secondary core lpj calibration
+	  is not necessary and can be skipped to save considerable time.
+
+	  If unsure, say n.
 
 config HIGHMEM
 	bool "High Memory Support (EXPERIMENTAL)"

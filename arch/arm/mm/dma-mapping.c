@@ -24,6 +24,39 @@
 #include <asm/tlbflush.h>
 #include <asm/sizes.h>
 
+#define smp_dma_flush_range		dmac_flush_range
+
+/*zepplin added for os memory test*/
+int dma_alloc_phys_page(u32* phys, gfp_t gfp)
+{
+	void *ptr;
+	struct page *page;
+
+	page = alloc_page(gfp);
+	if(!page) {
+		*phys = ~0;
+		return ENOMEM;
+	}
+
+	ptr = page_address(page);
+	smp_dma_flush_range(ptr, ptr + PAGE_SIZE);
+	outer_flush_range(__pa(ptr), __pa(ptr) + PAGE_SIZE);
+	*phys = page_to_dma(NULL, page);
+	SetPageReserved(page);
+
+	return 0;
+}
+EXPORT_SYMBOL(dma_alloc_phys_page);
+
+void dma_free_phys_page(u32 phys)
+{
+	struct page * page = pfn_to_page(phys>>PAGE_SHIFT);
+
+	ClearPageReserved(page);
+	__free_page(page);
+}
+EXPORT_SYMBOL(dma_free_phys_page);
+
 static u64 get_coherent_dma_mask(struct device *dev)
 {
 	u64 mask = ISA_DMA_THRESHOLD;

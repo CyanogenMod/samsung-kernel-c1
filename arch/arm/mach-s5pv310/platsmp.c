@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * Cloned from linux/arch/arm/mach-vexpress/platsmp.c
+ * Based on linux/arch/arm/mach-vexpress/platsmp.c
  *
  *  Copyright (C) 2002 ARM Ltd.
  *  All Rights Reserved
@@ -19,16 +19,27 @@
 #include <linux/jiffies.h>
 #include <linux/smp.h>
 #include <linux/io.h>
+#include <linux/sched.h>
 
 #include <asm/cacheflush.h>
 #include <asm/localtimer.h>
 #include <asm/smp_scu.h>
 #include <asm/unified.h>
+#include <asm/mmu_context.h>
+
+#include <plat/s5pv310.h>
 
 #include <mach/hardware.h>
 #include <mach/regs-clock.h>
 
+#define SCU_CTRL		0x00
+#define   IC_STANDBY_EN		(1 << 6)
+#define   SCU_STANDBY_EN	(1 << 5)
+
 extern void s5pv310_secondary_startup(void);
+extern inline void platform_do_lowpower(unsigned int cpu);
+
+#define CPU1_BOOT_REG (s5pv310_subrev() == 0 ? S5P_VA_SYSRAM : S5P_INFORM5)
 
 /*
  * control for which core is the next to come out of the secondary
@@ -43,8 +54,27 @@ static void __iomem *scu_base_addr(void)
 
 static DEFINE_SPINLOCK(boot_lock);
 
+#ifdef CONFIG_VFP
+static void vfp_enable(void *unused)
+{
+	u32 access = get_copro_access();
+
+	/*
+	 * Enable full access to VFP (cp10 and cp11)
+	 */
+	set_copro_access(access | CPACC_FULL(10) | CPACC_FULL(11));
+}
+#endif
+
 void __cpuinit platform_secondary_init(unsigned int cpu)
 {
+#ifdef CONFIG_VFP
+	unsigned int cpu_arch = cpu_architecture();
+
+	if (cpu_arch >= CPU_ARCH_ARMv6)
+		vfp_enable(NULL);
+#endif
+
 	trace_hardirqs_off();
 
 	/*
@@ -90,16 +120,46 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
 	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
 	outer_clean_range(__pa(&pen_release), __pa(&pen_release + 1));
 
+	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
+		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+			     S5P_ARM_CORE1_CONFIGURATION);
+
+		timeout = 10;
+
+		/* wait max 10 ms until cpu1 is on */
+		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
+			if (timeout-- == 0)
+				break;
+
+			mdelay(1);
+		}
+
+		if (timeout == 0) {
+			printk(KERN_ERR "cpu1 power enable failed");
+			spin_unlock(&boot_lock);
+
+			return -ETIMEDOUT;
+		}
+	}
+
 	/*
 	 * Send the secondary CPU a soft interrupt, thereby causing
-	 * the boot monitor to read the system wide flags register,
-	 * and branch to the address found there.
+	 * the boot monitor to read the system ram, and branch to
+	 * the address found there.
 	 */
 	smp_cross_call(cpumask_of(cpu));
 
 	timeout = jiffies + (1 * HZ);
 	while (time_before(jiffies, timeout)) {
 		smp_rmb();
+
+		if (!__raw_readl(CPU1_BOOT_REG)) {
+			__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
+				     CPU1_BOOT_REG);
+			smp_cross_call(cpumask_of(cpu));
+		}
+
 		if (pen_release == -1)
 			break;
 
@@ -152,6 +212,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	unsigned int cpu = smp_processor_id();
 	int i;
 
+	init_new_context(current, &init_mm);
 	smp_store_cpu_info(cpu);
 
 	/*
@@ -164,36 +225,39 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	 * Initialise the present map, which describes the set of CPUs
 	 * actually populated at the present time.
 	 */
-	for (i = 0; i < max_cpus; i++)
+	for (i = 0; i < ncores; i++)
 		set_cpu_present(i, true);
 
 	/*
 	 * Initialise the SCU if there are more than one CPU and let
 	 * them know where to start.
 	 */
-	if (max_cpus > 1) {
+	if (ncores > 1) {
+		for (i = max_cpus; i < ncores; i++)
+			platform_do_lowpower(i);
+
 		/*
 		 * Enable the local timer or broadcast device for the
 		 * boot CPU, but only if we have more than one CPU.
 		 */
 		percpu_timer_setup();
 
+		i = __raw_readl(scu_base_addr() + SCU_CTRL);
+		i |= SCU_STANDBY_EN;
+		__raw_writel(i, scu_base_addr() + SCU_CTRL);
+
 		scu_enable(scu_base_addr());
 
-		/*
-		 * Write the address of secondary startup into the
-		 * system-wide flags register. The boot monitor waits
-		 * until it receives a soft interrupt, and then the
-		 * secondary CPU branches to this address.
-		 */
-
-#ifndef CONFIG_S5PV310_FPGA
-		__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
-			(void __iomem *)(S5P_VA_IRAM + 0x5000));
-#else
-        __raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
-			S5P_VA_TEMP + 0x8);
-#endif
+		if (max_cpus > 1) {
+			/*
+			 * Write the address of secondary startup into the
+			 * system-wide flags register. The boot monitor waits
+			 * until it receives a soft interrupt, and then the
+			 * secondary CPU branches to this address.
+			 */
+			__raw_writel(BSYM(virt_to_phys(s5pv310_secondary_startup)),
+				     CPU1_BOOT_REG);
+		}
 	}
 }
 

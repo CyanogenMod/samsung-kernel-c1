@@ -48,9 +48,14 @@ struct platform_device s3c_device_i2c4 = {
 static struct s3c2410_platform_i2c default_i2c_data4 __initdata = {
 	.flags		= 0,
 	.bus_num	= 4,
-	.slave_addr	= 0x10,
 	.frequency	= 100*1000,
+#ifdef CONFIG_EPEN_WACOM_G5SP
+	.slave_addr	= 0x56,
+	.sda_delay	= S3C2410_IICLC_SDA_DELAY5 | S3C2410_IICLC_FILTER_ON,
+#else
+	.slave_addr	= 0x10,
 	.sda_delay	= 100,
+#endif /* CONFIG_EPEN_WACOM_G5SP */
 };
 
 void __init s3c_i2c4_set_platdata(struct s3c2410_platform_i2c *pd)

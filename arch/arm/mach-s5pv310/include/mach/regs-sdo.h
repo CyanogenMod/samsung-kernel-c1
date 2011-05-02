@@ -11,10 +11,11 @@
  */
 
 #ifndef __ARCH_ARM_REGS_SDO_H
-#define __ARCH_ARM_REGS_SDO_H __FILE__
+#define __ARCH_ARM_REGS_SDO_H
 
-#include <mach/map.h>
-
+/*
+ * Register part
+ */ 
 #define S5P_SDO_CLKCON				(0x0000)
 #define S5P_SDO_CONFIG				(0x0008)
 #define S5P_SDO_SCALE				(0x000C)
@@ -277,10 +278,10 @@
 #define S5P_SDO_MV_AGC_103_ON			(1)
 
 /* SDO Color Compensation On/Off Control (SDO_CCCON) */
-#define S5P_SDO_COMPONENT_BHS_ADJ_ON		(0 << 4)
-#define S5P_SDO_COMPONENT_BHS_ADJ_OFF		(1 << 4)
-#define S5P_SDO_COMPONENT_CVBS_COMP_ON		(0)
-#define S5P_SDO_COMPONENT_CVBS_COMP_OFF		(1)
+#define S5P_SDO_COMPENSATION_BHS_ADJ_ON		(0 << 4)
+#define S5P_SDO_COMPENSATION_BHS_ADJ_OFF	(1 << 4)
+#define S5P_SDO_COMPENSATION_CVBS_COMP_ON	(0)
+#define S5P_SDO_COMPENSATION_CVBS_COMP_OFF	(1)
 
 /* SDO Brightness Control for Y (SDO_YSCALE) */
 #define S5P_SDO_BRIGHTNESS_GAIN(x)		(((x) & 0xFF) << 16)

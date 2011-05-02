@@ -63,7 +63,7 @@ static inline void s3c_pm_debug_init(void)
 }
 
 #else
-#define s3c_pm_debug_init() do { } while(0)
+#define s3c_pm_debug_init() do { } while (0)
 
 #endif /* CONFIG_SAMSUNG_PM_DEBUG */
 
@@ -87,9 +87,10 @@ static void s3c_pm_save_uart(unsigned int uart, struct pm_uart_save *save)
 
 	if (pm_uart_udivslot)
 		save->udivslot = __raw_readl(regs + S3C2443_DIVSLOT);
-
+#if 0
 	S3C_PMDBG("UART[%d]: ULCON=%04x, UCON=%04x, UFCON=%04x, UBRDIV=%04x\n",
 		  uart, save->ulcon, save->ucon, save->ufcon, save->ubrdiv);
+#endif
 }
 
 static void s3c_pm_save_uarts(void)
@@ -133,7 +134,7 @@ static void s3c_pm_restore_uarts(void) { }
 /* The IRQ ext-int code goes here, it is too small to currently bother
  * with its own file. */
 
-unsigned long s3c_irqwake_intmask	= 0xffffffffL;
+unsigned long s3c_irqwake_intmask	= 0xffffffddL;
 unsigned long s3c_irqwake_eintmask	= 0xffffffffL;
 
 int s3c_irqext_wake(unsigned int irqno, unsigned int state)
@@ -168,7 +169,9 @@ void s3c_pm_do_save(struct sleep_save *ptr, int count)
 {
 	for (; count > 0; count--, ptr++) {
 		ptr->val = __raw_readl(ptr->reg);
+#if 0
 		S3C_PMDBG("saved %p value %08lx\n", ptr->reg, ptr->val);
+#endif
 	}
 }
 
@@ -186,8 +189,10 @@ void s3c_pm_do_save(struct sleep_save *ptr, int count)
 void s3c_pm_do_restore(struct sleep_save *ptr, int count)
 {
 	for (; count > 0; count--, ptr++) {
+#if 0
 		printk(KERN_DEBUG "restore %p (restore %08lx, was %08x)\n",
 		       ptr->reg, ptr->val, __raw_readl(ptr->reg));
+#endif
 
 		__raw_writel(ptr->val, ptr->reg);
 	}
@@ -214,6 +219,7 @@ void s3c_pm_do_restore_core(struct sleep_save *ptr, int count)
  *
  * print any IRQs asserted at resume time (ie, we woke from)
 */
+#if 0
 static void s3c_pm_show_resume_irqs(int start, unsigned long which,
 				    unsigned long mask)
 {
@@ -227,6 +233,7 @@ static void s3c_pm_show_resume_irqs(int start, unsigned long which,
 		}
 	}
 }
+#endif
 
 
 void (*pm_cpu_prep)(void);
@@ -305,18 +312,24 @@ static int s3c_pm_enter(suspend_state_t state)
 	 * we resume as it saves its own register state and restores it
 	 * during the resume.  */
 
-	s3c_cpu_save(regs_save);
+	S3C_PMINFO("%s: s3c_cpu_save\n", __func__);
+	if (s3c_cpu_save(regs_save) == 0) {
+		S3C_PMDBG("S3C PM Resume by early wakeup.\n");
+		goto early_wakeup;
+	}
 
 	/* restore the cpu state using the kernel's cpu init code. */
 
+	S3C_PMINFO("%s: cpu_init\n", __func__);
 	cpu_init();
 
 	/* restore the system state */
-
+	S3C_PMINFO("%s: s3c_pm_restore_core\n", __func__);
 	s3c_pm_restore_core();
 	s3c_pm_restore_uarts();
 	s3c_pm_restore_gpios();
 
+	S3C_PMINFO("%s: s3c_pm_debug_init\n", __func__);
 	s3c_pm_debug_init();
 
 	/* check what irq (if any) restored the system */
@@ -326,39 +339,80 @@ static int s3c_pm_enter(suspend_state_t state)
 	S3C_PMDBG("%s: post sleep, preparing to return\n", __func__);
 
 	/* LEDs should now be 1110 */
-	s3c_pm_debug_smdkled(1 << 1, 0);
+	/* s3c_pm_debug_smdkled(1 << 1, 0); */
 
 	s3c_pm_check_restore();
 
 	/* ok, let's return from sleep */
 
 	S3C_PMDBG("S3C PM Resume (post-restore)\n");
+
+early_wakeup:
+	/* exit early wakeup */
+
 	return 0;
 }
+
+#if defined(CONFIG_CACHE_L2X0)
+static void flush_l2_cache(void)
+{
+	outer_nolock_flush_all();
+}
+#endif
 
 /* callback from assembly code */
 void s3c_pm_cb_flushcache(void)
 {
 	flush_cache_all();
+#if defined(CONFIG_CACHE_L2X0)
+	flush_l2_cache();
+#endif
+}
+
+int (*pm_begin)(void);
+int (*pm_prepare)(void);
+void (*pm_end)(void);
+
+static int s3c_pm_begin(suspend_state_t state)
+{
+	int ret = 0;
+
+	if (pm_begin)
+		ret = pm_begin();
+
+	return ret;
+}
+
+static void s3c_pm_end(void)
+{
+	if (pm_end)
+		pm_end();
 }
 
 static int s3c_pm_prepare(void)
 {
 	/* prepare check area if configured */
 
+	disable_hlt();
 	s3c_pm_check_prepare();
+	if (pm_prepare)
+		pm_prepare();
+
 	return 0;
 }
 
 static void s3c_pm_finish(void)
 {
 	s3c_pm_check_cleanup();
+	enable_hlt();
 }
 
 static struct platform_suspend_ops s3c_pm_ops = {
+	.begin		= s3c_pm_begin,
 	.enter		= s3c_pm_enter,
 	.prepare	= s3c_pm_prepare,
 	.finish		= s3c_pm_finish,
+	.end		= s3c_pm_end,
 	.valid		= suspend_valid_only_mem,
 };
 
@@ -371,7 +425,7 @@ static struct platform_suspend_ops s3c_pm_ops = {
 
 int __init s3c_pm_init(void)
 {
-	printk("S3C Power Management, Copyright 2004 Simtec Electronics\n");
+	printk(KERN_INFO "S3C Power Management, Copyright 2004 Simtec Electronics\n");
 
 	suspend_set_ops(&s3c_pm_ops);
 	return 0;

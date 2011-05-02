@@ -45,17 +45,31 @@ struct gic_chip_data {
 #define MAX_GIC_NR	1
 #endif
 
+#ifdef CONFIG_USE_EXT_GIC
+#define GIC_OFFSET_FOR_CPU1	0x8000
+#endif
+
 static struct gic_chip_data gic_data[MAX_GIC_NR];
 
 static inline void __iomem *gic_dist_base(unsigned int irq)
 {
 	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
+
+#if defined(CONFIG_USE_EXT_GIC) && defined(CONFIG_SMP)
+	if (hard_smp_processor_id() == 1)
+		return gic_data->dist_base + GIC_OFFSET_FOR_CPU1;
+#endif
 	return gic_data->dist_base;
 }
 
 static inline void __iomem *gic_cpu_base(unsigned int irq)
 {
 	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
+
+#if defined(CONFIG_USE_EXT_GIC) && defined(CONFIG_SMP)
+	if (hard_smp_processor_id() == 1)
+		return gic_data->cpu_base + GIC_OFFSET_FOR_CPU1;
+#endif
 	return gic_data->cpu_base;
 }
 
@@ -250,6 +264,13 @@ void __cpuinit gic_cpu_init(unsigned int gic_nr, void __iomem *base)
 
 	gic_data[gic_nr].cpu_base = base;
 
+#if defined(CONFIG_USE_EXT_GIC) && defined(CONFIG_SMP)
+	if (hard_smp_processor_id() == 1) {
+		writel(0xf0, base + GIC_CPU_PRIMASK + GIC_OFFSET_FOR_CPU1);
+		writel(1, base + GIC_CPU_CTRL + GIC_OFFSET_FOR_CPU1);
+		return;
+	}
+#endif
 	writel(0xf0, base + GIC_CPU_PRIMASK);
 	writel(1, base + GIC_CPU_CTRL);
 }
@@ -258,6 +279,14 @@ void __cpuinit gic_cpu_init(unsigned int gic_nr, void __iomem *base)
 void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
 {
 	unsigned long map = *cpus_addr(*mask);
+
+#ifdef CONFIG_USE_EXT_GIC
+	if (hard_smp_processor_id() == 1) {
+		writel(map << 16 | irq, gic_data[0].dist_base +
+		       GIC_DIST_SOFTINT + GIC_OFFSET_FOR_CPU1);
+		return;
+	}
+#endif
 
 	/* this always happens on GIC0 */
 	writel(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);

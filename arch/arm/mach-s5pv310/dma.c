@@ -22,6 +22,7 @@
 
 #include <plat/devs.h>
 #include <plat/irqs.h>
+#include <plat/pd.h>
 
 #include <mach/map.h>
 #include <mach/irqs.h>
@@ -32,13 +33,23 @@ static u64 dma_dmamask = DMA_BIT_MASK(32);
 
 static struct resource s5pv310_mdma_resource[] = {
 	[0] = {
+#if defined(CONFIG_CPU_S5PV310_EVT1)
+		.start  = S5PV310_PA_MDMA1,
+		.end    = S5PV310_PA_MDMA1 + SZ_4K,
+#else
 		.start  = S5PV310_PA_MDMA0,
 		.end    = S5PV310_PA_MDMA0 + SZ_4K,
+#endif
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
+#if defined(CONFIG_CPU_S5PV310_EVT1)
+		.start	= IRQ_MDMA1,
+		.end	= IRQ_MDMA1,
+#else
 		.start	= IRQ_MDMA0,
 		.end	= IRQ_MDMA0,
+#endif
 		.flags	= IORESOURCE_IRQ,
 	},
 };
@@ -87,7 +98,7 @@ struct s3c_pl330_platdata s5pv310_mdma_pdata = {
 	},
 };
 
-static struct platform_device s5pv310_device_mdma = {
+struct platform_device s5pv310_device_mdma = {
 	.name		= "s3c-pl330",
 	.id		= 0,
 	.num_resources	= ARRAY_SIZE(s5pv310_mdma_resource),
@@ -149,7 +160,7 @@ static struct s3c_pl330_platdata s5pv310_pdma0_pdata = {
 	},
 };
 
-static struct platform_device s5pv310_device_pdma0 = {
+struct platform_device s5pv310_device_pdma0 = {
 	.name		= "s3c-pl330",
 	.id		= 1,
 	.num_resources	= ARRAY_SIZE(s5pv310_pdma0_resource),
@@ -211,7 +222,7 @@ static struct s3c_pl330_platdata s5pv310_pdma1_pdata = {
 	},
 };
 
-static struct platform_device s5pv310_device_pdma1 = {
+struct platform_device s5pv310_device_pdma1 = {
 	.name		= "s3c-pl330",
 	.id		= 2,
 	.num_resources	= ARRAY_SIZE(s5pv310_pdma1_resource),
@@ -224,13 +235,18 @@ static struct platform_device s5pv310_device_pdma1 = {
 };
 
 static struct platform_device *s5pv310_dmacs[] __initdata = {
+#if 0
 	&s5pv310_device_mdma,
+#endif
 	&s5pv310_device_pdma0,
 	&s5pv310_device_pdma1,
 };
 
 static int __init s5pv310_dma_init(void)
 {
+#if 0
+	s5pv310_device_mdma.dev.parent = &s5pv310_device_pd[PD_LCD0].dev;
+#endif
 	platform_add_devices(s5pv310_dmacs, ARRAY_SIZE(s5pv310_dmacs));
 
 	return 0;

@@ -83,6 +83,7 @@ extern struct sysdev_class s5p6440_sysclass;
 extern struct sysdev_class s5p6450_sysclass;
 extern struct sysdev_class s5p6442_sysclass;
 extern struct sysdev_class s5pv210_sysclass;
+extern struct sysdev_class s5pv310_sysclass;
 
 extern void (*s5pc1xx_idle)(void);
 

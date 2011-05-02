@@ -23,8 +23,8 @@ struct platform_device; /* don't need the contents */
 
 void s3c_i2c6_cfg_gpio(struct platform_device *dev)
 {
-	s3c_gpio_cfgpin(S5PV310_GPC1(3), S3C_GPIO_SFN(2));
+	s3c_gpio_cfgpin(S5PV310_GPC1(3), S3C_GPIO_SFN(4));
 	s3c_gpio_setpull(S5PV310_GPC1(3), S3C_GPIO_PULL_UP);
-	s3c_gpio_cfgpin(S5PV310_GPC1(4), S3C_GPIO_SFN(2));
+	s3c_gpio_cfgpin(S5PV310_GPC1(4), S3C_GPIO_SFN(4));
 	s3c_gpio_setpull(S5PV310_GPC1(4), S3C_GPIO_PULL_UP);
 }

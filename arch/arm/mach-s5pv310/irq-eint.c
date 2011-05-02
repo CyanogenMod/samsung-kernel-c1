@@ -21,6 +21,7 @@
 
 #include <mach/map.h>
 #include <plat/cpu.h>
+#include <plat/pm.h>
 
 #include <plat/gpio-cfg.h>
 #include <mach/regs-gpio.h>
@@ -113,6 +114,7 @@ static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 	int shift;
 	u32 ctrl, mask;
 	u32 newvalue = 0;
+	struct irq_desc *desc = irq_to_desc(irq);
 
 	switch (type) {
 	case IRQ_TYPE_EDGE_RISING:
@@ -128,10 +130,7 @@ static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 		break;
 
 	case IRQ_TYPE_LEVEL_LOW:
-		if (irq == IRQ_EINT(5))
-			newvalue = S5P_EXTINT_HILEV;
-		else
-			newvalue = S5P_EXTINT_LOWLEV;
+		newvalue = S5P_EXTINT_LOWLEV;
 		break;
 
 	case IRQ_TYPE_LEVEL_HIGH:
@@ -168,6 +167,11 @@ static int s5pv310_irq_eint_set_type(unsigned int irq, unsigned int type)
 	else
 		printk(KERN_ERR "No such irq number %d", offs);
 
+	if (type & IRQ_TYPE_EDGE_BOTH)
+		desc->handle_irq = handle_edge_irq;
+	else
+		desc->handle_irq = handle_level_irq;
+
 	return 0;
 }
 
@@ -191,9 +195,9 @@ static struct irq_chip s5pv310_irq_eint = {
  *
  * Each EINT pend/mask registers handle eight of them.
  */
-static inline void s5pv310_irq_demux_eint(unsigned int start)
+static inline void s5pv310_irq_demux_eint(unsigned int irq, unsigned int start)
 {
-	unsigned int irq;
+	unsigned int cascade_irq;
 
 	u32 status = __raw_readl(S5P_EINT_PEND(s5pv310_irq_split(start)));
 	u32 mask = __raw_readl(S5P_EINT_MASK(s5pv310_irq_split(start)));
@@ -202,24 +206,29 @@ static inline void s5pv310_irq_demux_eint(unsigned int start)
 	status &= 0xff;
 
 	while (status) {
-		irq = fls(status) - 1;
-		generic_handle_irq(irq + start);
-		status &= ~(1 << irq);
+		cascade_irq = fls(status) - 1;
+		generic_handle_irq(cascade_irq + start);
+		status &= ~(1 << cascade_irq);
 	}
 }
 
 static void s5pv310_irq_demux_eint16_31(unsigned int irq, struct irq_desc *desc)
 {
-	s5pv310_irq_demux_eint(IRQ_EINT(16));
-	s5pv310_irq_demux_eint(IRQ_EINT(24));
+	struct irq_chip *chip = get_irq_chip(irq);
+
+	if (chip->ack)
+		chip->ack(irq);
+
+	s5pv310_irq_demux_eint(irq, IRQ_EINT(16));
+	s5pv310_irq_demux_eint(irq, IRQ_EINT(24));
+
+	chip->unmask(irq);
 }
 
 static void s5pv310_irq_eint0_15(unsigned int irq, struct irq_desc *desc)
 {
 	u32 i;
 	struct irq_chip *chip = get_irq_chip(irq);
-
-	chip->mask(irq);
 
 	if (chip->ack)
 		chip->ack(irq);

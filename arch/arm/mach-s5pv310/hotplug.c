@@ -1,6 +1,6 @@
 /* linux arch/arm/mach-s5pv310/hotplug.c
  *
- *  Cloned form linux/arch/arm/mach-realview/hotplug.c
+ *  Based on linux/arch/arm/mach-realview/hotplug.c
  *
  *  Copyright (C) 2002 ARM Ltd.
  *  All Rights Reserved
@@ -13,14 +13,17 @@
 #include <linux/errno.h>
 #include <linux/smp.h>
 #include <linux/completion.h>
+#include <linux/io.h>
 
 #include <asm/cacheflush.h>
+
+#include <mach/regs-pmu.h>
 
 extern volatile int pen_release;
 
 static DECLARE_COMPLETION(cpu_killed);
 
-static inline void cpu_enter_lowpower(void)
+static void cpu_enter_lowpower(void)
 {
 	unsigned int v;
 
@@ -32,7 +35,7 @@ static inline void cpu_enter_lowpower(void)
 	 * Turn off coherency
 	 */
 	"	mrc	p15, 0, %0, c1, c0, 1\n"
-	"	bic	%0, %0, #0x20\n"
+	"	bic	%0, %0, #0x41\n"
 	"	mcr	p15, 0, %0, c1, c0, 1\n"
 	"	mrc	p15, 0, %0, c1, c0, 0\n"
 	"	bic	%0, %0, #0x04\n"
@@ -42,36 +45,48 @@ static inline void cpu_enter_lowpower(void)
 	  : "cc");
 }
 
-static inline void cpu_leave_lowpower(void)
+static void cpu_leave_lowpower(void)
 {
 	unsigned int v;
 
-	asm volatile(	"mrc	p15, 0, %0, c1, c0, 0\n"
+	asm volatile(
+	"	mrc	p15, 0, %0, c1, c0, 0\n"
 	"	orr	%0, %0, #0x04\n"
 	"	mcr	p15, 0, %0, c1, c0, 0\n"
 	"	mrc	p15, 0, %0, c1, c0, 1\n"
-	"	orr	%0, %0, #0x20\n"
+	"	orr	%0, %0, #0x41\n"
 	"	mcr	p15, 0, %0, c1, c0, 1\n"
 	  : "=&r" (v)
 	  :
 	  : "cc");
 }
 
-static inline void platform_do_lowpower(unsigned int cpu)
+inline void platform_do_lowpower(unsigned int cpu)
 {
-	/*
-	 * there is no power-control hardware on this platform, so all
-	 * we can do is put the core into WFI; this is safe as the calling
-	 * code will have already disabled interrupts
-	 */
+	unsigned int i;
+
 	for (;;) {
+		/* make cpu1 to be turned off at next WFI command */
+
+		if (cpu == 1) {
+			__raw_writel(0, S5P_VA_EXTGIC_CPU+0x8000);
+			
+			for(i = 0; i < 5; i++)
+				__raw_writel(0xffff, S5P_VA_EXTGIC_DIST + 0x8280 + i*0x4);
+
+			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
+		}
+
+		if (hard_smp_processor_id() == 0)
+			return;
+
 		/*
 		 * here's the WFI
 		 */
-		asm(".word	0xe320f003\n"
-		    :
-		    :
-		    : "memory", "cc");
+		asm(".word      0xe320f003\n"
+		:
+		:
+		: "memory", "cc");
 
 		if (pen_release == cpu) {
 			/*

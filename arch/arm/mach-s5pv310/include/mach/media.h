@@ -22,5 +22,9 @@
 #define S5P_MDEV_FIMC3          6
 #define S5P_MDEV_JPEG		7
 
+#define S5P_MDEV_PMEM_GPU1	8
+#define S5P_MDEV_SRP		9
+
+#define S5P_MDEV_FIMG2D        10
 #endif
 

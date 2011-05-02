@@ -19,6 +19,8 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/pwm.h>
+#include <mach/gpio.h>
+#include <plat/gpio-cfg.h>
 
 #include <mach/irqs.h>
 #include <mach/map.h>
@@ -60,23 +62,64 @@ static struct clk *clk_scaler[2];
 		}					\
 	}
 
-#define DEFINE_S3C_TIMER(_tmr_no, _irq)			\
-	.name		= "s3c24xx-pwm",		\
-	.id		= _tmr_no,			\
-	.num_resources	= TIMER_RESOURCE_SIZE,		\
-	.resource	= TIMER_RESOURCE(_tmr_no, _irq),	\
+#define DEFINE_S3C_TIMER(_tmr_no, _irq, _plat_data)		\
+	.name       = "s3c24xx-pwm",				\
+		.id     = _tmr_no,				\
+		.num_resources  = TIMER_RESOURCE_SIZE,		\
+		.resource   = TIMER_RESOURCE(_tmr_no, _irq),    \
+		.dev        = {					\
+	        .platform_data  = _plat_data,			\
+	}
 
 /* since we already have an static mapping for the timer, we do not
  * bother setting any IO resource for the base.
  */
 
-struct platform_device s3c_device_timer[] = {
-	[0] = { DEFINE_S3C_TIMER(0, IRQ_TIMER0) },
-	[1] = { DEFINE_S3C_TIMER(1, IRQ_TIMER1) },
-	[2] = { DEFINE_S3C_TIMER(2, IRQ_TIMER2) },
-	[3] = { DEFINE_S3C_TIMER(3, IRQ_TIMER3) },
-	[4] = { DEFINE_S3C_TIMER(4, IRQ_TIMER4) },
+struct s3c_pwm_pdata {
+	/* PWM output port */
+	unsigned int gpio_no;
+	const char  *gpio_name;
+	unsigned int gpio_set_value;
 };
+
+struct s3c_pwm_pdata pwm_data[] = {
+	{
+		.gpio_no = S5PV310_GPD0(0),
+		.gpio_name = "GPD",
+		.gpio_set_value = S5PV310_GPD_0_0_TOUT_0,
+	}, {
+		.gpio_no = S5PV310_GPD0(1),
+		.gpio_name = "GPD",
+		.gpio_set_value = S5PV310_GPD_0_1_TOUT_1,
+	}, {
+		.gpio_no = S5PV310_GPD0(2),
+		.gpio_name = "GPD",
+		.gpio_set_value = S5PV310_GPD_0_2_TOUT_2,
+	}, {
+		.gpio_no = S5PV310_GPD0(3),
+		.gpio_name = "GPD",
+		.gpio_set_value = S5PV310_GPD_0_3_TOUT_3,
+	}, {
+		.gpio_no = 0,
+		.gpio_name = NULL,
+		.gpio_set_value = 0,
+	}
+};
+
+struct platform_device s3c_device_timer[] = {
+	[0] = { DEFINE_S3C_TIMER(0, IRQ_TIMER0, &pwm_data[0]) },
+	[1] = { DEFINE_S3C_TIMER(1, IRQ_TIMER1, &pwm_data[1]) },
+	[2] = { DEFINE_S3C_TIMER(2, IRQ_TIMER2, &pwm_data[2]) },
+	[3] = { DEFINE_S3C_TIMER(3, IRQ_TIMER3, &pwm_data[3]) },
+	[4] = { DEFINE_S3C_TIMER(4, IRQ_TIMER4, &pwm_data[4]) },
+};
+
+struct s3c_pwm_pdata *to_pwm_pdata(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+
+	return (struct s3c_pwm_pdata *)pdev->dev.platform_data;
+}
 
 static inline int pwm_is_tdiv(struct pwm_device *pwm)
 {
@@ -296,10 +339,22 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct pwm_device *pwm;
+	struct s3c_pwm_pdata *pdata = to_pwm_pdata(dev);
 	unsigned long flags;
 	unsigned long tcon;
 	unsigned int id = pdev->id;
 	int ret;
+
+	if (gpio_is_valid(pdata->gpio_no)) {
+		ret = gpio_request(pdata->gpio_no, pdata->gpio_name);
+		if (ret)
+			printk(KERN_ERR "failed to get GPIO for PWM0\n");
+		s3c_gpio_cfgpin(pdata->gpio_no, pdata->gpio_set_value);
+
+		/* Inserting the following for commit 2010.02.26: [BACKLIGHT] Fix PWM
+		   driver handling GPIO routine (request but not free)*/
+		gpio_free(pdata->gpio_no);
+	}
 
 	if (id == 4) {
 		dev_err(dev, "TIMER4 is currently not supported\n");

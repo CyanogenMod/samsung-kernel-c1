@@ -20,7 +20,6 @@
 #endif
 
 #define S5P_SYSMMU_TOTAL_IPNUM          (16)
-#define S5P_SZ_SYSMMU                     (0XFFFF)
 
 struct s5p_sysmmu_platdata {
 
@@ -71,20 +70,16 @@ struct sysmmu_controller {
 	const char		*name;
 	void __iomem		*regs;		/* channels registers */
 	unsigned int		irq;		/* channel irq */
-
 	sysmmu_ips              ips;            /* SysMMU controller type */
 	sysmmu_table_type_t	table_type;	/* SysMMU table type: shared or separated */
-
 	sysmmu_tt_info_t	*tt_info;	/* Translation Table Info. */
 	struct resource *mem;
 	struct device *dev;
+	bool			enable;		/* SysMMU controller enable - true : enable */
 };
 
 int sysmmu_on(sysmmu_ips ips);
 int sysmmu_off(sysmmu_ips ips);
 int sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd);
 int sysmmu_tlb_invalidate(sysmmu_ips ips);
-int sysmmu_get_TLB_data(sysmmu_ips ips, unsigned int v_addr);
-
 #endif /* __SYSMMU_H__ */
-

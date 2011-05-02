@@ -11,16 +11,35 @@ obj-n				:=
 obj-				:=
 
 # Core support for S5PV310 system
-obj-$(CONFIG_CPU_S5PV310)		+= cpu.o init.o clock.o irq-combiner.o gpiolib.o
-obj-$(CONFIG_CPU_S5PV310)		+= setup-i2c0.o time.o irq-eint.o dma.o
-obj-$(CONFIG_CPU_S5PV310)		+= bootmem-smdkv310.o button-smdkv310.o
 
-obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
-obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
-obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
+obj-$(CONFIG_CPU_S5PV310)	+= cpu.o init.o clock.o irq-combiner.o gpiolib.o irq-eint.o
+obj-$(CONFIG_CPU_S5PV310)	+= setup-i2c0.o dma.o dmc.o
+obj-$(CONFIG_SAMSUNG_IRQ_GPIO)  += irq-gpio.o
 
+ifeq ($(CONFIG_CPU_S5PV310_EVT1),y)
+obj-y				+= mct.o
+else
+obj-y				+= time.o
+endif
+
+obj-$(CONFIG_S5PV310_PM)	+= pm.o sleep.o
+
+obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o cpu_ppmu.o
+obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+obj-$(CONFIG_S5P_MEM_BOOTMEM)	+= bootmem-smdkv310.o
+obj-$(CONFIG_S5PV310_PM_HOTPLUG)	+= pm-hotplug.o
 # machine support
-obj-$(CONFIG_MACH_SMDKV310)		+= mach-smdkv310.o
+obj-$(CONFIG_BT)		+= c1-rfkill.o
+obj-$(CONFIG_MACH_SMDKC210)	+= mach-smdkc210.o button-smdkc210.o
+obj-$(CONFIG_MACH_SMDKV310)	+= mach-smdkv310.o button-smdkv310.o
+obj-$(CONFIG_MACH_C1)		+= mach-c1.o mach-c1-gps.o
+obj-$(CONFIG_MACH_UNIVERSAL_C210)	+= mach-universal_c210.o
+obj-$(CONFIG_MACH_C1)		+= c1-panel.o
+obj-$(CONFIG_MACH_C1)		+= c1-wlan.o
+obj-$(CONFIG_MACH_C1)		+= c1-regulator-consumer.o
+obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= c1-modem.o
 
 # device support
 obj-$(CONFIG_S5PV310_SETUP_FB_S3C)	+= setup-fb.o
@@ -38,5 +57,20 @@ obj-$(CONFIG_S5PV310_SETUP_I2C6)	+= setup-i2c6.o
 obj-$(CONFIG_S5PV310_SETUP_I2C7)	+= setup-i2c7.o
 obj-$(CONFIG_S5PV310_SETUP_SDHCI)	+= setup-sdhci.o
 obj-$(CONFIG_S5PV310_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
+obj-$(CONFIG_S5PV310_SETUP_MSHCI)	+= setup-mshci.o
+obj-$(CONFIG_S5PV310_SETUP_MSHCI_GPIO)	+= setup-mshci-gpio.o
+obj-$(CONFIG_S5PV310_SETUP_TVOUT)	+= setup-tvout.o
+obj-$(CONFIG_S5PV310_SETUP_USB_PHY)	+= setup-usb.o
+ifneq ($(CONFIG_SATA_AHCI_PLATFORM),)
+obj-y					+= dev-ahci.o
+endif
 obj-$(CONFIG_SND_SOC)			+= dev-audio.o
 obj-$(CONFIG_S3C64XX_DEV_SPI)		+= dev-spi.o
+ifeq ($(CONFIG_S3C_DEV_ADC1),y)
+obj-$(CONFIG_SAMSUNG_DEV_TS)		+= dev-ts1.o
+endif
+obj-$(CONFIG_S5PV310_DEV_PD)		+= dev-pd.o
+ifneq ($(CONFIG_USE_EXT_GIC),y)
+obj-$(CONFIG_CPU_IDLE)			+= irq-extgic.o dev-egic.o
+endif
+obj-$(CONFIG_SEC_DEBUG)			+= sec_debug.o sec_getlog.o sec_gaf.o

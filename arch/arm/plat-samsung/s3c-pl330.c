@@ -15,6 +15,10 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
+#include <linux/clk.h>
+#if 0
+#include <linux/pm_runtime.h>
+#endif
 
 #include <asm/hardware/pl330.h>
 
@@ -34,6 +38,7 @@ struct s3c_pl330_dmac {
 	struct list_head	node;
 	struct pl330_info	*pi;
 	struct kmem_cache	*kmcache;
+	struct clk		*dmaclk;
 };
 
 /**
@@ -494,9 +499,11 @@ static void s3c_pl330_rq(struct s3c_pl330_chan *ch,
 
 	spin_lock_irqsave(&res_lock, flags);
 
-	r->x = NULL;
+	if (!r->infiniteloop) {
+		r->x = NULL;
 
-	s3c_pl330_submit(ch, r);
+		s3c_pl330_submit(ch, r);
+	}
 
 	spin_unlock_irqrestore(&res_lock, flags);
 
@@ -509,12 +516,20 @@ static void s3c_pl330_rq(struct s3c_pl330_chan *ch,
 		res = S3C2410_RES_ERR;
 
 	/* If last request had some xfer */
-	if (xl) {
-		xfer = container_of(xl, struct s3c_pl330_xfer, px);
-		_finish_off(xfer, res, 0);
+	if (!r->infiniteloop) {
+		if (xl) {
+			xfer = container_of(xl, struct s3c_pl330_xfer, px);
+			_finish_off(xfer, res, 0);
+		} else {
+			dev_info(ch->dmac->pi->dev, "%s:%d No Xfer?!\n",
+				__func__, __LINE__);
+		}
 	} else {
-		dev_info(ch->dmac->pi->dev, "%s:%d No Xfer?!\n",
-			__func__, __LINE__);
+		/* Do callback */
+
+		xfer = container_of(xl, struct s3c_pl330_xfer, px);
+		if (ch->callback_fn)
+			ch->callback_fn(NULL, xfer->token, xfer->px.bytes, res);
 	}
 }
 
@@ -656,8 +671,8 @@ ctrl_exit:
 }
 EXPORT_SYMBOL(s3c2410_dma_ctrl);
 
-int s3c2410_dma_enqueue(enum dma_ch id, void *token,
-			dma_addr_t addr, int size)
+int s3c2410_dma_enqueue_ring(enum dma_ch id, void *token,
+			dma_addr_t addr, int size, int numofblock)
 {
 	struct s3c_pl330_chan *ch;
 	struct s3c_pl330_xfer *xfer;
@@ -705,11 +720,13 @@ int s3c2410_dma_enqueue(enum dma_ch id, void *token,
 	/* Try submitting on either request */
 	idx = (ch->lrq == &ch->req[0]) ? 1 : 0;
 
-	if (!ch->req[idx].x)
+	if (!ch->req[idx].x) {
+		ch->req[idx].infiniteloop = numofblock;
 		s3c_pl330_submit(ch, &ch->req[idx]);
-	else
+	} else {
+		ch->req[1 - idx].infiniteloop = numofblock;
 		s3c_pl330_submit(ch, &ch->req[1 - idx]);
-
+	}
 	spin_unlock_irqrestore(&res_lock, flags);
 
 	if (ch->options & S3C2410_DMAF_AUTOSTART)
@@ -722,7 +739,7 @@ enq_exit:
 
 	return ret;
 }
-EXPORT_SYMBOL(s3c2410_dma_enqueue);
+EXPORT_SYMBOL(s3c2410_dma_enqueue_ring);
 
 int s3c2410_dma_request(enum dma_ch id,
 			struct s3c2410_dma_client *client,
@@ -743,9 +760,21 @@ int s3c2410_dma_request(enum dma_ch id,
 
 	dmac = ch->dmac;
 
+#if 0
+	/* enable the power domain */
+	pm_runtime_get_sync(dmac->pi->dev);
+#endif
+
+	clk_enable(dmac->dmaclk);
+
 	ch->pl330_chan_id = pl330_request_channel(dmac->pi);
 	if (!ch->pl330_chan_id) {
+		clk_disable(dmac->dmaclk);
 		chan_release(ch);
+#if 0
+		/* disable the power domain */
+		pm_runtime_put(dmac->pi->dev);
+#endif
 		ret = -EBUSY;
 		goto req_exit;
 	}
@@ -856,7 +885,11 @@ int s3c2410_dma_free(enum dma_ch id, struct s3c2410_dma_client *client)
 	pl330_release_channel(ch->pl330_chan_id);
 
 	ch->pl330_chan_id = NULL;
-
+	clk_disable(ch->dmac->dmaclk);
+#if 0
+	/* disable the power domain */
+	pm_runtime_put(ch->dmac->pi->dev);
+#endif
 	chan_release(ch);
 
 free_exit:
@@ -1042,6 +1075,7 @@ static int pl330_probe(struct platform_device *pdev)
 	struct s3c_pl330_platdata *pl330pd;
 	struct pl330_info *pl330_info;
 	struct resource *res;
+	struct clk *dmaclk;
 	int i, ret, irq;
 
 	pl330pd = pdev->dev.platform_data;
@@ -1064,6 +1098,21 @@ static int pl330_probe(struct platform_device *pdev)
 		ret = -ENODEV;
 		goto probe_err1;
 	}
+	dmaclk = clk_get(&pdev->dev, "dma");
+	if (dmaclk == NULL) {
+		dev_err(&pdev->dev, "failed to find dma clock source\n");
+		ret = -ENODEV;
+		goto probe_err1;
+	}
+
+#if 0
+	/* to use the runtime PM helper functions */
+	pm_runtime_enable(&pdev->dev);
+	/* enable the power domain */
+	pm_runtime_get_sync(&pdev->dev);
+#endif
+
+	clk_enable(dmaclk);
 
 	request_mem_region(res->start, resource_size(res), pdev->name);
 
@@ -1094,6 +1143,8 @@ static int pl330_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto probe_err6;
 	}
+	/* Clock */
+	s3c_pl330_dmac->dmaclk = dmaclk;
 
 	/* Hook the info */
 	s3c_pl330_dmac->pi = pl330_info;
@@ -1130,6 +1181,12 @@ static int pl330_probe(struct platform_device *pdev)
 		pl330_info->pcfg.data_bus_width / 8, pl330_info->pcfg.num_chan,
 		pl330_info->pcfg.num_peri, pl330_info->pcfg.num_events);
 
+	clk_disable(dmaclk);
+
+#if 0
+	/* disable the power domain */
+	pm_runtime_put(&pdev->dev);
+#endif
 	return 0;
 
 probe_err7:
@@ -1143,6 +1200,13 @@ probe_err3:
 	iounmap(pl330_info->base);
 probe_err2:
 	release_mem_region(res->start, resource_size(res));
+	clk_disable(dmaclk);
+	clk_put(dmaclk);
+#if 0
+	/* disable the power domain */
+	pm_runtime_put(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
+#endif
 probe_err1:
 	kfree(pl330_info);
 
@@ -1152,7 +1216,7 @@ probe_err1:
 static int pl330_remove(struct platform_device *pdev)
 {
 	struct s3c_pl330_dmac *dmac, *d;
-	struct s3c_pl330_chan *ch;
+	struct s3c_pl330_chan *ch, *cht;
 	unsigned long flags;
 	int del, found;
 
@@ -1176,7 +1240,7 @@ static int pl330_remove(struct platform_device *pdev)
 	dmac = d;
 
 	/* Remove all Channels that are managed only by this DMAC */
-	list_for_each_entry(ch, &chan_list, node) {
+	list_for_each_entry_safe(ch, cht, &chan_list, node) {
 
 		/* Only channels that are handled by this DMAC */
 		if (iface_of_dmac(dmac, ch->id))
@@ -1202,17 +1266,44 @@ static int pl330_remove(struct platform_device *pdev)
 
 	/* Remove the DMAC */
 	list_del(&dmac->node);
+	clk_put(dmac->dmaclk);
 	kfree(dmac);
+
+#if 0
+	/* disable the power domain */
+	pm_runtime_put(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
+#endif
 
 	spin_unlock_irqrestore(&res_lock, flags);
 
 	return 0;
 }
 
+#if 0
+static int pl330_runtime_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int pl330_runtime_resume(struct device *dev)
+{
+	return 0;
+}
+
+static const struct dev_pm_ops pl330_pm_ops = {
+	.runtime_suspend = pl330_runtime_suspend,
+	.runtime_resume = pl330_runtime_resume,
+};
+#endif
+
 static struct platform_driver pl330_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "s3c-pl330",
+#if 0
+		.pm     = &pl330_pm_ops,
+#endif
 	},
 	.probe		= pl330_probe,
 	.remove		= pl330_remove,

@@ -10,7 +10,8 @@
 #include <plat/sysmmu.h>
 #include <plat/map-s5p.h>
 
-/*  1 : S5P_PA_SYSMMU_MDMA		(0x10A40000),
+/*
+ *  0 : S5P_PA_SYSMMU_MDMA		(0x10A40000),
  *  1 : S5P_PA_SYSMMU_SSS		(0x10A50000),
  *  2 : S5P_PA_SYSMMU_FIMC0		(0x11A20000),
  *  3 : S5P_PA_SYSMMU_FIMC1		(0x11A30000),
@@ -28,7 +29,91 @@
  * 15 : S5P_PA_SYSMMU_MFC_R		(0x13630000)
 */
 
+extern int g2d_sysmmu_fault();
+
+static char *sysmmu_ips_name[S5P_SYSMMU_TOTAL_IPNUM] = {
+	"SYSMMU_MDMA"	,
+	"SYSMMU_SSS"	,
+	"SYSMMU_FIMC0"	,
+	"SYSMMU_FIMC1"	,
+	"SYSMMU_FIMC2"	,
+	"SYSMMU_FIMC3"	,
+	"SYSMMU_JPEG"	,
+	"SYSMMU_FIMD0"	,
+	"SYSMMU_FIMD1"	,
+	"SYSMMU_PCIe"	,
+	"SYSMMU_G2D"	,
+	"SYSMMU_ROTATOR",
+	"SYSMMU_MDMA2"	,
+	"SYSMMU_TV"	,
+	"SYSMMU_MFC_L"	,
+	"SYSMMU_MFC_R"	,
+};
+
+typedef void (*pg_ft_handler)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);	/* Page fault callback */
+typedef void (*mh_ft_handler)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);	/* Multi hit fault callback */
+typedef void (*st_ft_handler)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);	/* Security fault callback */
+typedef void (*as_ft_handler)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);	/* Access fault callback */
+
+struct sysmmu_fsr_info {
+	void (*pg_fault)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);
+	void (*mh_fault)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);
+	void (*st_fault)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);
+	void (*as_fault)(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp);
+	const char *name;
+};
+
+static void sysmmu_pg_fault(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp)
+{
+	printk(KERN_INFO "%s: ips: %s\n", __func__, sysmmuconp->name);
+}
+
+static void  sysmmu_do_bad(sysmmu_ips ips, sysmmu_controller_t *sysmmuconp)
+{
+	printk(KERN_INFO "%s: ips: %s\n", __func__, sysmmuconp->name);
+}
+
+	/* Page fault,		Multi fit fault,Security fault,	Access fault,	"ips handler name"	*/
+struct sysmmu_fsr_info isysmmu_fsr_info[S5P_SYSMMU_TOTAL_IPNUM] = {
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu mdma fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu sss fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimc0 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimc1 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimc2 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimc3 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu jpeg fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimd0 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu fimd1 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu pcle fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu g2d fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu rotator fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu mdma2 fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu tv fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu mfc_l fault handler"	},
+	{ sysmmu_pg_fault,	sysmmu_do_bad,	sysmmu_do_bad,	sysmmu_do_bad,	"sysmmu mfc_r fault handler"	},
+};
+
 sysmmu_controller_t s5p_sysmmu_cntlrs[S5P_SYSMMU_TOTAL_IPNUM];
+
+void sysmmu_set_pg_fault(sysmmu_ips ips, pg_ft_handler callback)
+{
+	isysmmu_fsr_info[ips].pg_fault = callback;
+}
+
+void sysmmu_set_mh_fault(sysmmu_ips ips, mh_ft_handler callback)
+{
+	isysmmu_fsr_info[ips].mh_fault = callback;
+}
+
+void sysmmu_set_st_fault(sysmmu_ips ips, st_ft_handler callback)
+{
+	isysmmu_fsr_info[ips].st_fault = callback;
+}
+
+void sysmmu_set_as_fault(sysmmu_ips ips, as_ft_handler callback)
+{
+	isysmmu_fsr_info[ips].as_fault = callback;
+}
 
 /**
  * sysmmu_irq - [GENERIC] irq service routine
@@ -46,30 +131,75 @@ static irqreturn_t sysmmu_irq(int irq, void *dev_id)
 	unsigned int reg_PT_BASE_ADDR;
 	unsigned int reg_INT_STATUS;
 	unsigned int reg_PAGE_FAULT_ADDR;
+	unsigned int reg;
 
 	for (i = 0; i < S5P_SYSMMU_TOTAL_IPNUM; i++) {
 		sysmmuconp = &s5p_sysmmu_cntlrs[i];
 
-		reg_INT_STATUS = readl(sysmmuconp->regs + S5P_INT_STATUS);
-
-		if (reg_INT_STATUS & 0xFF) {
-			reg_MMU_CTRL = readl(sysmmuconp->regs + S5P_MMU_CTRL);
-			reg_MMU_STATUS = readl(sysmmuconp->regs + S5P_MMU_STATUS);
-			reg_PT_BASE_ADDR = readl(sysmmuconp->regs + S5P_PT_BASE_ADDR);
-			reg_PAGE_FAULT_ADDR = readl(sysmmuconp->regs + S5P_PAGE_FAULT_ADDR);
-
-			printk(KERN_INFO "%s: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", __func__);
-			printk(KERN_INFO "%s: sysmmu irq : ip%d\n", __func__, i);
-
-			printk(KERN_INFO "%s: MMU_CTRL:0x%X, MMU_STATUS:0x%X, PT_BASE_ADDR:0x%X\n", __func__, reg_MMU_CTRL, reg_MMU_STATUS, reg_PT_BASE_ADDR);
-			printk(KERN_INFO "%s: INT_STATUS:0x%X, PAGE_FAULT_ADDR:0x%X\n", __func__, reg_INT_STATUS, reg_PAGE_FAULT_ADDR);
-
-			printk(KERN_INFO "%s: before clear - MMU_CTRL:0x%X, MMU_STATUS:0x%X\n", __func__, reg_MMU_CTRL , reg_MMU_STATUS);
-			writel(reg_INT_STATUS, sysmmuconp->regs + S5P_INT_CLEAR);	/* Clear INT */
-
+		if (sysmmuconp->enable == true) {
 			reg_INT_STATUS = readl(sysmmuconp->regs + S5P_INT_STATUS);
-			printk(KERN_INFO "%s: After Clear : INT_STATUS:0x%X, PAGE_FAULT_ADDR:0x%X\n", __func__, reg_INT_STATUS, reg_PAGE_FAULT_ADDR);
-			printk(KERN_INFO "%s: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n", __func__);
+
+			if (reg_INT_STATUS & 0xFF) {
+				reg_MMU_CTRL = readl(sysmmuconp->regs + S5P_MMU_CTRL);
+				reg_MMU_STATUS = readl(sysmmuconp->regs + S5P_MMU_STATUS);
+				reg_PT_BASE_ADDR = readl(sysmmuconp->regs + S5P_PT_BASE_ADDR);
+				reg_PAGE_FAULT_ADDR = readl(sysmmuconp->regs + S5P_PAGE_FAULT_ADDR);
+
+				printk(KERN_DEBUG "%s: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", __func__);
+				printk(KERN_DEBUG "%s: sysmmu irq : ip%2d, ips:%s\n", __func__, i, sysmmuconp->name);
+
+				printk(KERN_DEBUG "%s: MMU_CTRL:0x%X, MMU_STATUS:0x%X, PT_BASE_ADDR:0x%X\n", __func__, reg_MMU_CTRL, reg_MMU_STATUS, reg_PT_BASE_ADDR);
+				printk(KERN_DEBUG "%s: INT_STATUS:0x%X, PAGE_FAULT_ADDR:0x%X\n", __func__, reg_INT_STATUS, reg_PAGE_FAULT_ADDR);
+
+				switch (reg_INT_STATUS & 0xFF) {
+				case 0x1:
+					printk(KERN_DEBUG "%s: Page fault\n", __func__);
+					printk(KERN_DEBUG "%s: Virtual address causing last page fault or bus error : 0x%x\n", __func__ , reg_PAGE_FAULT_ADDR);
+					isysmmu_fsr_info[i].pg_fault((sysmmu_ips)i, sysmmuconp);
+					
+					if((sysmmu_ips)i == SYSMMU_G2D) {
+						g2d_sysmmu_fault(reg_PAGE_FAULT_ADDR, reg_PT_BASE_ADDR);
+						reg = readl(sysmmuconp->regs + S5P_MMU_CTRL);
+						reg &= ~((0x1<<2) | (0x1<<0));	/* Disable interrupt, Disable MMU */
+						writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
+					}
+					break;
+				case 0x2:
+					printk(KERN_DEBUG "%s: AR multi-hit fault\n", __func__);
+					isysmmu_fsr_info[i].mh_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				case 0x4:
+					printk(KERN_DEBUG "%s: AW multi-hit fault\n", __func__);
+					isysmmu_fsr_info[i].mh_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				case 0x8:
+					printk(KERN_DEBUG "%s: Bus error\n", __func__);
+					break;
+				case 0x10:
+					printk(KERN_DEBUG "%s: AR Security protection fault\n", __func__);
+					isysmmu_fsr_info[i].as_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				case 0x20:
+					printk(KERN_DEBUG "%s: AR Access protection fault\n", __func__);
+					isysmmu_fsr_info[i].as_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				case 0x40:
+					printk(KERN_DEBUG "%s: AW Security protection fault\n", __func__);
+					isysmmu_fsr_info[i].st_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				case 0x80:
+					printk(KERN_DEBUG "%s: AW Access protection fault\n", __func__);
+					isysmmu_fsr_info[i].st_fault((sysmmu_ips)i, sysmmuconp);
+					break;
+				}
+
+				printk(KERN_DEBUG "%s: before clear - MMU_CTRL:0x%X, MMU_STATUS:0x%X\n", __func__, reg_MMU_CTRL , reg_MMU_STATUS);
+				writel(reg_INT_STATUS, sysmmuconp->regs + S5P_INT_CLEAR);	/* Clear INT */
+
+				reg_INT_STATUS = readl(sysmmuconp->regs + S5P_INT_STATUS);
+				printk(KERN_DEBUG "%s: After Clear : INT_STATUS:0x%X, PAGE_FAULT_ADDR:0x%X\n", __func__, reg_INT_STATUS, reg_PAGE_FAULT_ADDR);
+				printk(KERN_DEBUG "%s: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n", __func__);
+			}
 		}
 	}
 	return IRQ_HANDLED;
@@ -85,17 +215,26 @@ static void sysmmu_get_info(int ipnum, sysmmu_controller_t *sysmmuconp)
 int sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd)
 {
 	sysmmu_controller_t *sysmmuconp = NULL;
-
-	sysmmu_debug("Start\n");
-
+	unsigned int reg;
+	
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
+
+	if (ips == SYSMMU_G2D) {
+		reg = readl(sysmmuconp->regs + S5P_MMU_CTRL);
+		if ((reg & 0x1) == 0) {
+			reg |= ((0x1<<2)|(0x1<<0));	/* Enable interrupt, Enable MMU */
+			writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
+		}
+	}
+
+	sysmmu_debug("Start, %s\n", sysmmuconp->name);
 
 	writel(pgd, sysmmuconp->regs + S5P_PT_BASE_ADDR);	/* Set sysmmu TTBase */
 
 	if (sysmmu_tlb_invalidate(ips) != 0)
 		printk(KERN_ERR "%s: failed sysmmu_tlb_invalidate\n", __func__);
 
-	sysmmu_debug("Done\n");
+	sysmmu_debug("Done, %s\n", sysmmuconp->name);
 
 	return 0;
 }
@@ -105,9 +244,9 @@ static int sysmmu_set_tablebase(sysmmu_ips ips)
 	unsigned int pg;
 	sysmmu_controller_t *sysmmuconp;
 
-	sysmmu_debug("Start\n");
-
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
+
+	sysmmu_debug("Start, %s\n", sysmmuconp->name);
 
 	if (sysmmuconp->table_type == SHARED) {
 
@@ -117,14 +256,14 @@ static int sysmmu_set_tablebase(sysmmu_ips ips)
 
 		printk(KERN_INFO "%s: CP15 TTBR0 : 0x%x\n", __func__, pg);
 
-		printk(KERN_INFO "%s: sysmmuconp->regs + S5P_PT_BASE_ADDR:0x%X\n", __func__, (unsigned int)(sysmmuconp->regs + S5P_PT_BASE_ADDR));
+		printk(KERN_INFO "%s: %s sysmmuconp->regs + S5P_PT_BASE_ADDR:0x%X\n", __func__, sysmmuconp->name, (unsigned int)(sysmmuconp->regs + S5P_PT_BASE_ADDR));
 
 		writel(pg, sysmmuconp->regs + S5P_PT_BASE_ADDR);	/* Set sysmmu TTBase */
 	} else {
 		writel(sysmmuconp->tt_info->pgd_paddr, sysmmuconp->regs + S5P_PT_BASE_ADDR);	/* Set sysmmu TTBase */
 	}
 
-	sysmmu_debug("Done\n");
+	sysmmu_debug("Done, %s\n", sysmmuconp->name);
 
 	return 0;
 }
@@ -135,12 +274,14 @@ int sysmmu_on(sysmmu_ips ips)
 
 	sysmmu_controller_t *sysmmuconp;
 
-	sysmmu_debug("Start\n");
-
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
 
-	if (sysmmuconp == NULL)
+	sysmmu_debug("Start, %s\n", sysmmuconp->name);
+
+	if (sysmmuconp == NULL) {
 		printk(KERN_ERR "%s: failed to get ip's sysmmu info\n", __func__);
+		return -EINVAL;
+	}
 
 	sysmmu_set_tablebase(ips);
 
@@ -151,11 +292,12 @@ int sysmmu_on(sysmmu_ips ips)
 	reg = readl(sysmmuconp->regs + S5P_MMU_CTRL);
 	reg |= ((0x1<<2)|(0x1<<0));	/* Enable interrupt, Enable MMU */
 
-	printk(KERN_INFO "%s: sysmmuconp->regs + S5P_MMU_CTRL:0x%X, reg:0x%X\n", __func__, (unsigned int)(sysmmuconp->regs + S5P_MMU_CTRL), reg);
+	printk(KERN_INFO "%s:%s sysmmuconp->regs + S5P_MMU_CTRL:0x%X, reg:0x%X\n", __func__, sysmmuconp->name, (unsigned int)(sysmmuconp->regs + S5P_MMU_CTRL), reg);
 
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
 
-	sysmmu_debug("Done\n");
+	sysmmuconp->enable = true;
+	sysmmu_debug("Done, %s\n", sysmmuconp->name);
 
 	return 0;
 }
@@ -166,12 +308,14 @@ int sysmmu_off(sysmmu_ips ips)
 
 	sysmmu_controller_t *sysmmuconp = NULL;
 
-	sysmmu_debug("Start\n");
-
-	if (ips > S5P_SYSMMU_TOTAL_IPNUM)
+	if (ips > S5P_SYSMMU_TOTAL_IPNUM) {
 		printk(KERN_ERR "%s: failed to get ips parameter\n", __func__);
+		return -EINVAL;
+	}
 
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
+
+	sysmmu_debug("Start, %s\n", sysmmuconp->name);
 
 	reg = readl(sysmmuconp->regs + S5P_MMU_CFG);
 	reg |= (0x1<<0);		/* replacement policy : LRU */
@@ -182,7 +326,8 @@ int sysmmu_off(sysmmu_ips ips)
 
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);
 
-	sysmmu_debug("Done\n");
+	sysmmuconp->enable = false;
+	sysmmu_debug("Done, %s\n", sysmmuconp->name);
 
 	return 0;
 }
@@ -192,9 +337,9 @@ int sysmmu_tlb_invalidate(sysmmu_ips ips)
 	unsigned int reg;
 	sysmmu_controller_t *sysmmuconp = NULL;
 
-	sysmmu_debug("Start\n");
-
 	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
+
+	sysmmu_debug("Start, %s\n", sysmmuconp->name);
 
 	reg = readl(sysmmuconp->regs + S5P_MMU_CTRL);
 	reg |= (0x1<<1);
@@ -206,34 +351,7 @@ int sysmmu_tlb_invalidate(sysmmu_ips ips)
 	reg &= ~(0x1<<1);
 	writel(reg, sysmmuconp->regs + S5P_MMU_CTRL);	/* Un-block MMU */
 
-	sysmmu_debug("Done\n");
-
-	return 0;
-}
-
-int sysmmu_get_TLB_data(sysmmu_ips ips, unsigned int v_addr)
-{
-	unsigned int reg;
-	int ppba;	/* Physical page base address */
-	int page_size;
-	int ns;		/* Non-secure */
-	int ap;		/* Access permission */
-
-	sysmmu_controller_t *sysmmuconp = NULL;
-
-	sysmmuconp = &s5p_sysmmu_cntlrs[ips];	/* sysmmu_get_info(ipnum, sysmmuconp); */
-
-	reg = (v_addr&0xfffff000) | (0x1<<0);
-	writel(reg, sysmmuconp->regs + S5P_TLB_READ);	/* Read a TLB entry by VPN */
-
-	reg = readl(sysmmuconp->regs + S5P_TLB_DATA);	/* Get a TLB entry */
-
-	ppba = ((reg & 0xfffff000)>>12);
-	page_size = ((reg & 0x00000060)>>5);
-	ns = ((reg & 0x00000010)>>4);
-	ap = ((reg & 0x0000000E)>>1);
-
-	printk(KERN_INFO "%s: PPBA:0x%x, PageSize:0x%x, NS:0x%x, AP:0x%x\n", __func__, ppba, page_size, ns, ap);
+	sysmmu_debug("Done, %s\n", sysmmuconp->name);
 
 	return 0;
 }
@@ -251,6 +369,8 @@ static int sysmmu_probe(struct platform_device *pdev)
 
 	for (i = 0; i < S5P_SYSMMU_TOTAL_IPNUM; i++) {
 		sysmmuconp = &s5p_sysmmu_cntlrs[i];
+
+		sysmmuconp->name = sysmmu_ips_name[i];
 
 		/* memory region */
 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
@@ -277,7 +397,7 @@ static int sysmmu_probe(struct platform_device *pdev)
 			goto err_map;
 		}
 
-		sysmmu_debug("loop - i:%d res->start:0x%x, res->end:0x%x, sysmmuconp->regs:0x%x\n", i, res->start, res->end, (unsigned int)(sysmmuconp->regs));
+		sysmmu_debug("loop - i:%d res->start:0x%x, res->end:0x%x, sysmmuconp->regs:0x%x, ip:%s\n", i, res->start, res->end, (unsigned int)(sysmmuconp->regs), sysmmuconp->name);
 
 		/* irq */
 		sysmmuconp->irq = platform_get_irq(pdev, i);

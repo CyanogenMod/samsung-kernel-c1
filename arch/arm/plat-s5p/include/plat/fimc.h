@@ -10,12 +10,12 @@
  * published by the Free Software Foundation.
 */
 #ifndef __ASM_PLAT_FIMC_H
-#define __ASM_PLAT_FIMC_H __FILE__ 
+#define __ASM_PLAT_FIMC_H __FILE__
 
 #include <linux/videodev2.h>
 
-#define FIMC_SRC_MAX_W		1920
-#define FIMC_SRC_MAX_H		1088
+#define FIMC_SRC_MAX_W		4224
+#define FIMC_SRC_MAX_H		4224
 
 struct platform_device;
 
@@ -68,7 +68,7 @@ struct s3c_platform_camera {
 	enum fimc_cam_order422		order422;	/* YCBCR422 order for ITU */
 	u32				pixelformat;	/* default fourcc */
 
-	int				i2c_busnum;
+	int				(*get_i2c_busnum)(void);
 	struct i2c_board_info		*info;
 	struct v4l2_subdev		*sd;
 
@@ -92,6 +92,8 @@ struct s3c_platform_camera {
 	int				inv_hsync;
 
 	int				initialized;
+	/* The cam needs reset before start streaming   */
+	int				reset_camera;
 
 	/* Board specific power pin control */
 	int				(*cam_power)(int onoff);

@@ -452,6 +452,6 @@ static inline void s3c2416_default_sdhci1(void) { }
 
 #endif /* CONFIG_S3C2416_SETUP_SDHCI */
 
-
+extern void sdhci_s3c_force_presence_change(struct platform_device *pdev);
 
 #endif /* __PLAT_S3C_SDHCI_H */

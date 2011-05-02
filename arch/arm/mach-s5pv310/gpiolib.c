@@ -31,7 +31,13 @@ static struct s3c_gpio_cfg gpio_cfg_noint = {
 	.get_pull	= s3c_gpio_getpull_updown,
 };
 
-int s5pv310_gpio2int(struct gpio_chip *chip, unsigned pin)
+static struct s3c_gpio_cfg gpio_cfg_extint = {
+	.set_config	= s3c_gpio_setcfg_s3c64xx_4bit,
+	.set_pull	= s3c_gpio_setpull_updown,
+	.get_pull	= s3c_gpio_getpull_updown,
+};
+
+static int s5pv310_gpio2int(struct gpio_chip *chip, unsigned pin)
 {
 	int ret = 0;
 	int base = chip->base;
@@ -283,11 +289,68 @@ static struct s3c_gpio_chip s5pv310_gpio_part2_4bit[] = {
 			.label	= "GPX3",
 			.to_irq	= s5pv310_gpio2int,
 		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x120),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY0(0),
+			.ngpio	= S5PV310_GPIO_Y0_NR,
+			.label	= "GPY0",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x140),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY1(0),
+			.ngpio	= S5PV310_GPIO_Y1_NR,
+			.label	= "GPY1",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x160),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY2(0),
+			.ngpio	= S5PV310_GPIO_Y2_NR,
+			.label	= "GPY2",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x180),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY3(0),
+			.ngpio	= S5PV310_GPIO_Y3_NR,
+			.label	= "GPY3",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x1A0),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY4(0),
+			.ngpio	= S5PV310_GPIO_Y4_NR,
+			.label	= "GPY4",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x1C0),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY5(0),
+			.ngpio	= S5PV310_GPIO_Y5_NR,
+			.label	= "GPY5",
+		},
+	}, {
+		.base	= (S5PV310_VA_GPIO2 + 0x1E0),
+		.config	= &gpio_cfg_noint,
+		.chip	= {
+			.base	= S5PV310_GPY6(0),
+			.ngpio	= S5PV310_GPIO_Y6_NR,
+			.label	= "GPY6",
+		},
 	},
 };
 
 static struct s3c_gpio_chip s5pv310_gpio_part3_4bit[] = {
 	{
+		.config	= &gpio_cfg_noint,
 		.chip	= {
 			.base	= S5PV310_GPZ(0),
 			.ngpio	= S5PV310_GPIO_Z_NR,
@@ -296,18 +359,136 @@ static struct s3c_gpio_chip s5pv310_gpio_part3_4bit[] = {
 	},
 };
 
+/* S5PV310 machine dependent GPIO help function */
+int s3c_gpio_slp_cfgpin(unsigned int pin, unsigned int config)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	void __iomem *reg;
+	unsigned long flags;
+	int offset;
+	u32 con;
+	int shift;
+
+	if (!chip)
+		return -EINVAL;
+
+	if ((pin >= S5PV310_GPX0(0)) && (pin <= S5PV310_GPX3(7)))
+		return -EINVAL;
+
+	if (config > S3C_GPIO_SLP_PREV)
+		return -EINVAL;
+
+	reg = chip->base + 0x10;
+
+	offset = pin - chip->chip.base;
+	shift = offset * 2;
+
+	local_irq_save(flags);
+
+	con = __raw_readl(reg);
+	con &= ~(3 << shift);
+	con |= config << shift;
+	__raw_writel(con, reg);
+
+	local_irq_restore(flags);
+	return 0;
+}
+
+s3c_gpio_pull_t s3c_gpio_get_slp_cfgpin(unsigned int pin)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	void __iomem *reg;
+	unsigned long flags;
+	int offset;
+	u32 con;
+	int shift;
+
+	if (!chip)
+		return -EINVAL;
+
+	if ((pin >= S5PV310_GPX0(0)) && (pin <= S5PV310_GPX3(7)))
+		return -EINVAL;
+
+	reg = chip->base + 0x10;
+
+	offset = pin - chip->chip.base;
+	shift = offset * 2;
+
+	local_irq_save(flags);
+
+	con = __raw_readl(reg);
+	con >>= shift;
+	con &= 0x3;
+
+	local_irq_restore(flags);
+
+	return (__force s3c_gpio_pull_t)con;
+}
+
+int s3c_gpio_slp_setpull_updown(unsigned int pin, unsigned int config)
+{
+	struct s3c_gpio_chip *chip = s3c_gpiolib_getchip(pin);
+	void __iomem *reg;
+	unsigned long flags;
+	int offset;
+	u32 con;
+	int shift;
+
+	if (!chip)
+		return -EINVAL;
+
+	if ((pin >= S5PV310_GPX0(0)) && (pin <= S5PV310_GPX3(7)))
+		return -EINVAL;
+
+	if (config > S3C_GPIO_PULL_UP)
+		return -EINVAL;
+
+	reg = chip->base + 0x14;
+
+	offset = pin - chip->chip.base;
+	shift = offset * 2;
+
+	local_irq_save(flags);
+
+	con = __raw_readl(reg);
+	con &= ~(3 << shift);
+	con |= config << shift;
+	__raw_writel(con, reg);
+
+	local_irq_restore(flags);
+
+	return 0;
+}
+
+static int s5pc210_extint_to_irq(struct gpio_chip *gpio, unsigned int offset)
+{
+	struct s3c_gpio_chip *chip = to_s3c_gpio(gpio);
+	int irq;
+
+	irq = (chip->group * 8) + offset;
+	return IRQ_EINT(irq);
+}
+
 static __init int s5pv310_gpiolib_init(void)
 {
+#ifdef CONFIG_SAMSUNG_IRQ_GPIO
+	struct samsung_irq_gpio_info gpio[2];
+#endif
 	struct s3c_gpio_chip *chip;
 	int i;
 	int nr_chips;
+	int group = 0, extint = 0;
 
 	chip = s5pv310_gpio_part1_4bit;
 	nr_chips = ARRAY_SIZE(s5pv310_gpio_part1_4bit);
 
 	for (i = 0; i < nr_chips; i++, chip++) {
-		if (chip->config == NULL)
+		if (chip->config == NULL) {
 			chip->config = &gpio_cfg;
+			/* Assign the GPIO interrupt group */
+			chip->group = group++;
+			samsung_irq_gpio_add(chip);
+		}
 		if (chip->base == NULL)
 			chip->base = S5PV310_BANK_BASE1(i);
 	}
@@ -318,8 +499,17 @@ static __init int s5pv310_gpiolib_init(void)
 	nr_chips = ARRAY_SIZE(s5pv310_gpio_part2_4bit);
 
 	for (i = 0; i < nr_chips; i++, chip++) {
-		if (chip->config == NULL)
+		if (chip->config == NULL) {
 			chip->config = &gpio_cfg;
+			/* Assign the GPIO interrupt group */
+			chip->group = group++;
+			samsung_irq_gpio_add(chip);
+		}
+		if (chip->config == &gpio_cfg_extint) {
+			/* Assign the External GPIO interrupt group */
+			chip->group = extint++;
+			chip->chip.to_irq = s5pc210_extint_to_irq;
+		}
 		if (chip->base == NULL)
 				chip->base = S5PV310_BANK_BASE2(i);
 	}
@@ -330,13 +520,32 @@ static __init int s5pv310_gpiolib_init(void)
 	nr_chips = ARRAY_SIZE(s5pv310_gpio_part3_4bit);
 
 	for (i = 0; i < nr_chips; i++, chip++) {
-		if (chip->config == NULL)
+		if (chip->config == NULL) {
 			chip->config = &gpio_cfg;
+			/* Assign the GPIO interrupt group */
+			chip->group = group++;
+			samsung_irq_gpio_add(chip);
+		}
 		if (chip->base == NULL)
 				chip->base = S5PV310_BANK_BASE3(i);
 	}
 
 	samsung_gpiolib_add_4bit_chips(s5pv310_gpio_part3_4bit, nr_chips);
+
+#ifdef CONFIG_SAMSUNG_IRQ_GPIO
+	/* Register two GPIO IRQ */
+	gpio[0].irq = IRQ_GPIO_XA;
+	gpio[0].sig.start = 0;
+	gpio[0].sig.nr_groups = IRQ_GPIO1_NR_GROUPS;
+	gpio[0].sig.base = S5P_VA_GPIO;
+	gpio[0].handler = NULL;
+	gpio[1].irq = IRQ_GPIO_XB;
+	gpio[1].sig.start = IRQ_GPIO1_NR_GROUPS;
+	gpio[1].sig.nr_groups = IRQ_GPIO2_NR_GROUPS;
+	gpio[1].sig.base = S5PV310_VA_GPIO2;
+	gpio[1].handler = NULL;
+#endif
+	samsung_irq_gpio_register(gpio, ARRAY_SIZE(gpio));
 
 	return 0;
 }

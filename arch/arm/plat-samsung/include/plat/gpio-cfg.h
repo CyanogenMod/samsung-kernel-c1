@@ -26,6 +26,8 @@
 
 typedef unsigned int __bitwise__ s3c_gpio_pull_t;
 typedef unsigned int __bitwise__ s5p_gpio_drvstr_t;
+typedef unsigned int __bitwise__ s5p_gpio_conpdn_t;
+typedef unsigned int __bitwise__ s5p_gpio_pudpdn_t;
 
 /* forward declaration if gpio-core.h hasn't been included */
 struct s3c_gpio_chip;
@@ -125,6 +127,17 @@ extern unsigned s3c_gpio_getcfg(unsigned int pin);
 #define S3C_GPIO_PULL_UP	((__force s3c_gpio_pull_t)0x02)
 #endif
 
+#if defined(CONFIG_ARCH_S5PV310)
+/* need to move to mach/gpio.h */
+#define S3C_GPIO_SLP_OUT0       ((__force s3c_gpio_pull_t)0x00)
+#define S3C_GPIO_SLP_OUT1       ((__force s3c_gpio_pull_t)0x01)
+#define S3C_GPIO_SLP_INPUT      ((__force s3c_gpio_pull_t)0x02)
+#define S3C_GPIO_SLP_PREV       ((__force s3c_gpio_pull_t)0x03)
+
+#define S3C_GPIO_SETPIN_ZERO         0
+#define S3C_GPIO_SETPIN_ONE          1
+#define S3C_GPIO_SETPIN_NONE	     2
+#endif
 /**
  * s3c_gpio_setpull() - set the state of a gpio pin pull resistor
  * @pin: The pin number to configure the pull resistor.
@@ -149,12 +162,12 @@ extern s3c_gpio_pull_t s3c_gpio_getpull(unsigned int pin);
 /* Define values for the drvstr available for each gpio pin.
  *
  * These values control the value of the output signal driver strength,
- * configurable on most pins on the S5C series.
+ * configurable on most pins on the S5P series.
  */
-#define S5P_GPIO_DRVSTR_LV1	((__force s5p_gpio_drvstr_t)0x00)
-#define S5P_GPIO_DRVSTR_LV2	((__force s5p_gpio_drvstr_t)0x01)
-#define S5P_GPIO_DRVSTR_LV3	((__force s5p_gpio_drvstr_t)0x10)
-#define S5P_GPIO_DRVSTR_LV4	((__force s5p_gpio_drvstr_t)0x11)
+#define S5P_GPIO_DRVSTR_LV1	((__force s5p_gpio_drvstr_t)0x0)
+#define S5P_GPIO_DRVSTR_LV2	((__force s5p_gpio_drvstr_t)0x2)
+#define S5P_GPIO_DRVSTR_LV3	((__force s5p_gpio_drvstr_t)0x1)
+#define S5P_GPIO_DRVSTR_LV4	((__force s5p_gpio_drvstr_t)0x3)
 
 /**
  * s5c_gpio_get_drvstr() - get the driver streght value of a gpio pin
@@ -174,5 +187,63 @@ extern s5p_gpio_drvstr_t s5p_gpio_get_drvstr(unsigned int pin);
  * cannot support the requested setting.
 */
 extern int s5p_gpio_set_drvstr(unsigned int pin, s5p_gpio_drvstr_t drvstr);
+
+
+/* Define values for the powerdown state  available for each gpio pin.
+ *
+ * These values control the value of the output signal powerdown state,
+ * configurable on most pins on the S5P series.
+ */
+#define S5P_GPIO_OUTPUT0	((__force s5p_gpio_conpdn_t)0x0)
+#define S5P_GPIO_OUTPUT1	((__force s5p_gpio_conpdn_t)0x1)
+#define S5P_GPIO_INPUT		((__force s5p_gpio_conpdn_t)0x2)
+#define S5P_GPIO_PREVIOUS_STATE	((__force s5p_gpio_conpdn_t)0x3)
+
+/**
+ * s5c_gpio_get_conpdn() - get the powerdown state value of a gpio pin
+ * @pin: The pin number to get the settings for
+ *
+ * Read the powerdown state value for the specified pin.
+*/
+extern s5p_gpio_conpdn_t s5p_gpio_get_conpdn(unsigned int pin);
+
+/**
+ * s3c_gpio_set_conpdn() - set the powerdown state value of a gpio pin
+ * @pin: The pin number to configure the powerdown state value
+ * @conpdn: The new value of the powerdown state
+ *
+ * This function sets the driver strength value for the specified pin.
+ * It will return 0 if successfull, or a negative error code if the pin
+ * cannot support the requested setting.
+*/
+extern int s5p_gpio_set_conpdn(unsigned int pin, s5p_gpio_conpdn_t conpdn);
+
+/* Define values for the powerdown pull up/down state available 
+ * for each gpio pin.
+ *
+ * These values control the value of the output signal powerdown pull up/down
+ * state,configurable on most pins on the S5P series.
+ */
+#define S5P_GPIO_PULL_UP_DOWN_DISABLE	((__force s5p_gpio_pudpdn_t)0x0)
+#define S5P_GPIO_PULL_DOWN_ENABLE	((__force s5p_gpio_pudpdn_t)0x1)
+#define S5P_GPIO_PULL_UP_ENABLE		((__force s5p_gpio_pudpdn_t)0x2)
+
+/**
+ * s5c_gpio_get_pudpdn() - get the powerdown pull up/down state value of 
+ * a gpio pin
+ * @pin: The pin number to get the settings for
+ *
+ * Read the powerdown pull up/down state value for the specified pin.
+*/
+extern s5p_gpio_pudpdn_t s5p_gpio_get_pudpdn(unsigned int pin);
+
+/**
+ * s3c_gpio_set_pudpdn() - set the powerdown pull up/down state value of 
+ * a gpio pin
+ * @pin: The pin number to configure the powerdown state value
+ * @pudpdn: The new value of the powerdown pull up/down state
+*/
+extern int s5p_gpio_set_pudpdn(unsigned int pin, s5p_gpio_pudpdn_t pudpdn);
+
 
 #endif /* __PLAT_GPIO_CFG_H */

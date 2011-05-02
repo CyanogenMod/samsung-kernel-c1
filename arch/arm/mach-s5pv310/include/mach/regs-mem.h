@@ -35,4 +35,9 @@
 #define S5P_SROM_16WIDTH(x)	(1 << ((x) * 4))
 #define S5P_SROM_8WIDTH(x)	(0 << ((x) * 4))
 
+#define S5P_DMC0_MEMCON_OFFSET	(0x04)
+
+#define S5P_DMC0_MEMTYPE_SHIFT	(8)
+#define S5P_DMC0_MEMTYPE_MASK	(0xf)
+
 #endif /* __ASM_ARCH_REGS_MEM_H */

@@ -25,7 +25,9 @@ static int s5pv310_cfg_i2s(struct platform_device *pdev)
 	switch (pdev->id) {
 	case 1:
 		s3c_gpio_cfgpin(S5PV310_GPC0(0), S3C_GPIO_SFN(2));
+#ifndef CONFIG_TDMB
 		s3c_gpio_cfgpin(S5PV310_GPC0(1), S3C_GPIO_SFN(2));
+#endif
 		s3c_gpio_cfgpin(S5PV310_GPC0(2), S3C_GPIO_SFN(2));
 		s3c_gpio_cfgpin(S5PV310_GPC0(3), S3C_GPIO_SFN(2));
 		s3c_gpio_cfgpin(S5PV310_GPC0(4), S3C_GPIO_SFN(2));
@@ -92,7 +94,9 @@ static int s5pv310_pcm_cfg_gpio(struct platform_device *pdev)
 	switch (pdev->id) {
 	case 1:
 		s3c_gpio_cfgpin(S5PV310_GPC0(0), S3C_GPIO_SFN(3));
+#ifndef CONFIG_TDMB
 		s3c_gpio_cfgpin(S5PV310_GPC0(1), S3C_GPIO_SFN(3));
+#endif
 		s3c_gpio_cfgpin(S5PV310_GPC0(2), S3C_GPIO_SFN(3));
 		s3c_gpio_cfgpin(S5PV310_GPC0(3), S3C_GPIO_SFN(3));
 		s3c_gpio_cfgpin(S5PV310_GPC0(4), S3C_GPIO_SFN(3));
@@ -152,3 +156,74 @@ struct platform_device s5pv310_device_pcm1 = {
 		.platform_data = &s3c_pcm_pdata,
 	},
 };
+
+
+static int s5pv310_ac97_cfg_gpio(struct platform_device *pdev)
+{
+	s3c_gpio_cfgpin(S5PV310_GPC0(0), S3C_GPIO_SFN(4));
+#ifndef CONFIG_TDMB
+	s3c_gpio_cfgpin(S5PV310_GPC0(1), S3C_GPIO_SFN(4));
+#endif
+	s3c_gpio_cfgpin(S5PV310_GPC0(2), S3C_GPIO_SFN(4));
+	s3c_gpio_cfgpin(S5PV310_GPC0(3), S3C_GPIO_SFN(4));
+	s3c_gpio_cfgpin(S5PV310_GPC0(4), S3C_GPIO_SFN(4));
+
+	return 0;
+}
+
+static struct resource s5pv310_ac97_resource[] = {
+	[0] = {
+		.start = S5PV310_PA_AC97,
+		.end   = S5PV310_PA_AC97 + 0x100 - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = DMACH_AC97_PCMOUT,
+		.end   = DMACH_AC97_PCMOUT,
+		.flags = IORESOURCE_DMA,
+	},
+	[2] = {
+		.start = DMACH_AC97_PCMIN,
+		.end   = DMACH_AC97_PCMIN,
+		.flags = IORESOURCE_DMA,
+	},
+	[3] = {
+		.start = DMACH_AC97_MICIN,
+		.end   = DMACH_AC97_MICIN,
+		.flags = IORESOURCE_DMA,
+	},
+	[4] = {
+		.start = IRQ_AC97,
+		.end   = IRQ_AC97,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
+static struct s3c_audio_pdata s3c_ac97_pdata = {
+	.cfg_gpio = s5pv310_ac97_cfg_gpio,
+};
+
+static u64 s5pv310_ac97_dmamask = DMA_BIT_MASK(32);
+
+struct platform_device s5pv310_device_ac97 = {
+	.name             = "s3c-ac97",
+	.id               = -1,
+	.num_resources    = ARRAY_SIZE(s5pv310_ac97_resource),
+	.resource         = s5pv310_ac97_resource,
+	.dev = {
+		.platform_data = &s3c_ac97_pdata,
+		.dma_mask = &s5pv310_ac97_dmamask,
+		.coherent_dma_mask = DMA_BIT_MASK(32),
+	},
+};
+
+static struct resource s5pv310_rp_resource[] = {
+};
+
+struct platform_device s5pv310_device_rp = {
+	.name             = "s5p-rp",
+	.id               = -1,
+	.num_resources    = ARRAY_SIZE(s5pv310_rp_resource),
+	.resource         = s5pv310_rp_resource,
+};
+EXPORT_SYMBOL(s5pv310_device_rp);

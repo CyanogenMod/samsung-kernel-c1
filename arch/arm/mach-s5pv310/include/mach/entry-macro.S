@@ -18,6 +18,12 @@
 		.macro  get_irqnr_preamble, base, tmp
 		ldr	\base, =gic_cpu_base_addr
 		ldr	\base, [\base]
+#ifdef CONFIG_USE_EXT_GIC
+		mrc	p15, 0, \tmp, c0, c0, 5
+		and	\tmp, \tmp, #3
+		cmp	\tmp, #1
+		addeq	\base, \base, #0x8000
+#endif
 		.endm
 
 		.macro  arch_ret_to_user, tmp1, tmp2
@@ -44,7 +50,7 @@
 
 		.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp
 
-		ldr     \irqstat, [\base, #GIC_CPU_INTACK] /* bits 12-10 = src CPU, 9-0 = int # */
+		ldr	\irqstat, [\base, #GIC_CPU_INTACK] /* bits 12-10 = src CPU, 9-0 = int # */
 
 		ldr	\tmp, =1021
 

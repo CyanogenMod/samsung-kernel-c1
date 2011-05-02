@@ -204,11 +204,16 @@ __v7_setup:
 	mrc	p15, 0, r0, c0, c0, 0		@ read main ID register
 	and	r10, r0, #0xff000000		@ ARM?
 	teq	r10, #0x41000000
-	bne	2f
+	bne	3f
 	and	r5, r0, #0x00f00000		@ variant
 	and	r6, r0, #0x0000000f		@ revision
-	orr	r0, r6, r5, lsr #20-4		@ combine variant and revision
+	orr	r6, r6, r5, lsr #20-4		@ combine variant and revision
+	ubfx	r0, r0, #4, #12			@ primary part number
 
+	/* Cortex-A8 Errata */
+	ldr	r10, =0x00000c08		@ Cortex-A8 primary part number
+	teq	r0, r10
+	bne	2f
 #ifdef CONFIG_ARM_ERRATA_430973
 	teq	r5, #0x00100000			@ only present in r1p*
 	mrceq	p15, 0, r10, c1, c0, 1		@ read aux control register
@@ -216,36 +221,64 @@ __v7_setup:
 	mcreq	p15, 0, r10, c1, c0, 1		@ write aux control register
 #endif
 #ifdef CONFIG_ARM_ERRATA_458693
-	teq	r0, #0x20			@ only present in r2p0
+	teq	r6, #0x20			@ only present in r2p0
 	mrceq	p15, 0, r10, c1, c0, 1		@ read aux control register
 	orreq	r10, r10, #(1 << 5)		@ set L1NEON to 1
 	orreq	r10, r10, #(1 << 9)		@ set PLDNOP to 1
 	mcreq	p15, 0, r10, c1, c0, 1		@ write aux control register
 #endif
 #ifdef CONFIG_ARM_ERRATA_460075
-	teq	r0, #0x20			@ only present in r2p0
+	teq	r6, #0x20			@ only present in r2p0
 	mrceq	p15, 1, r10, c9, c0, 2		@ read L2 cache aux ctrl register
 	tsteq	r10, #1 << 22
 	orreq	r10, r10, #(1 << 22)		@ set the Write Allocate disable bit
 	mcreq	p15, 1, r10, c9, c0, 2		@ write the L2 cache aux ctrl register
 #endif
+	b	3f
 
+	/* Cortex-A9 Errata */
+2:	ldr	r10, =0x00000c09		@ Cortex-A9 primary part number
+	teq	r0, r10
+	bne	3f
 #ifdef CONFIG_ARM_ERRATA_742230
-	teq	r0, #0x21
-        mrceq	p15, 0, r10, c15, c0, 1
-	orreq	r10, #1 << 4
-        mcreq	p15, 0, r10, c15, c0, 1
+	cmp	r6, #0x22			@ only present up to r2p2
+	mrcle	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+	orrle	r10, r10, #1 << 4		@ set bit #4
+	mcrle	p15, 0, r10, c15, c0, 1		@ write diagnostic register
 #endif
-
 #ifdef CONFIG_ARM_ERRATA_742231
-	teq	r0, #0x21
-        mrceq	p15, 0, r10, c15, c0, 1
-	orreq	r10, #1 << 12
-	orreq	r10, #1 << 22
-        mcreq	p15, 0, r10, c15, c0, 1
+	teq	r6, #0x20			@ present in r2p0
+	teqne	r6, #0x21			@ present in r2p1
+	teqne	r6, #0x22			@ present in r2p2
+	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+	orreq	r10, r10, #1 << 12		@ set bit #12
+	orreq	r10, r10, #1 << 22		@ set bit #22
+	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
+#endif
+#ifdef CONFIG_ARM_ERRATA_743622
+	teq	r6, #0x20			@ present in r2p0
+	teqne	r6, #0x21			@ present in r2p1
+	teqne	r6, #0x22			@ present in r2p2
+	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+	orreq	r10, r10, #1 << 6		@ set bit #6
+	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
+#endif
+#ifdef CONFIG_ARM_ERRATA_751472
+	teq	r6, #0x20			@ present in r2p0
+	teqne	r6, #0x21			@ present in r2p1
+	teqne	r6, #0x22			@ present in r2p2
+	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+	orreq	r10, r10, #1 << 11		@ set bit #11
+	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
 #endif
 
-2:	mov	r10, #0
+#ifdef CONFIG_CPU_DYNAMIC_CLOCK_GATING
+	mrc     p15, 0, r10, c15, c0, 0         @ read power control register
+	orr     r10, r10, #1                    @ enable dynamic clock gating
+	mcr     p15, 0, r10, c15, c0, 0         @ write power control register
+#endif
+
+3:	mov	r10, #0
 #ifdef HARVARD_CACHE
 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
 #endif

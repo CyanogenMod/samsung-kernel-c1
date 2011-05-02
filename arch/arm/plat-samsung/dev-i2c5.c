@@ -16,14 +16,35 @@
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/platform_device.h>
+#include <linux/i2c-gpio.h>
 
 #include <mach/irqs.h>
 #include <mach/map.h>
+#include <mach/gpio.h>
 
 #include <plat/regs-iic.h>
 #include <plat/iic.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
+
+#if defined CONFIG_MFD_MAX8998
+static struct i2c_gpio_platform_data gpio_i2c_data5 __initdata = {
+	.sda_pin	= S5PV310_GPB(6),
+	.scl_pin	= S5PV310_GPB(7),
+};
+
+struct platform_device s3c_device_i2c5 = {
+	.name	= "i2c-gpio",
+	.id	= 5,
+	.dev.platform_data	= &gpio_i2c_data5,
+};
+
+void __init s3c_i2c5_set_platdata(struct s3c2410_platform_i2c *pd)
+{
+	/* Do nothing */
+}
+
+#else
 
 static struct resource s3c_i2c_resource[] = {
 	[0] = {
@@ -49,7 +70,7 @@ static struct s3c2410_platform_i2c default_i2c_data5 __initdata = {
 	.flags		= 0,
 	.bus_num	= 5,
 	.slave_addr	= 0x10,
-	.frequency	= 100*1000,
+	.frequency	= 400*1000,
 	.sda_delay	= 100,
 };
 
@@ -68,3 +89,5 @@ void __init s3c_i2c5_set_platdata(struct s3c2410_platform_i2c *pd)
 
 	s3c_device_i2c5.dev.platform_data = npd;
 }
+
+#endif

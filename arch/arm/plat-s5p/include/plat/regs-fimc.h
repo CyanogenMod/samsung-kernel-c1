@@ -197,6 +197,10 @@
 #define S3C_CISTATUS_GET_LCD_STATUS(x)		(((x) >> 9) & 0x1)
 #define S3C_CISTATUS_GET_ENVID_STATUS(x)	((x) & 0x1)
 
+#define S3C_CISTATUS2_GET_FRAMECOUNT_BEFORE(x)	(((x) >> 7) & 0x3f)
+#define S3C_CISTATUS2_GET_FRAMECOUNT_PRESENT(x)	((x) & 0x3f)
+
+#define S3C_CIIMGEFF_FIN(x)			((x & 0x7) << 26)
 #define S3C_CIIMGEFF_PAT_CB(x)			((x) << 13)
 #define S3C_CIIMGEFF_PAT_CR(x)			((x) << 0)
 
@@ -282,6 +286,8 @@
 #define S3C_CIGCTRL_IRQ_CLR			(1 << 19)
 #define S3C_CIGCTRL_IRQ_DISABLE			(0 << 16)
 #define S3C_CIGCTRL_IRQ_ENABLE			(1 << 16)
+#define S3C_CIGCTRL_SHADOW_DISABLE		(1 << 12)
+#define S3C_CIGCTRL_CAM_JPEG			(1 << 8)
 #define S3C_CIGCTRL_SELCAM_MIPI_B		(0 << 7)
 #define S3C_CIGCTRL_SELCAM_MIPI_A		(1 << 7)
 #define S3C_CIGCTRL_SELCAM_MIPI_MASK		(1 << 7)
@@ -325,6 +331,7 @@
 /* Output DMA control register */
 #define S3C_CIOCTRL_WEAVE_OUT			(1 << 31)
 #define S3C_CIOCTRL_WEAVE_MASK			(1 << 31)
+#define S3C_CIOCTRL_LASTENDEN			(1 << 30)
 #define S3C_CIOCTRL_ORDER2P_LSB_CBCR		(0 << 24)
 #define S3C_CIOCTRL_ORDER2P_LSB_CRCB		(1 << 24)
 #define S3C_CIOCTRL_ORDER2P_MSB_CRCB		(2 << 24)
@@ -373,6 +380,7 @@
 #define S3C_CISTATUS_OVFICB			(1 << 30)
 #define S3C_CISTATUS_OVFICR			(1 << 29)
 #define S3C_CISTATUS_VSYNC			(1 << 28)
+#define S3C_CISTATUS_SCALERSTART		(1 << 26)
 #define S3C_CISTATUS_WINOFSTEN			(1 << 25)
 #define S3C_CISTATUS_IMGCPTEN			(1 << 22)
 #define S3C_CISTATUS_IMGCPTENSC			(1 << 21)
@@ -493,5 +501,17 @@
 #define S3C_CLKSRC_HCLK				(0 << 1)
 #define S3C_CLKSRC_HCLK_MASK			(1 << 1)
 #define S3C_CLKSRC_SCLK				(1 << 1)
+
+/* SYSREG for FIMC writeback */
+#define SYSREG_CAMERA_BLK			(S3C_VA_SYS + 0x0218)
+#define FIMD0_WB_DEST_FIMC0			(0x0 << 14)
+#define FIMD0_WB_DEST_FIMC1			(0x1 << 14)
+#define FIMD0_WB_DEST_FIMC2			(0x2 << 14)
+#define FIMD0_WB_DEST_FIMC3			(0x3 << 14)
+
+#define FIMD1_WB_DEST_FIMC0			(0x0 << 10)
+#define FIMD1_WB_DEST_FIMC1			(0x1 << 10)
+#define FIMD1_WB_DEST_FIMC2			(0x2 << 10)
+#define FIMD1_WB_DEST_FIMC3			(0x3 << 10)
 
 #endif /* __ASM_PLAT_REGS_FIMC_H */

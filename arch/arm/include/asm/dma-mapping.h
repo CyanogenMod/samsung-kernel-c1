@@ -9,6 +9,9 @@
 #include <asm-generic/dma-coherent.h>
 #include <asm/memory.h>
 
+int dma_alloc_phys_page(u32* phys, gfp_t gfp);
+void dma_free_phys_page(u32 phys);
+
 /*
  * page_to_dma/dma_to_virt/virt_to_dma are architecture private functions
  * used internally by the DMA-mapping API to provide DMA addresses. They

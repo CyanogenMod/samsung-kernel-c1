@@ -6,7 +6,7 @@
 
 config PLAT_SAMSUNG
 	bool
-	depends on ARCH_S3C2410 || ARCH_S3C24A0 || ARCH_S3C64XX || ARCH_S5P6450 || ARCH_S5PV210
+	depends on ARCH_S3C2410 || ARCH_S3C24A0 || ARCH_S3C64XX || ARCH_S5P6450 || ARCH_S5PV210 || ARCH_S5PV310
 	select NO_IOPORT
 	default y
 	help
@@ -111,6 +111,17 @@ config S5P_GPIO_DRVSTR
 	  Internal configuration to get and set correct GPIO driver strength
 	  helper
 
+config S5P_GPIO_CONPDN
+	bool
+	help
+	  Internal configuration to get and set correct GPIO control powerdown state
+
+config S5P_GPIO_PUDPDN
+	bool
+	help
+	  Internal configuration to get and set correct GPIO control 
+	  powerdown pull up/down state
+
 config SAMSUNG_GPIO_EXTRA
 	int "Number of additional GPIO pins"
 	default 0
@@ -183,7 +194,7 @@ config S3C_DEV_HSMMC3
 	help
 	  Compile in platform device definitions for HSMMC channel 3
 
-config S3C_DEV_MSHC
+config S5P_DEV_MSHC
 	bool
 	help
 	  Compile in platform device definitions for MSHC
@@ -233,6 +244,30 @@ config S3C_DEV_I2C7
 	depends on ARCH_S5PV310
 	help
 	  Compile in platform device definitions for I2C channel 7
+
+config S3C_DEV_I2C8_EMUL
+	bool "I2C8 Information GPIO bitbanging emulation"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 8
+
+config S3C_DEV_I2C9_EMUL
+	bool "I2C9 Information GPIO bitbanging emulation"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 9
+
+config S3C_DEV_I2C10_EMUL
+	bool "I2C10 Information GPIO bitbanging emulation"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 10
+
+config S3C_DEV_I2C11_EMUL
+	bool "I2C11 Information GPIO bitbanging emulation"
+	depends on ARCH_S5PV310
+	help
+	  Compile in platform device definitions for I2C channel 11
 
 config S3C_DEV_FB
 	bool
@@ -363,5 +398,14 @@ config SAMSUNG_WAKEMASK
 	  Compile support for wakeup-mask controls found on the S3C6400
 	  and above. This code allows a set of interrupt to wakeup-mask
 	  mappings. See <plat/wakeup-mask.h>
+
+comment "Power Domain"
+
+config SAMSUNG_PD
+	bool "Samsung Power Domain"
+	depends on PM_RUNTIME
+	default y
+	help
+	  Say Y here if you want to control Power Domain by Runtime PM.
 
 endif

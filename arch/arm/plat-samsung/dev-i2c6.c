@@ -48,7 +48,7 @@ struct platform_device s3c_device_i2c6 = {
 static struct s3c2410_platform_i2c default_i2c_data6 __initdata = {
 	.flags		= 0,
 	.bus_num	= 6,
-	.slave_addr	= 0x10,
+	.slave_addr	= 0x3a,		/* For MC2N1 */
 	.frequency	= 100*1000,
 	.sda_delay	= 100,
 };

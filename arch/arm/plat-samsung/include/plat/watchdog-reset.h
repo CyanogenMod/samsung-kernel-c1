@@ -16,11 +16,13 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/io.h>
+#include <mach/regs-clock.h>
 
 static inline void arch_wdt_reset(void)
 {
 	struct clk *wdtclk;
 
+#if 0
 	printk("arch_reset: attempting watchdog reset\n");
 
 	__raw_writel(0, S3C2410_WTCON);	  /* disable watchdog, to be safe  */
@@ -30,7 +32,9 @@ static inline void arch_wdt_reset(void)
 		clk_enable(wdtclk);
 	} else
 		printk(KERN_WARNING "%s: warning: cannot get watchdog clock\n", __func__);
+#endif
 
+	__raw_writel(0x3FFFF, S5P_CLKGATE_IP_PERIR);
 	/* put initial values into count and data */
 	__raw_writel(0x80, S3C2410_WTCNT);
 	__raw_writel(0x80, S3C2410_WTDAT);

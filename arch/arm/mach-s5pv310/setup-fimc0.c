@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-s5pv210/setup-fimc0.c
+/* linux/arch/arm/mach-s5pv310/setup-fimc0.c
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
@@ -39,7 +39,7 @@ void s3c_fimc0_cfg_gpio(struct platform_device *pdev)
 		s3c_gpio_cfgpin(S5PV310_GPJ1(i), S3C_GPIO_SFN(2));
 		s3c_gpio_setpull(S5PV310_GPJ1(i), S3C_GPIO_PULL_NONE);
 	}
-
+#if defined(CONFIG_MACH_SMDKC210) || defined(CONFIG_MACH_SMDKV310)
 	/* CAM B port(b0011) : DATA[0-7] */
 	for (i = 0; i < 8; i++) {
 		s3c_gpio_cfgpin(S5PV310_GPE1(i), S3C_GPIO_SFN(3));
@@ -50,30 +50,20 @@ void s3c_fimc0_cfg_gpio(struct platform_device *pdev)
 		s3c_gpio_cfgpin(S5PV310_GPE0(i), S3C_GPIO_SFN(3));
 		s3c_gpio_setpull(S5PV310_GPE0(i), S3C_GPIO_PULL_NONE);
 	}
-
+#endif
 	/* note : driver strength to max is unnecessary */
 }
 
 int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 {
 	struct clk *sclk_fimc_lclk = NULL;
-	struct clk *mout_mpll = NULL;
 	struct clk *mout_epll = NULL;
-
-	mout_mpll = clk_get(&pdev->dev, "mout_mpll");
-	if (IS_ERR(mout_mpll)) {
-		dev_err(&pdev->dev, "failed to get mout_mpll\n");
-		goto err_clk1;
-	}
 
 	sclk_fimc_lclk = clk_get(&pdev->dev, "sclk_fimc");
 	if (IS_ERR(sclk_fimc_lclk)) {
 		dev_err(&pdev->dev, "failed to get sclk_fimc_lclk\n");
-		goto err_clk2;
+		goto err_clk3;
 	}
-
-	clk_set_parent(sclk_fimc_lclk, mout_mpll);
-	clk_set_rate(sclk_fimc_lclk, 166750000);
 
 	/* be able to handle clock on/off only with this clock */
 	*clk = clk_get(&pdev->dev, "fimc");
@@ -83,11 +73,6 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 	}
 	mout_epll = clk_get(&pdev->dev, "mout_epll");
 
-	printk(KERN_INFO "mout_epll : %ld\n", clk_get_rate(mout_epll));
-	printk(KERN_INFO "mout_mpll : %ld\n", clk_get_rate(mout_mpll));
-	printk(KERN_INFO "sclk_fimc : %ld\n", clk_get_rate(sclk_fimc_lclk));
-	printk(KERN_INFO "fimc_clk: %ld\n", clk_get_rate(*clk));
-
 	clk_enable(*clk);
 	clk_enable(sclk_fimc_lclk);
 
@@ -96,19 +81,17 @@ int s3c_fimc_clk_on(struct platform_device *pdev, struct clk **clk)
 err_clk3:
 	clk_put(sclk_fimc_lclk);
 
-err_clk2:
-	clk_put(mout_mpll);
-
 err_clk1:
 	return -EINVAL;
 }
 
 int s3c_fimc_clk_off(struct platform_device *pdev, struct clk **clk)
 {
-	clk_disable(*clk);
-	clk_put(*clk);
-
-	*clk = NULL;
+	if (*clk != NULL) {
+		clk_disable(*clk);
+		clk_put(*clk);
+		*clk = NULL;
+	}
 
 	return 0;
 }

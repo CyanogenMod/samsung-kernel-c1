@@ -21,6 +21,20 @@
 struct platform_device;
 struct clk;
 
+#ifdef CONFIG_FB_S3C_MIPI_LCD
+/* enumerates display mode. */
+enum {
+	SINGLE_LCD_MODE = 1,
+	DUAL_LCD_MODE = 2,
+};
+
+/* enumerates interface mode. */
+enum {
+	FIMD_RGB_INTERFACE = 1,
+	FIMD_CPU_INTERFACE = 2,
+};
+#endif
+
 struct s3c_platform_fb {
 	int		hw_ver;
 	char		clk_name[16];
@@ -28,8 +42,40 @@ struct s3c_platform_fb {
 	int		nr_buffers[5];
 	int		default_win;
 	int		swap;
+	void		*lcd;
+#ifdef CONFIG_FB_S3C_MIPI_LCD
+	unsigned int	sub_lcd_enabled;
+	unsigned int	machine_is_cypress;
+	unsigned int	machine_is_p1p2;
+	unsigned int	mdnie_is_enabled;
+	unsigned int	mipi_is_enabled;
+	unsigned int	interface_mode;
 
+	void		*single_lcd;
+	void		*dual_lcd;
+
+	void		(*set_display_path)(unsigned int mode);
+	int		(*reset_lcd)(void);
+
+	/* variables and interface for mDNIe */
+	char		mdnie_clk_name[20];
+	void		*mdnie_clk;
+	unsigned int	mdnie_phy_base;
+	unsigned int	ielcd_phy_base;
+	void __iomem	*mdnie_mmio_base;
+	void __iomem	*ielcd_mmio_base;
+	unsigned char	mdnie_mode;
+
+	void		(*set_mdnie_clock)(void *mdnie_clk, unsigned char enable);
+	void		(*init_mdnie)(unsigned int mdnie_base,
+				unsigned int hsize, unsigned int vsize);
+	void		(*mdnie_set_mode)(unsigned int mdnie_base, unsigned char mode);
+
+	void		(*start_ielcd_logic)(unsigned int ielcd_base);
+	void		(*init_ielcd)(unsigned int ielcd_base, void *l, void *c);
+#endif
 	void		(*cfg_gpio)(struct platform_device *dev);
+	void		(*cfg_gpio_sleep)(struct platform_device *dev);	
 	int		(*backlight_on)(struct platform_device *dev);
 	int		(*backlight_off)(struct platform_device *dev);
 	int		(*lcd_on)(struct platform_device *dev);
@@ -42,6 +88,7 @@ extern void s3cfb_set_platdata(struct s3c_platform_fb *fimd);
 
 /* defined by architecture to configure gpio */
 extern void s3cfb_cfg_gpio(struct platform_device *pdev);
+extern void s3cfb_cfg_gpio_sleep(struct platform_device *pdev);
 extern int s3cfb_backlight_on(struct platform_device *pdev);
 extern int s3cfb_backlight_off(struct platform_device *pdev);
 extern int s3cfb_lcd_on(struct platform_device *pdev);

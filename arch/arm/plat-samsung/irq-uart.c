@@ -18,6 +18,7 @@
 #include <linux/serial_core.h>
 #include <linux/irq.h>
 #include <linux/io.h>
+#include <linux/spinlock.h>
 
 #include <mach/map.h>
 #include <plat/irq-uart.h>
@@ -27,6 +28,7 @@
 /* Note, we make use of the fact that the parent IRQs, IRQ_UART[0..3]
  * are consecutive when looking up the interrupt in the demux routines.
  */
+static DEFINE_SPINLOCK(uart_lock);
 
 static inline void __iomem *s3c_irq_uart_base(unsigned int irq)
 {
@@ -45,9 +47,11 @@ static void s3c_irq_uart_mask(unsigned int irq)
 	unsigned int bit = s3c_irq_uart_bit(irq);
 	u32 reg;
 
+	spin_lock(&uart_lock);
 	reg = __raw_readl(regs + S3C64XX_UINTM);
 	reg |= (1 << bit);
 	__raw_writel(reg, regs + S3C64XX_UINTM);
+	spin_unlock(&uart_lock);
 }
 
 static void s3c_irq_uart_maskack(unsigned int irq)
@@ -56,10 +60,12 @@ static void s3c_irq_uart_maskack(unsigned int irq)
 	unsigned int bit = s3c_irq_uart_bit(irq);
 	u32 reg;
 
+	spin_lock(&uart_lock);
 	reg = __raw_readl(regs + S3C64XX_UINTM);
 	reg |= (1 << bit);
 	__raw_writel(reg, regs + S3C64XX_UINTM);
 	__raw_writel(1 << bit, regs + S3C64XX_UINTP);
+	spin_unlock(&uart_lock);
 }
 
 static void s3c_irq_uart_unmask(unsigned int irq)
@@ -68,9 +74,11 @@ static void s3c_irq_uart_unmask(unsigned int irq)
 	unsigned int bit = s3c_irq_uart_bit(irq);
 	u32 reg;
 
+	spin_lock(&uart_lock);
 	reg = __raw_readl(regs + S3C64XX_UINTM);
 	reg &= ~(1 << bit);
 	__raw_writel(reg, regs + S3C64XX_UINTM);
+	spin_unlock(&uart_lock);
 }
 
 static void s3c_irq_uart_ack(unsigned int irq)
@@ -78,7 +86,9 @@ static void s3c_irq_uart_ack(unsigned int irq)
 	void __iomem *regs = s3c_irq_uart_base(irq);
 	unsigned int bit = s3c_irq_uart_bit(irq);
 
+	spin_lock(&uart_lock);
 	__raw_writel(1 << bit, regs + S3C64XX_UINTP);
+	spin_unlock(&uart_lock);
 }
 
 static void s3c_irq_demux_uart(unsigned int irq, struct irq_desc *desc)
@@ -86,6 +96,10 @@ static void s3c_irq_demux_uart(unsigned int irq, struct irq_desc *desc)
 	struct s3c_uart_irq *uirq = desc->handler_data;
 	u32 pend = __raw_readl(uirq->regs + S3C64XX_UINTP);
 	int base = uirq->base_irq;
+	struct irq_chip *chip = get_irq_chip(irq);
+
+	if (chip->ack)
+		chip->ack(irq);
 
 	if (pend & (1 << 0))
 		generic_handle_irq(base);
@@ -95,11 +109,14 @@ static void s3c_irq_demux_uart(unsigned int irq, struct irq_desc *desc)
 		generic_handle_irq(base + 2);
 	if (pend & (1 << 3))
 		generic_handle_irq(base + 3);
+
+	chip->unmask(irq);
 }
 
 static struct irq_chip s3c_irq_uart = {
 	.name		= "s3c-uart",
 	.mask		= s3c_irq_uart_mask,
+	.disable	= s3c_irq_uart_maskack,
 	.unmask		= s3c_irq_uart_unmask,
 	.mask_ack	= s3c_irq_uart_maskack,
 	.ack		= s3c_irq_uart_ack,

@@ -38,25 +38,21 @@
  * action is required.
  */
 
-enum s3c_cpu_type {
-	TYPE_S3C24XX,
-	TYPE_S3C64XX
-};
-
 struct s3c_adc_client {
 	struct platform_device	*pdev;
-	struct list_head	 pend;
+	struct list_head	pend;
 	wait_queue_head_t	*wait;
 
-	unsigned int		 nr_samples;
-	int			 result;
-	unsigned char		 is_ts;
-	unsigned char		 channel;
+	unsigned int		nr_samples;
+	int			result;
+	unsigned char		is_ts;
+	unsigned char		channel;
 
 	void	(*select_cb)(struct s3c_adc_client *c, unsigned selected);
 	void	(*convert_cb)(struct s3c_adc_client *c,
 			      unsigned val1, unsigned val2,
 			      unsigned *samples_left);
+	atomic_t		running;
 };
 
 struct adc_device {
@@ -66,11 +62,15 @@ struct adc_device {
 	struct s3c_adc_client	*cur;
 	struct s3c_adc_client	*ts_pend;
 	void __iomem		*regs;
-	spinlock_t		 lock;
+	spinlock_t		lock;
+	enum s3c_cpu_type	cputype;
 
-	unsigned int		 prescale;
+	unsigned int	prescale;
 
-	int			 irq;
+	int		irq;
+	unsigned int	adccon;
+	unsigned int	adctsc;
+	unsigned int	adcdly;
 };
 
 static struct adc_device *adc_dev;
@@ -97,9 +97,15 @@ static inline void s3c_adc_select(struct adc_device *adc,
 	con &= ~S3C2410_ADCCON_MUXMASK;
 	con &= ~S3C2410_ADCCON_STDBM;
 	con &= ~S3C2410_ADCCON_STARTMASK;
+	con |= S3C2410_ADCCON_PRSCEN;
 
-	if (!client->is_ts)
-		con |= S3C2410_ADCCON_SELMUX(client->channel);
+	if (!client->is_ts) {
+		if (adc->cputype == TYPE_S3C64XX)
+			writel(S3C_ADCCON_SELMUX_1(client->channel),
+					adc->regs + S3C_ADCMUX);
+		else
+			con |= S3C2410_ADCCON_SELMUX(client->channel);
+	}
 
 	writel(con, adc->regs + S3C2410_ADCCON);
 }
@@ -115,6 +121,7 @@ static void s3c_adc_dbgshow(struct adc_device *adc)
 static void s3c_adc_try(struct adc_device *adc)
 {
 	struct s3c_adc_client *next = adc->ts_pend;
+	unsigned con;
 
 	if (!next && !list_empty(&adc_pending)) {
 		next = list_first_entry(&adc_pending,
@@ -129,11 +136,27 @@ static void s3c_adc_try(struct adc_device *adc)
 		s3c_adc_select(adc, next);
 		s3c_adc_convert(adc);
 		s3c_adc_dbgshow(adc);
+
+		if (!atomic_xchg(&next->running, 0))
+			WARN(1, "%s: %p is already stopped\n", __func__, next);
+	} else {
+		con = readl(adc->regs + S3C2410_ADCCON);
+		con &= ~S3C2410_ADCCON_PRSCEN;
+		con |= S3C2410_ADCCON_STDBM;
+		writel(con, adc->regs + S3C2410_ADCCON);
 	}
 }
 
+static void s3c_convert_done(struct s3c_adc_client *client,
+			     unsigned v, unsigned u, unsigned *left)
+{
+	client->result = v;
+	wake_up(client->wait);
+}
+
 int s3c_adc_start(struct s3c_adc_client *client,
-		  unsigned int channel, unsigned int nr_samples)
+		  unsigned int channel, unsigned int nr_samples,
+		  wait_queue_head_t *pwake)
 {
 	struct adc_device *adc = adc_dev;
 	unsigned long flags;
@@ -146,7 +169,16 @@ int s3c_adc_start(struct s3c_adc_client *client,
 	if (client->is_ts && adc->ts_pend)
 		return -EAGAIN;
 
+	if (atomic_xchg(&client->running, 1)) {
+		WARN(1, "%s: %p is already running\n", __func__, client);
+		return -EAGAIN;
+	}
+
 	spin_lock_irqsave(&adc->lock, flags);
+
+	client->convert_cb = s3c_convert_done;
+	client->wait = pwake;
+	client->result = -1;
 
 	client->channel = channel;
 	client->nr_samples = nr_samples;
@@ -165,28 +197,21 @@ int s3c_adc_start(struct s3c_adc_client *client,
 }
 EXPORT_SYMBOL_GPL(s3c_adc_start);
 
-static void s3c_convert_done(struct s3c_adc_client *client,
-			     unsigned v, unsigned u, unsigned *left)
-{
-	client->result = v;
-	wake_up(client->wait);
-}
+static void s3c_adc_stop(struct s3c_adc_client *client);
 
 int s3c_adc_read(struct s3c_adc_client *client, unsigned int ch)
 {
 	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wake);
 	int ret;
 
-	client->convert_cb = s3c_convert_done;
-	client->wait = &wake;
-	client->result = -1;
-
-	ret = s3c_adc_start(client, ch, 1);
+	ret = s3c_adc_start(client, ch, 1, &wake);
 	if (ret < 0)
 		goto err;
 
 	ret = wait_event_timeout(wake, client->result >= 0, HZ / 2);
 	if (client->result < 0) {
+		s3c_adc_stop(client);
+		WARN(1, "%s: %p is timed out\n", __func__, client);
 		ret = -ETIMEDOUT;
 		goto err;
 	}
@@ -237,7 +262,7 @@ struct s3c_adc_client *s3c_adc_register(struct platform_device *pdev,
 }
 EXPORT_SYMBOL_GPL(s3c_adc_register);
 
-void s3c_adc_release(struct s3c_adc_client *client)
+static void s3c_adc_stop(struct s3c_adc_client *client)
 {
 	unsigned long flags;
 
@@ -254,8 +279,13 @@ void s3c_adc_release(struct s3c_adc_client *client)
 
 		list_for_each_safe(p, n, &adc_pending) {
 			tmp = list_entry(p, struct s3c_adc_client, pend);
-			if (tmp == client)
+			if (tmp == client) {
 				list_del(&tmp->pend);
+				if (!atomic_xchg(&tmp->running, 0)) {
+					WARN(1, "%s: %p is already stopped\n",
+					     __func__, tmp);
+				}
+			}
 		}
 	}
 
@@ -263,6 +293,11 @@ void s3c_adc_release(struct s3c_adc_client *client)
 		s3c_adc_try(adc_dev);
 
 	spin_unlock_irqrestore(&adc_dev->lock, flags);
+}
+
+void s3c_adc_release(struct s3c_adc_client *client)
+{
+	s3c_adc_stop(client);
 	kfree(client);
 }
 EXPORT_SYMBOL_GPL(s3c_adc_release);
@@ -271,7 +306,6 @@ static irqreturn_t s3c_adc_irq(int irq, void *pw)
 {
 	struct adc_device *adc = pw;
 	struct s3c_adc_client *client = adc->cur;
-	enum s3c_cpu_type cpu = platform_get_device_id(adc->pdev)->driver_data;
 	unsigned data0, data1;
 
 	if (!client) {
@@ -285,7 +319,7 @@ static irqreturn_t s3c_adc_irq(int irq, void *pw)
 
 	client->nr_samples--;
 
-	if (cpu == TYPE_S3C64XX) {
+	if (adc->cputype == TYPE_S3C64XX) {
 		/* S3C64XX ADC resolution is 12-bit */
 		data0 &= 0xfff;
 		data1 &= 0xfff;
@@ -312,7 +346,7 @@ static irqreturn_t s3c_adc_irq(int irq, void *pw)
 	}
 
 exit:
-	if (cpu == TYPE_S3C64XX) {
+	if (adc->cputype == TYPE_S3C64XX) {
 		/* Clear ADC interrupt */
 		writel(0, adc->regs + S3C64XX_ADCCLRINT);
 	}
@@ -323,9 +357,17 @@ static int s3c_adc_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct adc_device *adc;
+	struct s3c_adc_mach_info *adcinfo;
 	struct resource *regs;
 	int ret;
-	unsigned tmp;
+	unsigned int tmp = 0;
+
+	adcinfo = pdev->dev.platform_data;
+
+	if (!adcinfo) {
+		dev_err(&pdev->dev, "platform data missing!\n");
+		return -ENODEV;
+	}
 
 	adc = kzalloc(sizeof(struct adc_device), GFP_KERNEL);
 	if (adc == NULL) {
@@ -336,7 +378,8 @@ static int s3c_adc_probe(struct platform_device *pdev)
 	spin_lock_init(&adc->lock);
 
 	adc->pdev = pdev;
-	adc->prescale = S3C2410_ADCCON_PRSCVL(49);
+
+	adc->cputype = platform_get_device_id(adc->pdev)->driver_data;
 
 	adc->irq = platform_get_irq(pdev, 1);
 	if (adc->irq <= 0) {
@@ -381,11 +424,18 @@ static int s3c_adc_probe(struct platform_device *pdev)
 
 	clk_enable(adc->clk);
 
-	tmp = adc->prescale | S3C2410_ADCCON_PRSCEN;
-	if (platform_get_device_id(pdev)->driver_data == TYPE_S3C64XX) {
-		/* Enable 12-bit ADC resolution */
+	/* Initialise registers */
+	if ((adcinfo->presc & 0xff) > 0)
+		tmp = S3C2410_ADCCON_PRSCVL(adcinfo->presc & 0xff);
+
+	if ((adcinfo->delay & 0xffff) > 0)
+		writel(adcinfo->delay & 0xffff, adc->regs + S3C2410_ADCDLY);
+
+	if (adcinfo->resolution == 12)
 		tmp |= S3C64XX_ADCCON_RESSEL;
-	}
+
+	tmp |= S3C2410_ADCCON_STDBM;
+
 	writel(tmp, adc->regs + S3C2410_ADCCON);
 
 	dev_info(dev, "attached adc driver\n");
@@ -423,17 +473,12 @@ static int __devexit s3c_adc_remove(struct platform_device *pdev)
 static int s3c_adc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct adc_device *adc = platform_get_drvdata(pdev);
-	unsigned long flags;
-	u32 con;
 
-	spin_lock_irqsave(&adc->lock, flags);
-
-	con = readl(adc->regs + S3C2410_ADCCON);
-	con |= S3C2410_ADCCON_STDBM;
-	writel(con, adc->regs + S3C2410_ADCCON);
+	adc->adccon = readl(adc->regs + S3C2410_ADCCON);
+	adc->adctsc = readl(adc->regs + S3C2410_ADCTSC);
+	adc->adcdly = readl(adc->regs + S3C2410_ADCDLY);
 
 	disable_irq(adc->irq);
-	spin_unlock_irqrestore(&adc->lock, flags);
 	clk_disable(adc->clk);
 
 	return 0;
@@ -442,13 +487,14 @@ static int s3c_adc_suspend(struct platform_device *pdev, pm_message_t state)
 static int s3c_adc_resume(struct platform_device *pdev)
 {
 	struct adc_device *adc = platform_get_drvdata(pdev);
-	unsigned long flags;
 
 	clk_enable(adc->clk);
-	enable_irq(adc->irq);
 
-	writel(adc->prescale | S3C2410_ADCCON_PRSCEN,
-	       adc->regs + S3C2410_ADCCON);
+	writel(adc->adctsc, adc->regs + S3C2410_ADCTSC);
+	writel(adc->adcdly, adc->regs + S3C2410_ADCDLY);
+	writel(adc->adccon, adc->regs + S3C2410_ADCCON);
+
+	enable_irq(adc->irq);
 
 	return 0;
 }

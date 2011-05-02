@@ -23,8 +23,15 @@ struct platform_device; /* don't need the contents */
 
 void s3c_i2c4_cfg_gpio(struct platform_device *dev)
 {
+#ifdef CONFIG_EPEN_WACOM_G5SP
+	s3c_gpio_cfgpin(S5PV310_GPB(2), S3C_GPIO_SFN(3));
+	s3c_gpio_setpull(S5PV310_GPB(2), S3C_GPIO_PULL_UP);
+	s3c_gpio_cfgpin(S5PV310_GPB(3), S3C_GPIO_SFN(3));
+	s3c_gpio_setpull(S5PV310_GPB(3), S3C_GPIO_PULL_UP);
+#else
 	s3c_gpio_cfgpin(S5PV310_GPB(0), S3C_GPIO_SFN(3));
 	s3c_gpio_setpull(S5PV310_GPB(0), S3C_GPIO_PULL_UP);
 	s3c_gpio_cfgpin(S5PV310_GPB(1), S3C_GPIO_SFN(3));
 	s3c_gpio_setpull(S5PV310_GPB(1), S3C_GPIO_PULL_UP);
+#endif /* CONFIG_EPEN_WACOM_G5SP */
 }

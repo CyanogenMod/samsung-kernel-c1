@@ -40,6 +40,10 @@ extern unsigned long s3c_irqwake_eintallow;
 extern void (*pm_cpu_prep)(void);
 extern void (*pm_cpu_sleep)(void);
 
+extern int (*pm_begin)(void);
+extern int (*pm_prepare)(void);
+extern void (*pm_end)(void);
+
 /* Flags for PM Control */
 
 extern unsigned long s3c_pm_flags;
@@ -93,6 +97,8 @@ struct pm_uart_save {
 	u32	udivslot;
 };
 
+struct sys_device;
+
 /* helper functions to save/restore lists of registers. */
 
 extern void s3c_pm_do_save(struct sleep_save *ptr, int count);
@@ -125,6 +131,16 @@ extern void s3c_pm_dbg(const char *msg, ...);
 #define S3C_PMDBG(fmt...) s3c_pm_dbg(fmt)
 #else
 #define S3C_PMDBG(fmt...) printk(KERN_DEBUG fmt)
+#endif
+
+/**
+ * This is temporary log for sleep/wakeup problem.
+ * This will be omitted after debugging this problem.
+ */
+#ifdef CONFIG_SEC_DEBUG_PM_TEMP
+#define S3C_PMINFO(fmt...) S3C_PMDBG(fmt)
+#else
+#define S3C_PMINFO(fmt...)
 #endif
 
 #ifdef CONFIG_S3C_PM_DEBUG_LED_SMDK

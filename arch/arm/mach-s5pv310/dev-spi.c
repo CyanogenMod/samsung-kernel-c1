@@ -40,13 +40,19 @@ static int s5pv310_spi_cfg_gpio(struct platform_device *pdev)
 	switch (pdev->id) {
 	case 0:
 		s3c_gpio_cfgpin(S5PV310_GPB(0), S3C_GPIO_SFN(2));
+		s3c_gpio_cfgpin(S5PV310_GPB(1), S3C_GPIO_SFN(2));
+#if !defined(CONFIG_EPEN_WACOM_G5SP)
 		s3c_gpio_cfgpin(S5PV310_GPB(2), S3C_GPIO_SFN(2));
 		s3c_gpio_cfgpin(S5PV310_GPB(3), S3C_GPIO_SFN(2));
+#endif /* CONFIG_EPEN_WACOM_G5SP */
 		s3c_gpio_setpull(S5PV310_GPB(0), S3C_GPIO_PULL_UP);
+#if !defined(CONFIG_EPEN_WACOM_G5SP)
 		s3c_gpio_setpull(S5PV310_GPB(2), S3C_GPIO_PULL_UP);
 		s3c_gpio_setpull(S5PV310_GPB(3), S3C_GPIO_PULL_UP);
+#endif /* CONFIG_EPEN_WACOM_G5SP */
 		break;
 
+#if !defined(CONFIG_TDMB) && !defined(CONFIG_ISDBT_FC8100)
 	case 1:
 		s3c_gpio_cfgpin(S5PV310_GPB(4), S3C_GPIO_SFN(2));
 		s3c_gpio_cfgpin(S5PV310_GPB(6), S3C_GPIO_SFN(2));
@@ -64,7 +70,7 @@ static int s5pv310_spi_cfg_gpio(struct platform_device *pdev)
 		s3c_gpio_setpull(S5PV310_GPC1(3), S3C_GPIO_PULL_UP);
 		s3c_gpio_setpull(S5PV310_GPC1(4), S3C_GPIO_PULL_UP);
 		break;
-
+#endif
 	default:
 		dev_err(&pdev->dev, "Invalid SPI Controller number!");
 		return -EINVAL;

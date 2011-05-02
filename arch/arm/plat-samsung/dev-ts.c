@@ -23,10 +23,11 @@
 #include <plat/devs.h>
 #include <plat/ts.h>
 
+#if 0
 static struct resource s3c_ts_resource[] = {
 	[0] = {
 		.start = SAMSUNG_PA_ADC,
-		.end   = SAMSUNG_PA_ADC + SZ_256 - 1,
+		.end   = SAMSUNG_PA_ADC + SZ_8K - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
@@ -34,8 +35,15 @@ static struct resource s3c_ts_resource[] = {
 		.end   = IRQ_TC,
 		.flags = IORESOURCE_IRQ,
 	},
+	[2] = {
+                .start = IRQ_ADC,
+                .end   = IRQ_ADC,
+                .flags = IORESOURCE_IRQ,
+	        },
 };
+#endif
 
+#ifdef CONFIG_TOUCHSCREEN_S3C2410
 struct platform_device s3c_device_ts = {
 	.name		= "s3c64xx-ts",
 	.id		= -1,
@@ -59,3 +67,30 @@ void __init s3c24xx_ts_set_platdata(struct s3c2410_ts_mach_info *pd)
 	s3c_device_ts.dev.platform_data = npd;
 }
 EXPORT_SYMBOL(s3c24xx_ts_set_platdata);
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_S5PV310
+struct platform_device s3c_device_ts = {
+	.name             = "s3c-ts",
+	.id               = -1,
+	.num_resources    = ARRAY_SIZE(s3c_ts_resource),
+	.resource         = s3c_ts_resource,
+};
+
+void __init s3c_ts_set_platdata(struct s3c_ts_mach_info *pd)
+{
+	struct s3c_ts_mach_info *npd;
+
+	if (!pd) {
+		printk(KERN_ERR "%s: no platform data\n", __func__);
+		return;
+	}
+
+	npd = kmemdup(pd, sizeof(struct s3c_ts_mach_info), GFP_KERNEL);
+	if (!npd)
+		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
+
+	s3c_device_ts.dev.platform_data = npd;
+}
+EXPORT_SYMBOL(s3c_ts_set_platdata);
+#endif

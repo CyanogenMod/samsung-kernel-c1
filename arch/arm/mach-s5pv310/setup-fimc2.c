@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-s5pv210/setup-fimc2.c
+/* linux/arch/arm/mach-s5pv310/setup-fimc2.c
  *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/

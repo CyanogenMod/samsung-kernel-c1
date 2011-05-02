@@ -293,6 +293,12 @@ extern void copy_to_user_page(struct vm_area_struct *, struct page *,
  */
 #define flush_cache_all()		__cpuc_flush_kern_all()
 
+#ifndef CONFIG_SMP
+#define flush_all_cpu_caches()		flush_cache_all()
+#else
+extern void flush_all_cpu_caches(void);
+#endif
+
 static inline void vivt_flush_cache_mm(struct mm_struct *mm)
 {
 	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(mm)))

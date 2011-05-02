@@ -8,10 +8,10 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
+ */
 
 #ifndef __ARCH_ARM_REGS_VP_H
-#define __ARCH_ARM_REGS_VP_H __FILE__
+#define __ARCH_ARM_REGS_VP_H
 
 /*
  * Register part
@@ -167,6 +167,8 @@
 #define S5P_VP_FIELD_ID_BOTTOM			(1 << 0)
 
 /* VP_MODE */
+#define S5P_VP_MODE_IMG_TYPE_YUV420_NV12	(0 << 6)
+#define S5P_VP_MODE_IMG_TYPE_YUV420_NV21	(1 << 6)
 #define S5P_VP_MODE_LINE_SKIP_OFF		(0 << 5)
 #define S5P_VP_MODE_LINE_SKIP_ON		(1 << 5)
 #define S5P_VP_MODE_MEM_MODE_LINEAR		(0 << 4)

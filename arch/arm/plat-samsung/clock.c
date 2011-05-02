@@ -39,6 +39,8 @@
 #include <linux/clk.h>
 #include <linux/spinlock.h>
 #include <linux/io.h>
+#include <linux/seq_file.h>
+#include <linux/debugfs.h>
 
 #include <mach/hardware.h>
 #include <asm/irq.h>
@@ -69,6 +71,7 @@ static int clk_null_enable(struct clk *clk, int enable)
 
 struct clk *clk_get(struct device *dev, const char *id)
 {
+	unsigned long flags;
 	struct clk *p;
 	struct clk *clk = ERR_PTR(-ENOENT);
 	int idno;
@@ -90,7 +93,7 @@ struct clk *clk_get(struct device *dev, const char *id)
 			idno = to_platform_device(dev)->id;
 	}
 #endif
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 
 	list_for_each_entry(p, &clocks, list) {
 		if (p->id == idno &&
@@ -114,7 +117,7 @@ struct clk *clk_get(struct device *dev, const char *id)
 		}
 	}
 
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 	return clk;
 }
 
@@ -125,31 +128,35 @@ void clk_put(struct clk *clk)
 
 int clk_enable(struct clk *clk)
 {
+	unsigned long flags;
+
 	if (IS_ERR(clk) || clk == NULL)
 		return -EINVAL;
 
 	clk_enable(clk->parent);
 
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 
 	if ((clk->usage++) == 0)
 		(clk->enable)(clk, 1);
 
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 	return 0;
 }
 
 void clk_disable(struct clk *clk)
 {
+	unsigned long flags;
+
 	if (IS_ERR(clk) || clk == NULL)
 		return;
 
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 
 	if ((--clk->usage) == 0)
 		(clk->enable)(clk, 0);
 
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 	clk_disable(clk->parent);
 }
 
@@ -181,6 +188,7 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
 
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
+	unsigned long flags;
 	int ret;
 
 	if (IS_ERR(clk))
@@ -196,9 +204,9 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	if (clk->ops == NULL || clk->ops->set_rate == NULL)
 		return -EINVAL;
 
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 	ret = (clk->ops->set_rate)(clk, rate);
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 
 	return ret;
 }
@@ -210,17 +218,18 @@ struct clk *clk_get_parent(struct clk *clk)
 
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
+	unsigned long flags;
 	int ret = 0;
 
 	if (IS_ERR(clk))
 		return -EINVAL;
 
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 
 	if (clk->ops && clk->ops->set_parent)
 		ret = (clk->ops->set_parent)(clk, parent);
 
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 
 	return ret;
 }
@@ -317,6 +326,69 @@ struct clk s3c24xx_uclk = {
 	.id		= -1,
 };
 
+#ifdef CONFIG_DEBUG_FS
+
+static void print_clk(struct seq_file *s, struct clk *p, int leaf)
+{
+	if (!p)
+		return;
+
+	print_clk(s, p->parent, 0);
+	seq_printf(s, "%s", p->name);
+	if (p->id >= 0)
+		seq_printf(s, ".%d", p->id);
+
+	if (leaf)
+		seq_printf(s, "(%ld, %d)\n", clk_get_rate(p), p->usage);
+	else
+		seq_printf(s, " -> ");
+}
+
+static int s3c24xx_clock_show(struct seq_file *s, void *unused)
+{
+	unsigned long flags;
+	struct clk *p;
+
+	spin_lock_irqsave(&clocks_lock, flags);
+
+	list_for_each_entry(p, &clocks, list) {
+		if (s->private || p->usage)
+			print_clk(s, p, 1);
+	}
+
+	spin_unlock_irqrestore(&clocks_lock, flags);
+
+	return 0;
+}
+
+static int s3c24xx_clock_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, s3c24xx_clock_show, inode->i_private);
+}
+
+static const struct file_operations s3c24xx_clock_operations = {
+	.open		= s3c24xx_clock_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static int __init s3c24xx_clock_debugfs_init(void)
+{
+	/* /sys/kernel/debug/s3c24xx_clock */
+	struct dentry *dir = debugfs_create_dir("s3c24xx_clock", NULL);
+	if (dir) {
+		debugfs_create_file("all", S_IFREG | S_IRUGO, dir, (void *)1,
+				    &s3c24xx_clock_operations);
+		debugfs_create_file("on", S_IFREG | S_IRUGO, dir, (void *)0,
+				    &s3c24xx_clock_operations);
+	}
+	return 0;
+}
+postcore_initcall(s3c24xx_clock_debugfs_init);
+
+#endif
+
 /* initialise the clock system */
 
 /**
@@ -327,6 +399,7 @@ struct clk s3c24xx_uclk = {
  */
 int s3c24xx_register_clock(struct clk *clk)
 {
+	unsigned long flags;
 	if (clk->enable == NULL)
 		clk->enable = clk_null_enable;
 
@@ -335,9 +408,9 @@ int s3c24xx_register_clock(struct clk *clk)
 	/* Quick check to see if this clock has already been registered. */
 	BUG_ON(clk->list.prev != clk->list.next);
 
-	spin_lock(&clocks_lock);
+	spin_lock_irqsave(&clocks_lock, flags);
 	list_add(&clk->list, &clocks);
-	spin_unlock(&clocks_lock);
+	spin_unlock_irqrestore(&clocks_lock, flags);
 
 	return 0;
 }

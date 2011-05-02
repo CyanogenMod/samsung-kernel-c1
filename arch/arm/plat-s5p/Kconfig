@@ -15,6 +15,8 @@ config PLAT_S5P
 	select ARCH_REQUIRE_GPIOLIB
 	select S3C_GPIO_TRACK
 	select S5P_GPIO_DRVSTR
+	select S5P_GPIO_CONPDN
+	select S5P_GPIO_PUDPDN
 	select SAMSUNG_GPIOLIB_4BIT
 	select S3C_GPIO_CFG_S3C64XX
 	select S3C_GPIO_PULL_UPDOWN
@@ -31,6 +33,37 @@ config S5P_EXT_INT
 	help
 	  Use the external interrupts (other than GPIO interrupts.)
 	  Note: Do not choose this for S5P6440.
+
+# MFC part
+config S5P_DEV_MFC
+	bool
+	depends on (VIDEO_MFC50)
+	default y
+	help
+	  Compile in platform device definitions for MFC
+
+config S5P_SETUP_MFC
+	bool
+	depends on (VIDEO_MFC5X || VIDEO_MFC50)
+	default y
+	help
+	  Common setup code for MFC
+
+choice
+	prompt "Fixed Memory Support"
+	default S5P_MEM_CMA if ARCH_S5PV310
+	default S5P_MEM_BOOTMEM if (ARCH_S5P6440 || ARCH_S5P6442 || ARCH_S5P6450|| ARCH_S5PC100 || ARCH_S5PV210)
+config S5P_MEM_CMA
+        bool "Fixed memory through CMA"
+	select CMA
+        help
+          Use CMA(Contiguous memory allocator) to reserve machine specific memory.
+
+config S5P_MEM_BOOTMEM
+        bool "Fixed memory through Bootmem"
+        help
+          Use bootmem to reserve machine specific memory.
+endchoice
 
 menuconfig S5P_SYSMMU
         bool "SYSMMU support"

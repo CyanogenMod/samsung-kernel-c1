@@ -22,6 +22,8 @@
 #include <plat/irq-vic-timer.h>
 #include <plat/regs-timer.h>
 
+static DEFINE_SPINLOCK(timer_lock);
+
 static void s3c_irq_demux_vic_timer(unsigned int irq, struct irq_desc *desc)
 {
 	generic_handle_irq((int)desc->handler_data);
@@ -31,29 +33,44 @@ static void s3c_irq_demux_vic_timer(unsigned int irq, struct irq_desc *desc)
 
 static void s3c_irq_timer_mask(unsigned int irq)
 {
-	u32 reg = __raw_readl(S3C64XX_TINT_CSTAT);
+	u32 reg;
+	unsigned long flags;
+
+	spin_lock_irqsave(&timer_lock, flags);
+	reg = __raw_readl(S3C64XX_TINT_CSTAT);
 
 	reg &= 0x1f;  /* mask out pending interrupts */
 	reg &= ~(1 << (irq - IRQ_TIMER0));
 	__raw_writel(reg, S3C64XX_TINT_CSTAT);
+	spin_unlock_irqrestore(&timer_lock, flags);
 }
 
 static void s3c_irq_timer_unmask(unsigned int irq)
 {
-	u32 reg = __raw_readl(S3C64XX_TINT_CSTAT);
+	u32 reg;
+	unsigned long flags;
+
+	spin_lock_irqsave(&timer_lock, flags);
+	reg = __raw_readl(S3C64XX_TINT_CSTAT);
 
 	reg &= 0x1f;  /* mask out pending interrupts */
 	reg |= 1 << (irq - IRQ_TIMER0);
 	__raw_writel(reg, S3C64XX_TINT_CSTAT);
+	spin_unlock_irqrestore(&timer_lock, flags);
 }
 
 static void s3c_irq_timer_ack(unsigned int irq)
 {
-	u32 reg = __raw_readl(S3C64XX_TINT_CSTAT);
+	u32 reg;
+	unsigned long flags;
+
+	spin_lock_irqsave(&timer_lock, flags);
+	reg = __raw_readl(S3C64XX_TINT_CSTAT);
 
 	reg &= 0x1f;
 	reg |= (1 << 5) << (irq - IRQ_TIMER0);
 	__raw_writel(reg, S3C64XX_TINT_CSTAT);
+	spin_unlock_irqrestore(&timer_lock, flags);
 }
 
 static struct irq_chip s3c_irq_timer = {

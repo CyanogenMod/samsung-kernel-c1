@@ -96,15 +96,17 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
 		/*
 		 * What guarantees do we have here that 'tsk'
 		 * is not running on another CPU?
+		 *
+		 * We guarantee that this function will be used for
+		 * latencytop only :-)
 		 */
-		BUG();
-#else
+		/* BUG(); */
+#endif
 		data.no_sched_functions = 1;
 		frame.fp = thread_saved_fp(tsk);
 		frame.sp = thread_saved_sp(tsk);
 		frame.lr = 0;		/* recovered from the stack */
 		frame.pc = thread_saved_pc(tsk);
-#endif
 	} else {
 		register unsigned long current_sp asm ("sp");
 

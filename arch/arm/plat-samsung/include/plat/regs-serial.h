@@ -226,6 +226,8 @@
 
 #ifndef __ASSEMBLY__
 
+struct platform_device;
+
 /* struct s3c24xx_uart_clksrc
  *
  * this structure defines a named clock source that can be used for the
@@ -267,6 +269,9 @@ struct s3c2410_uartcfg {
 
 	struct s3c24xx_uart_clksrc *clocks;
 	unsigned int		    clocks_size;
+
+	void	(*cfg_gpio)(struct platform_device *dev);
+	void	(*wake_peer)(struct uart_port *);
 };
 
 /* s3c24xx_uart_devs

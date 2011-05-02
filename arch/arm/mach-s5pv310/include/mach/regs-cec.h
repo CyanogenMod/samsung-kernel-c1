@@ -1,18 +1,21 @@
 /* linux/arch/arm/mach-s5pv310/include/mach/regs-cec.h
  *
  * Copyright (c) 2010 Samsung Electronics
- * 	http://www.samsung.com/
+ *		http://www.samsung.com/
  *
  * CEC register header file for Samsung TVOUT driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
+ */
 
-#ifndef __REGS_CEC_H
-#define __REGS_CEC_H
+#ifndef __ARCH_ARM_REGS_CEC_H
+#define __ARCH_ARM_REGS_CEC_H
 
+/*
+ * Register part
+ */ 
 #define S5P_CES_STATUS_0			(0x0000)
 #define S5P_CES_STATUS_1			(0x0004)
 #define S5P_CES_STATUS_2			(0x0008)
@@ -69,6 +72,9 @@
 #define S5P_CES_RX_FILTER_CTRL			(0x0180)
 #define S5P_CES_RX_FILTER_TH			(0x0184)
 
+/*
+ * Bit definition part
+ */
 #define S5P_CES_IRQ_TX_DONE			(1<<0)
 #define S5P_CES_IRQ_TX_ERROR			(1<<1)
 #define S5P_CES_IRQ_RX_DONE			(1<<4)
@@ -84,4 +90,4 @@
 
 #define S5P_CES_LOGIC_ADDR_MASK			(0xF)
 
-#endif	/* __REGS_CEC_H	*/
+#endif	/* __ARCH_ARM_REGS_CEC_H	*/
