@@ -881,11 +881,13 @@ static int do_write(struct fsg_common *common)
 			curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
 			return -EINVAL;
 		}
+#ifndef CONFIG_USB_ANDROID_MASS_STORAGE		
 		if (common->cmnd[1] & 0x08) {	/* FUA */
 			spin_lock(&curlun->filp->f_lock);
 			curlun->filp->f_flags |= O_SYNC;
 			spin_unlock(&curlun->filp->f_lock);
 		}
+#endif
 	}
 	if (lba >= curlun->num_sectors) {
 		curlun->sense_data = SS_LOGICAL_BLOCK_ADDRESS_OUT_OF_RANGE;
@@ -1161,11 +1163,17 @@ static int do_verify(struct fsg_common *common)
 
 
 /*-------------------------------------------------------------------------*/
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE) && defined(CONFIG_TARGET_LOCALE_KOR)
+static char product_name[16 + 1];
+#endif
 
 static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 {
 	struct fsg_lun *curlun = common->curlun;
 	u8	*buf = (u8 *) bh->buf;
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE) && defined(CONFIG_TARGET_LOCALE_KOR)
+	struct usb_mass_storage_platform_data *pdata;
+#endif
 
 	if (!curlun) {		/* Unsupported LUNs are okay */
 		common->bad_lun_okay = 1;
@@ -1183,6 +1191,30 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 	buf[5] = 0;		/* No special options */
 	buf[6] = 0;
 	buf[7] = 0;
+
+#if defined(CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE) && defined(CONFIG_TARGET_LOCALE_KOR)
+#define OR(x, y) ((x) ? (x) : (y))
+	if (curlun->dev.parent) {
+		pdata = curlun->dev.parent->platform_data;
+
+		if (pdata) {
+			strncpy(product_name, OR(pdata->product, "UMS"), 16);
+			product_name[16] = '\0';
+			if (pdata->product && common->lun > 0) {
+				strncat(product_name, " Card", 16);
+				product_name[16] = '\0';
+			}
+
+			snprintf(common->inquiry_string,
+				sizeof common->inquiry_string,
+				"%-8s%-16s%04x",
+				OR(pdata->vendor, "SAMSUNG"),
+				product_name,
+				OR(pdata->release, 1));
+		}
+	}
+#endif
+
 	memcpy(buf + 8, common->inquiry_string, sizeof common->inquiry_string);
 	return 36;
 }

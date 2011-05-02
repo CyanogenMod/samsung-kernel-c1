@@ -553,11 +553,11 @@ config USB_GADGET_DUMMY_HCD
 	  side is the master; the gadget side is the slave.  Gadget drivers
 	  can be high, full, or low speed; and they have access to endpoints
 	  like those from NET2280, PXA2xx, or SA1100 hardware.
-	  
+
 	  This may help in some stages of creating a driver to embed in a
 	  Linux device, since it lets you debug several parts of the gadget
 	  driver without its hardware or drivers being involved.
-	  
+
 	  Since such a gadget side driver needs to interoperate with a host
 	  side Linux-USB device driver, this may help to debug both sides
 	  of a USB protocol stack.
@@ -582,7 +582,7 @@ comment "NOTE: S3C OTG device role enables the controller driver below"
 
 config USB_S3C_OTGD
 	tristate "S3C high speed(2.0, dual-speed) USB OTG device"
-	depends on USB_GADGET && USB_GADGET_S3C_OTGD && !(USB_S3C_OTG_HOST)
+	depends on USB_GADGET && USB_GADGET_S3C_OTGD
 	default y
 	default USB_GADGET
 	select USB_GADGET_SELECTED
@@ -703,7 +703,7 @@ config USB_ETH
 	help
 	  This driver implements Ethernet style communication, in one of
 	  several ways:
-	  
+
 	   - The "Communication Device Class" (CDC) Ethernet Control Model.
 	     That protocol is often avoided with pure Ethernet adapters, in
 	     favor of simpler vendor-specific hardware, but is widely
@@ -743,7 +743,7 @@ config USB_ETH_RNDIS
 	   If you say "y" here, the Ethernet gadget driver will try to provide
 	   a second device configuration, supporting RNDIS to talk to such
 	   Microsoft USB hosts.
-	   
+
 	   To make MS-Windows work with this, use Documentation/usb/linux.inf
 	   as the "driver info file".  For versions of MS-Windows older than
 	   XP, you'll need to download drivers from Microsoft's website; a URL
@@ -920,6 +920,12 @@ config USB_ANDROID_ACM
 	help
 	  Provides ACM serial function for android gadget driver.
 
+config USB_DUN_SUPPORT
+	boolean "DUN support function"
+	depends on USB_ANDROID_ACM
+	help
+	  Provides USB modem serial driver.
+
 config USB_ANDROID_ADB
 	boolean "Android gadget adb function"
 	depends on USB_ANDROID
@@ -954,12 +960,35 @@ config USB_ANDROID_RNDIS_WCEIS
          If you enable this option, the device is no longer CDC ethernet
          compatible.
 
-
-config USB_ANDROID_ACCESSORY
-	boolean "Android USB accessory function"
+config USB_ANDROID_SAMSUNG_COMPOSITE
+	boolean "Samsung Composite function"
 	depends on USB_ANDROID
 	help
-	  Provides Android USB Accessory support for android gadget driver.
+	  Provides SAMSUNG composite driver using ACM, UMS, ADB, MTP, RNDIS
+
+config USB_ANDROID_SAMSUNG_ESCAPE
+	boolean "Use escape usb host driver in PC side."
+	depends on USB_ANDROID_SAMSUNG_COMPOSITE
+	help
+	  If you enable this option, the device will setting custom IAD for Escape driver.
+
+config USB_ANDROID_SAMSUNG_KIES_UMS
+	boolean "Use UMS composite in Samsung Kies mode"
+	depends on USB_ANDROID_SAMSUNG_ESCAPE
+	help
+	  If you enable this option, the ums will be used in Kies mode.
+
+config CONFIG_USB_ANDROID_SAMSUNG_RNDIS_WITH_MS_COMPOSITE
+	boolean "Use RNDIS with ms composite in PC side."
+	depends on USB_ANDROID_SAMSUNG_COMPOSITE
+	help
+	  If you enable this option, the device will setting custom IAD for to use ms composite.
+
+config USB_ANDROID_SAMSUNG_MTP
+	boolean "Samsung MTP function"
+	depends on USB_ANDROID
+	help
+	  Provides Media Transfer Protocol (MTP) support for samsung gadget driver.
 
 config USB_CDC_COMPOSITE
 	tristate "CDC Composite Device (Ethernet and ACM)"

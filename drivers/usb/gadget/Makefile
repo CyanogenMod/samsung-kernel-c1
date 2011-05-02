@@ -27,8 +27,8 @@ obj-$(CONFIG_USB_M66592)	+= m66592-udc.o
 obj-$(CONFIG_USB_R8A66597)	+= r8a66597-udc.o
 obj-$(CONFIG_USB_FSL_QE)	+= fsl_qe_udc.o
 obj-$(CONFIG_USB_CI13XXX)	+= ci13xxx_udc.o
-obj-$(CONFIG_USB_S3C_HSOTG)	+= s3c-hsotg.o
-obj-$(CONFIG_USB_S3C_HSUDC)	+= s3c-hsudc.o
+#obj-$(CONFIG_USB_S3C_HSOTG)	+= s3c-hsotg.o
+#obj-$(CONFIG_USB_S3C_HSUDC)	+= s3c-hsudc.o
 obj-$(CONFIG_USB_LANGWELL)	+= langwell_udc.o
 
 #
@@ -65,11 +65,13 @@ obj-$(CONFIG_USB_G_HID)		+= g_hid.o
 obj-$(CONFIG_USB_G_MULTI)	+= g_multi.o
 obj-$(CONFIG_USB_G_NOKIA)	+= g_nokia.o
 obj-$(CONFIG_USB_G_WEBCAM)	+= g_webcam.o
+
 obj-$(CONFIG_USB_ANDROID)	+= android.o
 obj-$(CONFIG_USB_ANDROID_ACM)	+= f_acm.o u_serial.o
+obj-$(CONFIG_USB_DUN_SUPPORT)  += serial_acm.o
 obj-$(CONFIG_USB_ANDROID_ADB)	+= f_adb.o
 obj-$(CONFIG_USB_ANDROID_MASS_STORAGE)	+= f_mass_storage.o
 obj-$(CONFIG_USB_ANDROID_MTP)	+= f_mtp.o
+obj-$(CONFIG_USB_ANDROID_SAMSUNG_MTP)	+= f_mtp_samsung.o
 obj-$(CONFIG_USB_ANDROID_RNDIS)	+= f_rndis.o u_ether.o
-obj-$(CONFIG_USB_ANDROID_ACCESSORY)	+= f_accessory.o
 

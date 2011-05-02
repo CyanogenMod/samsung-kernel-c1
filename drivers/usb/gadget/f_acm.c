@@ -22,6 +22,13 @@
 #include "u_serial.h"
 #include "gadget_chips.h"
 
+/* #define CSY_SAMSUNG_NO_IAD */
+#ifdef CONFIG_USB_DUN_SUPPORT
+/* refered from S1 */
+extern int modem_register(void * data);
+extern void modem_unregister(void);
+extern void notify_control_line_state(u32 value);
+#endif
 
 /*
  * This CDC ACM function support just wraps control functions and
@@ -102,7 +109,9 @@ static inline struct f_acm *port_to_acm(struct gserial *p)
 #define GS_NOTIFY_MAXPACKET		10	/* notification + 2 bytes */
 
 /* interface and class descriptors: */
-
+#ifdef CSY_SAMSUNG_NO_IAD
+/* Nothing to do */
+#else
 static struct usb_interface_assoc_descriptor
 acm_iad_descriptor = {
 	.bLength =		sizeof acm_iad_descriptor,
@@ -115,7 +124,7 @@ acm_iad_descriptor = {
 	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
 	/* .iFunction =		DYNAMIC */
 };
-
+#endif
 
 static struct usb_interface_descriptor acm_control_interface_desc = {
 	.bLength =		USB_DT_INTERFACE_SIZE,
@@ -196,7 +205,11 @@ static struct usb_endpoint_descriptor acm_fs_out_desc = {
 };
 
 static struct usb_descriptor_header *acm_fs_function[] = {
+#ifdef CSY_SAMSUNG_NO_IAD
+ /* Nothing to do */
+#else
 	(struct usb_descriptor_header *) &acm_iad_descriptor,
+#endif
 	(struct usb_descriptor_header *) &acm_control_interface_desc,
 	(struct usb_descriptor_header *) &acm_header_desc,
 	(struct usb_descriptor_header *) &acm_call_mgmt_descriptor,
@@ -235,7 +248,11 @@ static struct usb_endpoint_descriptor acm_hs_out_desc = {
 };
 
 static struct usb_descriptor_header *acm_hs_function[] = {
+#ifdef CSY_SAMSUNG_NO_IAD
+/* Nothing to do */
+#else
 	(struct usb_descriptor_header *) &acm_iad_descriptor,
+#endif
 	(struct usb_descriptor_header *) &acm_control_interface_desc,
 	(struct usb_descriptor_header *) &acm_header_desc,
 	(struct usb_descriptor_header *) &acm_call_mgmt_descriptor,
@@ -252,13 +269,21 @@ static struct usb_descriptor_header *acm_hs_function[] = {
 
 #define ACM_CTRL_IDX	0
 #define ACM_DATA_IDX	1
+#ifdef CSY_SAMSUNG_NO_IAD
+ /* Nothing to do */
+#else
 #define ACM_IAD_IDX	2
+#endif
 
 /* static strings, in UTF-8 */
 static struct usb_string acm_string_defs[] = {
 	[ACM_CTRL_IDX].s = "CDC Abstract Control Model (ACM)",
 	[ACM_DATA_IDX].s = "CDC ACM Data",
+#ifdef CSY_SAMSUNG_NO_IAD
+ /* Nothing to do */
+#else
 	[ACM_IAD_IDX ].s = "CDC Serial",
+#endif
 	{  /* ZEROES END LIST */ },
 };
 
@@ -367,6 +392,10 @@ static int acm_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 		 * that bit, we should return to that no-flow state.
 		 */
 		acm->port_handshake_bits = w_value;
+#ifdef CONFIG_USB_DUN_SUPPORT
+/* refered from S1 */
+		notify_control_line_state((unsigned long)w_value);
+#endif
 		break;
 
 	default:
@@ -537,6 +566,16 @@ static void acm_cdc_notify_complete(struct usb_ep *ep, struct usb_request *req)
 		acm_notify_serial_state(acm);
 }
 
+#ifdef CONFIG_USB_DUN_SUPPORT
+/* refered from S1 */
+void acm_notify(void * dev, u16 state)
+{
+	struct f_acm	*acm = (struct f_acm *)dev;
+
+	acm->serial_state = state;
+	acm_notify_serial_state(acm);
+}
+#endif
 /* connect == the TTY link is open */
 
 static void acm_connect(struct gserial *port)
@@ -585,8 +624,11 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
 	if (status < 0)
 		goto fail;
 	acm->ctrl_id = status;
+#ifdef CSY_SAMSUNG_NO_IAD
+ /* Nothing to do */
+#else
 	acm_iad_descriptor.bFirstInterface = status;
-
+#endif
 	acm_control_interface_desc.bInterfaceNumber = status;
 	acm_union_desc .bMasterInterface0 = status;
 
@@ -670,6 +712,10 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
 			gadget_is_dualspeed(c->cdev->gadget) ? "dual" : "full",
 			acm->port.in->name, acm->port.out->name,
 			acm->notify->name);
+#ifdef CONFIG_USB_DUN_SUPPORT
+/* refered from S1 */
+	modem_register(acm);
+#endif
 	return 0;
 
 fail:
@@ -698,7 +744,16 @@ acm_unbind(struct usb_configuration *c, struct usb_function *f)
 		usb_free_descriptors(f->hs_descriptors);
 	usb_free_descriptors(f->descriptors);
 	gs_free_req(acm->notify, acm->notify_req);
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+/* refered from S1 */
+	gserial_disconnect(&acm->port);
+	gserial_cleanup();
+#endif
 	kfree(acm);
+#ifdef CONFIG_USB_DUN_SUPPORT
+/* refered from S1 */
+	modem_unregister();
+#endif
 }
 
 /* Some controllers can't support CDC ACM ... */
@@ -707,6 +762,78 @@ static inline bool can_support_cdc(struct usb_configuration *c)
 	/* everything else is *probably* fine ... */
 	return true;
 }
+
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+static int acm_set_interface_id(struct usb_function *f,
+	int intf_num,
+	int index_num)
+{
+	int ret = 0;
+	struct f_acm		*acm = func_to_acm(f);
+
+	if (gadget_is_dualspeed(f->config->cdev->gadget)) {
+		if (index_num == 0) {
+			if (usb_change_interface_num(acm_hs_function,
+				f->hs_descriptors, &acm_control_interface_desc,
+				intf_num)) {
+				acm->ctrl_id = intf_num;
+			}
+			usb_change_cdc_union_num(acm_hs_function,
+				f->hs_descriptors, &acm_union_desc,
+				intf_num, 1);
+			usb_change_iad_num(acm_hs_function,
+				f->hs_descriptors, &acm_iad_descriptor,
+				intf_num);
+			ret = 1;
+		} else if (index_num == 1) {
+			if (usb_change_interface_num(acm_hs_function,
+				f->hs_descriptors, &acm_data_interface_desc,
+				intf_num)) {
+				acm->data_id = intf_num;
+			}
+			usb_change_cdc_union_num(acm_hs_function,
+				f->hs_descriptors, &acm_union_desc,
+				intf_num, 0);
+			usb_change_cdc_call_mgmt_num(acm_hs_function,
+				f->hs_descriptors, &acm_call_mgmt_descriptor,
+				intf_num);
+			ret = 1;
+		} else {
+			printk(KERN_DEBUG "usb acm has only 2 interface. please check it\n");
+		}
+	} else {
+		if (index_num == 0) {
+			if (usb_change_interface_num(acm_fs_function,
+				f->descriptors, &acm_control_interface_desc,
+				intf_num)) {
+				acm->ctrl_id = intf_num;
+			}
+			usb_change_cdc_union_num(acm_fs_function,
+				f->descriptors, &acm_union_desc,
+				intf_num, 1);
+			usb_change_iad_num(acm_fs_function, f->descriptors,
+			    &acm_iad_descriptor, intf_num);
+			ret = 1;
+		} else if (index_num == 1) {
+			if (usb_change_interface_num(acm_fs_function,
+				f->descriptors, &acm_data_interface_desc,
+				intf_num)) {
+				acm->data_id = intf_num;
+			}
+			usb_change_cdc_union_num(acm_fs_function,
+				f->descriptors, &acm_union_desc,
+				intf_num, 0);
+			usb_change_cdc_call_mgmt_num(acm_fs_function,
+				f->descriptors, &acm_call_mgmt_descriptor,
+				intf_num);
+			ret = 1;
+		} else {
+			printk(KERN_DEBUG "usb acm has only 2 interface. please check it\n");
+		}
+	}
+	return ret;
+}
+#endif
 
 /**
  * acm_bind_config - add a CDC ACM function to a configuration
@@ -747,13 +874,16 @@ int acm_bind_config(struct usb_configuration *c, u8 port_num)
 		acm_string_defs[ACM_DATA_IDX].id = status;
 
 		acm_data_interface_desc.iInterface = status;
-
+#ifdef CSY_SAMSUNG_NO_IAD
+ /* Nothing to do */
+#else
 		status = usb_string_id(c->cdev);
 		if (status < 0)
 			return status;
 		acm_string_defs[ACM_IAD_IDX].id = status;
 
 		acm_iad_descriptor.iFunction = status;
+#endif
 	}
 
 	/* allocate and initialize one new instance */
@@ -778,6 +908,9 @@ int acm_bind_config(struct usb_configuration *c, u8 port_num)
 	acm->port.func.setup = acm_setup;
 	acm->port.func.disable = acm_disable;
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	acm->port.func.set_intf_num = acm_set_interface_id;
+#endif
 	status = usb_add_function(c, &acm->port.func);
 	if (status)
 		kfree(acm);

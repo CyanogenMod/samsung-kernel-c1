@@ -12,7 +12,7 @@
 
 #define GINTMSK_INIT	(INT_OUT_EP | INT_IN_EP | INT_RESUME |\
 				INT_ENUMDONE|INT_RESET|INT_SUSPEND)
-#define DOEPMSK_INIT	(CTRL_OUT_EP_SETUP_PHASE_DONE | AHB_ERROR |\
+#define DOEPMSK_INIT	(CTRL_OUT_EP_SETUP_PHASE_DONE | AHB_ERROR | BACK2BACK_SETUP_RECEIVED |\
 				TRANSFER_DONE)
 #define DIEPMSK_INIT	(NON_ISO_IN_EP_TIMEOUT|AHB_ERROR|TRANSFER_DONE)
 #define GAHBCFG_INIT	(PTXFE_HALF | NPTXFE_HALF | MODE_DMA | BURST_INCR4 |\
@@ -48,20 +48,32 @@ static u8 test_pkt[TEST_PKT_SIZE] __attribute__((aligned(8))) = {
 };
 
 void s3c_udc_ep_set_stall(struct s3c_ep *ep);
+#if defined (CONFIG_BATTERY_S3C)
+extern void s3c_cable_check_status(int flag);
 
+void s3c_udc_cable_connect(struct s3c_udc *dev)
+{
+	    s3c_cable_check_status(1);
+}
+
+void s3c_udc_cable_disconnect(struct s3c_udc *dev)
+{
+	    s3c_cable_check_status(0);
+}
+#endif
 static inline void s3c_udc_ep0_zlp(void)
 {
 	u32 ep_ctrl;
 
-	writel(virt_to_phys(&usb_ctrl), S3C_UDC_OTG_DIEPDMA(EP0_CON));
-	writel((1<<19 | 0<<0), S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
+	__raw_writel(virt_to_phys(usb_ctrl), S3C_UDC_OTG_DIEPDMA(EP0_CON));
+	__raw_writel((1<<19 | 0<<0), S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
 
-	ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
-	writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK,
+	ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	__raw_writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK,
 		S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
 	DEBUG_EP0("%s:EP0 ZLP DIEPCTL0 = 0x%x\n",
-		__func__, readl(S3C_UDC_OTG_DIEPCTL(EP0_CON)));
+		__func__, __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON)));
 }
 
 static inline void s3c_udc_pre_setup(void)
@@ -70,12 +82,12 @@ static inline void s3c_udc_pre_setup(void)
 
 	DEBUG_IN_EP("%s : Prepare Setup packets.\n", __func__);
 
-	writel((1<<19) | sizeof(struct usb_ctrlrequest),
+	__raw_writel((3<<29)| (1<<19) | sizeof(struct usb_ctrlrequest),
 		S3C_UDC_OTG_DOEPTSIZ(EP0_CON));
-	writel(virt_to_phys(&usb_ctrl), S3C_UDC_OTG_DOEPDMA(EP0_CON));
+	__raw_writel(virt_to_phys(usb_ctrl), S3C_UDC_OTG_DOEPDMA(EP0_CON));
 
-	ep_ctrl = readl(S3C_UDC_OTG_DOEPCTL(EP0_CON));
-	writel(ep_ctrl|DEPCTL_EPENA|DEPCTL_CNAK, S3C_UDC_OTG_DOEPCTL(EP0_CON));
+	ep_ctrl = __raw_readl(S3C_UDC_OTG_DOEPCTL(EP0_CON));
+	__raw_writel(ep_ctrl|DEPCTL_EPENA|DEPCTL_CNAK, S3C_UDC_OTG_DOEPCTL(EP0_CON));
 }
 
 static int setdma_rx(struct s3c_ep *ep, struct s3c_request *req)
@@ -99,19 +111,19 @@ static int setdma_rx(struct s3c_ep *ep, struct s3c_request *req)
 	else
 		pktcnt = (length - 1)/(ep->ep.maxpacket) + 1;
 
-	ctrl =  readl(S3C_UDC_OTG_DOEPCTL(ep_num));
+	ctrl =  __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num));
 
-	writel(virt_to_phys(buf), S3C_UDC_OTG_DOEPDMA(ep_num));
-	writel((pktcnt<<19) | (length<<0), S3C_UDC_OTG_DOEPTSIZ(ep_num));
-	writel(DEPCTL_EPENA | DEPCTL_CNAK | ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
+	__raw_writel(virt_to_phys(buf), S3C_UDC_OTG_DOEPDMA(ep_num));
+	__raw_writel((pktcnt<<19) | (length<<0), S3C_UDC_OTG_DOEPTSIZ(ep_num));
+	__raw_writel(DEPCTL_EPENA | DEPCTL_CNAK | ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
 
 	DEBUG_OUT_EP("%s: EP%d RX DMA start : DOEPDMA = 0x%x,"
 			"DOEPTSIZ = 0x%x, DOEPCTL = 0x%x\n"
 			"\tbuf = 0x%p, pktcnt = %d, xfersize = %d\n",
 			__func__, ep_num,
-			readl(S3C_UDC_OTG_DOEPDMA(ep_num)),
-			readl(S3C_UDC_OTG_DOEPTSIZ(ep_num)),
-			readl(S3C_UDC_OTG_DOEPCTL(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DOEPDMA(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DOEPTSIZ(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num)),
 			buf, pktcnt, length);
 	return 0;
 
@@ -143,37 +155,32 @@ static int setdma_tx(struct s3c_ep *ep, struct s3c_request *req)
 		pktcnt = (length - 1)/(ep->ep.maxpacket) + 1;
 
 #ifdef DED_TX_FIFO
-	/* Flush the endpoint's Tx FIFO */
-	writel(ep_num<<6, S3C_UDC_OTG_GRSTCTL);
-	writel((ep_num<<6)|0x20, S3C_UDC_OTG_GRSTCTL);
-
-	while (readl(S3C_UDC_OTG_GRSTCTL) & 0x20)
-		;
-
 	/* Write the FIFO number to be used for this endpoint */
-	ctrl = readl(S3C_UDC_OTG_DIEPCTL(ep_num));
+	ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num));
 	ctrl &= ~DEPCTL_TXFNUM_MASK;;
 	ctrl |= (ep_num << DEPCTL_TXFNUM_BIT);
-	writel(ctrl , S3C_UDC_OTG_DIEPCTL(ep_num));
+	__raw_writel(ctrl , S3C_UDC_OTG_DIEPCTL(ep_num));
 #endif
 
-	writel(virt_to_phys(buf), S3C_UDC_OTG_DIEPDMA(ep_num));
-	writel((pktcnt<<19)|(length<<0), S3C_UDC_OTG_DIEPTSIZ(ep_num));
-	ctrl = readl(S3C_UDC_OTG_DIEPCTL(ep_num));
-	writel(DEPCTL_EPENA|DEPCTL_CNAK|ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
+	__raw_writel(virt_to_phys(buf), S3C_UDC_OTG_DIEPDMA(ep_num));
+	__raw_writel((pktcnt<<19)|(length<<0), S3C_UDC_OTG_DIEPTSIZ(ep_num));
+	ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num));
+	__raw_writel(DEPCTL_EPENA|DEPCTL_CNAK|ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
 
-	ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+#ifndef DED_TX_FIFO
+	ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
 	ctrl = (ctrl & ~(EP_MASK<<DEPCTL_NEXT_EP_BIT)) |
 		(ep_num<<DEPCTL_NEXT_EP_BIT);
-	writel(ctrl, S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	__raw_writel(ctrl, S3C_UDC_OTG_DIEPCTL(EP0_CON));
+#endif
 
 	DEBUG_IN_EP("%s:EP%d TX DMA start : DIEPDMA0 = 0x%x,"
 			"DIEPTSIZ0 = 0x%x, DIEPCTL0 = 0x%x\n"
 			"\tbuf = 0x%p, pktcnt = %d, xfersize = %d\n",
 			__func__, ep_num,
-			readl(S3C_UDC_OTG_DIEPDMA(ep_num)),
-			readl(S3C_UDC_OTG_DIEPTSIZ(ep_num)),
-			readl(S3C_UDC_OTG_DIEPCTL(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DIEPDMA(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DIEPTSIZ(ep_num)),
+			__raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num)),
 			buf, pktcnt, length);
 
 	return length;
@@ -194,7 +201,7 @@ static void complete_rx(struct s3c_udc *dev, u8 ep_num)
 
 	req = list_entry(ep->queue.next, struct s3c_request, queue);
 
-	ep_tsr = readl(S3C_UDC_OTG_DOEPTSIZ(ep_num));
+	ep_tsr = __raw_readl(S3C_UDC_OTG_DOEPTSIZ(ep_num));
 
 	if (ep_num == EP0_CON)
 		xfer_size = (ep_tsr & 0x7f);
@@ -260,7 +267,7 @@ static void complete_tx(struct s3c_udc *dev, u8 ep_num)
 		return;
 	}
 
-	ep_tsr = readl(S3C_UDC_OTG_DIEPTSIZ(ep_num));
+	ep_tsr = __raw_readl(S3C_UDC_OTG_DIEPTSIZ(ep_num));
 
 	if (ep_num == EP0_CON)
 		xfer_size = (ep_tsr & 0x7f);
@@ -278,6 +285,12 @@ static void complete_tx(struct s3c_udc *dev, u8 ep_num)
 			is_short, ep_tsr, xfer_size);
 
 	if (req->req.actual == req->req.length) {
+		/* send ZLP when req.zero is set for Non-ep0 */
+		if (ep_num > 0 && req->req.zero) {
+			req->req.zero = 0;
+			write_fifo_ep0(ep, req);
+			return;
+		}
 		done(ep, req, 0);
 
 		if (!list_empty(&ep->queue)) {
@@ -317,7 +330,7 @@ static void process_ep_in_intr(struct s3c_udc *dev)
 	u32 ep_intr, ep_intr_status;
 	u8 ep_num = 0;
 
-	ep_intr = readl(S3C_UDC_OTG_DAINT);
+	ep_intr = __raw_readl(S3C_UDC_OTG_DAINT);
 	DEBUG_IN_EP("*** %s: EP In interrupt : DAINT = 0x%x\n",
 				__func__, ep_intr);
 
@@ -325,12 +338,12 @@ static void process_ep_in_intr(struct s3c_udc *dev)
 
 	while (ep_intr) {
 		if (ep_intr & 0x1) {
-			ep_intr_status = readl(S3C_UDC_OTG_DIEPINT(ep_num));
+			ep_intr_status = __raw_readl(S3C_UDC_OTG_DIEPINT(ep_num));
 			DEBUG_IN_EP("\tEP%d-IN : DIEPINT = 0x%x\n",
 						ep_num, ep_intr_status);
 
 			/* Interrupt Clear */
-			writel(ep_intr_status, S3C_UDC_OTG_DIEPINT(ep_num));
+			__raw_writel(ep_intr_status, S3C_UDC_OTG_DIEPINT(ep_num));
 
 			if (ep_intr_status & TRANSFER_DONE) {
 				complete_tx(dev, ep_num);
@@ -359,8 +372,9 @@ static void process_ep_out_intr(struct s3c_udc *dev)
 {
 	u32 ep_intr, ep_intr_status;
 	u8 ep_num = 0;
+	u32 ep_ctrl=0;
 
-	ep_intr = readl(S3C_UDC_OTG_DAINT);
+	ep_intr = __raw_readl(S3C_UDC_OTG_DAINT);
 	DEBUG_OUT_EP("*** %s: EP OUT interrupt : DAINT = 0x%x\n",
 				__func__, ep_intr);
 
@@ -368,12 +382,12 @@ static void process_ep_out_intr(struct s3c_udc *dev)
 
 	while (ep_intr) {
 		if (ep_intr & 0x1) {
-			ep_intr_status = readl(S3C_UDC_OTG_DOEPINT(ep_num));
+			ep_intr_status = __raw_readl(S3C_UDC_OTG_DOEPINT(ep_num));
 			DEBUG_OUT_EP("\tEP%d-OUT : DOEPINT = 0x%x\n",
 						ep_num, ep_intr_status);
 
 			/* Interrupt Clear */
-			writel(ep_intr_status, S3C_UDC_OTG_DOEPINT(ep_num));
+			__raw_writel(ep_intr_status, S3C_UDC_OTG_DOEPINT(ep_num));
 
 			if (ep_num == 0) {
 				if (ep_intr_status &
@@ -381,12 +395,26 @@ static void process_ep_out_intr(struct s3c_udc *dev)
 					DEBUG_OUT_EP("\tSETUP"
 						"packet(transaction)"
 						"arrived\n");
+					if (likely((ep_intr_status & BACK2BACK_SETUP_RECEIVED)==0)) {
+						if(((__raw_readl(S3C_UDC_OTG_DOEPTSIZ(0))>>29)&0x3) < 2) {
+							/* Got more than 1 setup packets */
+							/* Get the last valid setup packet (next setup pkt)*/
+							s3c_udc_pre_setup();
+							printk(KERN_DEBUG "b2bs\n");
+							continue;
+						}
+					}
 					s3c_handle_ep0(dev);
 				}
 
 				if (ep_intr_status & TRANSFER_DONE) {
 					complete_rx(dev, ep_num);
-					s3c_udc_pre_setup();
+					writel((3<<29)|(1 << 19)|sizeof(struct usb_ctrlrequest), S3C_UDC_OTG_DOEPTSIZ(EP0_CON));
+					writel(virt_to_phys(usb_ctrl), S3C_UDC_OTG_DOEPDMA(EP0_CON));
+
+					ep_ctrl = readl(S3C_UDC_OTG_DOEPCTL(EP0_CON));
+					writel(ep_ctrl|DEPCTL_EPENA|DEPCTL_SNAK, S3C_UDC_OTG_DOEPCTL(EP0_CON));
+
 				}
 
 			} else {
@@ -412,14 +440,14 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 
 	spin_lock_irqsave(&dev->lock, flags);
 
-	intr_status = readl(S3C_UDC_OTG_GINTSTS);
-	gintmsk = readl(S3C_UDC_OTG_GINTMSK);
+	intr_status = __raw_readl(S3C_UDC_OTG_GINTSTS);
+	gintmsk = __raw_readl(S3C_UDC_OTG_GINTMSK);
 
 	DEBUG_ISR("\n*** %s : GINTSTS=0x%x(on state %s), GINTMSK :"
 			"0x%x, DAINT : 0x%x, DAINTMSK : 0x%x\n",
 			__func__, intr_status,
 			state_names[dev->ep0state], gintmsk,
-			readl(S3C_UDC_OTG_DAINT), readl(S3C_UDC_OTG_DAINTMSK));
+			__raw_readl(S3C_UDC_OTG_DAINT), __raw_readl(S3C_UDC_OTG_DAINTMSK));
 
 	if (!intr_status) {
 		spin_unlock_irqrestore(&dev->lock, flags);
@@ -429,8 +457,8 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 	if (intr_status & INT_ENUMDONE) {
 		DEBUG_ISR("\tSpeed Detection interrupt\n");
 
-		writel(INT_ENUMDONE, S3C_UDC_OTG_GINTSTS);
-		usb_status = (readl(S3C_UDC_OTG_DSTS) & 0x6);
+		__raw_writel(INT_ENUMDONE, S3C_UDC_OTG_GINTSTS);
+		usb_status = (__raw_readl(S3C_UDC_OTG_DSTS) & 0x6);
 
 		if (usb_status & (USB_FULL_30_60MHZ | USB_FULL_48MHZ)) {
 			DEBUG_ISR("\t\tFull Speed Detection\n");
@@ -445,13 +473,13 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 
 	if (intr_status & INT_EARLY_SUSPEND) {
 		DEBUG_ISR("\tEarly suspend interrupt\n");
-		writel(INT_EARLY_SUSPEND, S3C_UDC_OTG_GINTSTS);
+		__raw_writel(INT_EARLY_SUSPEND, S3C_UDC_OTG_GINTSTS);
 	}
 
 	if (intr_status & INT_SUSPEND) {
-		usb_status = readl(S3C_UDC_OTG_DSTS);
+		usb_status = __raw_readl(S3C_UDC_OTG_DSTS);
 		DEBUG_ISR("\tSuspend interrupt :(DSTS):0x%x\n", usb_status);
-		writel(INT_SUSPEND, S3C_UDC_OTG_GINTSTS);
+		__raw_writel(INT_SUSPEND, S3C_UDC_OTG_GINTSTS);
 
 		if (dev->gadget.speed != USB_SPEED_UNKNOWN
 		    && dev->driver
@@ -459,11 +487,21 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 
 			dev->driver->suspend(&dev->gadget);
 		}
+		/* report disconnect; the driver is already quiesced */
+		if (dev->driver) {
+			spin_unlock(&dev->lock);
+			dev->driver->disconnect(&dev->gadget);
+			spin_lock(&dev->lock);
+		}
+#if defined (CONFIG_BATTERY_S3C)
+		s3c_udc_cable_disconnect(dev);
+#endif
+
 	}
 
 	if (intr_status & INT_RESUME) {
 		DEBUG_ISR("\tResume interrupt\n");
-		writel(INT_RESUME, S3C_UDC_OTG_GINTSTS);
+		__raw_writel(INT_RESUME, S3C_UDC_OTG_GINTSTS);
 
 		if (dev->gadget.speed != USB_SPEED_UNKNOWN
 		    && dev->driver
@@ -474,9 +512,9 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 	}
 
 	if (intr_status & INT_RESET) {
-		usb_status = readl(S3C_UDC_OTG_GOTGCTL);
+		usb_status = __raw_readl(S3C_UDC_OTG_GOTGCTL);
 		DEBUG_ISR("\tReset interrupt - (GOTGCTL):0x%x\n", usb_status);
-		writel(INT_RESET, S3C_UDC_OTG_GINTSTS);
+		__raw_writel(INT_RESET, S3C_UDC_OTG_GINTSTS);
 
 		set_conf_done = 0;
 
@@ -565,7 +603,7 @@ static int s3c_queue(struct usb_ep *_ep, struct usb_request *_req,
 			req = 0;
 
 		} else if (ep_is_in(ep)) {
-			gintsts = readl(S3C_UDC_OTG_GINTSTS);
+			gintsts = __raw_readl(S3C_UDC_OTG_GINTSTS);
 			DEBUG_IN_EP("%s: ep_is_in, S3C_UDC_OTG_GINTSTS=0x%x\n",
 						__func__, gintsts);
 
@@ -580,7 +618,7 @@ static int s3c_queue(struct usb_ep *_ep, struct usb_request *_req,
 			}
 
 		} else {
-			gintsts = readl(S3C_UDC_OTG_GINTSTS);
+			gintsts = __raw_readl(S3C_UDC_OTG_GINTSTS);
 			DEBUG_OUT_EP("%s: ep_is_out,"
 				"S3C_UDC_OTG_GINTSTS=0x%x\n",
 				__func__, gintsts);
@@ -643,7 +681,7 @@ static inline int s3c_fifo_read(struct s3c_ep *ep, u32 *cp, int max)
 	u32 bytes;
 
 	bytes = sizeof(struct usb_ctrlrequest);
-	__dma_single_dev_to_cpu(&usb_ctrl, bytes, DMA_FROM_DEVICE);
+	__dma_single_dev_to_cpu(usb_ctrl, bytes, DMA_FROM_DEVICE);
 	DEBUG_EP0("%s: bytes=%d, ep_index=%d\n", __func__, bytes, ep_index(ep));
 
 	return bytes;
@@ -658,13 +696,13 @@ static inline int s3c_fifo_read(struct s3c_ep *ep, u32 *cp, int max)
  */
 static void udc_set_address(struct s3c_udc *dev, unsigned char address)
 {
-	u32 ctrl = readl(S3C_UDC_OTG_DCFG);
-	writel(address << 4 | ctrl, S3C_UDC_OTG_DCFG);
+	u32 ctrl = __raw_readl(S3C_UDC_OTG_DCFG);
+	__raw_writel(address << 4 | ctrl, S3C_UDC_OTG_DCFG);
 
 	s3c_udc_ep0_zlp();
 
 	DEBUG_EP0("%s: USB OTG 2.0 Device address=%d, DCFG=0x%x\n",
-		__func__, address, readl(S3C_UDC_OTG_DCFG));
+		__func__, address, __raw_readl(S3C_UDC_OTG_DCFG));
 
 	dev->usb_address = address;
 }
@@ -675,7 +713,7 @@ static inline void s3c_udc_ep0_set_stall(struct s3c_ep *ep)
 	u32		ep_ctrl = 0;
 
 	dev = ep->dev;
-	ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
 	/* set the disable and stall bits */
 	if (ep_ctrl & DEPCTL_EPENA)
@@ -683,10 +721,10 @@ static inline void s3c_udc_ep0_set_stall(struct s3c_ep *ep)
 
 	ep_ctrl |= DEPCTL_STALL;
 
-	writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	__raw_writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
 	DEBUG_EP0("%s: set ep%d stall, DIEPCTL0 = 0x%x\n",
-		__func__, ep_index(ep), readl(S3C_UDC_OTG_DIEPCTL(EP0_CON)));
+		__func__, ep_index(ep), __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON)));
 	/*
 	 * The application can only set this bit, and the core clears it,
 	 * when a SETUP token is received for this endpoint
@@ -723,7 +761,7 @@ static void s3c_ep0_read(struct s3c_udc *dev)
 		s3c_udc_ep0_zlp();
 
 		DEBUG_EP0("%s: req.length = 0, bRequest = %d\n",
-			__func__, usb_ctrl.bRequest);
+			__func__, usb_ctrl->bRequest);
 		return;
 	}
 
@@ -820,11 +858,11 @@ static int s3c_udc_get_status(struct s3c_udc *dev,
 
 	__dma_single_cpu_to_dev(&g_status, 2, DMA_TO_DEVICE);
 
-	writel(virt_to_phys(&g_status), S3C_UDC_OTG_DIEPDMA(EP0_CON));
-	writel((1<<19)|(2<<0), S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
+	__raw_writel(virt_to_phys(&g_status), S3C_UDC_OTG_DIEPDMA(EP0_CON));
+	__raw_writel((1<<19)|(2<<0), S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
 
-	ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
-	writel(ep_ctrl|DEPCTL_EPENA|DEPCTL_CNAK, S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+	__raw_writel(ep_ctrl|DEPCTL_EPENA|DEPCTL_CNAK, S3C_UDC_OTG_DIEPCTL(EP0_CON));
 	dev->ep0state = WAIT_FOR_SETUP;
 
 	return 0;
@@ -839,7 +877,7 @@ void s3c_udc_ep_set_stall(struct s3c_ep *ep)
 	DEBUG("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
 
 	if (ep_is_in(ep)) {
-		ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num));
 
 		/* set the disable and stall bits */
 		if (ep_ctrl & DEPCTL_EPENA)
@@ -847,19 +885,19 @@ void s3c_udc_ep_set_stall(struct s3c_ep *ep)
 
 		ep_ctrl |= DEPCTL_STALL;
 
-		writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
+		__raw_writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
 		DEBUG("%s: set stall, DIEPCTL%d = 0x%x\n",
-			__func__, ep_num, readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
+			__func__, ep_num, __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
 
 	} else {
-		ep_ctrl = readl(S3C_UDC_OTG_DOEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num));
 
 		/* set the stall bit */
 		ep_ctrl |= DEPCTL_STALL;
 
-		writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
+		__raw_writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
 		DEBUG("%s: set stall, DOEPCTL%d = 0x%x\n",
-			__func__, ep_num, readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
+			__func__, ep_num, __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
 	}
 
 	return;
@@ -874,7 +912,7 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 	DEBUG("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
 
 	if (ep_is_in(ep)) {
-		ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num));
 
 		/* clear stall bit */
 		ep_ctrl &= ~DEPCTL_STALL;
@@ -890,12 +928,12 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 			ep_ctrl |= DEPCTL_SETD0PID; /* DATA0 */
 		}
 
-		writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
+		__raw_writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
 		DEBUG("%s: cleared stall, DIEPCTL%d = 0x%x\n",
-			__func__, ep_num, readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
+			__func__, ep_num, __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
 
 	} else {
-		ep_ctrl = readl(S3C_UDC_OTG_DOEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num));
 
 		/* clear stall bit */
 		ep_ctrl &= ~DEPCTL_STALL;
@@ -905,9 +943,9 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 			ep_ctrl |= DEPCTL_SETD0PID; /* DATA0 */
 		}
 
-		writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
+		__raw_writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
 		DEBUG("%s: cleared stall, DOEPCTL%d = 0x%x\n",
-			__func__, ep_num, readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
+			__func__, ep_num, __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
 	}
 
 	return;
@@ -966,10 +1004,10 @@ void s3c_udc_ep_activate(struct s3c_ep *ep)
 
 	/* Read DEPCTLn register */
 	if (ep_is_in(ep)) {
-		ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num));
 		daintmsk = 1 << ep_num;
 	} else {
-		ep_ctrl = readl(S3C_UDC_OTG_DOEPCTL(ep_num));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num));
 		daintmsk = (1 << ep_num) << DAINT_OUT_BIT;
 	}
 
@@ -986,21 +1024,21 @@ void s3c_udc_ep_activate(struct s3c_ep *ep)
 		ep_ctrl |= (DEPCTL_SETD0PID | DEPCTL_USBACTEP);
 
 		if (ep_is_in(ep)) {
-			writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
+			__raw_writel(ep_ctrl, S3C_UDC_OTG_DIEPCTL(ep_num));
 			DEBUG("%s: USB Ative EP%d, DIEPCTRL%d = 0x%x\n",
 				__func__, ep_num, ep_num,
-				readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
+				__raw_readl(S3C_UDC_OTG_DIEPCTL(ep_num)));
 		} else {
-			writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
+			__raw_writel(ep_ctrl, S3C_UDC_OTG_DOEPCTL(ep_num));
 			DEBUG("%s: USB Ative EP%d, DOEPCTRL%d = 0x%x\n",
 				__func__, ep_num, ep_num,
-				readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
+				__raw_readl(S3C_UDC_OTG_DOEPCTL(ep_num)));
 		}
 	}
 
 	/* Unmask EP Interrtupt */
-	writel(readl(S3C_UDC_OTG_DAINTMSK)|daintmsk, S3C_UDC_OTG_DAINTMSK);
-	DEBUG("%s: DAINTMSK = 0x%x\n", __func__, readl(S3C_UDC_OTG_DAINTMSK));
+	__raw_writel(__raw_readl(S3C_UDC_OTG_DAINTMSK)|daintmsk, S3C_UDC_OTG_DAINTMSK);
+	DEBUG("%s: DAINTMSK = 0x%x\n", __func__, __raw_readl(S3C_UDC_OTG_DAINTMSK));
 
 }
 
@@ -1015,15 +1053,15 @@ static int s3c_udc_clear_feature(struct usb_ep *_ep)
 	DEBUG_SETUP("%s: ep_num = %d, is_in = %d, clear_feature_flag = %d\n",
 		__func__, ep_num, ep_is_in(ep), clear_feature_flag);
 
-	if (usb_ctrl.wLength != 0) {
+	if (usb_ctrl->wLength != 0) {
 		DEBUG_SETUP("\tCLEAR_FEATURE:"
 			"wLength is not zero.....\n");
 		return 1;
 	}
 
-	switch (usb_ctrl.bRequestType & USB_RECIP_MASK) {
+	switch (usb_ctrl->bRequestType & USB_RECIP_MASK) {
 	case USB_RECIP_DEVICE:
-		switch (usb_ctrl.wValue) {
+		switch (usb_ctrl->wValue) {
 		case USB_DEVICE_REMOTE_WAKEUP:
 			DEBUG_SETUP("\tCLEAR_FEATURE:"
 				"USB_DEVICE_REMOTE_WAKEUP\n");
@@ -1041,9 +1079,9 @@ static int s3c_udc_clear_feature(struct usb_ep *_ep)
 
 	case USB_RECIP_ENDPOINT:
 		DEBUG_SETUP("\tCLEAR_FEATURE: USB_RECIP_ENDPOINT,"
-			"wValue = %d\n", usb_ctrl.wValue);
+			"wValue = %d\n", usb_ctrl->wValue);
 
-		if (usb_ctrl.wValue == USB_ENDPOINT_HALT) {
+		if (usb_ctrl->wValue == USB_ENDPOINT_HALT) {
 			if (ep_num == 0) {
 				s3c_udc_ep0_set_stall(ep);
 				return 0;
@@ -1068,13 +1106,13 @@ static int s3c_udc_clear_feature(struct usb_ep *_ep)
 static inline void set_test_mode(void)
 {
 	u32 ep_ctrl, dctl;
-	u8 test_selector = (usb_ctrl.wIndex>>8) & TEST_SELECTOR_MASK;
+	u8 test_selector = (usb_ctrl->wIndex>>8) & TEST_SELECTOR_MASK;
 
 	if (test_selector > 0 && test_selector < 6) {
-		ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
-		writel(1<<19 | 0<<0, S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
-		writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK
+		__raw_writel(1<<19 | 0<<0, S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
+		__raw_writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK
 			| EP0_CON<<DEPCTL_NEXT_EP_BIT,
 			S3C_UDC_OTG_DIEPCTL(EP0_CON));
 	}
@@ -1085,8 +1123,8 @@ static inline void set_test_mode(void)
 		printk(KERN_INFO "Test mode selector in set_feature request is"
 			"TEST J\n");
 
-		dctl = readl(S3C_UDC_OTG_DCTL);
-		writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_J_MODE,
+		dctl = __raw_readl(S3C_UDC_OTG_DCTL);
+		__raw_writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_J_MODE,
 			S3C_UDC_OTG_DCTL);
 		break;
 	case TEST_K_SEL:
@@ -1094,8 +1132,8 @@ static inline void set_test_mode(void)
 		printk(KERN_INFO "Test mode selector in set_feature request is"
 			"TEST K\n");
 
-		dctl = readl(S3C_UDC_OTG_DCTL);
-		writel((dctl&~(TEST_CONTROL_MASK))|TEST_K_MODE,
+		dctl = __raw_readl(S3C_UDC_OTG_DCTL);
+		__raw_writel((dctl&~(TEST_CONTROL_MASK))|TEST_K_MODE,
 			S3C_UDC_OTG_DCTL);
 		break;
 	case TEST_SE0_NAK_SEL:
@@ -1103,8 +1141,8 @@ static inline void set_test_mode(void)
 		printk(KERN_INFO "Test mode selector in set_feature request is"
 			"TEST SE0 NAK\n");
 
-		dctl = readl(S3C_UDC_OTG_DCTL);
-		writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_SE0_NAK_MODE,
+		dctl = __raw_readl(S3C_UDC_OTG_DCTL);
+		__raw_writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_SE0_NAK_MODE,
 			S3C_UDC_OTG_DCTL);
 		break;
 	case TEST_PACKET_SEL:
@@ -1113,17 +1151,17 @@ static inline void set_test_mode(void)
 			"TEST PACKET\n");
 
 		__dma_single_cpu_to_dev(test_pkt, TEST_PKT_SIZE, DMA_TO_DEVICE);
-		writel(virt_to_phys(test_pkt), S3C_UDC_OTG_DIEPDMA(EP0_CON));
+		__raw_writel(virt_to_phys(test_pkt), S3C_UDC_OTG_DIEPDMA(EP0_CON));
 
-		ep_ctrl = readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
+		ep_ctrl = __raw_readl(S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
-		writel(1<<19 | TEST_PKT_SIZE<<0, S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
-		writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK
+		__raw_writel(1<<19 | TEST_PKT_SIZE<<0, S3C_UDC_OTG_DIEPTSIZ(EP0_CON));
+		__raw_writel(ep_ctrl | DEPCTL_EPENA | DEPCTL_CNAK
 				| EP0_CON<<DEPCTL_NEXT_EP_BIT,
 				S3C_UDC_OTG_DIEPCTL(EP0_CON));
 
-		dctl = readl(S3C_UDC_OTG_DCTL);
-		writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_PACKET_MODE,
+		dctl = __raw_readl(S3C_UDC_OTG_DCTL);
+		__raw_writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_PACKET_MODE,
 				S3C_UDC_OTG_DCTL);
 		break;
 	case TEST_FORCE_ENABLE_SEL:
@@ -1131,8 +1169,8 @@ static inline void set_test_mode(void)
 		printk(KERN_INFO "Test mode selector in set_feature request is"
 					"TEST FORCE ENABLE\n");
 
-		dctl = readl(S3C_UDC_OTG_DCTL);
-		writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_FORCE_ENABLE_MODE,
+		dctl = __raw_readl(S3C_UDC_OTG_DCTL);
+		__raw_writel((dctl & ~(TEST_CONTROL_MASK)) | TEST_FORCE_ENABLE_MODE,
 				S3C_UDC_OTG_DCTL);
 		break;
 	}
@@ -1149,14 +1187,14 @@ static int s3c_udc_set_feature(struct usb_ep *_ep)
 	DEBUG_SETUP("%s: *** USB_REQ_SET_FEATURE,"
 			"ep_num = %d\n", __func__, ep_num);
 
-	if (usb_ctrl.wLength != 0) {
+	if (usb_ctrl->wLength != 0) {
 		DEBUG_SETUP("\tSET_FEATURE: wLength is not zero.....\n");
 		return 1;
 	}
 
-	switch (usb_ctrl.bRequestType & USB_RECIP_MASK) {
+	switch (usb_ctrl->bRequestType & USB_RECIP_MASK) {
 	case USB_RECIP_DEVICE:
-		switch (usb_ctrl.wValue) {
+		switch (usb_ctrl->wValue) {
 		case USB_DEVICE_REMOTE_WAKEUP:
 			DEBUG_SETUP("\tSET_FEATURE:"
 						"USB_DEVICE_REMOTE_WAKEUP\n");
@@ -1193,7 +1231,7 @@ static int s3c_udc_set_feature(struct usb_ep *_ep)
 
 	case USB_RECIP_ENDPOINT:
 		DEBUG_SETUP("\tSET_FEATURE: USB_RECIP_ENDPOINT\n");
-		if (usb_ctrl.wValue == USB_ENDPOINT_HALT) {
+		if (usb_ctrl->wValue == USB_ENDPOINT_HALT) {
 			if (ep_num == 0) {
 				s3c_udc_ep0_set_stall(ep);
 				return 0;
@@ -1222,29 +1260,29 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 	nuke(ep, -EPROTO);
 
 	/* read control req from fifo (8 bytes) */
-	bytes = s3c_fifo_read(ep, (u32 *)&usb_ctrl, 8);
+	bytes = s3c_fifo_read(ep, (u32 *)usb_ctrl, 8);
 
 	DEBUG_SETUP("%s: bRequestType = 0x%x(%s), bRequest = 0x%x"
 			"\twLength = 0x%x, wValue = 0x%x, wIndex= 0x%x\n",
-			__func__, usb_ctrl.bRequestType,
-			(usb_ctrl.bRequestType & USB_DIR_IN) ? "IN" : "OUT",
-			usb_ctrl.bRequest, usb_ctrl.wLength, usb_ctrl.wValue,
-			usb_ctrl.wIndex);
+			__func__, usb_ctrl->bRequestType,
+			(usb_ctrl->bRequestType & USB_DIR_IN) ? "IN" : "OUT",
+			usb_ctrl->bRequest, usb_ctrl->wLength, usb_ctrl->wValue,
+			usb_ctrl->wIndex);
 
-	if (usb_ctrl.bRequest == GET_MAX_LUN_REQUEST && usb_ctrl.wLength != 1) {
+	if (usb_ctrl->bRequest == GET_MAX_LUN_REQUEST && usb_ctrl->wLength != 1) {
 		DEBUG_SETUP("\t%s:GET_MAX_LUN_REQUEST:invalid wLength = %d,"
-			"setup returned\n", __func__, usb_ctrl.wLength);
+			"setup returned\n", __func__, usb_ctrl->wLength);
 
 		s3c_udc_ep0_set_stall(ep);
 		dev->ep0state = WAIT_FOR_SETUP;
 
 		return;
-	} else if (usb_ctrl.bRequest ==
-			BOT_RESET_REQUEST && usb_ctrl.wLength != 0) {
+	} else if (usb_ctrl->bRequest ==
+			BOT_RESET_REQUEST && usb_ctrl->wLength != 0) {
 		/* Bulk-Only *mass storge reset of class-specific request */
 		DEBUG_SETUP("\t%s:BOT Rest:invalid wLength = %d,"
 			"setup returned\n",
-			__func__, usb_ctrl.wLength);
+			__func__, usb_ctrl->wLength);
 
 		s3c_udc_ep0_set_stall(ep);
 		dev->ep0state = WAIT_FOR_SETUP;
@@ -1253,7 +1291,7 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 	}
 
 	/* Set direction of EP0 */
-	if (likely(usb_ctrl.bRequestType & USB_DIR_IN)) {
+	if (likely(usb_ctrl->bRequestType & USB_DIR_IN)) {
 		ep->bEndpointAddress |= USB_DIR_IN;
 		is_in = 1;
 
@@ -1262,33 +1300,36 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 		is_in = 0;
 	}
 	/* cope with automagic for some standard requests. */
-	dev->req_std = (usb_ctrl.bRequestType & USB_TYPE_MASK)
+	dev->req_std = (usb_ctrl->bRequestType & USB_TYPE_MASK)
 						== USB_TYPE_STANDARD;
 	dev->req_config = 0;
 	dev->req_pending = 1;
 
 	/* Handle some SETUP packets ourselves */
-	switch (usb_ctrl.bRequest) {
+	switch (usb_ctrl->bRequest) {
 	case USB_REQ_SET_ADDRESS:
 	DEBUG_SETUP("%s: *** USB_REQ_SET_ADDRESS (%d)\n",
-			__func__, usb_ctrl.wValue);
+			__func__, usb_ctrl->wValue);
 
-		if (usb_ctrl.bRequestType
+		if (usb_ctrl->bRequestType
 			!= (USB_TYPE_STANDARD | USB_RECIP_DEVICE))
 			break;
 
-		udc_set_address(dev, usb_ctrl.wValue);
+		udc_set_address(dev, usb_ctrl->wValue);
 		return;
 
 	case USB_REQ_SET_CONFIGURATION:
 		DEBUG_SETUP("============================================\n");
 		DEBUG_SETUP("%s: USB_REQ_SET_CONFIGURATION (%d)\n",
-				__func__, usb_ctrl.wValue);
+				__func__, usb_ctrl->wValue);
 
-		if (usb_ctrl.bRequestType == USB_RECIP_DEVICE) {
+		if (usb_ctrl->bRequestType == USB_RECIP_DEVICE) {
 			reset_available = 1;
 			dev->req_config = 1;
 		}
+#if defined (CONFIG_BATTERY_S3C)
+		s3c_udc_cable_connect(dev);
+#endif
 		break;
 
 	case USB_REQ_GET_DESCRIPTOR:
@@ -1297,9 +1338,9 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 
 	case USB_REQ_SET_INTERFACE:
 		DEBUG_SETUP("%s: *** USB_REQ_SET_INTERFACE (%d)\n",
-				__func__, usb_ctrl.wValue);
+				__func__, usb_ctrl->wValue);
 
-		if (usb_ctrl.bRequestType == USB_RECIP_INTERFACE) {
+		if (usb_ctrl->bRequestType == USB_RECIP_INTERFACE) {
 			reset_available = 1;
 			dev->req_config = 1;
 		}
@@ -1311,14 +1352,14 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 
 	case USB_REQ_GET_STATUS:
 		if (dev->req_std) {
-			if (!s3c_udc_get_status(dev, &usb_ctrl))
+			if (!s3c_udc_get_status(dev, usb_ctrl))
 				return;
 
 		}
 		break;
 
 	case USB_REQ_CLEAR_FEATURE:
-		ep_num = usb_ctrl.wIndex & 0x7f;
+		ep_num = usb_ctrl->wIndex & 0x7f;
 
 		if (!s3c_udc_clear_feature(&dev->ep[ep_num].ep))
 			return;
@@ -1326,7 +1367,7 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 		break;
 
 	case USB_REQ_SET_FEATURE:
-		ep_num = usb_ctrl.wIndex & 0x7f;
+		ep_num = usb_ctrl->wIndex & 0x7f;
 
 		if (!s3c_udc_set_feature(&dev->ep[ep_num].ep))
 			return;
@@ -1334,8 +1375,8 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 		break;
 
 	default:
-		DEBUG_SETUP("%s: *** Default of usb_ctrl.bRequest=0x%x"
-			"happened.\n", __func__, usb_ctrl.bRequest);
+		DEBUG_SETUP("%s: *** Default of usb_ctrl->bRequest=0x%x"
+			"happened.\n", __func__, usb_ctrl->bRequest);
 		break;
 	}
 
@@ -1346,13 +1387,13 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 			"fsg_setup()\n", __func__);
 
 		spin_unlock(&dev->lock);
-		i = dev->driver->setup(&dev->gadget, &usb_ctrl);
+		i = dev->driver->setup(&dev->gadget, usb_ctrl);
 		spin_lock(&dev->lock);
 
 		if (i < 0) {
 			if (dev->req_config) {
 				DEBUG_SETUP("\tconfig change 0x%02x fail %d?\n",
-					(u32)&usb_ctrl.bRequest, i);
+					(u32*)usb_ctrl->bRequest, i);
 				return;
 			}
 
@@ -1362,7 +1403,7 @@ static void s3c_ep0_setup(struct s3c_udc *dev)
 
 			DEBUG_SETUP("\tdev->driver->setup failed (%d),"
 				"bRequest = %d\n",
-				i, usb_ctrl.bRequest);
+				i, usb_ctrl->bRequest);
 
 
 		} else if (dev->req_pending) {

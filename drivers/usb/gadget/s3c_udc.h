@@ -52,6 +52,7 @@
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
+#include <linux/host_notify.h>
 
 /* Max packet size */
 #if defined(CONFIG_USB_GADGET_S3C_FS)
@@ -86,6 +87,54 @@
 #define TEST_SE0_NAK_SEL	0x3
 #define TEST_PACKET_SEL		0x4
 #define TEST_FORCE_ENABLE_SEL	0x5
+
+
+#define USE_USB_LDO_CONTROL 	/* This definition is for LDO control. */
+#include <linux/regulator/consumer.h>
+/*
+ * ------------------------------------------------------------------------------------------
+ * Debugging macro and defines
+ */
+/*#define CSY_DEBUG */
+/* #define CSY_DEBUG2 */
+#define CSY_DEBUG_ESS
+/* #define CSY_MORE_DEBUG */
+
+#ifdef CSY_DEBUG
+#  ifdef CSY_MORE_DEBUG
+#    define CSY_DBG(fmt, args...) printk(KERN_INFO "usb %s:%d "fmt, __func__, __LINE__, ##args)
+#  else
+#    define CSY_DBG(fmt, args...) printk(KERN_DEBUG "usb "fmt, ##args)
+#  endif
+#else /* DO NOT PRINT LOG */
+#  define CSY_DBG(fmt, args...) do { } while (0)
+#endif /* CSY_DEBUG */
+
+#ifdef CSY_DEBUG2
+#  ifdef CSY_MORE_DEBUG
+#    define CSY_DBG2(fmt, args...) printk(KERN_INFO "usb %s:%d "fmt, __func__, __LINE__, ##args)
+#  else
+#    define CSY_DBG2(fmt, args...) printk(KERN_DEBUG "usb "fmt, ##args)
+#  endif
+#else /* DO NOT PRINT LOG */
+#  define CSY_DBG2(fmt, args...) do { } while (0)
+#endif /* CSY_DEBUG2 */
+
+#ifdef CSY_DEBUG_ESS
+#  ifdef CSY_MORE_DEBUG
+#    define CSY_DBG_ESS(fmt, args...) printk(KERN_INFO "usb %s:%d "fmt, __func__, __LINE__, ##args)
+#  else
+#    define CSY_DBG_ESS(fmt, args...) printk(KERN_DEBUG "usb "fmt, ##args)
+#  endif
+#else /* DO NOT PRINT LOG */
+#  define CSY_DBG_ESS(fmt, args...) do { } while (0)
+#endif /* CSY_DEBUG_ESS */
+
+#ifdef CSY_DEBUG
+#undef DBG
+#  define DBG(devvalue, fmt, args...) \
+	printk(KERN_INFO "usb %s:%d "fmt, __func__, __LINE__, ##args)
+#endif
 
 /* ************************************************************************* */
 /* IO
@@ -129,7 +178,16 @@ struct s3c_udc {
 #endif
 	struct platform_device *dev;
 	spinlock_t lock;
-
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+	u16 status;
+	struct regulator *udc_vcc_d, *udc_vcc_a;
+        int udc_enabled;
+	atomic_t usb_status;
+	int	(*get_usb_mode)(void);
+	int	(*change_usb_mode)(int mode);
+	struct mutex		mutex;
+	struct host_notify_dev * ndev;
+#endif
 	int ep0state;
 	struct s3c_ep ep[S3C_MAX_ENDPOINTS];
 
