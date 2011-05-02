@@ -23,13 +23,15 @@
 #include <linux/ktime.h>
 #include <linux/sched.h>
 
+#define CPUMON 0
+
 /*
  * dbs is used in this file as a shortform for demandbased switching
  * It helps to keep variable names smaller, simpler
  */
 
-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
-#define DEF_FREQUENCY_UP_THRESHOLD		(80)
+#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(5)
+#define DEF_FREQUENCY_UP_THRESHOLD		(85)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
 #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
 #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
@@ -484,6 +486,10 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/* Get Absolute Load - in terms of freq */
 	max_load_freq = 0;
 
+#if CPUMON
+	int load_each[2] = {0, 0};
+#endif
+
 	for_each_cpu(j, policy->cpus) {
 		struct cpu_dbs_info_s *j_dbs_info;
 		cputime64_t cur_wall_time, cur_idle_time, cur_iowait_time;
@@ -539,6 +545,9 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			continue;
 
 		load = 100 * (wall_time - idle_time) / wall_time;
+#if CPUMON
+		load_each[j & 0x01] = load;
+#endif
 
 		freq_avg = __cpufreq_driver_getavg(policy, j);
 		if (freq_avg <= 0)
@@ -549,12 +558,16 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			max_load_freq = load_freq;
 	}
 
+#if CPUMON
+	printk(KERN_ERR "CPUMON L %d %d\n", load_each[0], load_each[1]);
+#endif
+
 	/* Check for frequency increase */
 	if (max_load_freq > dbs_tuners_ins.up_threshold * policy->cur) {
 		/* if we are already at full speed then break out early */
 		if (!dbs_tuners_ins.powersave_bias) {
-			if (policy->cur == policy->max)
-				return;
+			//if (policy->cur == policy->max)
+			//	return;
 
 			__cpufreq_driver_target(policy, policy->max,
 				CPUFREQ_RELATION_H);
@@ -569,8 +582,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	/* Check for frequency decrease */
 	/* if we cannot reduce the frequency anymore, break out early */
-	if (policy->cur == policy->min)
+	if (policy->cur == policy->min) {
+		__cpufreq_driver_target(policy, policy->min,
+				CPUFREQ_RELATION_L);
 		return;
+	}
 
 	/*
 	 * The optimal frequency is the frequency that is the lowest that
@@ -637,7 +653,11 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 {
 	/* We want all CPUs to do sampling nearly on same jiffy */
 	int delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate);
+#if 0
 	delay -= jiffies % delay;
+#else
+	delay = usecs_to_jiffies(40 * 1000000);
+#endif
 
 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
 	INIT_DELAYED_WORK_DEFERRABLE(&dbs_info->work, do_dbs_timer);
@@ -780,7 +800,8 @@ static int __init cpufreq_gov_dbs_init(void)
 
 	idle_time = get_cpu_idle_time_us(cpu, &wall);
 	put_cpu();
-	if (idle_time != -1ULL) {
+	// if (idle_time != -1ULL) {
+	if (0) {
 		/* Idle micro accounting is supported. Use finer thresholds */
 		dbs_tuners_ins.up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
 		dbs_tuners_ins.down_differential =
@@ -794,7 +815,7 @@ static int __init cpufreq_gov_dbs_init(void)
 	} else {
 		/* For correct statistics, we need 10 ticks for each measure */
 		min_sampling_rate =
-			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(10);
+			MIN_SAMPLING_RATE_RATIO * jiffies_to_usecs(8);
 	}
 
 	kondemand_wq = create_workqueue("kondemand");

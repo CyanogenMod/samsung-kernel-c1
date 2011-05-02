@@ -280,7 +280,7 @@ static inline void cpufreq_debug_disable_ratelimit(void) { return; }
  * systems as each CPU might be scaled differently. So, use the arch
  * per-CPU loops_per_jiffy value wherever possible.
  */
-#ifndef CONFIG_SMP
+#if !defined(CONFIG_SMP) || defined(CONFIG_ARCH_S5PV310)
 static unsigned long l_p_j_ref;
 static unsigned int  l_p_j_ref_freq;
 
