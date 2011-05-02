@@ -165,13 +165,91 @@ config TOUCHSCREEN_S3C2410
 	  To compile this driver as a module, choose M here: the
 	  module will be called s3c2410_ts.
 
-config TOUCHSCREEN_S5PV310_MT
-	bool "Samsung S5PC210 10.1\" touchscreen input driver"
-	depends on ARCH_S5PC210 || SAMSUNG_DEV_TS
-	help
-	  Say Y here if you have the S5PC210 touchsecreen.
+config TOUCHSCREEN_S5PV310
+       tristate "Samsung S5PV310/generic touchscreen input driver"
+       depends on ARCH_S5PV310 || SAMSUNG_DEV_TS
+       help
+         Say Y here if you have the s5PV310 touchscreen.
 
-	  If unsure, say N.
+         If unsure, say N.
+
+         To compile this driver as a module, choose M here: the
+         module will be called s5pv310_ts.
+
+choice
+       prompt "Select touch screen port"
+       depends on TOUCHSCREEN_S5PV310
+       default TOUCH_LCD_A
+
+       config TOUCH_LCD_A
+      bool "Touch LCD A port"
+       depends on TOUCHSCREEN_S5PV310
+       help
+         Say Y here if you want to use the S3C SMDK Touch LCD A.
+
+       config TOUCH_LCD_B
+       bool "Touch LCD B port"
+       depends on TOUCHSCREEN_S5PV310
+       help
+         Say Y here if you want to use the S3C SMDK Touch LCD B.
+
+endchoice
+
+config TOUCHSCREEN_S3C_DEBUG
+       bool "Print debug messages for S5PV310 Touch screen"
+       depends on TOUCHSCREEN_S5PV310
+       default n
+       help
+        Say Y here if you want to print debug messages for touch screen.
+
+config TOUCHSCREEN_S5PV310_MT
+       tristate "Samsung S5PV310 MT touchscreen input driver"
+       depends on ARCH_S5PV310 || SAMSUNG_DEV_TS
+       help
+         Say Y here if you have the s5PV310 MT touchscreen.
+
+         If unsure, say N.
+
+         To compile this driver as a module, choose M here: the
+         module will be called s5pv310_MT_ts.
+
+config S5PV310_TS_FLIP
+       bool "S5PV310 LCD Flip"
+       depends on TOUCHSCREEN_S5PV310_MT
+       help
+	Say Y here if you want to use the S5PV310 LCD flip.
+
+config DEBUG_S5PV310_TS_MSG
+       bool "Multi touch debug massage"
+       depends on TOUCHSCREEN_S5PV310_MT
+       help
+	Say Y here if you want to use the S5PV310 debug massage.
+
+config TOUCHSCREEN_QT602240
+        tristate "quantum touchscreen driver"
+        depends on I2C
+        default N
+        help
+          Say Y here to enable the driver for the touchscreen on the
+          S3C spica board.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called melfas_ts.
+
+ config TOUCHSCREEN_MXT768E
+        tristate "quantum touchscreen driver"
+        depends on I2C || TOUCHSCREEN_QT602240
+        default N
+        help
+          Say Y here to enable the driver for the touchscreen on the
+          S3C spica board.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called melfas_ts.
 
 config TOUCHSCREEN_GUNZE
 	tristate "Gunze AHL-51S touchscreen"
@@ -208,6 +286,18 @@ config TOUCHSCREEN_WACOM_W8001
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called wacom_w8001.
+
+config EPEN_WACOM_G5SP
+	tristate "Wacom G5SP penabled i2c touchscreen"
+	depends on SERIO
+	help
+	  Say Y here if you have an Wacom G5SP penabled i2c touchscreen
+	  connected to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wacom_G5SP.
 
 config TOUCHSCREEN_MCS5000
 	tristate "MELFAS MCS-5000 touchscreen"

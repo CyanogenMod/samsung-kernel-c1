@@ -280,7 +280,7 @@ write_stop:
 
 #if defined(CONFIG_TOUCHSCREEN_S5PV310_MT)
 	if(wsize)	gpio_i2c_stop();
-#else
+#else	/* defined(CONFIG_TOUCHSCREEN_ODROID_S) */
 	gpio_i2c_stop();
 #endif
 

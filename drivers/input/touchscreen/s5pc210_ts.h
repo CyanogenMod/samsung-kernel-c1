@@ -26,13 +26,12 @@
 #define	TS_ABS_MIN_X            0
 #define	TS_ABS_MIN_Y            0
 #define	TS_ABS_MAX_X		1366
-#define	TS_ABS_MAX_Y		768
+#define	TS_ABS_MAX_Y		766
 
 #define	TS_X_THRESHOLD		1
 #define	TS_Y_THRESHOLD		1
 
 #define	TS_ATTB			(S5PV310_GPX3(5))
-/*	#define	TS_RESET_OUT			(S5PV310_GPX3(5)) */
 
 /* Interrupt Check port */
 #define	GET_INT_STATUS()	(((*(unsigned long *)GPX3DAT) & 0x01) ? 1 : 0)
@@ -82,6 +81,7 @@ typedef struct s5pv310_ts__t {
     unsigned int			x;
     unsigned int			y;
 
+    /* i2c read buffer */
     unsigned char			rd[10];
 
     /* sysfs used */
@@ -96,12 +96,12 @@ typedef struct s5pv310_ts__t {
     /* touch sensitivity (0-255) : default 0x14 */
     unsigned char			sensitivity;
 
-#if defined CONFIG_TOUCHSCREEN_S5PV310_MT
+#ifdef CONFIG_TOUCHSCREEN_S5PV310_MT
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
     struct	early_suspend		power;
-#endif
-#endif
+#endif/* CONFIG_HAS)EARLYSUSPEND */
+#endif/* CONFIG_TOUCHSCREEN_S5PV310_MT */
 
 } s5pv310_ts_t;
 
