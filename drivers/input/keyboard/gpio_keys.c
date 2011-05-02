@@ -32,6 +32,7 @@ struct gpio_button_data {
 	struct timer_list timer;
 	struct work_struct work;
 	bool disabled;
+	bool key_state;
 };
 
 struct gpio_keys_drvdata {
@@ -40,6 +41,10 @@ struct gpio_keys_drvdata {
 	unsigned int n_buttons;
 	struct gpio_button_data data[0];
 };
+
+#define HOME_KEY_VAL	102
+extern int touch_is_pressed;
+extern void Mxt224_force_released(void);
 
 /*
  * SYSFS interface for enabling/disabling keys and switches:
@@ -108,10 +113,11 @@ static void gpio_keys_disable_button(struct gpio_button_data *bdata)
 		/*
 		 * Disable IRQ and possible debouncing timer.
 		 */
+#if 0
 		disable_irq(gpio_to_irq(bdata->button->gpio));
 		if (bdata->button->debounce_interval)
 			del_timer_sync(&bdata->timer);
-
+#endif
 		bdata->disabled = true;
 	}
 }
@@ -129,7 +135,9 @@ static void gpio_keys_disable_button(struct gpio_button_data *bdata)
 static void gpio_keys_enable_button(struct gpio_button_data *bdata)
 {
 	if (bdata->disabled) {
+#if 0
 		enable_irq(gpio_to_irq(bdata->button->gpio));
+#endif
 		bdata->disabled = false;
 	}
 }
@@ -263,8 +271,9 @@ ATTR_SHOW_FN(disabled_switches, EV_SW, true);
 /*
  * ATTRIBUTES:
  *
- * /sys/devices/platform/gpio-keys/keys [ro]
- * /sys/devices/platform/gpio-keys/switches [ro]
+ * /sys/devices/platform/gpio-keys.0/keys [ro]
+ * /sys/devices/platform/gpio-keys.0/switches [ro]
+ * /sys/devices/platform/gpio-keys.0/key_pressed [ro]
  */
 static DEVICE_ATTR(keys, S_IRUGO, gpio_keys_show_keys, NULL);
 static DEVICE_ATTR(switches, S_IRUGO, gpio_keys_show_switches, NULL);
@@ -295,16 +304,39 @@ ATTR_STORE_FN(disabled_switches, EV_SW);
  * /sys/devices/platform/gpio-keys/disabled_keys [rw]
  * /sys/devices/platform/gpio-keys/disables_switches [rw]
  */
-static DEVICE_ATTR(disabled_keys, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(disabled_keys, 0664,
 		   gpio_keys_show_disabled_keys,
 		   gpio_keys_store_disabled_keys);
 static DEVICE_ATTR(disabled_switches, S_IWUSR | S_IRUGO,
 		   gpio_keys_show_disabled_switches,
 		   gpio_keys_store_disabled_switches);
 
+static ssize_t key_pressed_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
+	int i;
+	int keystate = 0;
+
+	for (i = 0; i < ddata->n_buttons; i++) {
+		struct gpio_button_data *bdata = &ddata->data[i];
+		keystate |= bdata->key_state;
+	}
+
+	if (keystate)
+		sprintf(buf, "PRESS");
+	else
+		sprintf(buf, "RELEASE");
+
+	return strlen(buf);
+}
+
+static DEVICE_ATTR(key_pressed, 0664, key_pressed_show, NULL);
+
 static struct attribute *gpio_keys_attrs[] = {
 	&dev_attr_keys.attr,
 	&dev_attr_switches.attr,
+	&dev_attr_key_pressed.attr,
 	&dev_attr_disabled_keys.attr,
 	&dev_attr_disabled_switches.attr,
 	NULL,
@@ -319,16 +351,30 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct gpio_keys_button *button = bdata->button;
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
+	struct irq_desc *desc = irq_to_desc(gpio_to_irq(button->gpio));
 	int state = (gpio_get_value(button->gpio) ? 1 : 0) ^ button->active_low;
 
-	input_event(input, type, button->code, !!state);
+	bdata->key_state = !!state;
+
+	if (state && (button->code == HOME_KEY_VAL)) {
+		if (touch_is_pressed) {
+			printk(KERN_ERR
+			       "In Key routine, Touch Down!!! Touch state clear!!");
+			Mxt224_force_released();
+		}
+	}
+
+	input_event(input, type, button->code,
+		    (desc->status & IRQ_WAKEUP) ? 1 : !!state);
+	if (bdata->key_state == 1)
+		printk(KERN_ERR "key [%d] is pressed\n", bdata->button->code);
 	input_sync(input);
 }
 
 static void gpio_keys_work_func(struct work_struct *work)
 {
 	struct gpio_button_data *bdata =
-		container_of(work, struct gpio_button_data, work);
+	    container_of(work, struct gpio_button_data, work);
 
 	gpio_keys_report_event(bdata);
 }
@@ -349,9 +395,16 @@ static irqreturn_t gpio_keys_isr(int irq, void *dev_id)
 
 	if (button->debounce_interval)
 		mod_timer(&bdata->timer,
-			jiffies + msecs_to_jiffies(button->debounce_interval));
+			  jiffies +
+			  msecs_to_jiffies(button->debounce_interval));
 	else
 		schedule_work(&bdata->work);
+
+	if (button->isr_hook) {
+		int state =
+		    (gpio_get_value(button->gpio) ? 1 : 0) ^ button->active_low;
+		button->isr_hook(button->code, state);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -398,6 +451,9 @@ static int __devinit gpio_keys_setup_key(struct platform_device *pdev,
 	 */
 	if (!button->can_disable)
 		irqflags |= IRQF_SHARED;
+
+	if (button->wakeup)
+		irqflags |= IRQF_NO_SUSPEND;
 
 	error = request_irq(irq, gpio_keys_isr, irqflags, desc, bdata);
 	if (error) {
@@ -469,6 +525,8 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 
 		input_set_capability(input, type, button->code);
 	}
+
+	set_bit(KEY_CAMERA & KEY_MAX, input->keybit); /* for factory key test */
 
 	error = sysfs_create_group(&pdev->dev.kobj, &gpio_keys_attr_group);
 	if (error) {
@@ -542,13 +600,15 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
 static int gpio_keys_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
+	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
 	int i;
 
 	if (device_may_wakeup(&pdev->dev)) {
 		for (i = 0; i < pdata->nbuttons; i++) {
 			struct gpio_keys_button *button = &pdata->buttons[i];
-			if (button->wakeup) {
+			struct gpio_button_data *bdata = &ddata->data[i];
+			if (button->wakeup && !bdata->disabled) {
 				int irq = gpio_to_irq(button->gpio);
 				enable_irq_wake(irq);
 			}
@@ -566,9 +626,10 @@ static int gpio_keys_resume(struct device *dev)
 	int i;
 
 	for (i = 0; i < pdata->nbuttons; i++) {
-
 		struct gpio_keys_button *button = &pdata->buttons[i];
-		if (button->wakeup && device_may_wakeup(&pdev->dev)) {
+		struct gpio_button_data *bdata = &ddata->data[i];
+		if (button->wakeup && !bdata->disabled
+		    && device_may_wakeup(&pdev->dev)) {
 			int irq = gpio_to_irq(button->gpio);
 			disable_irq_wake(irq);
 		}
@@ -590,7 +651,7 @@ static struct platform_driver gpio_keys_device_driver = {
 	.probe		= gpio_keys_probe,
 	.remove		= __devexit_p(gpio_keys_remove),
 	.driver		= {
-		.name	= "gpio-keys",
+		.name	= "sec_key",
 		.owner	= THIS_MODULE,
 #ifdef CONFIG_PM
 		.pm	= &gpio_keys_pm_ops,

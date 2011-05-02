@@ -194,7 +194,6 @@ config KEYBOARD_TCA6416
 	  If enabled the complete TCA6416 device will be managed through
 	  this driver.
 
-
 config KEYBOARD_MATRIX
 	tristate "GPIO driven matrix keypad support"
 	depends on GENERIC_GPIO
@@ -203,6 +202,42 @@ config KEYBOARD_MATRIX
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called matrix_keypad.
+
+config KEYPAD_S3C
+	tristate "S3C keypad support"
+	depends on CPU_S5PC100 || CPU_S5PC110 || CPU_S5P6442 || CPU_S5PV210 || CPU_S5PV310
+	default n
+	help
+	  Say Y here if you want to use the S3C SMDK keypad.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called s3c-keypad.
+
+config S3C_KEYPAD_DEBUG
+	bool "Print debug messages for S3C keypad"
+	depends on KEYPAD_S3C
+	default n
+	help
+	  Say Y here if you want to print debug messages for S3C keypad.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called s3c-keypad.
+
+choice
+	prompt "Select keypad interface type"
+	depends on KEYPAD_S3C
+	default KEYPAD_S3C_INT
+
+config KEYPAD_S3C_INT
+	bool "Port0 : [KEYPAD : INT(14x8)]"
+	depends on KEYPAD_S3C
+	help
+	  Say Y here if you want to use the S3C SMDK keypad.(14x8)
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called s3c-keypad.
+
+endchoice
 
 config KEYBOARD_HIL_OLD
 	tristate "HP HIL keyboard support (simple driver)"
@@ -425,5 +460,7 @@ config KEYBOARD_W90P910
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called w90p910_keypad.
+
+source "drivers/input/keyboard/cypress/Kconfig"
 
 endif
