@@ -874,6 +874,13 @@ config PRINTK
 	  very difficult to diagnose system problems, saying N here is
 	  strongly discouraged.
 
+config SEC_LOG
+	default y
+	bool "Enable support for sec_log" if EMBEDDED
+	depends on PRINTK
+	help
+	  This option enables sec_log support.
+
 config BUG
 	bool "BUG() support" if EMBEDDED
 	default y
