@@ -104,8 +104,8 @@ static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
 	do {
 		struct page *page = pages[*nr];
 
-		if (WARN_ON(!pte_none(*pte)))
-			return -EBUSY;
+		WARN(!pte_none(*pte), "!pte_none(*%p)\n", pte);
+
 		if (WARN_ON(!page))
 			return -ENOMEM;
 		set_pte_at(&init_mm, addr, pte, mk_pte(page, prot));

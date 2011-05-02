@@ -301,3 +301,108 @@ config NOMMU_INITIAL_TRIM_EXCESS
 	  of 1 says that all excess pages should be trimmed.
 
 	  See Documentation/nommu-mmap.txt for more information.
+
+
+config CMA
+	bool "Contiguous Memory Allocator framework"
+	# Currently there is only one allocator so force it on
+	select CMA_BEST_FIT
+	help
+	  This enables the Contiguous Memory Allocator framework which
+	  allows drivers to allocate big physically-contiguous blocks of
+	  memory for use with hardware components that do not support I/O
+	  map nor scatter-gather.
+
+	  If you select this option you will also have to select at least
+	  one allocator algorithm below.
+
+	  To make use of CMA you need to specify the regions and
+	  driver->region mapping on command line when booting the kernel.
+
+config CMA_DEVELOPEMENT
+	bool "Include CMA developement features"
+	depends on CMA
+	help
+	  This lets you enable some developement features of the CMA
+	  freamework.
+
+config CMA_DEBUG
+	bool "CMA debug messages"
+	depends on CMA_DEVELOPEMENT
+	help
+	  Enable debug messages in CMA code.
+
+config CMA_SYSFS
+	bool "CMA SysFS interface support"
+	depends on CMA_DEVELOPEMENT
+	help
+	  Enable support for SysFS interface.
+
+config CMA_CMDLINE
+	bool "CMA command line parameters support"
+	depends on CMA_DEVELOPEMENT
+	help
+	  Enable support for cma, cma.map and cma.asterisk command line
+	  parameters.
+
+config CMA_BEST_FIT
+	bool "CMA best-fit allocator"
+	depends on CMA
+	help
+	  This is a best-fit algorithm running in O(n log n) time where
+	  n is the number of existing holes (which is never greater then
+	  the number of allocated regions and usually much smaller).  It
+	  allocates area from the smallest hole that is big enough for
+	  allocation in question.
+
+config VCM
+	bool "Virtual Contiguous Memory framework"
+	help
+	  This enables the Virtual Contiguous Memory framework which
+	  provides an abstraction for virtual address space provided by
+	  various MMUs present on the platform.
+
+	  The framework uses plugable MMU drivers for hardware MMUs and
+	  if drivers obeys some limitations it can be also used on
+	  platforms with no MMU.
+
+	  For more information see
+	  <Documentation/virtual-contiguous-memory.txt>.  If unsure, say
+	  "n".
+
+config VCM_RES_REFCNT
+	bool "Reference counting on reservations"
+	depends on VCM
+	help
+	  This enables reference counting on a reservation to make sharing
+	  and migrating the ownership of the reservation easier.
+
+config VCM_PHYS
+	bool "VCM physical allocation wrappers"
+	depends on VCM && MODULES
+	help
+	  This enables the vcm_phys family of functions provided for VCM
+	  drivers.  If a VCM driver is built that requires this option, it
+	  will be automatically selected.  You select it if you are going to
+	  build external modules that will use this functionality.
+
+config VCM_MMU
+	bool "VCM MMU wrapper"
+	depends on VCM && MODULES
+	select VCM_PHYS
+	select GENERIC_ALLOCATOR
+	help
+	  This enables the VCM MMU wrapper which helps creating VCM drivers
+	  for IO MMUs.  If a VCM driver is built that requires this option, it
+	  will be automatically selected.  You select it if you are going to
+	  build external modules that will use this functionality.
+
+config VCM_O2O
+	bool "VCM O2O wrapper"
+	depends on VCM && MODULES
+	help
+	  This enables the VCM one-to-one wrapper which helps creating VCM
+	  drivers for devices without IO MMUs.  If a VCM driver is built that
+	  requires this option, it will be automatically selected.  You select
+	  it if you are going to build external modules that will use this
+	  functionality.

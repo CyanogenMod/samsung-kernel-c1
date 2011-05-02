@@ -29,6 +29,7 @@
 #include <linux/mutex.h>
 #include <linux/shmem_fs.h>
 #include <linux/ashmem.h>
+#include <linux/delay.h>
 
 #define ASHMEM_NAME_PREFIX "dev/ashmem/"
 #define ASHMEM_NAME_PREFIX_LEN (sizeof(ASHMEM_NAME_PREFIX) - 1)
@@ -283,9 +284,19 @@ calc_vm_may_flags(unsigned long prot)
 static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct ashmem_area *asma = file->private_data;
-	int ret = 0;
+	int ret = 0, count = 1000;
 
-	mutex_lock(&ashmem_mutex);
+	while (1) {
+		if (mutex_trylock(&ashmem_mutex)) {
+			/* pr_err("%s: ashmem_mutex obtained with %d!\n", __func__, count); */
+			break;
+		}
+		if (--count == 0) {
+			WARN(1, KERN_ERR "%s: FAILED to lock ashmem_mutex\n", __func__);
+			return -EBUSY;
+		}
+		msleep(1);
+	}
 
 	/* user needs to SET_SIZE before mapping */
 	if (unlikely(!asma->size)) {
