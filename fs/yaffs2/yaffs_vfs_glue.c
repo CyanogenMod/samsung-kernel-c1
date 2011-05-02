@@ -78,6 +78,7 @@
 #include <linux/interrupt.h>
 #include <linux/string.h>
 #include <linux/ctype.h>
+#include <linux/namei.h>
 
 #if (YAFFS_NEW_FOLLOW_LINK == 1)
 #include <linux/namei.h>
@@ -739,14 +740,25 @@ static int yaffs_follow_link(struct dentry *dentry, struct nameidata *nd)
 	yaffs_Device *dev = yaffs_DentryToObject(dentry)->myDev;
 
 	yaffs_GrossLock(dev);
-
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 33))
+	alias = (yaffs_DentryToObject(dentry))->variant.symLinkVariant.alias;
+#else
 	alias = yaffs_GetSymlinkAlias(yaffs_DentryToObject(dentry));
+#endif
+
 	yaffs_GrossUnlock(dev);
 
 	if (!alias) {
 		ret = -ENOMEM;
 		goto out;
 	}
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 33))
+	nd_set_link(nd, alias);
+	return NULL;
+#else
+	ret = vfs_follow_link(nd, alias);
+	kfree(alias);
+#endif
 
 #if (YAFFS_NEW_FOLLOW_LINK == 1)
 	nd_set_link(nd, alias);
