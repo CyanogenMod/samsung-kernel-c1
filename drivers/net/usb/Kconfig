@@ -385,6 +385,13 @@ config USB_CDC_PHONET
 	  cellular modem, as found on most Nokia handsets with the
 	  "PC suite" USB profile.
 
+config USB_CDC_SVNET
+	tristate "CDC Svnet support"
+	depends on PHONET
+	help
+	  Choose this option to support the Samsung virtual network interface
+	  using Phonet.
+
 config USB_IPHETH
 	tristate "Apple iPhone USB Ethernet driver"
 	default n
