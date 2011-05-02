@@ -11,6 +11,7 @@ struct gpio_keys_button {
 	int wakeup;		/* configure the button as a wake-up source */
 	int debounce_interval;	/* debounce ticks interval in msecs */
 	bool can_disable;
+	void (*isr_hook)(unsigned int code, int value);
 };
 
 struct gpio_keys_platform_data {

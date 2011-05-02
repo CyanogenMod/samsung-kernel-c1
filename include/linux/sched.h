@@ -272,14 +272,15 @@ extern int runqueue_is_locked(int cpu);
 
 extern cpumask_var_t nohz_cpu_mask;
 #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
-extern int select_nohz_load_balancer(int cpu);
+extern void select_nohz_load_balancer(int stop_tick);
 extern int get_nohz_load_balancer(void);
 #else
-static inline int select_nohz_load_balancer(int cpu)
+static inline void select_nohz_load_balancer(int stop_tick)
 {
 	return 0;
 }
 #endif
+extern int get_nohz_timer_target(void);
 
 /*
  * Only dump TASK_* tasks. (0 for all tasks)
@@ -1076,8 +1077,7 @@ struct sched_class {
 					 struct task_struct *task);
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
-	void (*moved_group) (struct task_struct *p, int on_rq);
-	void (*prep_move_group) (struct task_struct *p, int on_rq);
+	void (*task_move_group) (struct task_struct *p, int on_rq);
 #endif
 };
 
@@ -2559,6 +2559,8 @@ static inline unsigned long rlimit_max(unsigned int limit)
 	return task_rlimit_max(current, limit);
 }
 
+extern unsigned int d_hotplug_lock;
+extern unsigned int force_hotplug;
 #endif /* __KERNEL__ */
 
 #endif

@@ -127,6 +127,8 @@ enum power_supply_type {
 	POWER_SUPPLY_TYPE_UPS,
 	POWER_SUPPLY_TYPE_MAINS,
 	POWER_SUPPLY_TYPE_USB,
+	POWER_SUPPLY_TYPE_DOCK,
+	POWER_SUPPLY_TYPE_MISC,
 };
 
 union power_supply_propval {

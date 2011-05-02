@@ -158,7 +158,10 @@ struct mmc_host {
 #define MMC_CAP_DISABLE		(1 << 7)	/* Can the host be disabled */
 #define MMC_CAP_NONREMOVABLE	(1 << 8)	/* Nonremovable e.g. eMMC */
 #define MMC_CAP_WAIT_WHILE_BUSY	(1 << 9)	/* Waits while card is busy */
-#define MMC_CAP_DDR		(1 << 10)	/* Can the host do DDR transfers */
+#define MMC_CAP_ERASE		(1 << 10)	/* Allow erase/trim commands */
+#define MMC_CAP_DDR		(1 << 11)	/* Can the host do DDR transfers */
+#define MMC_CAP_ATHEROS_WIFI	(1 << 12)	/* For Atheros wifi module */
+#define MMC_CAP_CLOCK_GATING	(1 << 13)	/* Can do clock gating dynamically  */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
