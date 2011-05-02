@@ -23,9 +23,40 @@
 #include <linux/mman.h>
 #include <plat/media.h>
 #include <linux/clk.h>
+#include <linux/delay.h>
 
 #include "fimc.h"
 #include "fimc-ipc.h"
+
+#ifdef SYSMMU_FIMC
+#include <plat/sysmmu.h>
+#endif
+static __u32 fimc_get_pixel_format_type(__u32 pixelformat)
+{
+	switch (pixelformat) {
+	case V4L2_PIX_FMT_RGB32:
+	case V4L2_PIX_FMT_RGB565:
+		return FIMC_RGB;
+
+	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV12T:
+	case V4L2_PIX_FMT_NV21:
+	case V4L2_PIX_FMT_YUV420:
+		return FIMC_YUV420;
+
+	case V4L2_PIX_FMT_YUYV:
+	case V4L2_PIX_FMT_UYVY:
+	case V4L2_PIX_FMT_YVYU:
+	case V4L2_PIX_FMT_VYUY:
+	case V4L2_PIX_FMT_NV16:
+	case V4L2_PIX_FMT_NV61:
+	case V4L2_PIX_FMT_YUV422P:
+		return FIMC_YUV422;
+
+	default:
+		return FIMC_YUV444;
+	}
+}
 
 void fimc_outdev_set_src_addr(struct fimc_control *ctrl, dma_addr_t *base)
 {
@@ -57,6 +88,7 @@ static int fimc_outdev_stop_camif(void *param)
 	return 0;
 }
 
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
 static int fimc_outdev_stop_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 {
 	struct s3cfb_user_window window;
@@ -106,6 +138,7 @@ static int fimc_outdev_stop_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 
 	return 0;
 }
+#endif
 
 static int fimc_outdev_stop_fifo(struct fimc_control *ctrl,
 				 struct fimc_ctx *ctx)
@@ -120,7 +153,7 @@ static int fimc_outdev_stop_fifo(struct fimc_control *ctrl,
 				(void *)ctrl);
 		if (ret < 0)
 			fimc_err("FIMD FIFO close fail\n");
-	} else if ((pdata->hw_ver == 0x43) || (pdata->hw_ver == 0x50)) {
+	} else if ((pdata->hw_ver == 0x43) || (pdata->hw_ver >= 0x50)) {
 		ret = ctrl->fb.close_fifo(ctrl->id, NULL, NULL);
 		if (ret < 0)
 			fimc_err("FIMD FIFO close fail\n");
@@ -154,7 +187,9 @@ int fimc_outdev_stop_streaming(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		else
 			ctx->status = FIMC_READY_OFF;
 
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
 		fimc_outdev_stop_dma(ctrl, ctx);
+#endif
 		break;
 	case FIMC_OVLY_NONE_SINGLE_BUF:		/* fall through */
 	case FIMC_OVLY_NONE_MULTI_BUF:
@@ -179,9 +214,17 @@ int fimc_outdev_stop_streaming(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	return 0;
 }
 
+static int fimc_outdev_dma_auto_dst_resize(struct v4l2_rect *org)
+{
+	if (org->width % 16)
+		org->width = org->width + 16 - (org->width % 16);
+
+	return 0;
+}
+
 int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 {
-	struct v4l2_rect fimd_rect;
+	struct v4l2_rect fimd_rect, fimd_rect_virtual;
 	struct fb_var_screeninfo var;
 	struct s3cfb_user_window window;
 	int ret = -1, idx;
@@ -193,6 +236,10 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		fimc_err("fimc_fimd_rect fail\n");
 		return -EINVAL;
 	}
+
+	/* Support any size */
+	memcpy(&fimd_rect_virtual, &fimd_rect, sizeof(fimd_rect));
+	fimc_outdev_dma_auto_dst_resize(&fimd_rect_virtual);
 
 	/* Get WIN var_screeninfo */
 	ret = s3cfb_direct_ioctl(id, FBIOGET_VSCREENINFO,
@@ -217,8 +264,8 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	}
 
 	/* Update WIN size */
-	var.xres_virtual = fimd_rect.width;
-	var.yres_virtual = fimd_rect.height;
+	var.xres_virtual = fimd_rect_virtual.width;
+	var.yres_virtual = fimd_rect_virtual.height;
 	var.xres = fimd_rect.width;
 	var.yres = fimd_rect.height;
 
@@ -252,12 +299,17 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		return -EINVAL;
 	}
 
+#if 0
+	/* Remarked for better screen display
+	 * when dynamic screen size change is requested
+	 */
 	ret = s3cfb_direct_ioctl(ctrl->id, S3CFB_SET_WIN_ON,
 							(unsigned long)NULL);
 	if (ret < 0) {
 		fimc_err("direct_ioctl(S3CFB_SET_WIN_ON) fail\n");
 		return -EINVAL;
 	}
+#endif
 
 	ctrl->fb.is_enable = 1;
 
@@ -302,6 +354,7 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 		size = PAGE_ALIGN(y_size + cb_size + cr_size);
 		break;
 	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
 		cb_size = y_size >> 1;
 		size = PAGE_ALIGN(y_size + cb_size);
 		break;
@@ -316,6 +369,11 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 
 	if ((*curr + size * FIMC_OUTBUFS) > (ctrl->mem.base + ctrl->mem.size)) {
 		fimc_err("%s: Reserved memory is not sufficient\n", __func__);
+		fimc_err("ctrl->mem.base = 0x%x\n", ctrl->mem.base);
+		fimc_err("ctrl->mem.size = 0x%x\n", ctrl->mem.size);
+		fimc_err("*curr          = 0x%x\n", *curr);
+		fimc_err("size           = 0x%x\n", size);
+		fimc_err("FIMC_OUTBUFS   = 0x%x\n", FIMC_OUTBUFS);
 		return -EINVAL;
 	}
 
@@ -335,6 +393,7 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 		}
 		break;
 	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
 		for (i = 0; i < FIMC_OUTBUFS; i++) {
 			ctx->src[i].base[FIMC_ADDR_Y] = *curr;
 			ctx->src[i].length[FIMC_ADDR_Y] = y_size;
@@ -376,9 +435,100 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 	return 0;
 }
 
+#ifdef CONFIG_VIDEO_FIMC_UMP_VCM_CMA
+int fimc_vcm_alloc_outbuf(struct fimc_control *ctrl, int buf_num, int buf_size)
+{
+	unsigned long arg = 0;
+	struct ump_vcm ump_vcm;
+	struct vcm_phys *phys = NULL;
+	dma_addr_t phys_addr;
+
+	phys = kmalloc(sizeof(*phys) + sizeof(*phys->parts), GFP_KERNEL);
+	memset(phys, 0, sizeof(*phys) + sizeof(*phys->parts));
+
+	phys_addr = (dma_addr_t)cma_alloc(ctrl->dev, ctrl->cma_name, \
+					 (size_t)buf_size, 0);
+	fimc_info1("%s : phys_addr : 0x%x, ctrl->dev : 0x%x\n", __func__,
+			phys_addr, (unsigned int)ctrl->dev);
+	phys->count = 1;
+	phys->size = buf_size;
+	phys->free = NULL;
+	phys->parts[0].start = phys_addr;
+	phys->parts[0].size = buf_size;
+
+	ctrl->dev_vcm_res[buf_num] = vcm_map(ctrl->dev_vcm, phys, 0);
+
+	/* physical address */
+	ctrl->mem.base = ctrl->dev_vcm_res[buf_num]->phys->parts->start;
+
+	/* virtual address */
+	ctrl->mem.vaddr_base = ctrl->dev_vcm_res[buf_num]->start;
+
+	ctrl->mem.curr = ctrl->mem.base;
+	ctrl->mem.vaddr_curr = ctrl->mem.vaddr_base;
+
+	fimc_info1("%s : vaddr base : 0x%x\n", __func__, ctrl->mem.vaddr_base);
+	ctrl->mem.size = buf_size;
+
+	/* UMP */
+	ctrl->ump_memory_description.addr = ctrl->mem.base;
+	ctrl->ump_memory_description.size = ctrl->mem.size;
+
+	ump_vcm.vcm = ctrl->dev_vcm;
+	ump_vcm.vcm_res = ctrl->dev_vcm_res[buf_num];
+	ump_vcm.dev_id = ctrl->vcm_id;
+	arg = (unsigned int)&ump_vcm;
+
+	ctrl->ump_wrapped_buffer[buf_num] =
+		ump_dd_handle_create_from_phys_blocks(&ctrl->ump_memory_description, 1);
+
+	if (UMP_DD_HANDLE_INVALID == ctrl->ump_wrapped_buffer[buf_num]) {
+		fimc_err("%s : ump_wrapped_buffer is unhandled\n", __func__);
+		return -ENOMEM;
+	}
+#ifdef CONFIG_UMP_VCM_ALLOC
+	if (ump_dd_vcm_attribute_set(ctrl->ump_wrapped_buffer[buf_num], arg))
+		return -ENOMEM;
+#endif
+	return 0;
+}
+
+int fimc_vcm_free_outbuf(struct fimc_control *ctrl, int buf_num, int phy_addr)
+{
+	kfree(ctrl->dev_vcm_res[buf_num]->phys);
+	vcm_unmap(ctrl->dev_vcm_res[buf_num]);
+	cma_free(phy_addr);
+}
+#endif
+
 static int fimc_outdev_set_dst_buf(struct fimc_control *ctrl,
 				   struct fimc_ctx *ctx)
 {
+#ifdef SYSMMU_FIMC
+	struct vcm_res *vcm_res;
+
+	u32 width = ctrl->fb.lcd_hres;
+	u32 height = ctrl->fb.lcd_vres;
+	u32 i, size;
+
+	size = PAGE_ALIGN(width * height * 4);
+
+	/* Initialize destination buffer addr */
+	for (i = 0; i < FIMC_OUTBUFS; i++) {
+		fimc_vcm_alloc_outbuf(ctrl, i, size);
+		ctx->dst[i].base[FIMC_ADDR_Y] = ctrl->mem.base;
+		ctx->dst[i].vaddr_base[FIMC_ADDR_Y] = ctrl->mem.vaddr_curr;
+		ctx->dst[i].length[FIMC_ADDR_Y] = size;
+		ctx->dst[i].base[FIMC_ADDR_CB] = 0;
+		ctx->dst[i].vaddr_base[FIMC_ADDR_CB] = 0;
+		ctx->dst[i].length[FIMC_ADDR_CB] = 0;
+		ctx->dst[i].base[FIMC_ADDR_CR] = 0;
+		ctx->dst[i].vaddr_base[FIMC_ADDR_CR] = 0;
+		ctx->dst[i].length[FIMC_ADDR_CR] = 0;
+	}
+
+	return 0;
+#else
 	dma_addr_t *curr = &ctrl->mem.curr;
 	dma_addr_t end;
 	u32 width = ctrl->fb.lcd_hres;
@@ -390,6 +540,11 @@ static int fimc_outdev_set_dst_buf(struct fimc_control *ctrl,
 
 	if ((*curr + (size * FIMC_OUTBUFS)) > end) {
 		fimc_err("%s: Reserved memory is not sufficient\n", __func__);
+		fimc_err("ctrl->mem.base = 0x%x\n", ctrl->mem.base);
+		fimc_err("ctrl->mem.size = 0x%x\n", ctrl->mem.size);
+		fimc_err("*curr          = 0x%x\n", *curr);
+		fimc_err("size           = 0x%x\n", size);
+		fimc_err("FIMC_OUTBUFS   = 0x%x\n", FIMC_OUTBUFS);
 		return -EINVAL;
 	}
 
@@ -405,6 +560,7 @@ static int fimc_outdev_set_dst_buf(struct fimc_control *ctrl,
 	}
 
 	return 0;
+#endif
 }
 
 static int fimc_set_rot_degree(struct fimc_control *ctrl,
@@ -470,15 +626,16 @@ int fimc_outdev_check_param(struct fimc_control *ctrl,
 		ret = -EINVAL;
 	} else if ((dst.top + dst.height) > bound.height) {
 		fimc_err("Vertical position setting is failed\n");
-		fimc_err("\ttop = %d, height = %d, bound height = %d, \n",
+		fimc_err("\ttop = %d, height = %d, bound height = %d,\n",
 				dst.top, dst.height, bound.height);
 		ret = -EINVAL;
 	}
 
 	if ((ctx->status != FIMC_STREAMOFF) &&
 	    (ctx->status != FIMC_READY_ON) &&
+	    (ctx->status != FIMC_STREAMON_IDLE) &&
 	    (ctx->status != FIMC_ON_IDLE_SLEEP)) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -547,6 +704,9 @@ static void fimc_outdev_set_format(struct fimc_control *ctrl,
 		} else if (ctx->pix.field == V4L2_FIELD_INTERLACED_TB) {
 			pixfmt.pixelformat = V4L2_PIX_FMT_YUV444;
 			pixfmt.field = V4L2_FIELD_INTERLACED_TB;
+		} else if (ctx->pix.field == V4L2_FIELD_ANY) {
+			pixfmt.pixelformat = V4L2_PIX_FMT_RGB32;
+			pixfmt.field = V4L2_FIELD_NONE;
 		}
 
 		break;
@@ -624,87 +784,99 @@ static int fimc4x_outdev_check_src_size(struct fimc_control *ctrl,
 	    ((rot == 90) || (rot == 270))) {
 		/* Input Rotator */
 		if (real->height % 16) {
-			fimc_err("SRC Real_H: multiple of 16 !\n");
+			fimc_err("SRC Real_H(%d): multiple of 16 !\n",
+					real->height);
 			return -EINVAL;
 		}
 
 		if (ctx->sc.pre_hratio) {
 			if (real->height % (ctx->sc.pre_hratio * 4)) {
-				fimc_err("SRC Real_H: multiple of 4*pre_hratio\n");
+				fimc_err("SRC Real_H(%d): multiple of "
+						"4*pre_hratio(%d)\n",
+						real->height,
+						ctx->sc.pre_hratio);
 				return -EINVAL;
 			}
 		}
 
 		if (ctx->sc.pre_vratio) {
 			if (real->width % ctx->sc.pre_vratio) {
-				fimc_err("SRC Real_W: multiple of pre_vratio\n");
+				fimc_err("SRC Real_W(%d): multiple of "
+						"pre_vratio(%d)\n",
+						real->width,
+						ctx->sc.pre_vratio);
 				return -EINVAL;
 			}
 		}
 
 		if (real->height < 16) {
-			fimc_err("SRC Real_H: Min 16\n");
+			fimc_err("SRC Real_H(%d): Min 16\n", real->height);
 			return -EINVAL;
 		}
 		if (real->width < 8) {
-			fimc_err("SRC Real_W: Min 8\n");
+			fimc_err("SRC Real_W(%d): Min 8\n", real->width);
 			return -EINVAL;
 		}
 	} else {
 		/* No Input Rotator */
 		if (real->height < 8) {
-			fimc_err("SRC Real_H: Min 8\n");
+			fimc_err("SRC Real_H(%d): Min 8\n", real->height);
 			return -EINVAL;
 		}
 
 		if (real->width < 16) {
-			fimc_err("SRC Real_W: Min 16\n");
+			fimc_err("SRC Real_W(%d): Min 16\n", real->width);
 			return -EINVAL;
 		}
 
 		if (real->width > ctrl->limit->real_w_no_rot) {
-			fimc_err("SRC REAL_W: Real_W <= %d\n",
+			fimc_err("SRC REAL_W(%d): Real_W <= %d\n", real->width,
 					ctrl->limit->real_w_no_rot);
 			return -EINVAL;
 		}
 	}
 
 	if (org->height < real->height) {
-		fimc_err("SRC Org_H: larger than Real_H\n");
+		fimc_err("SRC Org_H(%d): larger than Real_H(%d)\n",
+				org->height, real->height);
 		return -EINVAL;
 	}
 
 	if (org->width < real->width) {
-		fimc_err("SRC Org_W: Org_W >= Real_W\n");
+		fimc_err("SRC Org_W: Org_W(%d) >= Real_W(%d)\n", org->width,
+				real->width);
 		return -EINVAL;
 	}
 
 	if (ctx->sc.pre_vratio) {
 		if (real->height % ctx->sc.pre_vratio) {
-			fimc_err("SRC Real_H: multiple of pre_vratio!\n");
+			fimc_err("SRC Real_H(%d): multi of pre_vratio(%d)!\n",
+					real->height, ctx->sc.pre_vratio);
 			return -EINVAL;
 		}
 	}
 
 	if (real->width % 16) {
-		fimc_err("SRC Real_W: multiple of 16 !\n");
+		fimc_err("SRC Real_W(%d): multiple of 16 !\n", real->width);
 		return -EINVAL;
 	}
 
 	if (ctx->sc.pre_hratio) {
 		if (real->width % (ctx->sc.pre_hratio * 4)) {
-			fimc_err("SRC Real_W: multiple of 4 * pre_hratio!\n");
+			fimc_err("SRC Real_W(%d): "
+					"multiple of 4 * pre_hratio(%d)!\n",
+					real->width, ctx->sc.pre_hratio);
 			return -EINVAL;
 		}
 	}
 
 	if (org->width % 16) {
-		fimc_err("SRC Org_W: multiple of 16\n");
+		fimc_err("SRC Org_W(%d): multiple of 16\n", org->width);
 		return -EINVAL;
 	}
 
 	if (org->height < 8) {
-		fimc_err("SRC Org_H: Min 8\n");
+		fimc_err("SRC Org_H(%d): Min 8\n", org->height);
 		return -EINVAL;
 	}
 
@@ -726,45 +898,50 @@ static int fimc50_outdev_check_src_size(struct fimc_control *ctrl,
 		case V4L2_PIX_FMT_YUV422P:	/* fall through */
 		case V4L2_PIX_FMT_YVU420:
 			if (real->height % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->height);
 				return -EINVAL;
 			}
 		}
 
 		if (real->height < 16) {
-			fimc_err("SRC Real_H: Min 16\n");
+			fimc_err("SRC Real_H(%d): Min 16\n", real->height);
 			return -EINVAL;
 		}
 		if (real->width < 8) {
-			fimc_err("SRC Real_W: Min 8\n");
+			fimc_err("SRC Real_W(%d): Min 8\n", real->width);
 			return -EINVAL;
 		}
 	} else {
 		/* No Input Rotator */
 		if (real->height < 8) {
-			fimc_err("SRC Real_H: Min 8\n");
+			fimc_err("SRC Real_H(%d): Min 8\n", real->height);
 			return -EINVAL;
 		}
 
 		if (real->width < 16) {
-			fimc_err("SRC Real_W: Min 16\n");
+			fimc_err("SRC Real_W(%d): Min 16\n", real->width);
 			return -EINVAL;
 		}
 
 		if (real->width > ctrl->limit->real_w_no_rot) {
-			fimc_err("SRC REAL_W: Real_W <= %d\n",
+			fimc_err("SRC REAL_W(%d): Real_W <= %d\n", real->width,
 					ctrl->limit->real_w_no_rot);
 			return -EINVAL;
 		}
 	}
 
 	if (org->height < real->height) {
-		fimc_err("SRC Org_H: larger than Real_H\n");
+		fimc_err("SRC Org_H: larger than Real_H, "
+				"org %dx%d, real %dx%d\n",
+				org->width, org->height,
+				real->width, real->height);
 		return -EINVAL;
 	}
 
 	if (org->width < real->width) {
-		fimc_err("SRC Org_W: Org_W >= Real_W\n");
+		fimc_err("SRC Org_W: Org_W(%d) >= Real_W(%d)\n",
+				org->width, real->width);
 		return -EINVAL;
 	}
 
@@ -773,33 +950,40 @@ static int fimc50_outdev_check_src_size(struct fimc_control *ctrl,
 		case V4L2_PIX_FMT_YUV444:	/* fall through */
 		case V4L2_PIX_FMT_RGB32:
 			if (real->height % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->height);
 				return -EINVAL;
 			}
 		case V4L2_PIX_FMT_YUV422P:
 			if (real->height % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->height);
 				return -EINVAL;
 			} else if (real->width % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->width);
 				return -EINVAL;
 			}
 		case V4L2_PIX_FMT_YVU420:
 			if (real->height % 4) {
-				fimc_err("SRC Real_H: multiple of 4\n");
+				fimc_err("SRC Real_H(%d): multiple of 4\n",
+						real->height);
 				return -EINVAL;
 			} else if (real->width % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->width);
 				return -EINVAL;
 			}
 		}
 	} else if (ctx->pix.field == V4L2_FIELD_NONE) {
 		if (pixelformat == V4L2_PIX_FMT_YUV422P) {
 			if (real->height % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->height);
 				return -EINVAL;
 			} else if (real->width % 2) {
-				fimc_err("SRC Real_H: multiple of 2\n");
+				fimc_err("SRC Real_H(%d): multiple of 2\n",
+						real->width);
 				return -EINVAL;
 			}
 		}
@@ -820,7 +1004,7 @@ static int fimc_outdev_set_src_dma_size(struct fimc_control *ctrl,
 	org.width = ctx->pix.width;
 	org.height = ctx->pix.height;
 
-	if (pdata->hw_ver == 0x50)
+	if (pdata->hw_ver >= 0x50)
 		ret = fimc50_outdev_check_src_size(ctrl, ctx, &real, &org);
 	else
 		ret = fimc4x_outdev_check_src_size(ctrl, ctx, &real, &org);
@@ -886,7 +1070,7 @@ static void fimc_outdev_set_dst_dma_offset(struct fimc_control *ctrl,
 
 		break;
 	default:
-		fimc_err("Rotation degree is invalid\n");
+		fimc_err("Rotation degree is invalid(%d)\n", ctx->rotate);
 		break;
 	}
 
@@ -914,9 +1098,13 @@ static int fimc_outdev_check_dst_size(struct fimc_control *ctrl,
 				      struct v4l2_rect *org)
 {
 	u32 rot = ctx->rotate;
+	__u32 pixel_type;
 
-	if (real->height % 2) {
-		fimc_err("DST Real_H: even number\n");
+	pixel_type = fimc_get_pixel_format_type(ctx->fbuf.fmt.pixelformat);
+
+	if (FIMC_YUV420 == pixel_type && real->height % 2) {
+		fimc_err("DST Real_H(%d): even number for YUV420 formats\n",
+				real->height);
 		return -EINVAL;
 	}
 
@@ -936,34 +1124,36 @@ static int fimc_outdev_check_dst_size(struct fimc_control *ctrl,
 		}
 
 		if (real->height > ctrl->limit->trg_h_rot) {
-			fimc_err("DST REAL_H: Real_H <= %d\n",
+			fimc_err("DST REAL_H: Real_H(%d) <= %d\n", real->height,
 					ctrl->limit->trg_h_rot);
 			return -EINVAL;
 		}
 	} else if (ctx->overlay.mode != FIMC_OVLY_FIFO) {
 		/* No Output Rotator */
 		if (org->height < 8) {
-			fimc_err("DST Org_H: Min 8\n");
+			fimc_err("DST Org_H(%d): Min 8\n", org->height);
 			return -EINVAL;
 		}
 
 		if (org->height < real->height) {
-			fimc_err("DST Org_H: Org_H >= Real_H\n");
+			fimc_err("DST Org_H: Org_H(%d) >= Real_H(%d)\n",
+					org->height, real->height);
 			return -EINVAL;
 		}
-
+		/*
 		if (org->width % 8) {
 			fimc_err("DST Org_W: multiple of 8\n");
 			return -EINVAL;
-		}
+		}*/
 
 		if (org->width < real->width) {
-			fimc_err("DST Org_W: Org_W >= Real_W\n");
+			fimc_err("DST Org_W: Org_W(%d) >= Real_W(%d)\n",
+					org->width, real->width);
 			return -EINVAL;
 		}
 
 		if (real->height > ctrl->limit->trg_h_no_rot) {
-			fimc_err("DST REAL_H: Real_H <= %d\n",
+			fimc_err("DST REAL_H: Real_H(%d) <= %d\n", real->height,
 					ctrl->limit->trg_h_no_rot);
 			return -EINVAL;
 		}
@@ -999,7 +1189,8 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 			org.height = ctx->fbuf.fmt.width;
 			break;
 		default:
-			fimc_err("Rotation degree is invalid\n");
+			fimc_err("Rotation degree is invalid(%d)\n",
+					ctx->rotate);
 			break;
 		}
 
@@ -1022,7 +1213,8 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 			org.height = ctx->win.w.width;
 			break;
 		default:
-			fimc_err("Rotation degree is invalid\n");
+			fimc_err("Rotation degree is invalid(%d)\n",
+					ctx->rotate);
 			break;
 		}
 
@@ -1045,7 +1237,8 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 			break;
 
 		default:
-			fimc_err("Rotation degree is invalid\n");
+			fimc_err("Rotation degree is invalid(%d)\n",
+					ctx->rotate);
 			break;
 		}
 
@@ -1053,6 +1246,9 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 	default:
 		break;
 	}
+
+	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO)
+		fimc_outdev_dma_auto_dst_resize(&org);
 
 	fimc_dbg("DST org: width(%d), height(%d)\n", org.width, org.height);
 	fimc_dbg("DST real: width(%d), height(%d)\n", real.width, real.height);
@@ -1098,7 +1294,8 @@ static void fimc_outdev_calibrate_scale_info(struct fimc_control *ctrl,
 			dst->height = ctx->win.w.width;
 			break;
 		default:
-			fimc_err("Rotation degree is invalid\n");
+			fimc_err("Rotation degree is invalid(%d)\n",
+					ctx->rotate);
 			break;
 		}
 	}
@@ -1116,8 +1313,8 @@ static int fimc_outdev_check_scaler(struct fimc_control *ctrl,
 
 	/* Check scaler limitation */
 	if (ctx->sc.pre_dst_width > ctrl->limit->pre_dst_w) {
-		fimc_err("FIMC%d : MAX PreDstWidth is %d\n",
-					ctrl->id, ctrl->limit->pre_dst_w);
+		fimc_err("MAX PreDstWidth(%d) is %d\n", ctx->sc.pre_dst_width,
+					ctrl->limit->pre_dst_w);
 		return -EDOM;
 	}
 
@@ -1132,16 +1329,18 @@ static int fimc_outdev_check_scaler(struct fimc_control *ctrl,
 		break;
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:
 		pixels = 8;
 		break;
 	default:
-		fimc_err("Invalid color format\n");
+		fimc_err("Invalid color format(0x%x)\n", ctx->pix.pixelformat);
 		return -EINVAL;
 	}
 
 	if (src->width % pixels) {
-		fimc_err("source width multiple of %d pixels\n", pixels);
+		fimc_err("source width(%d) multiple of %d pixels\n", src->width,
+				pixels);
 		return -EDOM;
 	}
 
@@ -1169,16 +1368,18 @@ static int fimc_outdev_check_scaler(struct fimc_control *ctrl,
 		break;
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:
 		pixels = 8;
 		break;
 	default:
-		fimc_err("Invalid color format\n");
+		fimc_err("Invalid color format(0x%x)\n", dstfmt);
 		return -EINVAL;
 	}
 
 	if (dst->width % pixels) {
-		fimc_err("source width multiple of %d pixels\n", pixels);
+		fimc_err("source width(%d) multiple of %d pixels\n",
+				dst->width, pixels);
 		return -EDOM;
 	}
 
@@ -1200,14 +1401,16 @@ static int fimc_outdev_set_scaler(struct fimc_control *ctrl,
 	ret = fimc_get_scaler_factor(src.width, dst.width,
 			&ctx->sc.pre_hratio, &ctx->sc.hfactor);
 	if (ret < 0) {
-		fimc_err("Fail : Out of Width scale range\n");
+		fimc_err("Fail : Out of Width scale range(%d, %d)\n",
+				src.width, dst.width);
 		return ret;
 	}
 
 	ret = fimc_get_scaler_factor(src.height, dst.height,
 			&ctx->sc.pre_vratio, &ctx->sc.vfactor);
 	if (ret < 0) {
-		fimc_err("Fail : Out of Height scale range\n");
+		fimc_err("Fail : Out of Height scale range(%d, %d)\n",
+				src.height, dst.height);
 		return ret;
 	}
 
@@ -1241,7 +1444,7 @@ static int fimc_outdev_set_scaler(struct fimc_control *ctrl,
 	ctx->sc.scaleup_v = (dst.height >= src.height) ? 1 : 0;
 	ctx->sc.shfactor = 10 - (ctx->sc.hfactor + ctx->sc.vfactor);
 
-	if (pdata->hw_ver != 0x50) {
+	if (pdata->hw_ver < 0x50) {
 		ret = fimc_outdev_check_scaler(ctrl, ctx, &src, &dst);
 		if (ret < 0)
 			return ret;
@@ -1266,6 +1469,10 @@ int fimc_outdev_set_ctx_param(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	if ((ctrl->status == FIMC_READY_ON) ||
 			(ctrl->status == FIMC_STREAMON_IDLE))
 		fimc_hwset_enable_irq(ctrl, 0, 1);
+
+#if (defined(CONFIG_S5PV310_DEV_PD) && defined(CONFIG_PM_RUNTIME))
+	fimc_hwset_output_buf_sequence_all(ctrl, FRAME_SEQ);
+#endif
 
 	fimc_outdev_set_format(ctrl, ctx);
 	fimc_outdev_set_path(ctrl, ctx);
@@ -1344,7 +1551,7 @@ int fimc_fimd_rect(const struct fimc_control *ctrl,
 		break;
 
 	default:
-		fimc_err("Rotation degree is invalid\n");
+		fimc_err("Rotation degree is invalid(%d)\n", ctx->rotate);
 		return -EINVAL;
 
 		break;
@@ -1384,7 +1591,7 @@ int fimc_start_fifo(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		ret = s3cfb_direct_ioctl(id,
 					S3CFB_SET_WIN_PATH, DATA_PATH_IPC);
 	if (ret < 0) {
-		fimc_err("direct_ioctl(S3CFB_SET_WIN_MEM) fail\n");
+		fimc_err("direct_ioctl(S3CFB_SET_WIN_PATH) fail\n");
 		return -EINVAL;
 	}
 
@@ -1415,7 +1622,8 @@ int fimc_start_fifo(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	/* Update WIN position */
 	window.x = fimd_rect.left;
 	window.y = fimd_rect.top;
-	ret = s3cfb_direct_ioctl(id, S3CFB_WIN_POSITION, (unsigned long)&window);
+	ret = s3cfb_direct_ioctl(id, S3CFB_WIN_POSITION,
+			(unsigned long)&window);
 	if (ret < 0) {
 		fimc_err("direct_ioctl(S3CFB_WIN_POSITION) fail\n");
 		return -EINVAL;
@@ -1478,7 +1686,7 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 	fimc_info1("%s: called\n", __func__);
 
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -1493,7 +1701,9 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 		b->count = FIMC_OUTBUFS;
 	}
 
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
 	fimc_hwset_output_buf_sequence_all(ctrl, FRAME_SEQ);
+#endif
 
 	fimc_init_out_buf(ctx);
 	ctx->is_requested = 0;
@@ -1523,9 +1733,15 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 		/* initialize source buffers */
 		if (b->memory == V4L2_MEMORY_MMAP) {
 			ret = fimc_outdev_set_src_buf(ctrl, ctx);
+			ctx->overlay.req_idx = FIMC_MMAP_IDX;
 			if (ret)
 				return ret;
+		} else if (b->memory == V4L2_MEMORY_USERPTR) {
+			if (mode == FIMC_OVLY_DMA_AUTO ||
+					mode == FIMC_OVLY_NOT_FIXED)
+				ctx->overlay.req_idx = FIMC_USERPTR_IDX;
 		}
+
 		ctx->is_requested = 1;
 	}
 
@@ -1545,7 +1761,7 @@ int fimc_querybuf_output(void *fh, struct v4l2_buffer *b)
 
 	ctx = &ctrl->out->ctx[ctx_id];
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -1570,10 +1786,11 @@ int fimc_g_ctrl_output(void *fh, struct v4l2_control *c)
 	struct fimc_ctx *ctx;
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
 	int ctx_id = ((struct fimc_prv_data *)fh)->ctx_id;
+	struct s3c_platform_fimc *pdata	= to_fimc_plat(ctrl->dev);
 	ctx = &ctrl->out->ctx[ctx_id];
 
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -1596,6 +1813,16 @@ int fimc_g_ctrl_output(void *fh, struct v4l2_control *c)
 			c->value = 0;
 		break;
 
+#ifdef CONFIG_VIDEO_FIMC_UMP_VCM_CMA
+	case V4L2_CID_GET_UMP_SECURE_ID:
+	{
+		ump_secure_id secure_id =
+			ump_dd_secure_id_get(ctrl->ump_wrapped_buffer);
+		c->id = secure_id;
+		fimc_info1("%s : ump_secure_id : %d\n", __func__, secure_id);
+		break;
+	}
+#endif
 	case V4L2_CID_OVERLAY_VADDR0:
 		c->value = ctx->overlay.buf.vir_addr[0];
 		break;
@@ -1615,6 +1842,14 @@ int fimc_g_ctrl_output(void *fh, struct v4l2_control *c)
 			c->value = 0;
 		break;
 
+	case V4L2_CID_RESERVED_MEM_BASE_ADDR:
+		c->value = ctrl->mem.base;
+		break;
+
+	case V4L2_CID_FIMC_VERSION:
+		c->value = pdata->hw_ver;
+		break;
+
 	default:
 		fimc_err("Invalid control id: %d\n", c->id);
 		return -EINVAL;
@@ -1629,10 +1864,31 @@ static int fimc_set_dst_info(struct fimc_control *ctrl,
 {
 	struct fimc_buf *buf;
 	int i;
+#ifdef SYSMMU_FIMC
+	struct vcm_res *vcm_res;
+#endif
 
 	for (i = 0; i < ctx->buf_num; i++) {
 		buf = &fimc_buf[i];
+#ifdef SYSMMU_FIMC
+		vcm_res = (struct vcm_res *)ump_dd_vcm_res_get(
+			(unsigned int)buf->base[FIMC_ADDR_Y], ctrl->vcm_id);
 
+		if (vcm_res)
+			buf->base[FIMC_ADDR_Y] = vcm_res->start;
+		else
+			return -EINVAL;
+		ctx->dst[i].base[FIMC_ADDR_Y] = buf->base[FIMC_ADDR_Y];
+		ctx->dst[i].length[FIMC_ADDR_Y] = buf->length[FIMC_ADDR_Y];
+
+		ctx->dst[i].base[FIMC_ADDR_CB] = \
+		ctx->dst[i].base[FIMC_ADDR_Y] + buf->base[FIMC_ADDR_CB];
+		ctx->dst[i].length[FIMC_ADDR_CB] = buf->length[FIMC_ADDR_CB];
+
+		ctx->dst[i].base[FIMC_ADDR_CR] = \
+		ctx->dst[i].base[FIMC_ADDR_CB] + buf->base[FIMC_ADDR_CR];
+		ctx->dst[i].length[FIMC_ADDR_CR] = buf->length[FIMC_ADDR_CR];
+#else
 		ctx->dst[i].base[FIMC_ADDR_Y] = buf->base[FIMC_ADDR_Y];
 		ctx->dst[i].length[FIMC_ADDR_Y] = buf->length[FIMC_ADDR_Y];
 
@@ -1641,6 +1897,7 @@ static int fimc_set_dst_info(struct fimc_control *ctrl,
 
 		ctx->dst[i].base[FIMC_ADDR_CR] = buf->base[FIMC_ADDR_CR];
 		ctx->dst[i].length[FIMC_ADDR_CR] = buf->length[FIMC_ADDR_CR];
+#endif
 	}
 
 	for (i = ctx->buf_num; i < FIMC_OUTBUFS; i++) {
@@ -1677,7 +1934,7 @@ int fimc_s_ctrl_output(struct file *filp, void *fh, struct v4l2_control *c)
 
 	ctx = &ctrl->out->ctx[ctx_id];
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -1718,6 +1975,12 @@ int fimc_s_ctrl_output(struct file *filp, void *fh, struct v4l2_control *c)
 		ret = fimc_set_dst_info(ctrl, ctx,
 					(struct fimc_buf *)c->value);
 		break;
+	case V4L2_CID_GET_PHY_SRC_YADDR:
+		c->value = ctx->src[c->value].base[FIMC_ADDR_Y];
+		break;
+	case V4L2_CID_GET_PHY_SRC_CADDR:
+		c->value = ctx->src[c->value].base[FIMC_ADDR_CB];
+		break;
 	default:
 		fimc_err("Invalid control id: %d\n", c->id);
 		ret = -EINVAL;
@@ -1738,13 +2001,14 @@ int fimc_cropcap_output(void *fh, struct v4l2_cropcap *a)
 	ctx = &ctrl->out->ctx[ctx_id];
 	pixelformat = ctx->pix.pixelformat;
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
 	is_rotate = fimc_mapping_rot_flip(ctx->rotate, ctx->flip);
 	switch (pixelformat) {
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:	/* fall through */
 	case V4L2_PIX_FMT_YUYV:		/* fall through */
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
@@ -1792,52 +2056,78 @@ int fimc_cropcap_output(void *fh, struct v4l2_cropcap *a)
 	return 0;
 }
 
+int fimc_g_crop_output(void *fh, struct v4l2_crop *a)
+{
+	struct fimc_ctx *ctx;
+	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
+	int ctx_id = ((struct fimc_prv_data *)fh)->ctx_id;
+
+	ctx = &ctrl->out->ctx[ctx_id];
+
+	fimc_info1("%s: called\n", __func__);
+
+	mutex_lock(&ctrl->v4l2_lock);
+	a->c.left   = ctx->crop.left;
+	a->c.top    = ctx->crop.top;
+	a->c.width  = ctx->crop.width;
+	a->c.height = ctx->crop.height;
+	mutex_unlock(&ctrl->v4l2_lock);
+
+	return 0;
+}
+
 int fimc_s_crop_output(void *fh, struct v4l2_crop *a)
 {
 	struct fimc_ctx *ctx;
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
 	int ctx_id = ((struct fimc_prv_data *)fh)->ctx_id;
 
-	fimc_info1("%s: called: left(%d), top(%d), width(%d), height(%d), \n",
+	fimc_info1("%s: called: left(%d), top(%d), width(%d), height(%d),\n",
 		__func__, a->c.left, a->c.top, a->c.width, a->c.height);
 
 	ctx = &ctrl->out->ctx[ctx_id];
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
 	/* Check arguments : widht and height */
 	if ((a->c.width < 0) || (a->c.height < 0)) {
 		fimc_err("The crop rect must be bigger than 0\n");
+		fimc_err("width = %d, height = %d\n", a->c.width, a->c.height);
 		return -EINVAL;
 	}
 
 	if ((a->c.width > FIMC_SRC_MAX_W) || (a->c.height > FIMC_SRC_MAX_H)) {
 		fimc_err("The crop width/height must be smaller than "
 			"%d and %d\n", FIMC_SRC_MAX_W, FIMC_SRC_MAX_H);
+		fimc_err("width = %d, height = %d\n", a->c.width, a->c.height);
 		return -EINVAL;
 	}
 
 	/* Check arguments : left and top */
 	if ((a->c.left < 0) || (a->c.top < 0)) {
 		fimc_err("The crop left, top must be  bigger than 0\n");
+		fimc_err("left = %d, top = %d\n", a->c.left, a->c.top);
 		return -EINVAL;
 	}
 
 	if ((a->c.left > FIMC_SRC_MAX_W) || (a->c.top > FIMC_SRC_MAX_H)) {
 		fimc_err("The crop left, top must be smaller than %d, %d\n",
 			FIMC_SRC_MAX_W, FIMC_SRC_MAX_H);
+		fimc_err("left = %d, top = %d\n", a->c.left, a->c.top);
 		return -EINVAL;
 	}
 
 	if ((a->c.left + a->c.width) > FIMC_SRC_MAX_W) {
 		fimc_err("The crop rect must be in bound rect\n");
+		fimc_err("left = %d, width = %d\n", a->c.left, a->c.width);
 		return -EINVAL;
 	}
 
 	if ((a->c.top + a->c.height) > FIMC_SRC_MAX_H) {
 		fimc_err("The crop rect must be in bound rect\n");
+		fimc_err("top = %d, width = %d\n", a->c.top, a->c.height);
 		return -EINVAL;
 	}
 
@@ -1898,14 +2188,55 @@ int fimc_streamoff_output(void *fh)
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
 	int ctx_id = ((struct fimc_prv_data *)fh)->ctx_id;
 	int ret = -1, i = 0, off_cnt = 0;
-
+	struct s3cfb_user_window window;
 	fimc_info1("%s: called\n", __func__);
 
 	ctx = &ctrl->out->ctx[ctx_id];
-	ret = fimc_outdev_stop_streaming(ctrl, ctx);
-	if (ret < 0) {
-		fimc_err("Fail: fimc_outdev_stop_streaming\n");
-		return -EINVAL;
+	/* Move it to here to ignore fimc_irq_out_dma operation. */
+	ctx->status = FIMC_STREAMOFF;
+
+	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO ||
+			ctx->overlay.mode == FIMC_OVLY_DMA_MANUAL) {
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
+		ret = fimc_outdev_stop_streaming(ctrl, ctx);
+		if (ret < 0) {
+			fimc_err("Fail: fimc_outdev_stop_streaming\n");
+			return -EINVAL;
+		}
+#else
+		/* Need some delay to waiting reamined operation */
+		msleep(100);
+
+		ret = s3cfb_direct_ioctl(ctrl->id, S3CFB_SET_WIN_OFF,
+				(unsigned long)NULL);
+		if (ret < 0) {
+			fimc_err("direct_ioctl(S3CFB_SET_WIN_OFF) fail\n");
+			return -EINVAL;
+		}
+
+		/* reset WIN position */
+		memset(&window, 0, sizeof(window));
+		ret = s3cfb_direct_ioctl(ctrl->id, S3CFB_WIN_POSITION,
+				(unsigned long)&window);
+		if (ret < 0) {
+			fimc_err("direct_ioctl(S3CFB_WIN_POSITION) fail\n");
+			return -EINVAL;
+		}
+
+		ret = s3cfb_direct_ioctl(ctrl->id, S3CFB_SET_WIN_ADDR, 0x00000000);
+		if (ret < 0) {
+			fimc_err("direct_ioctl(S3CFB_SET_WIN_ADDR) fail\n");
+			return -EINVAL;
+		}
+
+		ret = s3cfb_direct_ioctl(ctrl->id, S3CFB_SET_WIN_MEM, DMA_MEM_NONE);
+		if (ret < 0) {
+			fimc_err("direct_ioctl(S3CFB_SET_WIN_MEM) fail\n");
+			return -EINVAL;
+		}
+
+		ctrl->fb.is_enable = 0;
+#endif
 	}
 
 	ret = fimc_init_in_queue(ctrl, ctx);
@@ -1926,8 +2257,6 @@ int fimc_streamoff_output(void *fh)
 		ctx->src[i].flags = V4L2_BUF_FLAG_MAPPED;
 	}
 
-	ctx->status = FIMC_STREAMOFF;
-
 	if (ctrl->out->last_ctx == ctx->ctx_num)
 		ctrl->out->last_ctx = -1;
 
@@ -1935,6 +2264,12 @@ int fimc_streamoff_output(void *fh)
 		ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
 
 		for (i = 0; i < FIMC_OUTBUFS; i++) {
+#ifdef CONFIG_VIDEO_FIMC_UMP_VCM_CMA
+			fimc_vcm_free_outbuf(ctrl, i, ctx->dst[i].base[FIMC_ADDR_Y]);
+			ctx->dst[i].vaddr_base[FIMC_ADDR_Y] = 0;
+			ctx->dst[i].vaddr_base[FIMC_ADDR_CB] = 0;
+			ctx->dst[i].vaddr_base[FIMC_ADDR_CR] = 0;
+#endif
 			ctx->dst[i].base[FIMC_ADDR_Y] = 0;
 			ctx->dst[i].length[FIMC_ADDR_Y] = 0;
 
@@ -1952,11 +2287,13 @@ int fimc_streamoff_output(void *fh)
 			off_cnt++;
 	}
 
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
 	if (off_cnt == FIMC_MAX_CTXS) {
 		ctrl->status = FIMC_STREAMOFF;
 		fimc_outdev_init_idxs(ctrl);
 		fimc_outdev_stop_camif(ctrl);
 	}
+#endif
 
 	return 0;
 }
@@ -1972,10 +2309,37 @@ static int fimc_qbuf_output_single_buf(struct fimc_control *ctrl,
 	u32 y_size = width * height;
 	u32 c_size = y_size >> 2;
 	int ret = -1, i, cfg;
+	u32 rot = ctx->rotate;
 
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
 	memset(&buf_set, 0x00, sizeof(buf_set));
+
+#ifdef SYSMMU_FIMC
+	switch (format) {
+	case V4L2_PIX_FMT_RGB32:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
+		break;
+	case V4L2_PIX_FMT_YUV420:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
+		buf_set.vaddr_base[FIMC_ADDR_CB] = buf_set.vaddr_base[FIMC_ADDR_Y] + y_size;
+		buf_set.vaddr_base[FIMC_ADDR_CR] = buf_set.vaddr_base[FIMC_ADDR_CB] + c_size;
+		break;
+	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
+		buf_set.vaddr_base[FIMC_ADDR_CB] = buf_set.base[FIMC_ADDR_Y] + y_size;
+		break;
+	case V4L2_PIX_FMT_NV12T:
+		fimc_get_nv12t_size(width, height, &y_size, &c_size);
+		buf_set.vaddr_base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
+		buf_set.vaddr_base[FIMC_ADDR_CB] = buf_set.base[FIMC_ADDR_Y] + y_size;
+		break;
+	default:
+		fimc_err("%s: Invalid pixelformt : %d\n", __func__, format);
+		return -EINVAL;
+	}
+#else
 	switch (format) {
 	case V4L2_PIX_FMT_RGB32:
 		buf_set.base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
@@ -1986,11 +2350,17 @@ static int fimc_qbuf_output_single_buf(struct fimc_control *ctrl,
 		buf_set.base[FIMC_ADDR_CR] = buf_set.base[FIMC_ADDR_CB] + c_size;
 		break;
 	case V4L2_PIX_FMT_NV12:
+	case V4L2_PIX_FMT_NV21:
 		buf_set.base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
 		buf_set.base[FIMC_ADDR_CB] = buf_set.base[FIMC_ADDR_Y] + y_size;
 		break;
 	case V4L2_PIX_FMT_NV12T:
-		fimc_get_nv12t_size(width, height, &y_size, &c_size);
+//JJW_0131 Start 
+		if(rot == 0 || rot == 180)
+			fimc_get_nv12t_size(width, height, &y_size, &c_size);
+		else
+			fimc_get_nv12t_size(height, width, &y_size, &c_size);
+//JJW End. 
 		buf_set.base[FIMC_ADDR_Y] = (dma_addr_t)ctx->fbuf.base;
 		buf_set.base[FIMC_ADDR_CB] = buf_set.base[FIMC_ADDR_Y] + y_size;
 		break;
@@ -1998,7 +2368,7 @@ static int fimc_qbuf_output_single_buf(struct fimc_control *ctrl,
 		fimc_err("%s: Invalid pixelformt : %d\n", __func__, format);
 		return -EINVAL;
 	}
-
+#endif
 	cfg = fimc_hwget_output_buf_sequence(ctrl);
 
 	for (i = 0; i < FIMC_PHYBUFS; i++) {
@@ -2032,6 +2402,27 @@ static int fimc_qbuf_output_multi_buf(struct fimc_control *ctrl,
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
 	memset(&buf_set, 0x00, sizeof(buf_set));
+#ifdef SYSMMU_FIMC
+	switch (format) {
+	case V4L2_PIX_FMT_RGB32:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+		break;
+	case V4L2_PIX_FMT_YUV420:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+		buf_set.vaddr_base[FIMC_ADDR_CB] = ctx->dst[idx].base[FIMC_ADDR_CB];
+		buf_set.vaddr_base[FIMC_ADDR_CR] = ctx->dst[idx].base[FIMC_ADDR_CR];
+		break;
+	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
+	case V4L2_PIX_FMT_NV12T:
+		buf_set.vaddr_base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+		buf_set.vaddr_base[FIMC_ADDR_CB] = ctx->dst[idx].base[FIMC_ADDR_CB];
+		break;
+	default:
+		fimc_err("%s: Invalid pixelformt : %d\n", __func__, format);
+		return -EINVAL;
+	}
+#else
 	switch (format) {
 	case V4L2_PIX_FMT_RGB32:
 		buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
@@ -2042,6 +2433,7 @@ static int fimc_qbuf_output_multi_buf(struct fimc_control *ctrl,
 		buf_set.base[FIMC_ADDR_CR] = ctx->dst[idx].base[FIMC_ADDR_CR];
 		break;
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:
 		buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
 		buf_set.base[FIMC_ADDR_CB] = ctx->dst[idx].base[FIMC_ADDR_CB];
@@ -2050,7 +2442,8 @@ static int fimc_qbuf_output_multi_buf(struct fimc_control *ctrl,
 		fimc_err("%s: Invalid pixelformt : %d\n", __func__, format);
 		return -EINVAL;
 	}
-
+#endif
+	cfg = fimc_hwget_output_buf_sequence(ctrl);
 
 	for (i = 0; i < FIMC_PHYBUFS; i++) {
 		if (check_bit(cfg, i))
@@ -2078,7 +2471,7 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 {
 	struct fb_var_screeninfo var;
 	struct s3cfb_user_window window;
-	struct v4l2_rect fimd_rect;
+	struct v4l2_rect fimd_rect, fimd_rect_virtual;
 	struct fimc_buf_set buf_set;	/* destination addr */
 	u32 id = ctrl->id;
 	int ret = -1, i, cfg;
@@ -2091,6 +2484,10 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 			fimc_err("fimc_fimd_rect fail\n");
 			return -EINVAL;
 		}
+
+		/* Support any size */
+		memcpy(&fimd_rect_virtual, &fimd_rect, sizeof(fimd_rect));
+		fimc_outdev_dma_auto_dst_resize(&fimd_rect_virtual);
 
 		/* Get WIN var_screeninfo */
 		ret = s3cfb_direct_ioctl(id, FBIOGET_VSCREENINFO,
@@ -2116,8 +2513,8 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 		}
 
 		/* Update WIN size */
-		var.xres_virtual = fimd_rect.width;
-		var.yres_virtual = fimd_rect.height;
+		var.xres_virtual = fimd_rect_virtual.width;
+		var.yres_virtual = fimd_rect_virtual.height;
 		var.xres = fimd_rect.width;
 		var.yres = fimd_rect.height;
 
@@ -2144,7 +2541,13 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 		fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
 		memset(&buf_set, 0x00, sizeof(buf_set));
+#ifdef SYSMMU_FIMC
 		buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+		buf_set.vaddr_base[FIMC_ADDR_Y]
+			= ctx->dst[idx].vaddr_base[FIMC_ADDR_Y];
+#else
+		buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+#endif
 
 		cfg = fimc_hwget_output_buf_sequence(ctrl);
 
@@ -2184,8 +2587,11 @@ static int fimc_qbuf_output_dma_manual(struct fimc_control *ctrl,
 	fimc_outdev_set_src_addr(ctrl, ctx->src[idx].base);
 
 	memset(&buf_set, 0x00, sizeof(buf_set));
+#ifdef SYSMMU_FIMC
+	buf_set.vaddr_base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
+#else
 	buf_set.base[FIMC_ADDR_Y] = ctx->dst[idx].base[FIMC_ADDR_Y];
-
+#endif
 	cfg = fimc_hwget_output_buf_sequence(ctrl);
 
 	for (i = 0; i < FIMC_PHYBUFS; i++) {
@@ -2240,15 +2646,57 @@ static int fimc_update_in_queue_addr(struct fimc_control *ctrl,
 				     struct fimc_ctx *ctx,
 				     u32 idx, dma_addr_t *addr)
 {
+#ifdef SYSMMU_FIMC
+	struct vcm_res *vcm_res;
+#endif
+
 	if (idx >= FIMC_OUTBUFS) {
-		fimc_err("%s: Failed \n", __func__);
+		fimc_err("%s: Failed\n", __func__);
 		return -EINVAL;
 	}
 
+#ifdef SYSMMU_FIMC
+	if (ctx->pix.pixelformat == V4L2_PIX_FMT_NV12T) {
+		vcm_res = (struct vcm_res *)
+			ump_dd_vcm_res_get(addr[FIMC_ADDR_Y], ctrl->vcm_id);
+		if (vcm_res)
+			ctx->src[idx].base[FIMC_ADDR_Y] = vcm_res->start;
+		else
+			return -EINVAL;
+		vcm_res = (struct vcm_res *)
+			ump_dd_vcm_res_get(addr[FIMC_ADDR_CB], ctrl->vcm_id);
+		if (vcm_res)
+			ctx->src[idx].base[FIMC_ADDR_CB] = vcm_res->start;
+		else
+			return -EINVAL;
+		ctx->src[idx].base[FIMC_ADDR_CR] = 0;
+	} else if (ctx->pix.pixelformat == V4L2_PIX_FMT_NV21) {
+		vcm_res = (struct vcm_res *)
+			ump_dd_vcm_res_get(addr[FIMC_ADDR_Y], ctrl->vcm_id);
+		if (vcm_res)
+			ctx->src[idx].base[FIMC_ADDR_Y] = vcm_res->start;
+		else
+			return -EINVAL;
+		ctx->src[idx].base[FIMC_ADDR_CB] =
+			ctx->src[idx].base[FIMC_ADDR_Y] + addr[FIMC_ADDR_CB];
+		ctx->src[idx].base[FIMC_ADDR_CR] = 0;
+	} else {
+		vcm_res = (struct vcm_res *)
+			ump_dd_vcm_res_get(addr[FIMC_ADDR_Y], ctrl->vcm_id);
+		if (vcm_res)
+			ctx->src[idx].base[FIMC_ADDR_Y] = vcm_res->start;
+		else
+			return -EINVAL;
+		ctx->src[idx].base[FIMC_ADDR_CB] =
+			ctx->src[idx].base[FIMC_ADDR_Y] + addr[FIMC_ADDR_CB];
+		ctx->src[idx].base[FIMC_ADDR_CR] =
+			ctx->src[idx].base[FIMC_ADDR_CB] + addr[FIMC_ADDR_CR];
+	}
+#else
 	ctx->src[idx].base[FIMC_ADDR_Y] = addr[FIMC_ADDR_Y];
 	ctx->src[idx].base[FIMC_ADDR_CB] = addr[FIMC_ADDR_CB];
 	ctx->src[idx].base[FIMC_ADDR_CR] = addr[FIMC_ADDR_CR];
-
+#endif
 	return 0;
 }
 
@@ -2263,6 +2711,11 @@ int fimc_qbuf_output(void *fh, struct v4l2_buffer *b)
 
 	ctx = &ctrl->out->ctx[ctx_id];
 	fimc_info2("ctx(%d) queued idx = %d\n", ctx->ctx_num, b->index);
+	if (ctx->status == FIMC_STREAMOFF) {
+		printk("%s:: can not queue is FIMC_STREAMOFF status \n",
+				__func__);
+		return ret;
+	}
 
 	if (b->index > ctx->buf_num) {
 		fimc_err("The index is out of bounds. "
@@ -2279,17 +2732,25 @@ int fimc_qbuf_output(void *fh, struct v4l2_buffer *b)
 		return -EINVAL;
 	}
 
-	if (b->memory == V4L2_MEMORY_USERPTR) {
-		ret = fimc_update_in_queue_addr(ctrl, ctx, b->index, buf->base);
-		if (ret < 0)
-			return ret;
-	}
+	if ((ctrl->status == FIMC_READY_ON) ||
+	    (ctrl->status == FIMC_STREAMON) ||
+	    (ctrl->status == FIMC_STREAMON_IDLE)) {
+		if (b->memory == V4L2_MEMORY_USERPTR) {
+			ret = fimc_update_in_queue_addr(ctrl, ctx, b->index, buf->base);
+			if (ret < 0)
+				return ret;
+		}
 
-	/* Attach the buffer to the incoming queue. */
-	ret = fimc_push_inq(ctrl, ctx, b->index);
-	if (ret < 0) {
-		fimc_err("Fail: fimc_push_inq\n");
-		return -EINVAL;
+		/* Attach the buffer to the incoming queue. */
+		ret = fimc_push_inq(ctrl, ctx, b->index);
+		if (ret < 0) {
+			fimc_err("Fail: fimc_push_inq\n");
+			return -EINVAL;
+		}
+
+#if (defined(CONFIG_S5PV310_DEV_PD) && defined(CONFIG_PM_RUNTIME))
+		pm_runtime_get_sync(ctrl->dev);
+#endif
 	}
 
 	if ((ctrl->status == FIMC_READY_ON) ||
@@ -2373,6 +2834,7 @@ int fimc_g_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 	struct fimc_ctx *ctx;
 	int ctx_id = ((struct fimc_prv_data *)fh)->ctx_id;
 	int i, j;
+	int in_use;
 
 	fimc_info1("%s: called\n", __func__);
 
@@ -2413,6 +2875,12 @@ int fimc_g_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 		ctrl->out->idxs.active.idx = -1;
 		ctrl->out->idxs.next.ctx = -1;
 		ctrl->out->idxs.next.idx = -1;
+
+		in_use = atomic_read(&ctrl->in_use);
+		for (i = 0; i < in_use; i++)
+			ctrl->out->ctx_used[i] = true;
+		for (i = in_use; i < FIMC_MAX_CTXS; i++)
+			ctrl->out->ctx_used[i] = false;
 	}
 
 	f->fmt.pix = ctrl->out->ctx[ctx_id].pix;
@@ -2432,13 +2900,14 @@ int fimc_try_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 
 	ctx = &ctrl->out->ctx[ctx_id];
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
 	/* Check pixel format */
 	switch (format) {
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:	/* fall through */
 	case V4L2_PIX_FMT_YUYV:		/* fall through */
 	case V4L2_PIX_FMT_YUV420:	/* fall through */
@@ -2465,6 +2934,7 @@ int fimc_try_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 		f->fmt.pix.bytesperline = f->fmt.pix.width << 1;
 		break;
 	case V4L2_PIX_FMT_NV12:		/* fall through */
+	case V4L2_PIX_FMT_NV21:		/* fall through */
 	case V4L2_PIX_FMT_NV12T:
 		f->fmt.pix.bytesperline = (f->fmt.pix.width * 3) >> 1;
 		break;
@@ -2475,6 +2945,10 @@ int fimc_try_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 	}
 
 	f->fmt.pix.sizeimage = f->fmt.pix.bytesperline * f->fmt.pix.height;
+	ctx->crop.left = 0;
+	ctx->crop.top = 0;
+	ctx->crop.width = f->fmt.pix.width;
+	ctx->crop.height = f->fmt.pix.height;
 
 	return 0;
 }
@@ -2491,7 +2965,7 @@ int fimc_s_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 	/* Check stream status */
 	ctx = &ctrl->out->ctx[ctx_id];
 	if (ctx->status != FIMC_STREAMOFF) {
-		fimc_err("FIMC is running\n");
+		fimc_err("%s: FIMC is running\n", __func__);
 		return -EBUSY;
 	}
 
@@ -2565,7 +3039,8 @@ int fimc_push_inq(struct fimc_control *ctrl, struct fimc_ctx *ctx, int idx)
 	fimc_dbg("%s: idx = %d\n", __func__, idx);
 
 	if (ctrl->out->inq[FIMC_INQUEUES-1].idx != -1) {
-		fimc_err("FULL: common incoming queue\n");
+		fimc_err("FULL: common incoming queue(%d)\n",
+				ctrl->out->inq[FIMC_INQUEUES-1].idx);
 		return -EBUSY;
 	}
 

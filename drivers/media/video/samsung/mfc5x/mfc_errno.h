@@ -1,14 +1,24 @@
 /*
- * linux/drivers/media/video/samsung/mfc5x/mfc_errno.h
- *
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
- *		http://www.samsung.com/
+ *              http://www.samsung.com/
  *
- * Error number definition for Samsung MFC (Multi Function Codec - FIMV) driver
+ * Global header for Samsung MFC (Multi Function Codec - FIMV) driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
+ *
+ * Alternatively, Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef __MFC_ERRNO_H
@@ -63,7 +73,7 @@ enum mfc_ret_code {
 	MFC_CLK_ON_FAIL = -1030,
 	MFC_CLK_OFF_FAIL = -1030,
 	MFC_PWR_ON_FAIL = -1040,
-	MFC_PWER_OFF_FAIL = -1041,
+	MFC_PWR_OFF_FAIL = -1041,
 } ;
 
 #endif /* __MFC_ERRNO_H */

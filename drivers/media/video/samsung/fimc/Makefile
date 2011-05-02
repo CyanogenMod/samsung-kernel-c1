@@ -15,3 +15,19 @@ EXTRA_CFLAGS += -Idrivers/media/video
 ifeq ($(CONFIG_VIDEO_FIMC_DEBUG),y)
 EXTRA_CFLAGS += -DDEBUG
 endif
+ifeq ($(CONFIG_VIDEO_FIMC_UMP_VCM_CMA),y)
+EXTRA_CFLAGS += -Idrivers/media/video/samsung/ump/include -Idrivers/media/video/samsung/ump/common
+endif
+
+ifeq ($(CONFIG_S5P_SYSMMU_FIMC0),y)
+EXTRA_CFLAGS += -DSYSMMU_FIMC
+endif
+ifeq ($(CONFIG_S5P_SYSMMU_FIMC1),y)
+EXTRA_CFLAGS += -DSYSMMU_FIMC
+endif
+ifeq ($(CONFIG_S5P_SYSMMU_FIMC2),y)
+EXTRA_CFLAGS += -DSYSMMU_FIMC
+endif
+ifeq ($(CONFIG_S5P_SYSMMU_FIMC3),y)
+EXTRA_CFLAGS += -DSYSMMU_FIMC
+endif

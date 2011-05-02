@@ -43,11 +43,16 @@
 #include <plat/sysmmu.h>
 #endif
 
+#ifdef CONFIG_PM_RUNTIME
+#include <linux/pm_runtime.h>
+#endif
+
 #include "jpeg_core.h"
 #include "jpeg_dev.h"
 #include "jpeg_mem.h"
 
 struct jpeg_control *jpeg_ctrl;
+static struct device *jpeg_pm;
 
 static int jpeg_open(struct inode *inode, struct file *file)
 {
@@ -79,6 +84,11 @@ static int jpeg_open(struct inode *inode, struct file *file)
 	clk_enable(jpeg_ctrl->clk);
 
 	file->private_data = (struct jpeg_control *)jpeg_ctrl;
+
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_get_sync(jpeg_pm);
+#endif
+
 	return 0;
 resource_busy:
 	mutex_unlock(&jpeg_ctrl->lock);
@@ -98,6 +108,10 @@ static int jpeg_release(struct inode *inode, struct file *file)
 		jpeg_err("failed to disable jpeg power domain\n");
 		return -EINVAL;
 	}
+#endif
+
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_put_sync(jpeg_pm);
 #endif
 
 	return 0;
@@ -146,6 +160,9 @@ static int jpeg_ioctl(struct inode *inode, struct file *file,
 	case IOCTL_GET_DEC_OUT_BUF:
 	case IOCTL_GET_ENC_IN_BUF:
 		return jpeg_get_frame_buf(arg);
+
+	case IOCTL_GET_PHYADDR:
+		return jpeg_ctrl->mem.frame_data_addr;
 
 	case IOCTL_SET_DEC_PARAM:
 		ret = copy_from_user(&ctrl->dec_param,
@@ -201,7 +218,6 @@ int jpeg_mmap(struct file *filp, struct vm_area_struct *vma)
 #endif /* CONFIG_S5P_VMEM */
 #else
 	unsigned long	page_frame_no;
-	unsigned long	start;
 	unsigned long	size;
 	int		ret;
 
@@ -349,8 +365,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
 
-	ret = jpeg_init_mem(&jpeg_ctrl->mem.base);
-
+	ret = jpeg_init_mem(&pdev->dev, &jpeg_ctrl->mem.base);
 	if (ret != 0) {
 		jpeg_err("failed to init. jpeg mem");
 		ret = -ENOMEM;
@@ -363,6 +378,10 @@ static int jpeg_probe(struct platform_device *pdev)
 		goto err_reg;
 	}
 
+#ifdef CONFIG_PM_RUNTIME
+	jpeg_pm = &pdev->dev;
+	pm_runtime_enable(jpeg_pm);
+#endif
 	return 0;
 
 err_reg:
@@ -397,6 +416,9 @@ static int jpeg_remove(struct platform_device *dev)
 	kfree(jpeg_ctrl);
 	misc_deregister(&jpeg_miscdev);
 
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_disable(jpeg_pm);
+#endif
 	return 0;
 }
 
@@ -426,14 +448,42 @@ static int jpeg_resume(struct platform_device *pdev)
 
 	return 0;
 }
+
+#ifdef CONFIG_PM_RUNTIME
+static int jpeg_runtime_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int jpeg_runtime_resume(struct device *dev)
+{
+	return 0;
+}
+#endif
+
+static const struct dev_pm_ops jpeg_pm_ops = {
+	.suspend	= jpeg_suspend,
+	.resume		= jpeg_resume,
+#ifdef CONFIG_PM_RUNTIME
+	.runtime_suspend = jpeg_runtime_suspend,
+	.runtime_resume = jpeg_runtime_resume,
+#endif
+};
 static struct platform_driver jpeg_driver = {
 	.probe		= jpeg_probe,
 	.remove		= jpeg_remove,
+#if (!defined(CONFIG_S5PV310_DEV_PD) || !defined(CONFIG_PM_RUNTIME))
 	.suspend	= jpeg_suspend,
 	.resume		= jpeg_resume,
+#endif
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= JPEG_NAME,
+#if (defined(CONFIG_S5PV310_DEV_PD) && defined(CONFIG_PM_RUNTIME))
+		.pm = &jpeg_pm_ops,
+#else
+		.pm = NULL,
+#endif
 	},
 };
 

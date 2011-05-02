@@ -410,6 +410,27 @@ config VIDEO_VPX3220
 	  To compile this driver as a module, choose M here: the
 	  module will be called vpx3220.
 
+comment "Camera Driver"
+
+### Add M5M0 and S5K6AAFX ####
+config VIDEO_M5MO
+        tristate "M5MO supporting camera driver"
+        depends on I2C && VIDEO_V4L2
+        ---help---
+          This driver supports M5MO SoC camera module
+
+config VIDEO_S5K6AAFX
+        tristate "S5K6AAFX supporting camera driver"
+        depends on I2C && VIDEO_V4L2
+        ---help---
+          This driver supports S5K6AAFX SoC camera module
+
+config VIDEO_S5K5BAFX
+	tristate "S5K5BAFX supporting camera driver"
+	depends on I2C && VIDEO_V4L2 && MACH_C1_REV02
+	---help---
+	  This driver supports S5K5BAFX SoC camera module
+
 config VIDEO_S5K3BA
 	tristate "S5K3BA supporting camera driver"
 	depends on I2C && VIDEO_V4L2
@@ -436,6 +457,22 @@ config VIDEO_S5K6AA
 	  This driver supports s5k6aa SoC camera module with
 	  MIPI CSI-2 as well
 
+config VIDEO_S5K6AAFX_MIPI
+	tristate "S5K6AAFX MIPI support"
+	depends on VIDEO_S5K6AAFX && VIDEO_FIMC_MIPI
+	---help---
+	  Support MIPI interface of S5K6AAFX camera module
+
+config VIDEO_M5MO_USE_SWI2C
+	tristate "Change M5MO SW I2C"
+	depends on VIDEO_M5MO && I2C
+	---help---
+	  Support that M5MO camera module uses SW I2C
+
+config VIDEO_DEBUG_NO_FRAME
+	bool "For debugging capture no frame"
+	depends on VIDEO_FIMC_MIPI && VIDEO_S5K5BAFX
+	
 comment "Video and audio decoders"
 
 source "drivers/media/video/cx25840/Kconfig"

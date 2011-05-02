@@ -88,10 +88,12 @@ static int fimc_check_pos(struct fimc_control *ctrl,
 			  struct v4l2_format *f)
 {
 	if (ctx->win.w.width != f->fmt.win.w.width) {
-		fimc_err("%s: cannot change width\n", __func__);
+		fimc_err("%s: cannot change width(%d,%d)\n", __func__,
+				ctx->win.w.width, f->fmt.win.w.width);
 		return -EINVAL;
 	} else if (ctx->win.w.height != f->fmt.win.w.height) {
-		fimc_err("%s: cannot change height\n", __func__);
+		fimc_err("%s: cannot change height(%d,%d)\n", __func__,
+				ctx->win.w.height, f->fmt.win.w.height);
 		return -EINVAL;
 	}
 
@@ -162,6 +164,7 @@ int fimc_s_fmt_vid_overlay(struct file *filp, void *fh, struct v4l2_format *f)
 
 	default:
 		fimc_err("FIMC is running\n");
+		fimc_err("%s::FIMC is running(%d)\n", __func__, ctx->status);
 		return -EBUSY;
 	}
 

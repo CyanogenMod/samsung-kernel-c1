@@ -29,6 +29,10 @@
 
 #include "csis.h"
 
+#ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
+static s32 err_print_cnt;
+#endif
+
 static struct s3c_csis_info *s3c_csis[S3C_CSIS_CH_NUM];
 #if 0
 static struct s3c_platform_csis *to_csis_plat(struct device *dev)
@@ -41,7 +45,7 @@ static struct s3c_platform_csis *to_csis_plat(struct device *dev)
 static int s3c_csis_set_info(struct platform_device *pdev)
 {
 	s3c_csis[pdev->id] = (struct s3c_csis_info *) \
-			kmalloc(sizeof(struct s3c_csis_info), GFP_KERNEL);
+			kzalloc(sizeof(struct s3c_csis_info), GFP_KERNEL);
 	if (!s3c_csis[pdev->id]) {
 		err("no memory for configuration\n");
 		return -ENOMEM;
@@ -93,8 +97,9 @@ static void s3c_csis_enable_interrupt(struct platform_device *pdev)
 		S3C_CSIS_INTMSK_ODD_BEFORE_ENABLE | \
 		S3C_CSIS_INTMSK_ODD_AFTER_ENABLE | \
 		S3C_CSIS_INTMSK_ERR_SOT_HS_ENABLE | \
-		S3C_CSIS_INTMSK_ERR_ESC_ENABLE | \
-		S3C_CSIS_INTMSK_ERR_CTRL_ENABLE | \
+		S3C_CSIS_INTMSK_ERR_LOST_FS_ENABLE | \
+		S3C_CSIS_INTMSK_ERR_LOST_FE_ENABLE | \
+		S3C_CSIS_INTMSK_ERR_OVER_ENABLE |\
 		S3C_CSIS_INTMSK_ERR_ECC_ENABLE | \
 		S3C_CSIS_INTMSK_ERR_CRC_ENABLE | \
 		S3C_CSIS_INTMSK_ERR_ID_ENABLE;
@@ -221,7 +226,7 @@ void s3c_csis_start(int csis_id, int lanes, int settle, int align, int width, \
 {
 	struct platform_device *pdev = NULL;
 	struct s3c_platform_csis *pdata = NULL;
-
+	printk(KERN_INFO "csis width = %d, height = %d\n", width, height);
 	/* clock & power on */
 	pdev = to_platform_device(s3c_csis[csis_id]->dev);
 	pdata = to_csis_plat(&pdev->dev);
@@ -252,6 +257,10 @@ void s3c_csis_start(int csis_id, int lanes, int settle, int align, int width, \
 	s3c_csis_system_on(pdev);
 	s3c_csis_phy_on(pdev);
 
+#ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
+	err_print_cnt = 0;
+#endif
+
 	info("Samsung MIPI-CSIS%d operation started\n", pdev->id);
 }
 
@@ -270,17 +279,35 @@ void s3c_csis_stop(int csis_id)
 	if (pdata->cfg_phy_global)
 		pdata->cfg_phy_global(0);
 
-	if (pdata->clk_off)
+	if (pdata->clk_off) {
+		if (s3c_csis[csis_id]->clock != NULL)
 		pdata->clk_off(pdev, &s3c_csis[csis_id]->clock);
+}
 }
 
 static irqreturn_t s3c_csis_irq(int irq, void *dev_id)
 {
 	u32 cfg;
+#ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
+	/* We check the below error lists:
+	ERR_SOT_HS, ERR_LOST_FS, ERR_LOST_FE,
+	ERR_OVER, ERR_ECC, ERR_CRC, ERR_ID */
+	const u32 err_int = 0x0F03F;
+#endif
 	struct platform_device *pdev = (struct platform_device *) dev_id;
 	/* just clearing the pends */
 	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
 	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
+
+#ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
+	if (unlikely(cfg & err_int != 0)) {
+		if (err_print_cnt < 20) {
+			printk(KERN_WARNING "%s: cnt=%d, error=0x%X\n\n",
+					__func__, err_print_cnt, cfg);
+			err_print_cnt++;
+		}
+	}
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -344,7 +371,8 @@ int s3c_csis_suspend(struct platform_device *pdev, pm_message_t state)
 	struct s3c_platform_csis *pdata = NULL;
 	pdata = to_csis_plat(&pdev->dev);
 
-	pdata->clk_off(pdev, &s3c_csis[pdev->id]->clock);
+/*	if (s3c_csis[pdev->id]->clock != NULL)
+	pdata->clk_off(pdev, &s3c_csis[pdev->id]->clock); */
 	return 0;
 }
 
@@ -354,7 +382,7 @@ int s3c_csis_resume(struct platform_device *pdev)
 	struct s3c_platform_csis *pdata = NULL;
 	pdata = to_csis_plat(&pdev->dev);
 
-	pdata->clk_on(pdev, &s3c_csis[pdev->id]->clock);
+/*	pdata->clk_on(pdev, &s3c_csis[pdev->id]->clock); */
 
 	return 0;
 }

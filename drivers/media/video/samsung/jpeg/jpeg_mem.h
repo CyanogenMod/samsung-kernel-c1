@@ -13,8 +13,15 @@
 #ifndef __JPEG_MEM_H__
 #define __JPEG_MEM_H__
 
-#define MAX_JPEG_WIDTH	3072
-#define MAX_JPEG_HEIGHT	2048
+#define MAX_JPEG_WIDTH		3264
+#define MAX_JPEG_HEIGHT		2448
+
+#ifdef CONFIG_UMP_VCM_ALLOC
+#include <plat/s5p-vcm.h>
+#include "ump_kernel_interface.h"
+#include "ump_kernel_interface_ref_drv.h"
+#endif
+
 #define MAX_JPEG_RES	(MAX_JPEG_WIDTH * MAX_JPEG_HEIGHT)
 
 /* jpeg stream buf */
@@ -39,7 +46,7 @@ struct jpeg_mem {
 	unsigned int	frame_data_size;
 };
 
-int jpeg_init_mem(unsigned int *base);
+int jpeg_init_mem(struct device *dev, unsigned int *base);
 int jpeg_mem_free(void);
 unsigned long jpeg_get_stream_buf(unsigned long arg);
 unsigned long jpeg_get_frame_buf(unsigned long arg);

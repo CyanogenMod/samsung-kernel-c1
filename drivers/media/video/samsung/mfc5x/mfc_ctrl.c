@@ -157,6 +157,7 @@ int mfc_sleep(struct mfc_dev *dev)
 
 	/* FIXME: add mfc_power_off()? */
 
+	/* FIXME: ret = 0 */
 	return ret;
 }
 
@@ -180,5 +181,7 @@ int mfc_wakeup(struct mfc_dev *dev)
 
 	mfc_clock_off();
 
+	/* FIXME: ret = 0 */
 	return ret;
 }
+

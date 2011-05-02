@@ -19,7 +19,8 @@
 
 #include "mfc_inst.h"
 
-#define MFC_DEV_NAME	"mfc"
+#define MFC_DEV_NAME	"s3c-mfc"
+#define MFC_NAME_LEN	16
 
 struct mfc_reg {
 	resource_size_t	rsrc_start;
@@ -28,47 +29,82 @@ struct mfc_reg {
 };
 
 struct mfc_pm {
-	char		pd_name[16];
-	char		clk_name[16];
+	char		pd_name[MFC_NAME_LEN];
+	char		clk_name[MFC_NAME_LEN];
 	struct clk	*clock;
+#ifdef CONFIG_ARCH_S5PV310
+	atomic_t 	power;
+#ifdef CONFIG_PM_RUNTIME
+	struct device	*device;
+#endif
+#ifdef CONFIG_CPU_FREQ
+	struct clk	*op_clk;
+	struct notifier_block	freq_transition;
+#endif
+#endif
 };
+
+#ifdef CONFIG_VIDEO_MFC_VCM_UMP
+struct mfc_vcm {
+	struct vcm	*sysmmu_vcm;
+	unsigned long	*sysmmu_pgd;
+};
+#endif
 
 struct mfc_mem {
 	unsigned long	base;	/* phys. or virt. addr for MFC	*/
 	size_t		size;	/* total size			*/
 	unsigned char	*addr;	/* kernel virtual address space */
+#if (defined(SYSMMU_MFC_ON) && !defined(CONFIG_VIDEO_MFC_VCM_UMP) && !defined(CONFIG_S5P_VMEM))
 	void		*vmalloc_addr;	/* not aligned vmalloc alloc. addr */
+#endif
+#ifdef CONFIG_VIDEO_MFC_VCM_UMP
+	struct vcm_res	*vcm_s;
+#endif
 };
 
 struct mfc_fw {
 	const struct firmware	*info;
 	int			state;
 	int			ver;
-#ifdef CONFIG_S5P_VMEM
-	int 			vmem_cookie;
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+	struct vcm_mmu_res	*vcm_s;
+	struct vcm_res		*vcm_k;
+#elif defined(CONFIG_S5P_VMEM)
+	int			vmem_cookie;
 #endif
 };
 
 struct mfc_dev {
-	char			name[16];
+	char			name[MFC_NAME_LEN];
 	struct mfc_reg		reg;
 	int			irq;
 	struct mfc_pm		pm;
+
+#ifdef CONFIG_VIDEO_MFC_VCM_UMP
+	struct mfc_vcm		vcm_info;
+#endif
 	int			mem_ports;
-	struct mfc_mem		mem_infos[2];
+	struct mfc_mem		mem_infos[MFC_MAX_MEM_PORT_NUM];
 
 	atomic_t		inst_cnt;
-	struct mfc_inst_ctx	inst_ctx[16];
+	struct mfc_inst_ctx	*inst_ctx[MFC_MAX_INSTANCE_NUM];
 
 	struct mutex		lock;
 	wait_queue_head_t	wait_sys;
 	int			irq_sys;
+	/* FIXME: remove or use 2 codec channel */
 	wait_queue_head_t	wait_codec[2];
 	int			irq_codec[2];
 
 	struct mfc_fw		fw;
 
+	struct s5p_vcm_mmu	*_vcm_mmu;
+
 	struct device		*device;
+#ifdef CONFIG_CPU_FREQ
+	atomic_t		busfreq_lock_cnt; /* Bus frequency Lock count */
+#endif
 };
 
 #endif /* __MFC_DEV_H */

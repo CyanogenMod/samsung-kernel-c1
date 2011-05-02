@@ -21,5 +21,8 @@ int mfc_clock_on(void);
 void mfc_clock_off(void);
 int mfc_power_on(void);
 int mfc_power_off(void);
+#ifdef CONFIG_ARCH_S5PV310
+bool mfc_power_chk(void);
+#endif
 
 #endif /* __MFC_PM_H */

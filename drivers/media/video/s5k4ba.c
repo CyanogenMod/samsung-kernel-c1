@@ -509,7 +509,7 @@ static int s5k4ba_init(struct v4l2_subdev *sd, u32 val)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	int err = -EINVAL, i;
-
+	int i2c_data;
 	v4l_info(client, "%s: camera initialization start\n", __func__);
 
 	for (i = 0; i < S5K4BA_INIT_REGS; i++) {
@@ -519,7 +519,25 @@ static int s5k4ba_init(struct v4l2_subdev *sd, u32 val)
 			v4l_info(client, "%s: register set failed\n", \
 			__func__);
 	}
+#if 1
+	for (i = 0; i < S5K4BA_SVGA_REGS; i++) {
+		err = s5k4ba_i2c_write(sd, s5k4ba_svga_reg[i], \
+					sizeof(s5k4ba_svga_reg[i]));
+		if (err < 0)
+			v4l_info(client, "%s: register set failed\n", \
+			__func__);
+	}
 
+#else
+	for (i = 0; i < S5K4BA_UXGA_REGS; i++) {
+		err = s5k4ba_i2c_write(sd, s5k4ba_uxga_reg[i], \
+					sizeof(s5k4ba_uxga_reg[i]));
+		if (err < 0)
+			v4l_info(client, "%s: register set failed\n", \
+			__func__);
+
+	}
+#endif
 	if (err < 0) {
 		v4l_err(client, "%s: camera initialization failed\n", \
 			__func__);

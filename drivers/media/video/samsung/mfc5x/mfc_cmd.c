@@ -23,6 +23,7 @@
 #include "mfc_reg.h"
 #include "mfc_log.h"
 #include "mfc_dec.h"
+#include "mfc_enc.h"
 #include "mfc_mem.h"
 #include "mfc_buf.h"
 
@@ -117,14 +118,14 @@ static bool mfc_wait_codec(struct mfc_inst_ctx *ctx, enum mfc_r2h_ret ret)
 static bool
 mfc_wait_sys(struct mfc_dev *dev, enum mfc_r2h_ret ret, long timeout)
 {
-	dev->irq_sys = 0;
 
 	if (wait_event_timeout(dev->wait_sys, dev->irq_sys, timeout) == 0) {
 		mfc_err("F/W timeout: 0x%02x\n", ret);
-
+		dev->irq_sys = 0;
 		return false;
 	}
 
+	dev->irq_sys = 0;
 	if (r2h_cmd == ERR_RET) {
 		mfc_err("F/W error code: 0x%02x", r2h_args.arg[1] & 0xFFFF);
 
@@ -242,8 +243,12 @@ int mfc_cmd_sys_wakeup(struct mfc_dev *dev)
 	if (write_h2r_cmd(WAKEUP, &h2r_args) == false)
 		return MFC_CMD_FAIL;
 
+	/* release RISC reset */
+	write_reg(0x3FF, MFC_SW_RESET);
+
 	if (mfc_wait_sys(dev, WAKEUP_RET,
-		msecs_to_jiffies(H2R_INT_TIMEOUT)) == false) {
+		//msecs_to_jiffies(H2R_INT_TIMEOUT)) == false) {
+		msecs_to_jiffies(20000)) == false) {
 		mfc_err("failed to wakeup\n");
 		return MFC_WAKEUP_FAIL;
 	}
@@ -254,21 +259,20 @@ int mfc_cmd_sys_wakeup(struct mfc_dev *dev)
 int mfc_cmd_inst_open(struct mfc_inst_ctx *ctx)
 {
 	struct mfc_cmd_args h2r_args;
-	struct mfc_dec_ctx *dec_ctx;
-	struct mfc_enc *enc;
 	unsigned int crc = 0;
 	unsigned int pixelcache = 0;
+	struct mfc_dec_ctx *dec_ctx;
+	struct mfc_enc_ctx *enc_ctx;
 
 	if (ctx->type == DECODER) {
-		dec_ctx = ctx->c_priv;
+		dec_ctx = (struct mfc_dec_ctx *)ctx->c_priv;
 
-		//crc = dec_ctx->crc;
-		pixelcache = dec_ctx->pixelcache;
+		crc = dec_ctx->crc & 0x1;
+		pixelcache = dec_ctx->pixelcache & 0x3;
 	} else {
-		enc = ctx->c_priv;
+		enc_ctx = (struct mfc_enc_ctx *)ctx->c_priv;
 
-		crc = 0;
-		//pixelcache = enc->pixelcache;
+		pixelcache = enc_ctx->pixelcache & 0x3;
 	}
 
 	memset(&h2r_args, 0, sizeof(struct mfc_cmd_args));
@@ -286,15 +290,16 @@ int mfc_cmd_inst_open(struct mfc_inst_ctx *ctx)
 		return MFC_OPEN_FAIL;
 	}
 
-	ctx->id = r2h_args.arg[0];
+	ctx->cmd_id = r2h_args.arg[0];
 
-	mfc_dbg("inst id: %d, codec id: %d", ctx->id, ctx->codecid);
+	mfc_dbg("inst id: %d, cmd id: %d, codec id: %d",
+		ctx->id, ctx->cmd_id, ctx->codecid);
 
 #ifdef MFC_PERF
 	framecnt = 0;
 #endif
 
-	return ctx->id;
+	return ctx->cmd_id;
 }
 
 int mfc_cmd_inst_close(struct mfc_inst_ctx *ctx)
@@ -302,7 +307,7 @@ int mfc_cmd_inst_close(struct mfc_inst_ctx *ctx)
 	struct mfc_cmd_args h2r_args;
 
 	memset(&h2r_args, 0, sizeof(struct mfc_cmd_args));
-	h2r_args.arg[0] = ctx->id;
+	h2r_args.arg[0] = ctx->cmd_id;
 
 	if (write_h2r_cmd(CLOSE_CH, &h2r_args) == false)
 		return MFC_CMD_FAIL;
@@ -321,7 +326,8 @@ int mfc_cmd_seq_start(struct mfc_inst_ctx *ctx)
 	/* all codec command pass the shared mem addrees */
 	write_reg(ctx->shmofs, MFC_SI_CH1_HOST_WR_ADR);
 
-	write_reg((SEQ_HEADER << 16 & 0x70000) | ctx->id, MFC_SI_CH1_INST_ID);
+	write_reg((SEQ_HEADER << 16 & 0x70000) | ctx->cmd_id,
+		  MFC_SI_CH1_INST_ID);
 
 	/* FIXME: close_instance ? */
 	/* FIXME: mfc_wait_codec */
@@ -339,7 +345,8 @@ int mfc_cmd_init_buffers(struct mfc_inst_ctx *ctx)
 	/* all codec command pass the shared mem addrees */
 	write_reg(ctx->shmofs, MFC_SI_CH1_HOST_WR_ADR);
 
-	write_reg((INIT_BUFFERS << 16 & 0x70000) | ctx->id, MFC_SI_CH1_INST_ID);
+	write_reg((INIT_BUFFERS << 16 & 0x70000) | ctx->cmd_id,
+		  MFC_SI_CH1_INST_ID);
 
 	/* FIXME: close_instance ? */
 	/* FIXME: mfc_wait_codec */
@@ -364,16 +371,26 @@ int mfc_cmd_frame_start(struct mfc_inst_ctx *ctx)
 	write_reg(ctx->shmofs, MFC_SI_CH1_HOST_WR_ADR);
 
 	if (ctx->type == DECODER) {
-		dec_ctx = ctx->c_priv;
+		dec_ctx = (struct mfc_dec_ctx *)ctx->c_priv;
+
+		mfc_dbg("dec_ctx->lastframe: %d", dec_ctx->lastframe);
 
 		if (dec_ctx->lastframe) {
-			write_reg((LAST_SEQ << 16 & 0x70000) | ctx->id, MFC_SI_CH1_INST_ID);
+			write_reg((LAST_SEQ << 16 & 0x70000) | ctx->cmd_id,
+				  MFC_SI_CH1_INST_ID);
 			dec_ctx->lastframe = 0;
+		} else if (ctx->resolution_status == RES_SET_CHANGE) {
+			mfc_dbg("FRAME_START_REALLOC\n");
+			write_reg((FRAME_START_REALLOC << 16 & 0x70000) | ctx->cmd_id,
+				  MFC_SI_CH1_INST_ID);
+			ctx->resolution_status = RES_WAIT_FRAME_DONE;
 		} else {
-			write_reg((FRAME_START << 16 & 0x70000) | ctx->id, MFC_SI_CH1_INST_ID);
+			write_reg((FRAME_START << 16 & 0x70000) | ctx->cmd_id,
+				  MFC_SI_CH1_INST_ID);
 		}
 	} else { /* == ENCODER */
-		write_reg((FRAME_START << 16 & 0x70000) | ctx->id, MFC_SI_CH1_INST_ID);
+		write_reg((FRAME_START << 16 & 0x70000) | ctx->cmd_id,
+			  MFC_SI_CH1_INST_ID);
 	}
 
 #ifdef MFC_PERF

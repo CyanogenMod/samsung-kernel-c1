@@ -29,7 +29,7 @@ static int fimc_querycap(struct file *filp, void *fh,
 
 	fimc_info1("%s: called\n", __func__);
 
-	strcpy(cap->driver, "Samsung FIMC Driver");
+	strcpy(cap->driver, "SEC FIMC Driver");
 	strlcpy(cap->card, ctrl->vd->name, sizeof(cap->card));
 	sprintf(cap->bus_info, "FIMC AHB-bus");
 
@@ -94,6 +94,23 @@ static int fimc_g_ctrl(struct file *filp, void *fh, struct v4l2_control *c)
 	return ret;
 }
 
+static int fimc_g_ext_ctrls(struct file *filp, void *fh, struct v4l2_ext_controls *c)
+{
+	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
+	int ret = -1;
+
+	if (ctrl->cap != NULL) {
+		ret = fimc_g_ext_ctrls_capture(ctrl, c);
+	} else if (ctrl->out != NULL) {
+		/* How about "ret = fimc_s_ext_ctrls_output(fh, c);"? */
+	} else {
+		fimc_err("%s: Invalid case\n", __func__);
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
 static int fimc_s_ctrl(struct file *filp, void *fh, struct v4l2_control *c)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
@@ -103,6 +120,23 @@ static int fimc_s_ctrl(struct file *filp, void *fh, struct v4l2_control *c)
 		ret = fimc_s_ctrl_capture(ctrl, c);
 	} else if (ctrl->out != NULL) {
 		ret = fimc_s_ctrl_output(filp, fh, c);
+	} else {
+		fimc_err("%s: Invalid case\n", __func__);
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
+static int fimc_s_ext_ctrls(struct file *filp, void *fh, struct v4l2_ext_controls *c)
+{
+	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
+	int ret = -1;
+
+	if (ctrl->cap != NULL) {
+		ret = fimc_s_ext_ctrls_capture(fh, c);
+	} else if (ctrl->out != NULL) {
+		/* How about "ret = fimc_s_ext_ctrls_output(fh, c);"? */
 	} else {
 		fimc_err("%s: Invalid case\n", __func__);
 		return -EINVAL;
@@ -136,6 +170,8 @@ static int fimc_g_crop(struct file *filp, void *fh, struct v4l2_crop *a)
 
 	if (a->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
 		ret = fimc_g_crop_capture(ctrl, a);
+	} else if (a->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
+		ret = fimc_g_crop_output(fh, a);
 	} else {
 		fimc_err("V4L2_BUF_TYPE_VIDEO_CAPTURE and "
 			"V4L2_BUF_TYPE_VIDEO_OUTPUT are only supported\n");
@@ -240,7 +276,9 @@ const struct v4l2_ioctl_ops fimc_v4l2_ops = {
 	.vidioc_reqbufs			= fimc_reqbufs,
 	.vidioc_querybuf		= fimc_querybuf,
 	.vidioc_g_ctrl			= fimc_g_ctrl,
+	.vidioc_g_ext_ctrls		= fimc_g_ext_ctrls,
 	.vidioc_s_ctrl			= fimc_s_ctrl,
+	.vidioc_s_ext_ctrls		= fimc_s_ext_ctrls,
 	.vidioc_cropcap			= fimc_cropcap,
 	.vidioc_g_crop			= fimc_g_crop,
 	.vidioc_s_crop			= fimc_s_crop,
@@ -267,4 +305,6 @@ const struct v4l2_ioctl_ops fimc_v4l2_ops = {
 	.vidioc_try_fmt_vid_overlay	= fimc_try_fmt_overlay,
 	.vidioc_g_fmt_vid_overlay	= fimc_g_fmt_vid_overlay,
 	.vidioc_s_fmt_vid_overlay	= fimc_s_fmt_vid_overlay,
+	.vidioc_enum_framesizes		= fimc_enum_framesizes,
+	.vidioc_enum_frameintervals	= fimc_enum_frameintervals,
 };

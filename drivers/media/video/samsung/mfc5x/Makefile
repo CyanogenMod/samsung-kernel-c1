@@ -13,3 +13,7 @@ obj-$(CONFIG_VIDEO_MFC5X) += mfc_mem.o
 ifeq ($(CONFIG_VIDEO_MFC5X_DEBUG),y)
 EXTRA_CFLAGS += -DDEBUG
 endif
+
+ifeq ($(CONFIG_VIDEO_MFC_VCM_UMP),y)
+EXTRA_CFLAGS += -Idrivers/media/video/samsung/ump/include
+endif

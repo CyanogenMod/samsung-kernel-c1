@@ -24,7 +24,7 @@ int init_shm(struct mfc_inst_ctx *ctx)
 {
 	struct mfc_alloc_buffer *alloc;
 
-	alloc = _mfc_alloc_buf(ctx, MFC_SHM_SIZE, ALIGN_4B, PORT_A);
+	alloc = _mfc_alloc_buf(ctx, MFC_SHM_SIZE, ALIGN_4B, MBT_SHM | PORT_A);
 
 	if (alloc != NULL) {
 		ctx->shm = alloc->addr;

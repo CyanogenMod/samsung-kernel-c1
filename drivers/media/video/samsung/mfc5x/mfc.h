@@ -56,6 +56,10 @@
 #define SYSMMU_MFC_ON
 #endif
 
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP) && !defined(SYSMMU_MFC_ON)
+#error In order to use UMP over VCM, you must configure System MMU for MFC_L and MFC_R!
+#endif
+
 #if defined(CONFIG_S5P_VMEM) && !defined(SYSMMU_MFC_ON)
 #error In order to use S5PVEM, you must configure System MMU for MFC_L and MFC_R!
 #endif

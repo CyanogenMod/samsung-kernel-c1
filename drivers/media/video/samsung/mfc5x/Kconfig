@@ -21,6 +21,11 @@ config VIDEO_MFC_MEM_PORT_COUNT
 	depends on VIDEO_MFC5X
 	default 2
 
+config VIDEO_MFC_VCM_UMP
+	bool "Support UMP over VCM for MFC"
+	depends on VIDEO_MFC5X && VCM_MMU && VIDEO_UMP
+	default y
+
 config VIDEO_MFC5X_DEBUG
 	bool "MFC driver debug message"
 	depends on VIDEO_MFC5X

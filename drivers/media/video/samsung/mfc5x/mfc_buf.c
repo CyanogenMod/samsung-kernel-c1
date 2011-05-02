@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/mm.h>
+#include <linux/err.h>
 
 #include "mfc.h"
 #include "mfc_mem.h"
@@ -21,7 +22,16 @@
 #include "mfc_log.h"
 #include "mfc_errno.h"
 
+#ifdef CONFIG_VIDEO_MFC_VCM_UMP
+#include <plat/s5p-vcm.h>
+
+#include "ump_kernel_interface.h"
+#include "ump_kernel_interface_ref_drv.h"
+#include "ump_kernel_interface_vcm.h"
+#endif
+
 #define PRINT_BUF
+#undef DEBUG_ALLOC_FREE
 
 static struct list_head mfc_alloc_head[MFC_MAX_MEM_PORT_NUM];
 /* The free node list sorted by real address */
@@ -32,7 +42,7 @@ static struct list_head mfc_free_head[MFC_MAX_MEM_PORT_NUM];
 static spinlock_t lock;
 */
 
-static void mfc_print_buf(void)
+void mfc_print_buf(void)
 {
 #ifdef PRINT_BUF
 	struct list_head *pos;
@@ -48,13 +58,39 @@ static void mfc_print_buf(void)
 			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
 			mfc_dbg("[A #%04d] addr: 0x%08x, size: %d",
 				i, (unsigned int)alloc->addr, alloc->size);
-			mfc_dbg("\t  real: 0x%08lx, user: 0x%08x, owner: %d",
-				alloc->real, (unsigned int)alloc->user,
-				alloc->owner);
-#ifdef CONFIG_S5P_VMEM
+			mfc_dbg("\t  real: 0x%08lx", alloc->real);
+			mfc_dbg("\t  type: 0x%08x, owner: %d",
+				alloc->type, alloc->owner);
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+			mfc_dbg("\t* vcm sysmmu");
+			if (alloc->vcm_s) {
+				mfc_dbg("\t  start: 0x%08x, res_size  : 0x%08x\n",
+					(unsigned int)alloc->vcm_s->res.start,
+					(unsigned int)alloc->vcm_s->res.res_size);
+				mfc_dbg("\t  bound_size: 0x%08x\n",
+					(unsigned int)alloc->vcm_s->res.bound_size);
+			}
+
+			mfc_dbg("\t* vcm kernel");
+			if (alloc->vcm_k) {
+				mfc_dbg("\t  start: 0x%08x, res_size  : 0x%08x\n",
+					(unsigned int)alloc->vcm_k->start,
+					(unsigned int)alloc->vcm_k->res_size);
+				mfc_dbg("\t  bound_size: 0x%08x\n",
+					(unsigned int)alloc->vcm_k->bound_size);
+			}
+
+			mfc_dbg("\t* ump");
+			if (alloc->ump_handle) {
+				mfc_dbg("\t  secure id: 0x%08x",
+					mfc_ump_get_id(alloc->ump_handle));
+			}
+#elif defined(CONFIG_S5P_VMEM)
 			mfc_dbg("\t  vmem cookie: 0x%08x addr: 0x%08lx, size: %d",
 				alloc->vmem_cookie, alloc->vmem_addr,
 				alloc->vmem_size);
+#else
+			mfc_dbg("\t  offset: 0x%08x", alloc->ofs);
 #endif
 			i++;
 		}
@@ -167,7 +203,7 @@ static unsigned int mfc_get_free_buf(int size, int align, int port)
 	list_for_each_safe(pos, nxt, &mfc_free_head[port]) {
 		free = list_entry(pos, struct mfc_free_buffer, list);
 
-#ifdef CONFIG_S5P_VMEM
+#if (defined(CONFIG_VIDEO_MFC_VCM_UMP) || defined(CONFIG_S5P_VMEM))
 		/*
 		 * Align the start address.
 		 * We assume the start address of free buffer aligned with 4KB
@@ -196,7 +232,7 @@ static unsigned int mfc_get_free_buf(int size, int align, int port)
 	if (match != NULL) {
 		addr = match->real;
 
-#ifndef CONFIG_S5P_VMEM
+#if !(defined(CONFIG_VIDEO_MFC_VCM_UMP) || defined(CONFIG_S5P_VMEM))
 		if (align_size > 0) {
 			/*
 			 * When the allocated address must be align without VMEM,
@@ -263,7 +299,26 @@ void mfc_final_buf(void)
 	for (port = 0; port < mfc_mem_count(); port++) {
 		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
 			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
-#ifdef CONFIG_S5P_VMEM
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+			if (alloc->ump_handle)
+				mfc_ump_unmap(alloc->ump_handle);
+
+			if (alloc->vcm_k)
+				mfc_vcm_unmap(alloc->vcm_k);
+
+			if (alloc->vcm_s)
+				mfc_vcm_unbind(alloc->vcm_s,
+						alloc->type & MBT_OTHER);
+
+			if (mfc_put_free_buf(alloc->vcm_addr,
+				alloc->vcm_size, port) < 0) {
+
+				mfc_err("failed to add free buffer\n");
+			} else {
+				list_del(&alloc->list);
+				kfree(alloc);
+			}
+#elif defined(CONFIG_S5P_VMEM)
 			if (alloc->vmem_cookie)
 				s5p_vfree(alloc->vmem_cookie);
 
@@ -343,21 +398,30 @@ void mfc_merge_buf(void)
 		}
 	}
 
+#ifdef DEBUG_ALLOC_FREE
 	mfc_print_buf();
+#endif
 }
 
-/* FIXME: port auto select */
+/* FIXME: port auto select, return values */
 struct mfc_alloc_buffer *_mfc_alloc_buf(
-	struct mfc_inst_ctx *ctx, int size, int align, int port)
+	struct mfc_inst_ctx *ctx, int size, int align, int flag)
 {
 	unsigned int addr;
 	struct mfc_alloc_buffer *alloc;
-#ifdef CONFIG_S5P_VMEM
+	int port = flag & 0xFFFF;
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+	int align_size = 0;
+	struct ump_vcm ump_vcm;
+#elif defined(CONFIG_S5P_VMEM)
 	int align_size = 0;
 #endif
 	/*
 	unsigned long flags;
 	*/
+
+	if (size <= 0)
+		return NULL;
 
 	alloc = (struct mfc_alloc_buffer *)
 		kzalloc(sizeof(struct mfc_alloc_buffer), GFP_KERNEL);
@@ -379,7 +443,10 @@ struct mfc_alloc_buffer *_mfc_alloc_buf(
 
 	if (!addr) {
 		mfc_dbg("cannot get suitable free buffer\n");
-
+		/* FIXME: is it need?
+		mfc_put_free_buf(addr, size, port);
+		*/
+		kfree(alloc);
 		/*
 		spin_unlock_irqrestore(&lock, flags);
 		*/
@@ -387,7 +454,63 @@ struct mfc_alloc_buffer *_mfc_alloc_buf(
 		return NULL;
 	}
 
-#ifdef CONFIG_S5P_VMEM
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+	if (align > PAGE_SIZE) {
+		align_size = ALIGN(addr, align) - addr;
+		align_size += ALIGN(align_size + size, PAGE_SIZE) - size;
+	} else {
+		align_size = ALIGN(align_size + size, PAGE_SIZE) - size;
+	}
+
+	alloc->vcm_s = mfc_vcm_bind(addr, size + align_size);
+	if (IS_ERR(alloc->vcm_s)) {
+		mfc_put_free_buf(addr, size, port);
+		kfree(alloc);
+
+		return NULL;
+		/*
+		return PTR_ERR(alloc->vcm_s);
+		*/
+	}
+
+	if (flag & MBT_KERNEL) {
+		alloc->vcm_k = mfc_vcm_map(alloc->vcm_s->res.phys);
+		if (IS_ERR(alloc->vcm_k)) {
+			mfc_vcm_unbind(alloc->vcm_s,
+					alloc->type & MBT_OTHER);
+			mfc_put_free_buf(addr, size, port);
+			kfree(alloc);
+
+			return NULL;
+			/*
+			return PTR_ERR(alloc->vcm_k);
+			*/
+		}
+	}
+
+	if (flag & MBT_USER) {
+		ump_vcm.vcm = alloc->vcm_s->res.vcm;
+		ump_vcm.vcm_res = &(alloc->vcm_s->res);
+		ump_vcm.dev_id = VCM_DEV_MFC;
+
+		alloc->ump_handle = mfc_ump_map(alloc->vcm_s->res.phys, (unsigned long)&ump_vcm);
+		if (IS_ERR(alloc->ump_handle)) {
+			mfc_vcm_unmap(alloc->vcm_k);
+			mfc_vcm_unbind(alloc->vcm_s,
+					alloc->type & MBT_OTHER);
+			mfc_put_free_buf(addr, size, port);
+			kfree(alloc);
+
+		return NULL;
+			/*
+			return PTR_ERR(alloc->vcm_k);
+			*/
+		}
+	}
+
+	alloc->vcm_addr = addr;
+	alloc->vcm_size = size + align_size;
+#elif defined(CONFIG_S5P_VMEM)
 	if (align > PAGE_SIZE) {
 		align_size = ALIGN(addr, align) - addr;
 		align_size += ALIGN(align_size + size, PAGE_SIZE) - size;
@@ -400,6 +523,8 @@ struct mfc_alloc_buffer *_mfc_alloc_buf(
 
 	if (!alloc->vmem_cookie) {
 		mfc_dbg("cannot map free buffer to memory\n");
+		mfc_put_free_buf(addr, size, port);
+		kfree(alloc);
 
 		return NULL;
 	}
@@ -409,10 +534,25 @@ struct mfc_alloc_buffer *_mfc_alloc_buf(
 #endif
 	alloc->real = ALIGN(addr, align);
 	alloc->size = size;
+
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+	if (alloc->vcm_k)
+		alloc->addr = (unsigned char *)alloc->vcm_k->start;
+	else
+		alloc->addr = NULL;
+#elif defined(CONFIG_S5P_VMEM)
 	alloc->addr = (unsigned char *)(mfc_mem_addr(port) +
 		mfc_mem_base_ofs(alloc->real));
+#else
+	alloc->addr = (unsigned char *)(mfc_mem_addr(port) +
+		mfc_mem_base_ofs(alloc->real));
+	/*
 	alloc->user = (unsigned char *)(ctx->userbase +
 		mfc_mem_data_ofs(alloc->real, 1));
+	*/
+	alloc->ofs = mfc_mem_data_ofs(alloc->real, 1);
+#endif
+	alloc->type = flag & 0xFFFF0000;
 	alloc->owner = ctx->id;
 
 	list_add(&alloc->list, &mfc_alloc_head[port]);
@@ -421,32 +561,124 @@ struct mfc_alloc_buffer *_mfc_alloc_buf(
 	spin_unlock_irqrestore(&lock, flags);
 	*/
 
+#ifdef DEBUG_ALLOC_FREE
 	mfc_print_buf();
+#endif
 
 	return alloc;
 }
 
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+unsigned int mfc_vcm_bind_from_others(struct mfc_inst_ctx *ctx,
+				struct mfc_buf_alloc_arg *args, int flag)
+{
+	int ret;
+	unsigned int addr, size;
+	unsigned int secure_id = args->secure_id;
+	int port = flag & 0xFFFF;
+
+	struct vcm_res *vcm_res;
+	struct vcm_mmu_res *s_res;
+	struct mfc_alloc_buffer *alloc;
+
+	ump_dd_handle ump_mem;
+
+	/* FIXME: right position? */
+	if (port > (mfc_mem_count() - 1))
+		port = mfc_mem_count() - 1;
+
+	ump_mem = ump_dd_handle_create_from_secure_id(secure_id);
+	ump_dd_reference_add(ump_mem);
+
+	vcm_res = (struct vcm_res *)
+		ump_dd_meminfo_get(secure_id, (void*)VCM_DEV_MFC);
+	if (!vcm_res) {
+		mfc_dbg("%s: Failed to get vcm_res\n", __func__);
+		goto err_ret;
+	}
+
+	size = vcm_res->bound_size;
+
+	alloc = (struct mfc_alloc_buffer *)
+		kzalloc(sizeof(struct mfc_alloc_buffer), GFP_KERNEL);
+	if(!alloc) {
+		mfc_dbg("%s: Failed to get mfc_alloc_buffer\n", __func__);
+		goto err_ret;
+	}
+
+	addr = mfc_get_free_buf(size, ALIGN_2KB, port);
+	if (!addr) {
+		mfc_dbg("cannot get suitable free buffer\n");
+		goto err_ret_alloc;
+	}
+	mfc_dbg("mfc_get_free_buf: 0x%08x\n", addr);
+
+	s_res = kzalloc(sizeof(struct vcm_mmu_res), GFP_KERNEL);
+	if (!s_res) {
+		mfc_dbg("%s: Failed to get vcm_mmu_res\n", __func__);
+		goto err_ret_alloc;
+	}
+
+	s_res->res.start = addr;
+	s_res->res.res_size = size;
+	s_res->res.vcm = ctx->dev->vcm_info.sysmmu_vcm;
+	INIT_LIST_HEAD(&s_res->bound);
+
+	ret = vcm_bind(&s_res->res, vcm_res->phys);
+	if (ret < 0) {
+		mfc_dbg("%s: Failed to vcm_bind\n", __func__);
+		goto err_ret_s_res;
+	}
+
+	alloc->vcm_s = s_res;
+	alloc->vcm_addr = addr;
+	alloc->ump_handle = ump_mem;
+	alloc->vcm_size = size;
+	alloc->real = addr;
+	alloc->size = size;
+	alloc->type = flag & 0xFFFF0000;
+	alloc->owner = ctx->id;
+
+	list_add(&alloc->list, &mfc_alloc_head[port]);
+
+	mfc_print_buf();
+
+	return 0;
+
+err_ret_s_res:
+	kfree(s_res);
+err_ret_alloc:
+	kfree(alloc);
+err_ret:
+	return -1;
+}
+#endif
+
 int
-mfc_alloc_buf(struct mfc_inst_ctx *ctx, struct mfc_buf_alloc_arg *args, int port)
+mfc_alloc_buf(struct mfc_inst_ctx *ctx, struct mfc_buf_alloc_arg *args, int flag)
 {
 	struct mfc_alloc_buffer *alloc;
 
-	alloc = _mfc_alloc_buf(ctx, args->size, args->align, port);
+	alloc = _mfc_alloc_buf(ctx, args->size, args->align, flag);
 
 	if (unlikely(alloc == NULL))
 		return MFC_MEM_ALLOC_FAIL;
-
-	args->user = (unsigned int)alloc->user;
+	/*
 	args->phys = (unsigned int)alloc->real;
+	*/
 	args->addr = (unsigned int)alloc->addr;
-#ifdef CONFIG_S5P_VMEM
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+	if (alloc->ump_handle)
+		args->secure_id = mfc_ump_get_id(alloc->ump_handle);
+#elif defined(CONFIG_S5P_VMEM)
 	args->cookie = (unsigned int)alloc->vmem_cookie;
+#else
+	args->offset = alloc->ofs;
 #endif
-
 	return MFC_OK;
 }
 
-int _mfc_free_buf(unsigned char *addr)
+int _mfc_free_buf(unsigned long real)
 {
 	struct list_head *pos, *nxt;
 	struct mfc_alloc_buffer *alloc;
@@ -456,7 +688,7 @@ int _mfc_free_buf(unsigned char *addr)
 	unsigned long flags;
 	*/
 
-	mfc_dbg("addr: 0x%08x\n", (unsigned int)addr);
+	mfc_dbg("addr: 0x%08lx\n", real);
 
 	/*
 	spin_lock_irqsave(&lock, flags);
@@ -466,9 +698,28 @@ int _mfc_free_buf(unsigned char *addr)
 		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
 			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
 
-			if (alloc->addr == addr) {
+			if (alloc->real == real) {
 				found = 1;
-#ifdef CONFIG_S5P_VMEM
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+				if (alloc->ump_handle)
+					mfc_ump_unmap(alloc->ump_handle);
+
+				if (alloc->vcm_k)
+					mfc_vcm_unmap(alloc->vcm_k);
+
+				if (alloc->vcm_s)
+					mfc_vcm_unbind(alloc->vcm_s,
+							alloc->type & MBT_OTHER);
+
+				if (mfc_put_free_buf(alloc->vcm_addr,
+					alloc->vcm_size, port) < 0) {
+
+					mfc_err("failed to add free buffer\n");
+				} else {
+					list_del(&alloc->list);
+					kfree(alloc);
+				}
+#elif defined(CONFIG_S5P_VMEM)
 				if (alloc->vmem_cookie)
 					s5p_vfree(alloc->vmem_cookie);
 
@@ -502,7 +753,9 @@ int _mfc_free_buf(unsigned char *addr)
 	spin_unlock_irqrestore(&lock, flags);
 	*/
 
+#ifdef DEBUG_ALLOC_FREE
 	mfc_print_buf();
+#endif
 
 	if (found)
 		return 0;
@@ -510,20 +763,35 @@ int _mfc_free_buf(unsigned char *addr)
 	return -1;
 }
 
-int mfc_free_buf(struct mfc_inst_ctx *ctx, unsigned char *user)
+int mfc_free_buf(struct mfc_inst_ctx *ctx, unsigned int key)
 {
-	unsigned char *addr;
+	unsigned long real;
 
-	mfc_dbg("user addr: 0x%08x\n", (unsigned int)user);
-
-	addr = mfc_get_buf_addr(ctx->id, user);
-	if (unlikely(addr == NULL))
+	real = mfc_get_buf_real(ctx->id, key);
+	if (unlikely(real == 0))
 		return MFC_MEM_INVALID_ADDR_FAIL;
 
-	if (_mfc_free_buf(addr) < 0)
+	if (_mfc_free_buf(real) < 0)
 		return MFC_MEM_INVALID_ADDR_FAIL;
 
 	return MFC_OK;
+}
+
+void mfc_free_buf_dpb(int owner)
+{
+	int port;
+	struct list_head *pos, *nxt;
+	struct mfc_alloc_buffer *alloc;
+
+	for (port = 0; port < mfc_mem_count(); port++) {
+		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
+			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
+
+			if ((alloc->owner == owner) && (alloc->type == MBT_DPB)) {
+				_mfc_free_buf(alloc->real);
+					}
+				}
+	}
 }
 
 /* FIXME: add MFC Buffer Type */
@@ -547,7 +815,26 @@ void mfc_free_buf_inst(int owner)
 			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
 
 			if (alloc->owner == owner) {
-#ifdef CONFIG_S5P_VMEM
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+				if (alloc->ump_handle)
+					mfc_ump_unmap(alloc->ump_handle);
+
+				if (alloc->vcm_k)
+					mfc_vcm_unmap(alloc->vcm_k);
+
+				if (alloc->vcm_s)
+					mfc_vcm_unbind(alloc->vcm_s,
+							alloc->type & MBT_OTHER);
+
+				if (mfc_put_free_buf(alloc->vcm_addr,
+					alloc->vcm_size, port) < 0) {
+
+					mfc_err("failed to add free buffer\n");
+				} else {
+					list_del(&alloc->list);
+					kfree(alloc);
+				}
+#elif defined(CONFIG_S5P_VMEM)
 				if (alloc->vmem_cookie)
 					s5p_vfree(alloc->vmem_cookie);
 
@@ -577,25 +864,42 @@ void mfc_free_buf_inst(int owner)
 	spin_unlock_irqrestore(&lock, flags);
 	*/
 
+#ifdef DEBUG_ALLOC_FREE
 	mfc_print_buf();
+#endif
 }
 
-unsigned long mfc_get_buf_real(int owner, unsigned char *user)
+unsigned long mfc_get_buf_real(int owner, unsigned int key)
 {
 	struct list_head *pos, *nxt;
 	int port;
 	struct mfc_alloc_buffer *alloc;
 
-	mfc_dbg("owner: %d, user: 0x%08x\n", owner, (unsigned int)user);
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+		mfc_dbg("owner: %d, secure id: 0x%08x\n", owner, key);
+#elif defined(CONFIG_S5P_VMEM)
+		mfc_dbg("owner: %d, cookie: 0x%08x\n", owner, key);
+#else
+		mfc_dbg("owner: %d, offset: 0x%08x\n", owner, key);
+#endif
 
 	for (port = 0; port < mfc_mem_count(); port++) {
 		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
 			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
 
-			if ((alloc->owner == owner)
-				&& (alloc->user == user)){
-
-				return alloc->real;
+			if (alloc->owner == owner) {
+#if defined(CONFIG_VIDEO_MFC_VCM_UMP)
+				if (alloc->ump_handle) {
+					if (mfc_ump_get_id(alloc->ump_handle) == key)
+						return alloc->real;
+				}
+#elif defined(CONFIG_S5P_VMEM)
+				if (alloc->vmem_cookie == key)
+					return alloc->real;
+#else
+				if (alloc->ofs == key)
+					return alloc->real;
+#endif
 			}
 		}
 	}
@@ -603,6 +907,7 @@ unsigned long mfc_get_buf_real(int owner, unsigned char *user)
 	return 0;
 }
 
+#if 0
 unsigned char *mfc_get_buf_addr(int owner, unsigned char *user)
 {
 	struct list_head *pos, *nxt;
@@ -648,4 +953,27 @@ unsigned char *_mfc_get_buf_addr(int owner, unsigned char *user)
 
 	return NULL;
 }
+#endif
+
+#ifdef CONFIG_VIDEO_MFC_VCM_UMP
+void *mfc_get_buf_ump_handle(unsigned long real)
+{
+	struct list_head *pos, *nxt;
+	int port;
+	struct mfc_alloc_buffer *alloc;
+
+	mfc_dbg("real: 0x%08lx\n", real);
+
+	for (port = 0; port < mfc_mem_count(); port++) {
+		list_for_each_safe(pos, nxt, &mfc_alloc_head[port]) {
+			alloc = list_entry(pos, struct mfc_alloc_buffer, list);
+
+			if (alloc->real == real)
+				return alloc->ump_handle;
+		}
+	}
+
+	return NULL;
+}
+#endif
 

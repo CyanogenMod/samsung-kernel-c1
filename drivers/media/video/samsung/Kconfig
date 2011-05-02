@@ -18,19 +18,28 @@ source "drivers/media/video/samsung/fimc/Kconfig"
 source "drivers/media/video/samsung/rotator/Kconfig"
 endif
 
-if CPU_S5PV210
-source "drivers/media/video/samsung/tv20/Kconfig"
-source "drivers/media/video/samsung/mfc50/Kconfig"
+if CPU_S5PV310
+source "drivers/media/video/samsung/tvout/Kconfig"
+endif
+
+if CPU_S5PV210 || CPU_S5P6450
+source "drivers/media/video/samsung/jpeg_v2/Kconfig"
+endif
+
+#source "drivers/media/video/samsung/mfc50/Kconfig"
+source "drivers/media/video/samsung/mfc5x/Kconfig"
+
+
+if CPU_S5PV210 || CPU_S5PV310
+source "drivers/media/video/samsung/fimg2d_android/Kconfig"
+source "drivers/media/video/samsung/jpeg/Kconfig"
 endif
 
 if CPU_S5PV310
-source "drivers/media/video/samsung/tv30/Kconfig"
-source "drivers/media/video/samsung/mfc5x/Kconfig"
-endif
-
-if CPU_S5PV210 || CPU_S5PV310
-source "drivers/media/video/samsung/fimg2d/Kconfig"
-source "drivers/media/video/samsung/jpeg/Kconfig"
+source "drivers/media/video/samsung/mali/Kconfig"
+source "drivers/media/video/samsung/ump/Kconfig"
+source "drivers/media/video/samsung/mhl_v1/Kconfig"
+source "drivers/media/video/samsung/tsi/Kconfig"
 endif
 
 if VIDEO_SAMSUNG
@@ -50,15 +59,13 @@ config VIDEO_SAMSUNG_MEMSIZE_FIMC2
 	depends on VIDEO_FIMC
 	default "5120"
 
+if CPU_S5PV310
 config VIDEO_SAMSUNG_MEMSIZE_FIMC3
 	int "Memory size in kbytes for FIMC3"
 	depends on VIDEO_FIMC && CPU_S5PV310
 	default "5120"
+endif
 
-config VIDEO_SAMSUNG_MEMSIZE_MFC
-	int "Memory size in kbytes for MFC"
-	depends on (VIDEO_MFC50 || VIDEO_MFC5X) && ( VIDEO_MFC_MEM_PORT_COUNT = 1)
-	default "65536"
 
 config VIDEO_SAMSUNG_MEMSIZE_MFC0
 	int "Memory size in kbytes for MFC port0"
@@ -73,7 +80,12 @@ config VIDEO_SAMSUNG_MEMSIZE_MFC1
 config VIDEO_SAMSUNG_MEMSIZE_JPEG
 	int "Memory size in kbytes for JPEG"
 	depends on VIDEO_JPEG
-	default "24576"
+	default "8192"
+
+config VIDEO_SAMSUNG_MEMSIZE_FIMG2D
+       int "Memory size in kbytes for FIMG2D"
+       depends on VIDEO_FIMG2D
+       default "8192"
 
 config VIDEO_SAMSUNG_MEMSIZE_TV
         int "Memory size in kbytes for TV"

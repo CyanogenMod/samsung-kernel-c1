@@ -11,19 +11,32 @@
 */
 
 #include <asm/page.h>
+#include <linux/errno.h>
 #include <linux/vmalloc.h>
+#include <linux/device.h>
 
+#if defined(CONFIG_S5P_MEM_CMA)
+#include <linux/cma.h>
+#elif defined(CONFIG_S5P_MEM_BOOTMEM)
 #include <mach/media.h>
 #include <plat/media.h>
+#endif
 #include "jpeg_mem.h"
+#include "jpeg_core.h"
 
 #if defined(CONFIG_S5P_SYSMMU_JPEG) && defined(CONFIG_S5P_VMEM)
 unsigned int s_cookie;	/* for stream buffer */
 unsigned int f_cookie;	/* for frame buffer */
 #endif
 
-int jpeg_init_mem(unsigned int *base)
+int jpeg_init_mem(struct device *dev, unsigned int *base)
 {
+#ifdef CONFIG_S5P_MEM_CMA
+	struct cma_info mem_info;
+	int err;
+	int size;
+	char cma_name[8];
+#endif
 #if defined(CONFIG_S5P_SYSMMU_JPEG)
 #if !defined(CONFIG_S5P_VMEM)
 	unsigned char *addr;
@@ -33,7 +46,26 @@ int jpeg_init_mem(unsigned int *base)
 	*base = (unsigned int)addr;
 #endif /* CONFIG_S5P_VMEM */
 #else
+#ifdef CONFIG_S5P_MEM_CMA
+	/* CMA */
+	sprintf(cma_name, "jpeg");
+	err = cma_info(&mem_info, dev, 0);
+	jpeg_info("[cma_info] start_addr : 0x%x, end_addr : 0x%x, "
+			"total_size : 0x%x, free_size : 0x%x\n",
+			mem_info.lower_bound, mem_info.upper_bound,
+			mem_info.total_size, mem_info.free_size);
+	if (err) {
+		printk("%s: get cma info failed\n", __func__);
+		return -1;
+	}
+	size = mem_info.total_size;
+	*base = (dma_addr_t)cma_alloc
+		(dev, cma_name, (size_t)size, 0);
+	jpeg_info("size = 0x%x\n", size);
+	jpeg_info("*base = 0x%x\n", *base);
+#else
 	*base = s5p_get_media_memory_bank(S5P_MDEV_JPEG, 0);
+#endif
 #endif /* CONFIG_S5P_SYSMMU_JPEG */
 	return 0;
 }
