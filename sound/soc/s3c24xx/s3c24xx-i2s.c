@@ -14,16 +14,26 @@
  *  option) any later version.
  */
 
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
+#include <linux/jiffies.h>
 #include <linux/io.h>
 #include <linux/gpio.h>
 
+#include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
+#include <sound/initval.h>
 #include <sound/soc.h>
 
+#include <mach/hardware.h>
 #include <mach/regs-gpio.h>
+#include <mach/regs-clock.h>
+
+#include <asm/dma.h>
 #include <mach/dma.h>
 
 #include <plat/regs-iis.h>
@@ -49,7 +59,7 @@ static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_out = {
 static struct s3c_dma_params s3c24xx_i2s_pcm_stereo_in = {
 	.client		= &s3c24xx_dma_client_in,
 	.channel	= DMACH_I2S_IN,
-	.dma_addr	= S3C2410_PA_IIS + S3C2410_IISFIFORX,
+	.dma_addr	= S3C2410_PA_IIS + S3C2410_IISFIFO,
 	.dma_size	= 4,
 };
 
@@ -250,16 +260,9 @@ static int s3c24xx_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S8:
-		iismod |= S3C2410_IISMOD_8BIT;
-		iismod &= ~S3C2410_IISMOD_BFS_MASK;
-		iismod |= S3C2410_IISMOD_32FS;
-		iismod &= ~S3C2410_IISMOD_FS_MASK;
-		iismod |= S3C2410_IISMOD_384FS;
+		iismod &= ~S3C2410_IISMOD_16BIT;
 		break;
 	case SNDRV_PCM_FORMAT_S16_LE:
-		iismod &= ~S3C2410_IISMOD_FS_MASK;
-		iismod &= ~S3C2410_IISMOD_BFS_MASK;
-		iismod |= S3C2410_IISMOD_384FS | S3C2410_IISMOD_32FS;
 		iismod |= S3C2410_IISMOD_16BIT;
 		break;
 	default:
@@ -385,7 +388,6 @@ EXPORT_SYMBOL_GPL(s3c24xx_i2s_get_clockrate);
 static int s3c24xx_i2s_probe(struct platform_device *pdev,
 			     struct snd_soc_dai *dai)
 {
-	u32 iismod;
 	pr_debug("Entered %s\n", __func__);
 
 	s3c24xx_i2s.regs = ioremap(S3C2410_PA_IIS, 0x100);
@@ -408,10 +410,6 @@ static int s3c24xx_i2s_probe(struct platform_device *pdev,
 	s3c2410_gpio_cfgpin(S3C2410_GPE4, S3C2410_GPE4_I2SSDO);
 
 	writel(S3C2410_IISCON_IISEN, s3c24xx_i2s.regs + S3C2410_IISCON);
-
-	iismod = readl(s3c24xx_i2s.regs + S3C2410_IISMOD);
-	iismod |= S3C2410_IISMOD_TXRXMODE;
-	writel(iismod, s3c24xx_i2s.regs + S3C2410_IISMOD);
 
 	s3c24xx_snd_txctrl(0);
 	s3c24xx_snd_rxctrl(0);

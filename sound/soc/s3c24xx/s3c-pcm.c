@@ -219,7 +219,7 @@ static int s3c_pcm_hw_params(struct snd_pcm_substream *substream,
 					params_rate(params) / 2 - 1;
 
 #if defined(CONFIG_ARCH_S5PV310)
-	if(clk_get_rate(clk) != (pcm->sclk_per_fs*params_rate(params)))
+	if (clk_get_rate(clk) != (pcm->sclk_per_fs*params_rate(params)))
 		clk_set_rate(clk, pcm->sclk_per_fs*params_rate(params));
 #else
 	clkctl &= ~(S3C_PCM_CLKCTL_SCLKDIV_MASK
@@ -264,7 +264,7 @@ static int s3c_pcm_set_fmt(struct snd_soc_dai *cpu_dai,
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_IB_NF:
-		/* Nothing to do, NB_NF by default */
+		/* Nothing to do, IB_NF by default */
 		break;
 	default:
 		dev_err(pcm->dev, "Unsupported clock inversion!\n");
@@ -349,6 +349,10 @@ static int s3c_pcm_set_sysclk(struct snd_soc_dai *cpu_dai,
 
 	case S3C_PCM_CLKSRC_MUX:
 		clkctl &= ~S3C_PCM_CLKCTL_SERCLKSEL_PCLK;
+
+		if (clk_get_rate(pcm->cclk) != freq)
+			clk_set_rate(pcm->cclk, freq);
+
 		break;
 
 	default:
@@ -367,6 +371,31 @@ static struct snd_soc_dai_ops s3c_pcm_dai_ops = {
 	.hw_params	= s3c_pcm_hw_params,
 	.set_fmt	= s3c_pcm_set_fmt,
 };
+
+#ifdef CONFIG_PM
+static int s3c_pcm_suspend(struct snd_soc_dai *dai)
+{
+	struct s3c_pcm_info *pcm = to_info(dai);
+
+	pcm->backup_pcmctl = readl(pcm->regs + S3C_PCM_CTL);
+	pcm->backup_pcmclkctl = readl(pcm->regs + S3C_PCM_CLKCTL);
+
+	return 0;
+}
+static int s3c_pcm_resume(struct snd_soc_dai *dai)
+{
+	struct s3c_pcm_info *pcm = to_info(dai);
+
+	writel(pcm->backup_pcmctl, pcm->regs + S3C_PCM_CTL);
+	writel(pcm->backup_pcmclkctl, pcm->regs + S3C_PCM_CLKCTL);
+
+	return 0;
+}
+#else
+#define s3c_pcm_suspend NULL
+#define s3c_pcm_resume NULL
+#endif
+
 
 #define S3C_PCM_RATES  SNDRV_PCM_RATE_8000_96000
 
@@ -388,6 +417,8 @@ static struct snd_soc_dai_ops s3c_pcm_dai_ops = {
 		.rates		= S3C_PCM_RATES,		\
 		.formats	= SNDRV_PCM_FMTBIT_S16_LE,	\
 	},							\
+	.suspend = s3c_pcm_suspend,				\
+	.resume = s3c_pcm_resume,				\
 }
 
 struct snd_soc_dai s3c_pcm_dai[] = {
@@ -447,9 +478,13 @@ static __devinit int s3c_pcm_dev_probe(struct platform_device *pdev)
 	/* Default is 128fs */
 	pcm->sclk_per_fs = 128;
 
+#if defined(CONFIG_ARCH_S5PV310)
+	pcm->cclk = clk_get(&pdev->dev, "sclk_pcm");
+#else
 	pcm->cclk = clk_get(&pdev->dev, "audio-bus");
+#endif
 	if (IS_ERR(pcm->cclk)) {
-		dev_err(&pdev->dev, "failed to get pcm src_clock\n");
+		dev_err(&pdev->dev, "failed to get audio-bus\n");
 		ret = PTR_ERR(pcm->cclk);
 		goto err1;
 	}

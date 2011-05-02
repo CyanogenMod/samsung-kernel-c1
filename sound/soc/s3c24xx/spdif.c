@@ -247,11 +247,11 @@ static int spdif_suspend(struct snd_soc_dai *cpu_dai)
 	spdif->saved_con = readl(spdif->regs + CON);
 	spdif->saved_cstas = readl(spdif->regs + CSTAS);
 
-	writel(CLKCTL_PWR_ON, regs + CLKCON);
+	writel(CLKCTL_PWR_ON, spdif->regs + CLKCON);
 	writel(con | CON_SW_RESET, spdif->regs + CON);
 	cpu_relax();
 
-	writel(~CLKCTL_PWR_ON, regs + CLKCON);
+	writel(~CLKCTL_PWR_ON, spdif->regs + CLKCON);
 
 	return 0;
 }

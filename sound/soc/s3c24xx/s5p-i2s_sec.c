@@ -19,13 +19,15 @@
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
-#include <plat/regs-iis.h>
+/*#include <plat/regs-iis.h>*/
 
 #include <mach/dma.h>
+#include <mach/regs-audss.h>
 
+#include "regs-i2s-v2.h"
+#include "s3c-i2s-v2.h"
 #include "s3c-dma.h"
-
-extern void s5p_idma_init(void *);
+#include "s3c-idma.h"
 
 static void __iomem *s5p_i2s0_regs;
 
@@ -134,22 +136,16 @@ static int s5p_snd_lrsync(void)
 	return 0;
 }
 
-static int s5p_i2s_hw_params(struct snd_pcm_substream *substream,
+int s5p_i2s_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dailink = rtd->dai;
 	u32 iismod;
 
 	snd_soc_dai_set_dma_data(rtd->dai->cpu_dai, substream,
 					&s5p_i2s_sec_pcm_out);
 
 	iismod = readl(s5p_i2s0_regs + S3C2412_IISMOD);
-
-	if (dailink->cpu_dai->use_idma)
-		iismod |= S5P_IISMOD_TXSLP;
-	else
-		iismod &= ~S5P_IISMOD_TXSLP;
 
 	/* Copy the same bps as Primary */
 	iismod &= ~S5P_IISMOD_BLCSMASK;
@@ -159,16 +155,25 @@ static int s5p_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(s5p_i2s_hw_params);
 
-static int s5p_i2s_startup(struct snd_pcm_substream *substream,
-		struct snd_soc_dai *dai)
+int s5p_i2s_startup(struct snd_soc_dai *dai)
 {
 	u32 iiscon, iisfic;
+	u32 iismod, iisahb;
 
 	iiscon = readl(s5p_i2s0_regs + S3C2412_IISCON);
+	iismod = readl(s5p_i2s0_regs + S3C2412_IISMOD);
+	iisahb = readl(s5p_i2s0_regs + S5P_IISAHB);
 
-	/* FIFOs must be flushed before enabling PSR and other MOD bits,
-	 * so we do it here. */
+	iisahb |= (S5P_IISAHB_DMARLD | S5P_IISAHB_DISRLDINT);
+	iismod |= S5P_IISMOD_TXSLP;
+
+	writel(iisahb, s5p_i2s0_regs + S5P_IISAHB);
+	writel(iismod, s5p_i2s0_regs + S3C2412_IISMOD);
+
+	/* FIFOs must be flushed before enabling PSR
+	*  and other MOD bits, so we do it here. */
 	if (iiscon & S5P_IISCON_TXSDMACTIVE)
 		return 0;
 
@@ -186,8 +191,9 @@ static int s5p_i2s_startup(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(s5p_i2s_startup);
 
-static int s5p_i2s_trigger(struct snd_pcm_substream *substream,
+int s5p_i2s_trigger(struct snd_pcm_substream *substream,
 		int cmd, struct snd_soc_dai *dai)
 {
 	switch (cmd) {
@@ -211,63 +217,10 @@ static int s5p_i2s_trigger(struct snd_pcm_substream *substream,
 
 	return 0;
 }
-
-static struct snd_soc_dai_ops i2s_sec_ops = {
-	.hw_params = s5p_i2s_hw_params,
-	.startup   = s5p_i2s_startup,
-	.trigger   = s5p_i2s_trigger,
-};
-
-struct snd_soc_dai i2s_sec_fifo_dai = {
-	.name = "i2s-sec-fifo",
-	.id = -1,
-	.ops = &i2s_sec_ops,
-};
-EXPORT_SYMBOL_GPL(i2s_sec_fifo_dai);
-
-static int get_dma_mode(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = i2s_sec_fifo_dai.use_idma;
-
-	return 0;
-}
-
-static int set_dma_mode(struct snd_kcontrol *kcontrol,
-		struct snd_ctl_elem_value *ucontrol)
-{
-	if (i2s_sec_fifo_dai.use_idma == ucontrol->value.integer.value[0]
-		|| i2s_sec_fifo_dai.active)
-		return 0;
-
-	i2s_sec_fifo_dai.use_idma = ucontrol->value.integer.value[0];
-
-	return 1;
-}
-
-static int get_dma_mode(struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol);
-static int set_dma_mode(struct snd_kcontrol *kcontrol,
-		struct snd_ctl_elem_value *ucontrol);
-
-static const char *dma_modes[] = {
-	"SysDMA",
-	"iDMA",
-};
-
-static const struct soc_enum dma_mode_enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dma_modes), dma_modes),
-};
-
-const struct snd_kcontrol_new s5p_idma_control =
-	SOC_ENUM_EXT("Sec_Fifo Mode", dma_mode_enum[0],
-		get_dma_mode, set_dma_mode);
-EXPORT_SYMBOL_GPL(s5p_idma_control);
+EXPORT_SYMBOL_GPL(s5p_i2s_trigger);
 
 void s5p_i2s_sec_init(void *regs, dma_addr_t phys_base)
 {
-	u32 val;
-
 #ifdef CONFIG_ARCH_S5PV210
 /* S5PC110 or S5PV210 */
 #define S3C_VA_AUDSS	S3C_ADDR(0x01600000)	/* Audio SubSystem */
@@ -275,6 +228,8 @@ void s5p_i2s_sec_init(void *regs, dma_addr_t phys_base)
 	/* We use I2SCLK for rate generation, so set EPLLout as
 	 * the parent of I2SCLK.
 	 */
+	u32 val;
+
 	val = readl(S5P_CLKSRC_AUDSS);
 	val &= ~(0x3<<2);
 	val |= (1<<0);
@@ -283,15 +238,34 @@ void s5p_i2s_sec_init(void *regs, dma_addr_t phys_base)
 	val = readl(S5P_CLKGATE_AUDSS);
 	val |= (0x7f<<0);
 	writel(val, S5P_CLKGATE_AUDSS);
+
+#elif defined(CONFIG_ARCH_S5PV310) || defined(CONFIG_ARCH_S5PC210)
+	u32 val;
+
+#if defined(CONFIG_SND_SOC_SMDK_WM8994_MASTER) || defined(CONFIG_SND_SOC_C1_MC1N2)
+	/* I2S ratio for Codec master (3+1) = EPLL/4 = 181/4 = 45MHz */
+	val = 0x300;
+#else
+	/* I2S ratio for AP master (0+1) = EPLL/1 = 181/1 = 181MHz */
+	val = 0x000;
+#endif
+	/* SRP ratio (15+1)= EPLL/16 = 181/16 = 11MHz
+	   BUS ratio (1+1) = SRP/2 = 11/2 = 5MHz */
+	val |= 0x01F;
+	writel(val, S5P_CLKDIV_AUDSS);
+
+	writel(0x001, S5P_CLKSRC_AUDSS);	/* I2S=Main CLK, ASS=FOUT_EPLL*/
+
+/* CLKGATE should not be controled in here
+	writel(0x1FF, S5P_CLKGATE_AUDSS);
+*/
 #else
 	#error INITIALIZE HERE!
 #endif
 
-	val  = S5P_IISAHB_DMARLD | S5P_IISAHB_DISRLDINT;
-	writel(val, regs + S5P_IISAHB);
-
 	s5p_i2s0_regs = regs;
-	s5p_i2s_sec_pcm_out.dma_addr = phys_base + S5P_IISTXDS;
+	s5p_i2s_startup(0);
+	s5p_snd_txctrl(0);
 	s5p_idma_init(regs);
 }
 

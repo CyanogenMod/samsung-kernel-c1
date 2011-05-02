@@ -57,6 +57,7 @@ struct s3c_i2sv2_info {
 
 	struct clk	*iis_pclk;
 	struct clk	*iis_cclk;
+	struct clk	*audss_srp;
 
 	unsigned char	 master;
 
@@ -66,6 +67,10 @@ struct s3c_i2sv2_info {
 	u32		 suspend_iismod;
 	u32		 suspend_iiscon;
 	u32		 suspend_iispsr;
+	u32		 suspend_iisahb;
+	u32		 suspend_audss_clksrc;
+	u32		 suspend_audss_clkdiv;
+	u32		 suspend_audss_clkgate;
 };
 
 extern struct clk *s3c_i2sv2_get_clock(struct snd_soc_dai *cpu_dai);
@@ -99,5 +104,10 @@ extern int s3c_i2sv2_probe(struct platform_device *pdev,
  * soc core.
  */
 extern int s3c_i2sv2_register_dai(struct snd_soc_dai *dai);
+extern int s3c2412_i2s_hw_params(struct snd_pcm_substream *substream,
+				 struct snd_pcm_hw_params *params,
+				 struct snd_soc_dai *dai);
+extern int s3c2412_i2s_trigger(struct snd_pcm_substream *substream,
+				int cmd, struct snd_soc_dai *dai);
 
 #endif /* __SND_SOC_S3C24XX_S3C_I2SV2_I2S_H */

@@ -43,11 +43,11 @@ static const struct snd_pcm_hardware s3c_dma_hardware = {
 				    SNDRV_PCM_FMTBIT_U16_LE |
 				    SNDRV_PCM_FMTBIT_U8 |
 				    SNDRV_PCM_FMTBIT_S8,
-	.channels_min		= 2,
+	.channels_min		= 1,
 	.channels_max		= 2,
 	.buffer_bytes_max	= 128*1024,
-	.period_bytes_min	= PAGE_SIZE,
-	.period_bytes_max	= PAGE_SIZE*2,
+	.period_bytes_min	= 128,
+	.period_bytes_max	= PAGE_SIZE * 4,
 	.periods_min		= 2,
 	.periods_max		= 128,
 	.fifo_size		= 32,
@@ -74,6 +74,7 @@ static void s3c_dma_enqueue(struct snd_pcm_substream *substream)
 {
 	struct s3c24xx_runtime_data *prtd = substream->runtime->private_data;
 	dma_addr_t pos = prtd->dma_pos;
+	unsigned long len;
 	unsigned int limit;
 	int ret;
 
@@ -87,27 +88,36 @@ static void s3c_dma_enqueue(struct snd_pcm_substream *substream)
 	pr_debug("%s: loaded %d, limit %d\n",
 				__func__, prtd->dma_loaded, limit);
 
-	while (prtd->dma_loaded < limit) {
-		unsigned long len = prtd->dma_period;
-
-		pr_debug("dma_loaded: %d\n", prtd->dma_loaded);
-
-		if ((pos + len) > prtd->dma_end) {
-			len  = prtd->dma_end - pos;
-			pr_debug(KERN_DEBUG "%s: corrected dma len %ld\n",
-			       __func__, len);
-		}
-
-		ret = s3c2410_dma_enqueue(prtd->params->channel,
-			substream, pos, len);
-
+	if (s3c_dma_has_infiniteloop()) {
+		ret = s3c2410_dma_enqueue_ring(prtd->params->channel,
+				substream, pos, prtd->dma_period, limit);
 		if (ret == 0) {
-			prtd->dma_loaded++;
+			prtd->dma_loaded += limit;
 			pos += prtd->dma_period;
-			if (pos >= prtd->dma_end)
-				pos = prtd->dma_start;
-		} else
-			break;
+		}
+	} else {
+		while (prtd->dma_loaded < limit) {
+			len = prtd->dma_period;
+
+			pr_debug("dma_loaded: %d\n", prtd->dma_loaded);
+
+			if ((pos + len) > prtd->dma_end) {
+				len  = prtd->dma_end - pos;
+				pr_debug("%s: corrected dma len %ld\n",
+							__func__, len);
+			}
+
+			ret = s3c2410_dma_enqueue(prtd->params->channel,
+				substream, pos, len);
+
+			if (ret == 0) {
+				prtd->dma_loaded++;
+				pos += prtd->dma_period;
+				if (pos >= prtd->dma_end)
+					pos = prtd->dma_start;
+			} else
+				break;
+		}
 	}
 
 	prtd->dma_pos = pos;
@@ -133,7 +143,8 @@ static void s3c24xx_audio_buffdone(struct s3c2410_dma_chan *channel,
 	spin_lock(&prtd->lock);
 	if (prtd->state & ST_RUNNING && !s3c_dma_has_circular()) {
 		prtd->dma_loaded--;
-		s3c_dma_enqueue(substream);
+		if (!s3c_dma_has_infiniteloop())
+			s3c_dma_enqueue(substream);
 	}
 
 	spin_unlock(&prtd->lock);
@@ -146,6 +157,7 @@ static int s3c_dma_hw_params(struct snd_pcm_substream *substream,
 	struct s3c24xx_runtime_data *prtd = runtime->private_data;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	unsigned long totbytes = params_buffer_bytes(params);
+	unsigned int  periods  = params_periods(params);
 	struct s3c_dma_params *dma =
 		snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
 	int ret = 0;
@@ -196,6 +208,11 @@ static int s3c_dma_hw_params(struct snd_pcm_substream *substream,
 	prtd->dma_pos = prtd->dma_start;
 	prtd->dma_end = prtd->dma_start + totbytes;
 	spin_unlock_irq(&prtd->lock);
+
+	printk("%s:DmaAddr=@%x Total=%lubytes PrdSz=%u #Prds=%u, dmaEnd 0x%x\n",
+		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? "P" : "C",
+		runtime->dma_addr, totbytes, params_period_bytes(params),
+		periods, prtd->dma_end);
 
 	return 0;
 }
@@ -289,8 +306,7 @@ static int s3c_dma_trigger(struct snd_pcm_substream *substream, int cmd)
 	return ret;
 }
 
-static snd_pcm_uframes_t
-s3c_dma_pointer(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t s3c_dma_pointer(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct s3c24xx_runtime_data *prtd = runtime->private_data;
@@ -412,7 +428,11 @@ static void s3c_dma_free_dma_buffers(struct snd_pcm *pcm)
 
 	pr_debug("Entered %s\n", __func__);
 
+#if defined(CONFIG_S5P_INTERNAL_DMA) && !defined(CONFIG_SND_S5P_RP)
+	for (stream = 1; stream < 2; stream++) {
+#else
 	for (stream = 0; stream < 2; stream++) {
+#endif
 		substream = pcm->streams[stream].substream;
 		if (!substream)
 			continue;
@@ -440,14 +460,14 @@ static int s3c_dma_new(struct snd_card *card,
 		card->dev->dma_mask = &s3c_dma_mask;
 	if (!card->dev->coherent_dma_mask)
 		card->dev->coherent_dma_mask = 0xffffffff;
-
+#if !defined(CONFIG_S5P_INTERNAL_DMA) || defined(CONFIG_SND_S5P_RP)
 	if (dai->playback.channels_min) {
 		ret = s3c_preallocate_dma_buffer(pcm,
 			SNDRV_PCM_STREAM_PLAYBACK);
 		if (ret)
 			goto out;
 	}
-
+#endif
 	if (dai->capture.channels_min) {
 		ret = s3c_preallocate_dma_buffer(pcm,
 			SNDRV_PCM_STREAM_CAPTURE);
@@ -460,7 +480,7 @@ static int s3c_dma_new(struct snd_card *card,
 
 struct snd_soc_platform s3c24xx_soc_platform = {
 	.name		= "s3c24xx-audio",
-	.pcm_ops 	= &s3c_dma_ops,
+	.pcm_ops	= &s3c_dma_ops,
 	.pcm_new	= s3c_dma_new,
 	.pcm_free	= s3c_dma_free_dma_buffers,
 };

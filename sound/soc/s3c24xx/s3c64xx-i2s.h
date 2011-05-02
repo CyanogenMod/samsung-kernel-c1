@@ -39,4 +39,7 @@ struct clk;
 extern struct snd_soc_dai s3c64xx_i2s_dai[];
 extern struct snd_soc_dai s3c64xx_i2s_v4_dai;
 
+extern void s5p_i2s_do_suspend_stream(struct snd_pcm_substream *substream);
+extern void s5p_i2s_do_resume_stream(struct snd_pcm_substream *substream);
+
 #endif /* __SND_SOC_S3C24XX_S3C64XX_I2S_H */

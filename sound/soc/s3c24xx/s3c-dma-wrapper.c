@@ -11,23 +11,34 @@
  */
 
 #include <sound/soc.h>
+#include "s3c-dma.h"
+#include "s3c-idma.h"
+#include "s3c64xx-i2s.h"
 
-extern struct snd_soc_platform idma_soc_platform;
-extern struct snd_soc_platform s3c24xx_soc_platform;
-extern struct snd_soc_dai i2s_sec_fifo_dai;
+static struct snd_soc_platform *s3c_wrpdma_get_platform(
+				struct snd_pcm_substream *substream)
+{
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+#ifdef CONFIG_SND_S5P_RP
+		/* GDMA for Legacy Audio, IDMA for SRP Audio(dedicated codec) */
+		return &s3c24xx_soc_platform;
+#elif defined CONFIG_S5P_INTERNAL_DMA
+		/* IDMA for Generic Audio */
+		return &idma_soc_platform;
+#else
+		/* GDMA for Generic Audio */
+		return &s3c24xx_soc_platform;
+#endif
+	} else {
+		/* Capture is possible via GDMA only */
+		return &s3c24xx_soc_platform;
+	}
+}
 
 static int s3c_wrpdma_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *params)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->hw_params)
 		return platform->pcm_ops->hw_params(substream, params);
@@ -37,15 +48,7 @@ static int s3c_wrpdma_hw_params(struct snd_pcm_substream *substream,
 
 static int s3c_wrpdma_hw_free(struct snd_pcm_substream *substream)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->hw_free)
 		return platform->pcm_ops->hw_free(substream);
@@ -55,15 +58,7 @@ static int s3c_wrpdma_hw_free(struct snd_pcm_substream *substream)
 
 static int s3c_wrpdma_prepare(struct snd_pcm_substream *substream)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->prepare)
 		return platform->pcm_ops->prepare(substream);
@@ -73,15 +68,17 @@ static int s3c_wrpdma_prepare(struct snd_pcm_substream *substream)
 
 static int s3c_wrpdma_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		s5p_i2s_do_resume_stream(substream);
+		break;
+	default:
+		break;
+	}
 
 	if (platform->pcm_ops->trigger)
 		return platform->pcm_ops->trigger(substream, cmd);
@@ -91,15 +88,7 @@ static int s3c_wrpdma_trigger(struct snd_pcm_substream *substream, int cmd)
 
 static snd_pcm_uframes_t s3c_wrpdma_pointer(struct snd_pcm_substream *substream)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->pointer)
 		return platform->pcm_ops->pointer(substream);
@@ -109,15 +98,7 @@ static snd_pcm_uframes_t s3c_wrpdma_pointer(struct snd_pcm_substream *substream)
 
 static int s3c_wrpdma_open(struct snd_pcm_substream *substream)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->open)
 		return platform->pcm_ops->open(substream);
@@ -127,15 +108,7 @@ static int s3c_wrpdma_open(struct snd_pcm_substream *substream)
 
 static int s3c_wrpdma_close(struct snd_pcm_substream *substream)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->close)
 		return platform->pcm_ops->close(substream);
@@ -146,15 +119,7 @@ static int s3c_wrpdma_close(struct snd_pcm_substream *substream)
 static int s3c_wrpdma_ioctl(struct snd_pcm_substream *substream,
 		unsigned int cmd, void *arg)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->ioctl)
 		return platform->pcm_ops->ioctl(substream, cmd, arg);
@@ -165,15 +130,7 @@ static int s3c_wrpdma_ioctl(struct snd_pcm_substream *substream,
 static int s3c_wrpdma_mmap(struct snd_pcm_substream *substream,
 		struct vm_area_struct *vma)
 {
-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
-
-	if (cpu_dai->use_idma)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	struct snd_soc_platform *platform = s3c_wrpdma_get_platform(substream);
 
 	if (platform->pcm_ops->mmap)
 		return platform->pcm_ops->mmap(substream, vma);
@@ -195,40 +152,42 @@ static struct snd_pcm_ops s3c_wrpdma_ops = {
 
 static void s3c_wrpdma_pcm_free(struct snd_pcm *pcm)
 {
-	struct snd_soc_pcm_runtime *rtd = pcm->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
+	struct snd_soc_platform *gdma_platform;
+#ifdef CONFIG_S5P_INTERNAL_DMA
+	struct snd_soc_platform *idma_platform;
+#endif
 
-	if (cpu_dai == &i2s_sec_fifo_dai)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
-
-	if (platform->pcm_free)
-		platform->pcm_free(pcm);
+#ifdef CONFIG_S5P_INTERNAL_DMA
+	idma_platform = &idma_soc_platform;
+	if (idma_platform->pcm_free)
+		idma_platform->pcm_free(pcm);
+#endif
+	gdma_platform = &s3c24xx_soc_platform;
+	if (gdma_platform->pcm_free)
+		gdma_platform->pcm_free(pcm);
 }
 
 static int s3c_wrpdma_pcm_new(struct snd_card *card,
 		struct snd_soc_dai *dai, struct snd_pcm *pcm)
 {
-	struct snd_soc_pcm_runtime *rtd = pcm->private_data;
-	struct snd_soc_dai_link *dai_link = rtd->dai;
-	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
-	struct snd_soc_platform *platform;
+	struct snd_soc_platform *gdma_platform;
+#ifdef CONFIG_S5P_INTERNAL_DMA
+	struct snd_soc_platform *idma_platform;
+#endif
 
 	/* sec_fifo i/f always use internal h/w buffers
-	 * irrespective of the xfer method (iDMA or SysDMA)
-	 */
-	if (cpu_dai == &i2s_sec_fifo_dai)
-		platform = &idma_soc_platform;
-	else
-		platform = &s3c24xx_soc_platform;
+	 * irrespective of the xfer method (iDMA or SysDMA) */
 
-	if (platform->pcm_new)
-		return platform->pcm_new(card, dai, pcm);
-	else
-		return 0;
+#ifdef CONFIG_S5P_INTERNAL_DMA
+	idma_platform = &idma_soc_platform;
+	if (idma_platform->pcm_new)
+		idma_platform->pcm_new(card, dai, pcm);
+#endif
+	gdma_platform  = &s3c24xx_soc_platform;
+	if (gdma_platform->pcm_new)
+		gdma_platform->pcm_new(card, dai, pcm);
+
+	return 0;
 }
 
 struct snd_soc_platform s3c_dma_wrapper = {

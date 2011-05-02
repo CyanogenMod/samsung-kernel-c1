@@ -1,6 +1,6 @@
 config SND_S3C24XX_SOC
 	tristate "SoC Audio for the Samsung S3CXXXX chips"
-	depends on ARCH_S3C2410 || ARCH_S3C64XX || ARCH_S5P6450 || ARCH_S5PV210 || ARCH_S5PV310
+	depends on ARCH_S3C2410 || ARCH_S3C64XX || ARCH_S5PC100 || ARCH_S5PV210 || ARCH_S5PV310
 	select S3C64XX_DMA if ARCH_S3C64XX
 	help
 	  Say Y or M if you want to add support for codecs attached to
@@ -40,12 +40,6 @@ config SND_S3C_SOC_AC97
 	tristate
 	select SND_SOC_AC97_BUS
 
-config SND_S5PV2XX_SOC_WM8580_PCM
-	tristate
-
-config SND_S3C64XX_SOC_WM8580_PCM
-	tristate
-
 config SND_SAMSUNG_SOC_SPDIF
 	tristate
 	select SND_SOC_SPDIF
@@ -68,15 +62,6 @@ config SND_S3C24XX_SOC_NEO1973_GTA02_WM8753
 	  This driver provides audio support for the Openmoko Neo FreeRunner
 	  smartphone.
 
-config SND_S3C24XX_SOC_SMDK2416_WM8580
-	tristate "SoC I2S Audio support for SMDK2416 - WM8580"
-	depends on SND_S3C24XX_SOC && (CPU_S3C2416)
-	select SND_S3C24XX_SOC_I2S
-	select SND_SOC_WM8580
-	  help
-	  Say Y if you want to add support for SoC audio on smdk2416
-	  with the WM8580.
-
 config SND_S3C24XX_SOC_JIVE_WM8750
 	tristate "SoC I2S Audio support for Jive"
 	depends on SND_S3C24XX_SOC && MACH_JIVE
@@ -87,33 +72,66 @@ config SND_S3C24XX_SOC_JIVE_WM8750
 
 config SND_S3C64XX_SOC_WM8580
 	tristate "SoC I2S Audio support for WM8580 on SMDK64XX"
-	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDK6450)
+	depends on SND_S3C24XX_SOC && MACH_SMDK6410
 	select SND_SOC_WM8580
 	select SND_S3C64XX_SOC_I2S_V4
 	help
 	  Say Y if you want to add support for SoC audio on the SMDK6410.
 
-config SND_S5PV2XX_SOC_WM8580
-	tristate "SoC I2S Audio support for WM8580 on SMDKV2XX"
-	depends on SND_S3C24XX_SOC && MACH_SMDKV210
-	select SND_SOC_WM8580
-	select SND_SAMSUNG_SOC_I2S_V5
-	help
-	  Say Y if you want to add support for SoC audio on the SMDKV210.
-
-config WM8580_MASTER
-	bool "WM8580 Codec is I2S Master"
-	depends on SND_S5PV2XX_SOC_WM8580
-	default y
-	help
-	  Say Y if you want to run WM8580 Codec as a I2S-Master.
-
-config SND_SOC_SMDK_WM8994
+config SND_SOC_SMDK_WM8994_I2S
 	tristate "SoC I2S Audio support for WM8994 on SMDK"
-	depends on SND_S3C24XX_SOC && MACH_SMDKV310
+	depends on SND_S3C24XX_SOC && (MACH_SMDKV310 || MACH_SMDKC210)
 	select SND_SOC_WM8994
 	select SND_SOC_WM_HUBS
-	select SND_S3C64XX_SOC_I2S_V4
+	select SND_SAMSUNG_SOC_I2S_V5
+	default y
+	help
+	  Say Y if you want to add support for SoC audio on the SMDK.
+
+config SND_SOC_SMDK_WM8994_MASTER
+	bool "WM8994 Master Mode"
+	depends on SND_SOC_SMDK_WM8994_I2S
+	default y
+
+config SND_SOC_C1_MC1N2
+	tristate "SoC I2S Audio support for MC1N2 on C1"
+	depends on SND_S3C24XX_SOC && MACH_C1
+	select SND_SOC_MC1N2
+	select SND_SAMSUNG_SOC_I2S_V5
+	help
+	  Say Y if you want to add support for SoC audio on the SMDK.
+
+config  S5P_INTERNAL_DMA
+	bool "IIS operation with Internal DMA"
+	depends on SND_SOC_SMDK_WM8994_I2S || SND_SOC_C1_MC1N2
+	default y
+	help
+	  Say Y for IIS to operate with Internal DMA(IIS's own DMA)
+
+config SND_S5P_RP
+	bool "SRP Audio support via Internal DMA"
+	depends on S5P_INTERNAL_DMA
+	default n
+	help
+	  Say Y if you want to add support for SRP Audio.
+
+config AUDIO_SAMSUNG_MEMSIZE_SRP
+	int "Memory size in kbytes for SRP Audio"
+	depends on SND_S5P_RP
+	default "1024"
+
+config SND_S5P_RP_DEBUG
+	bool "Enable debug message for SRP Audio"
+	depends on SND_S5P_RP
+	default n
+	help
+	  Say Y if you want to add debug message for SRP Audio.
+
+config SND_SOC_SMDK_WM8994_PCM
+	tristate "SoC PCM Audio support for WM8994 on SMDK"
+	depends on SND_S3C24XX_SOC && (MACH_SMDKV310 || MACH_SMDKC210)
+	select SND_SOC_WM8994
+	select SND_SOC_WM_HUBS
 	select SND_S3C_SOC_PCM
 	help
 	  Say Y if you want to add support for SoC audio on the SMDK.
@@ -168,40 +186,22 @@ config SND_S3C24XX_SOC_SIMTEC_HERMES
 
 config SND_SOC_SMDK_WM9713
 	tristate "SoC AC97 Audio support for SMDK with WM9713"
-	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDKV210)
+	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110 \
+			|| MACH_SMDKV310 || MACH_SMDKC210)
 	select SND_SOC_WM9713
 	select SND_S3C_SOC_AC97
 	help
 	  Sat Y if you want to add support for SoC audio on the SMDK.
 
-config SND_SMDK_WM8580_PCM
-	tristate "SoC PCM Audio support for WM8580 on SMDK"
-	depends on SND_S3C24XX_SOC && MACH_SMDKV210
-	select SND_S5PV2XX_SOC_WM8580_PCM if MACH_SMDKV210
-	select SND_S3C_SOC_PCM
-	select SND_SOC_WM8580
-	help
-	  Say Y if you want to add support for SoC PCM audio on the SMDK.
-
-
-config SND_SMDK64XX_WM8580_PCM
-	tristate "SoC PCM Audio support for WM8580 on SMDK64XX"
-	depends on SND_S3C24XX_SOC &&  MACH_SMDK6450
-	select SND_S3C64XX_SOC_WM8580_PCM if MACH_SMDK6450
-	select SND_S3C_SOC_PCM
-	select SND_SOC_WM8580
-	help
-	  Say Y if you want to add support for SoC PCM audio on the SMDK.
-
-config SND_S3C64XX_SOC_S5M8751
-	tristate "SoC I2S Audio support for S5M8751 on SMDK64XX"
-	depends on SND_S3C24XX_SOC && (MACH_SMDK6410 || MACH_SMDK6450) && MFD_S5M8751
-	select SND_SOC_S5M8751
-	select SND_S3C64XX_SOC_I2S_V4
+config SND_S3C64XX_SOC_SMARTQ
+	tristate "SoC I2S Audio support for SmartQ board"
+	depends on SND_S3C24XX_SOC && MACH_SMARTQ
+	select SND_S3C64XX_SOC_I2S
+	select SND_SOC_WM8750
 
 config SND_SOC_SMDK_SPDIF
 	tristate "SoC S/PDIF Audio support on SMDK"
-	depends on SND_S3C24XX_SOC && (MACH_SMDKV210 || MACH_SMDKC110)
+	depends on SND_S3C24XX_SOC && (MACH_SMDKV310 || MACH_SMDKC210)
 	select SND_SAMSUNG_SOC_SPDIF
 	help
 	  Say Y if you want to add support for SoC S/PDIF audio on the SMDK.

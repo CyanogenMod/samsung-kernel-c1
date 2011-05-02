@@ -103,6 +103,8 @@
  * @regs: The pointer to the device register block.
  * @dma_playback: DMA information for playback channel.
  * @dma_capture: DMA information for capture channel.
+ * @backup_pcmctl: PCM_CTL register backup for suspend/resume.
+ * @backup_pcmclkctl: PCM_CLKCTL register backup for suspend/resume.
  */
 struct s3c_pcm_info {
 	spinlock_t lock;
@@ -119,6 +121,9 @@ struct s3c_pcm_info {
 
 	struct s3c_dma_params	*dma_playback;
 	struct s3c_dma_params	*dma_capture;
+
+	u32 backup_pcmctl;
+	u32 backup_pcmclkctl;
 };
 
 extern struct snd_soc_dai s3c_pcm_dai[];
