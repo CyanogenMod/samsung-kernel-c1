@@ -22,6 +22,18 @@ config PDA_POWER
 	  one or two external power supplies (AC/USB) connected to main and
 	  backup batteries, and optional builtin charger.
 
+config BATTERY_S3C
+	tristate "S3C fake battery driver"
+	depends on ARCH_S5PV310
+	help
+	  Say Y to enable support for batteries with s5pc110 chip.
+
+config BATTERY_SEC
+	tristate "SAMSUNG battery driver"
+	depends on ARCH_S5PV310
+	help
+	  Say Y to enable samsung battery driver for devices with S5PV310 chip.
+
 config APM_POWER
 	tristate "APM emulation for class batteries"
 	depends on APM_EMULATION
@@ -35,6 +47,20 @@ config MAX8925_POWER
 	help
 	  Say Y here to enable support for the battery charger in the Maxim
 	  MAX8925 PMIC.
+
+config MAX8998_POWER
+	tristate "MAX8998 battery charger support"
+	depends on MFD_MAX8998
+	help
+	  Say Y here to enable support for the battery charger in the Maxim
+	  MAX8998 PMIC.
+
+config MAX8997_CHARGER
+	tristate "MAX8997 battery charger support"
+	depends on MFD_MAX8997
+	help
+	  Say Y here to enable support for the battery charger in the Maxim
+	  MAX8997 PMIC.
 
 config WM831X_BACKUP
 	tristate "WM831X backup battery charger support"
@@ -148,5 +174,19 @@ config POWER_S5M8751
 	help
 	  Say Y here to enable support for the power management unit
 	  provided by the Samsung Semiconductor S5M8751 PMIC.
+
+config FUELGAUGE_MAX17042
+	tristate "Maxim MAX17042 Fuel Gauge"
+	depends on I2C
+	help
+	  MAX17042 is fuel-gauge systems for lithium-ion (Li+) batteries
+	  in handheld and portable equipment. The MAX17042 is configured
+	  to operate with a single lithium cell
+
+config MAX8922_CHARGER
+	tristate "MAX8922 battery charger support"
+	help
+	  Say Y here to enable support for the battery charger in the Maxim
+	  MAX8922 Charger IC.
 
 endif # POWER_SUPPLY

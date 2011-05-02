@@ -23,7 +23,7 @@
 #define MAX8649_VOL_MASK	0x3f
 
 /* difference between voltages of max8649 and max8952 */
-#define DIFF_DCDC_VOL		20000		/* uV */
+#define DIFF_MAX8952_DCDC_VOL	20000		/* uV */
 
 /* Registers */
 #define MAX8649_MODE0		0x00
@@ -50,6 +50,11 @@
 #define MAX8649_RAMP_MASK	(7 << 5)
 #define MAX8649_RAMP_DOWN	(1 << 1)
 
+enum chips {
+	MAX8649 = 0x200a,
+	MAX8952 = 0x201a,
+};
+
 struct max8649_regulator_info {
 	struct regulator_dev	*regulator;
 	struct i2c_client	*i2c;
@@ -57,6 +62,7 @@ struct max8649_regulator_info {
 	struct mutex		io_lock;
 
 	int		vol_reg;
+	int		type;
 	unsigned	mode:2;	/* bit[1:0] = VID1, VID0 */
 	unsigned	extclk_freq:2;
 	unsigned	extclk:1;
@@ -144,8 +150,8 @@ static int max8649_list_voltage(struct regulator_dev *rdev, unsigned index)
 	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
 	int ret = MAX8649_DCDC_VMIN + index * MAX8649_DCDC_STEP;
 
-	if (!strcmp(info->i2c->name, "max8952"))
-		ret += DIFF_DCDC_VOL;
+	if (info->type == MAX8952)
+		ret += DIFF_MAX8952_DCDC_VOL;
 	return ret;
 }
 
@@ -168,9 +174,9 @@ static int max8649_set_voltage(struct regulator_dev *rdev,
 	struct max8649_regulator_info *info = rdev_get_drvdata(rdev);
 	unsigned char data, mask;
 
-	if (!strcmp(info->i2c->name, "max8952")) {
-		min_uV -= DIFF_DCDC_VOL;
-		max_uV -= DIFF_DCDC_VOL;
+	if (info->type == MAX8952) {
+		min_uV -= DIFF_MAX8952_DCDC_VOL;
+		max_uV -= DIFF_MAX8952_DCDC_VOL;
 	}
 
 	if (check_range(min_uV, max_uV)) {
@@ -183,6 +189,11 @@ static int max8649_set_voltage(struct regulator_dev *rdev,
 	mask = MAX8649_VOL_MASK;
 
 	return max8649_set_bits(info->i2c, info->vol_reg, mask, data);
+}
+
+static int max8649_set_suspend_voltage(struct regulator_dev *rdev, int uV)
+{
+	return max8649_set_voltage(rdev, uV, uV);
 }
 
 /* EN_PD means pulldown on EN input */
@@ -233,7 +244,7 @@ static int max8649_enable_time(struct regulator_dev *rdev)
 	ret = (ret & MAX8649_RAMP_MASK) >> 5;
 	rate = (32 * 1000) >> ret;	/* uV/uS */
 
-	return (voltage / rate);
+	return voltage / rate;
 }
 
 static int max8649_set_mode(struct regulator_dev *rdev, unsigned int mode)
@@ -276,6 +287,9 @@ static struct regulator_ops max8649_dcdc_ops = {
 	.enable_time	= max8649_enable_time,
 	.set_mode	= max8649_set_mode,
 	.get_mode	= max8649_get_mode,
+	.set_suspend_voltage	= max8649_set_suspend_voltage,
+	.set_suspend_enable	= max8649_enable,
+	.set_suspend_disable	= max8649_disable,
 };
 
 static struct regulator_desc dcdc_desc = {
@@ -293,6 +307,7 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
 	struct max8649_regulator_info *info = NULL;
 	unsigned char data;
 	int ret;
+	int chip_id;
 
 	info = kzalloc(sizeof(struct max8649_regulator_info), GFP_KERNEL);
 	if (!info) {
@@ -323,13 +338,34 @@ static int __devinit max8649_regulator_probe(struct i2c_client *client,
 		break;
 	}
 
-	ret = max8649_reg_read(info->i2c, MAX8649_CHIP_ID2);
+	ret = max8649_reg_read(info->i2c, MAX8649_CHIP_ID1);
 	if (ret < 0) {
-		dev_err(info->dev, "Failed to detect ID of MAX8649:%d\n",
-			ret);
+		dev_err(info->dev, "Failed to detect ID1 of %s:%d\n",
+			id->name, ret);
 		goto out;
 	}
-	dev_info(info->dev, "Detected %s (ID:%x)\n", id->name, ret);
+	chip_id = ret;
+
+	ret = max8649_reg_read(info->i2c, MAX8649_CHIP_ID2);
+	if (ret < 0) {
+		dev_err(info->dev, "Failed to detect ID2 of %s:%d\n",
+			id->name, ret);
+		goto out;
+	}
+
+	chip_id = (chip_id << 8) | ret;
+
+	if (id->driver_data != chip_id) {
+		dev_err(info->dev, "Failed to detect the device\n"
+				   "requested : 0x%x, detected 0x%x\n",
+				   (u32)id->driver_data, chip_id);
+		ret = -ENODEV;
+		goto out;
+	}
+
+	dev_info(info->dev, "Detected %s (ID: 0x%x)\n", id->name, chip_id);
+
+	info->type = id->driver_data;
 
 	/* enable VID0 & VID1 */
 	max8649_set_bits(info->i2c, MAX8649_CONTROL, MAX8649_VID_MASK, 0);
@@ -387,8 +423,8 @@ static int __devexit max8649_regulator_remove(struct i2c_client *client)
 }
 
 static const struct i2c_device_id max8649_id[] = {
-	{ "max8649", 0 },
-	{ "max8952", 0 },
+	{ "max8649", MAX8649 },
+	{ "max8952", MAX8952 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, max8649_id);

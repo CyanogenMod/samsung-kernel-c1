@@ -43,14 +43,10 @@ struct max17040_chip {
 	struct power_supply		battery;
 	struct max17040_platform_data	*pdata;
 
-	/* State Of Connect */
-	int online;
 	/* battery voltage */
 	int vcell;
 	/* battery capacity */
 	int soc;
-	/* State Of Charge */
-	int status;
 };
 
 static int max17040_get_property(struct power_supply *psy,
@@ -61,12 +57,6 @@ static int max17040_get_property(struct power_supply *psy,
 				struct max17040_chip, battery);
 
 	switch (psp) {
-	case POWER_SUPPLY_PROP_STATUS:
-		val->intval = chip->status;
-		break;
-	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = chip->online;
-		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = chip->vcell;
 		break;
@@ -144,38 +134,6 @@ static void max17040_get_version(struct i2c_client *client)
 	dev_info(&client->dev, "MAX17040 Fuel-Gauge Ver %d%d\n", msb, lsb);
 }
 
-static void max17040_get_online(struct i2c_client *client)
-{
-	struct max17040_chip *chip = i2c_get_clientdata(client);
-
-	if (chip->pdata->battery_online)
-		chip->online = chip->pdata->battery_online();
-	else
-		chip->online = 1;
-}
-
-static void max17040_get_status(struct i2c_client *client)
-{
-	struct max17040_chip *chip = i2c_get_clientdata(client);
-
-	if (!chip->pdata->charger_online || !chip->pdata->charger_enable) {
-		chip->status = POWER_SUPPLY_STATUS_UNKNOWN;
-		return;
-	}
-
-	if (chip->pdata->charger_online()) {
-		if (chip->pdata->charger_enable())
-			chip->status = POWER_SUPPLY_STATUS_CHARGING;
-		else
-			chip->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-	} else {
-		chip->status = POWER_SUPPLY_STATUS_DISCHARGING;
-	}
-
-	if (chip->soc > MAX17040_BATTERY_FULL)
-		chip->status = POWER_SUPPLY_STATUS_FULL;
-}
-
 static void max17040_work(struct work_struct *work)
 {
 	struct max17040_chip *chip;
@@ -184,15 +142,11 @@ static void max17040_work(struct work_struct *work)
 
 	max17040_get_vcell(chip->client);
 	max17040_get_soc(chip->client);
-	max17040_get_online(chip->client);
-	max17040_get_status(chip->client);
 
 	schedule_delayed_work(&chip->work, MAX17040_DELAY);
 }
 
 static enum power_supply_property max17040_battery_props[] = {
-	POWER_SUPPLY_PROP_STATUS,
-	POWER_SUPPLY_PROP_ONLINE,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 };
@@ -216,7 +170,7 @@ static int __devinit max17040_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, chip);
 
-	chip->battery.name		= "battery";
+	chip->battery.name		= "max17040-battery";
 	chip->battery.type		= POWER_SUPPLY_TYPE_BATTERY;
 	chip->battery.get_property	= max17040_get_property;
 	chip->battery.properties	= max17040_battery_props;
