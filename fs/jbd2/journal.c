@@ -507,11 +507,13 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
 {
 	transaction_t *transaction = NULL;
 	tid_t tid;
+	int need_to_start = 0;
 
 	spin_lock(&journal->j_state_lock);
 	if (journal->j_running_transaction && !current->journal_info) {
 		transaction = journal->j_running_transaction;
-		__jbd2_log_start_commit(journal, transaction->t_tid);
+		if (!tid_geq(journal->j_commit_request, transaction->t_tid))
+			need_to_start = 1;
 	} else if (journal->j_committing_transaction)
 		transaction = journal->j_committing_transaction;
 
@@ -522,6 +524,8 @@ int jbd2_journal_force_commit_nested(journal_t *journal)
 
 	tid = transaction->t_tid;
 	spin_unlock(&journal->j_state_lock);
+	if (need_to_start)
+		jbd2_log_start_commit(journal, tid);
 	jbd2_log_wait_commit(journal, tid);
 	return 1;
 }
