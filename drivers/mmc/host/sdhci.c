@@ -19,12 +19,15 @@
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 #include <linux/scatterlist.h>
+#include <linux/regulator/consumer.h>
 
 #include <linux/leds.h>
 
 #include <linux/mmc/host.h>
 
 #include "sdhci.h"
+
+#include <linux/gpio.h>
 
 #define DRIVER_NAME "sdhci"
 
@@ -36,6 +39,24 @@
 #define SDHCI_USE_LEDS_CLASS
 #endif
 
+#define MAX_BUS_CLK	(4)
+
+struct sdhci_s3c {
+	struct sdhci_host	*host;
+	struct platform_device	*pdev;
+	struct resource		*ioarea;
+	struct s3c_sdhci_platdata *pdata;
+	unsigned int		cur_clk;
+	int                     ext_cd_irq;
+	int                     ext_cd_gpio;
+
+	struct clk		*clk_io;
+	struct clk		*clk_bus[MAX_BUS_CLK];
+
+	struct workqueue_struct *regulator_workq;
+	struct delayed_work	regul_work;	
+};
+
 static unsigned int debug_quirks = 0;
 
 static void sdhci_prepare_data(struct sdhci_host *, struct mmc_data *);
@@ -43,6 +64,7 @@ static void sdhci_finish_data(struct sdhci_host *);
 
 static void sdhci_send_command(struct sdhci_host *, struct mmc_command *);
 static void sdhci_finish_command(struct sdhci_host *);
+static void sdhci_set_clock(struct sdhci_host *host, unsigned int clock);
 
 static void sdhci_dumpregs(struct sdhci_host *host)
 {
@@ -817,8 +839,12 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
 	WARN_ON(!host->data);
 
 	mode = SDHCI_TRNS_BLK_CNT_EN;
-	if (data->blocks > 1)
-		mode |= SDHCI_TRNS_MULTI;
+	if (data->blocks > 1) {
+		if (host->quirks & SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12)
+			mode |= SDHCI_TRNS_MULTI | SDHCI_TRNS_ACMD12;
+		else
+			mode |= SDHCI_TRNS_MULTI;
+	}
 	if (data->flags & MMC_DATA_READ)
 		mode |= SDHCI_TRNS_READ;
 	if (host->flags & SDHCI_REQ_USE_DMA)
@@ -867,7 +893,6 @@ static void sdhci_finish_data(struct sdhci_host *host)
 			sdhci_reset(host, SDHCI_RESET_CMD);
 			sdhci_reset(host, SDHCI_RESET_DATA);
 		}
-
 		sdhci_send_command(host, data->stop);
 	} else
 		tasklet_schedule(&host->finish_tasklet);
@@ -909,6 +934,13 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
 	mod_timer(&host->timer, jiffies + 10 * HZ);
 
 	host->cmd = cmd;
+
+
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING) {
+		del_timer(&host->clock_timer);
+		if(host->clock_to_restore != 0 && host->clock == 0)
+			sdhci_set_clock(host, host->clock_to_restore);
+	}
 
 	sdhci_prepare_data(host, cmd->data);
 
@@ -1108,6 +1140,12 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifndef SDHCI_USE_LEDS_CLASS
 	sdhci_activate_led(host);
 #endif
+	if (host->quirks & SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12) {
+		if (mrq->stop) {
+			mrq->data->stop = NULL;
+			mrq->stop = NULL;
+		}
+	}
 
 	host->mrq = mrq;
 
@@ -1172,8 +1210,8 @@ static void sdhci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	else
 		ctrl &= ~SDHCI_CTRL_4BITBUS;
 
- 	if (!(host->quirks & SDHCI_QUIRK_NO_HISPD_BIT) &&
-		(ios->timing == MMC_TIMING_SD_HS))
+	if (ios->timing == MMC_TIMING_SD_HS &&
+	    !(host->quirks & SDHCI_QUIRK_NO_HISPD_BIT))
 		ctrl |= SDHCI_CTRL_HISPD;
 	else
 		ctrl &= ~SDHCI_CTRL_HISPD;
@@ -1201,7 +1239,7 @@ static int sdhci_get_ro(struct mmc_host *mmc)
 
 	host = mmc_priv(mmc);
 
-	if ((host->quirks & SDHCI_QUIRK_NO_WP_BIT) && host->ops->get_ro)
+	if (host->ops->get_ro)
 		return host->ops->get_ro(mmc);
 
 	spin_lock_irqsave(&host->lock, flags);
@@ -1262,7 +1300,8 @@ static void sdhci_tasklet_card(unsigned long param)
 
 	spin_lock_irqsave(&host->lock, flags);
 
-	if (!(sdhci_readl(host, SDHCI_PRESENT_STATE) & SDHCI_CARD_PRESENT)) {
+	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) ||
+		!(sdhci_readl(host, SDHCI_PRESENT_STATE) & SDHCI_CARD_PRESENT)) {
 		if (host->mrq) {
 			printk(KERN_ERR "%s: Card removed during transfer!\n",
 				mmc_hostname(host->mmc));
@@ -1290,11 +1329,17 @@ static void sdhci_tasklet_finish(unsigned long param)
 
 	host = (struct sdhci_host*)param;
 
+	if(host == NULL)
+		return;
+
 	spin_lock_irqsave(&host->lock, flags);
 
 	del_timer(&host->timer);
 
 	mrq = host->mrq;
+
+	if(mrq == NULL || mrq->cmd == NULL)
+		goto out;
 
 	/*
 	 * The controller needs a reset of internal state machines
@@ -1320,6 +1365,15 @@ static void sdhci_tasklet_finish(unsigned long param)
 		   controllers do not like that. */
 		sdhci_reset(host, SDHCI_RESET_CMD);
 		sdhci_reset(host, SDHCI_RESET_DATA);
+	}
+
+out:
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING) {
+		/* Disable the clock for power saving */
+		if (host->clock != 0) {
+			mod_timer(&host->clock_timer,
+				  jiffies + msecs_to_jiffies(10));
+		}
 	}
 
 	host->mrq = NULL;
@@ -1364,6 +1418,28 @@ static void sdhci_timeout_timer(unsigned long data)
 	}
 
 	mmiowb();
+	spin_unlock_irqrestore(&host->lock, flags);
+}
+
+static void sdhci_clock_gate_timer(unsigned long data)
+{
+	struct sdhci_host *host;
+	unsigned long flags;
+	u32 mask;
+
+	host = (struct sdhci_host*)data;
+	mask = SDHCI_CMD_INHIBIT | SDHCI_DATA_INHIBIT;
+
+	spin_lock_irqsave(&host->lock, flags);
+
+	if ((readl(host->ioaddr + SDHCI_PRESENT_STATE) & mask)
+		|| host->cmd || host->data || host->mrq ) {
+		mod_timer(&host->clock_timer, jiffies + msecs_to_jiffies(10));
+	} else {
+		host->clock_to_restore = host->clock;
+		sdhci_set_clock(host, 0);
+	}
+
 	spin_unlock_irqrestore(&host->lock, flags);
 }
 
@@ -1615,7 +1691,12 @@ int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state)
 
 	free_irq(host->irq, host);
 
-	return 0;
+	if (host->vmmc && regulator_is_enabled(host->vmmc)) {
+		ret = regulator_disable(host->vmmc);
+		pr_info("%s : MMC Card OFF %s\n", __func__, host->hw_name);
+	}
+
+	return ret;
 }
 
 EXPORT_SYMBOL_GPL(sdhci_suspend_host);
@@ -1623,6 +1704,21 @@ EXPORT_SYMBOL_GPL(sdhci_suspend_host);
 int sdhci_resume_host(struct sdhci_host *host)
 {
 	int ret;
+
+	struct sdhci_s3c *sc = sdhci_priv(host);
+
+	if (host->vmmc) {
+		if (!(gpio_get_value(sc->ext_cd_gpio)) || !sc->regulator_workq) {
+			/* if tflash card is in or regulator_workq 
+			   is not valid */
+			int ret = regulator_enable(host->vmmc);
+			pr_info("%s : MMC Card ON %s\n",
+				__func__, host->hw_name);
+
+			if (ret)
+				return ret;
+		}
+	}
 
 	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
 		if (host->ops->enable_dma)
@@ -1678,6 +1774,7 @@ int sdhci_add_host(struct sdhci_host *host)
 	struct mmc_host *mmc;
 	unsigned int caps;
 	int ret;
+	struct sdhci_s3c *sc;
 
 	WARN_ON(host == NULL);
 	if (host == NULL)
@@ -1699,7 +1796,8 @@ int sdhci_add_host(struct sdhci_host *host)
 			host->version);
 	}
 
-	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
+	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ? host->caps :
+		sdhci_readl(host, SDHCI_CAPABILITIES);
 
 	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
 		host->flags |= SDHCI_USE_SDMA;
@@ -1797,9 +1895,7 @@ int sdhci_add_host(struct sdhci_host *host)
 	 * Set host parameters.
 	 */
 	mmc->ops = &sdhci_ops;
-	if ((host->quirks & SDHCI_QUIRK_NONSTANDARD_CLOCK ||
-		host->quirks & SDHCI_QUIRK_NONSTANDARD_MINCLOCK) &&
-			host->ops->set_clock && host->ops->get_min_clock)
+	if (host->ops->get_min_clock)
 		mmc->f_min = host->ops->get_min_clock(host);
 	else
 		mmc->f_min = host->max_clk / 256;
@@ -1891,11 +1987,40 @@ int sdhci_add_host(struct sdhci_host *host)
 		sdhci_tasklet_finish, (unsigned long)host);
 
 	setup_timer(&host->timer, sdhci_timeout_timer, (unsigned long)host);
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING)
+		setup_timer(&host->clock_timer, sdhci_clock_gate_timer,
+			    (unsigned long)host);
 
 	ret = request_irq(host->irq, sdhci_irq, IRQF_SHARED,
 		mmc_hostname(mmc), host);
 	if (ret)
 		goto untasklet;
+
+	sc = sdhci_priv(host);
+	
+	if (sc) {
+		if (sc->ext_cd_irq) {
+			/* This means this device is T-flash */
+			pr_info("%s : Regulator OK\n", __func__);
+			host->vmmc = regulator_get(NULL, "vtf_2.8v");
+			/* regulator_get(mmc_dev(mmc),"vmmc"); */
+		} else {
+			pr_info("%s : Regulator NONE\n", __func__);
+			host->vmmc = NULL;
+		}
+
+	} else
+		pr_info("%s : sdhci_priv error\n", __func__);
+	
+	if (IS_ERR(host->vmmc)) {
+		printk(KERN_ERR "%s: no vmmc regulator found\n", mmc_hostname(mmc));
+		host->vmmc = NULL;
+	} else if (!(gpio_get_value(sc->ext_cd_gpio)) || !sc->regulator_workq) {
+		/* If card is on the slot, enable regulator for tflash
+		   to init tflash card, or regulator_workq is not valid*/
+		if(host->vmmc)
+		regulator_enable(host->vmmc);
+	}
 
 	sdhci_init(host, 0);
 
@@ -1978,8 +2103,16 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
 
 	del_timer_sync(&host->timer);
 
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING)
+		del_timer_sync(&host->clock_timer);
+
 	tasklet_kill(&host->card_tasklet);
 	tasklet_kill(&host->finish_tasklet);
+
+	if (host->vmmc) {
+		regulator_disable(host->vmmc);
+		regulator_put(host->vmmc);
+	}
 
 	kfree(host->adma_desc);
 	kfree(host->align_buffer);

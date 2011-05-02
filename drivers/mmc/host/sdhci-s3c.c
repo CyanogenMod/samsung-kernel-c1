@@ -26,6 +26,8 @@
 #include <plat/sdhci.h>
 #include <plat/regs-sdhci.h>
 
+#include <linux/regulator/consumer.h>
+
 #include "sdhci.h"
 
 #define MAX_BUS_CLK	(4)
@@ -51,6 +53,9 @@ struct sdhci_s3c {
 
 	struct clk		*clk_io;
 	struct clk		*clk_bus[MAX_BUS_CLK];
+	
+	struct workqueue_struct *regulator_workq;
+	struct delayed_work	regul_work;
 };
 
 static inline struct sdhci_s3c *to_s3c(struct sdhci_host *host)
@@ -141,7 +146,7 @@ static unsigned int sdhci_s3c_consider_clock(struct sdhci_s3c *ourhost,
 		rate = clk_round_rate(clksrc,wanted);
 		return (wanted - rate);
 	}
-	
+
 	rate = clk_get_rate(clksrc);
 
 	for (div = 1; div < 256; div *= 2) {
@@ -174,8 +179,11 @@ static void sdhci_s3c_set_clock(struct sdhci_host *host, unsigned int clock)
 	unsigned int timeout;
 
 	/* don't bother if the clock is going off. */
-	if (clock == 0)
+	if (clock == 0) {
+		writew(0, host->ioaddr + SDHCI_CLOCK_CONTROL);
+		host->clock = clock;
 		return;
+	}
 
 	for (src = 0; src < MAX_BUS_CLK; src++) {
 		delta = sdhci_s3c_consider_clock(ourhost, src, clock);
@@ -217,7 +225,7 @@ static void sdhci_s3c_set_clock(struct sdhci_host *host, unsigned int clock)
 			(ourhost->pdata->cfg_card)(ourhost->pdev, host->ioaddr,
 						   &ios, NULL);
 	}
-	
+
 	if(host->quirks & SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER) {
 		writew(0, host->ioaddr + SDHCI_CLOCK_CONTROL);
 		clk_set_rate(ourhost->clk_bus[ourhost->cur_clk], clock);
@@ -239,7 +247,7 @@ static void sdhci_s3c_set_clock(struct sdhci_host *host, unsigned int clock)
 
 		writew(SDHCI_CLOCK_INT_EN | SDHCI_CLOCK_CARD_EN,
 				host->ioaddr + SDHCI_CLOCK_CONTROL);
-	
+
 		host->clock = clock;
 	}
 }
@@ -285,6 +293,8 @@ static int sdhci_s3c_get_ro(struct mmc_host *mmc)
 {
 	struct sdhci_s3c *ourhost = to_s3c(mmc_priv(mmc));
 
+	return 0;
+
 	return gpio_get_value(ourhost->pdata->wp_gpio);
 }
 
@@ -317,6 +327,7 @@ static void sdhci_s3c_set_ios(struct sdhci_host *host,
 			tmp = readb(host->ioaddr + SDHCI_HOST_CONTROL);
 			writeb(tmp | SDHCI_CTRL_8BITBUS,
 				host->ioaddr + SDHCI_HOST_CONTROL);
+			printk("%s: Enable 8Bit Data bus. ## ", mmc_hostname(host->mmc));
 			break;
 		case MMC_BUS_WIDTH_4:
 			width = 4;
@@ -346,23 +357,59 @@ static struct sdhci_ops sdhci_s3c_ops = {
 	.set_ios		= sdhci_s3c_set_ios,
 };
 
+void sdhci_s3c_force_presence_change(struct platform_device *pdev)
+{
+        struct sdhci_host *host = platform_get_drvdata(pdev);
+	printk(KERN_DEBUG "%s : Enter",__FUNCTION__);
+	mmc_detect_change(host->mmc, msecs_to_jiffies(0));
+}
+EXPORT_SYMBOL_GPL(sdhci_s3c_force_presence_change);
+
+static void sdhci_s3c_requlator_work(struct work_struct *work)
+{
+	struct sdhci_s3c *sc =
+		container_of(work, struct sdhci_s3c, regul_work.work);
+	struct sdhci_host *host = sc->host;
+
+	if (host->vmmc) {
+		if (!gpio_get_value(sc->ext_cd_gpio)) {
+			regulator_enable(host->vmmc);
+		} else {
+			regulator_disable(host->vmmc);
+		}
+	}
+}
+
 static void sdhci_s3c_notify_change(struct platform_device *dev, int state)
 {
 	struct sdhci_host *host;
+	struct sdhci_s3c *sc;
 	unsigned long flags;
 
 	local_irq_save(flags);
+	
 	host = platform_get_drvdata(dev);
+	
+	sc = sdhci_priv(host);
+	
 	if (host) {
 		if (state) {
 			dev_dbg(&dev->dev, "card inserted.\n");
+			pr_info("%s : card inserted\n", __func__);
 			host->flags &= ~SDHCI_DEVICE_DEAD;
 			host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+			if (sc->regulator_workq)
+				queue_delayed_work(sc->regulator_workq, \
+					&sc->regul_work, 0);			
 			tasklet_schedule(&host->card_tasklet);
 		} else {
 			dev_dbg(&dev->dev, "card removed.\n");
+			pr_info("%s : card removed\n", __func__);
 			host->flags |= SDHCI_DEVICE_DEAD;
 			host->quirks &= ~SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+			if (sc->regulator_workq)
+				queue_delayed_work(sc->regulator_workq, \
+					&sc->regul_work, 0);			
 			tasklet_schedule(&host->card_tasklet);
 		}
 	}
@@ -373,11 +420,46 @@ static irqreturn_t sdhci_s3c_gpio_card_detect_isr(int irq, void *dev_id)
 {
 	struct sdhci_s3c *sc = dev_id;
 	int status = gpio_get_value(sc->ext_cd_gpio);
+
 	if (sc->pdata->ext_cd_gpio_invert)
 		status = !status;
+
 	sdhci_s3c_notify_change(sc->pdev, status);
+
 	return IRQ_HANDLED;
 }
+
+extern struct class *sec_class;
+static struct device *tflash_detection_cmd_dev;
+
+static ssize_t tflash_detection_cmd_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct sdhci_s3c *sc = dev_get_drvdata(dev);
+	unsigned int detect;
+	if (sc && sc->ext_cd_gpio)
+		detect = gpio_get_value(sc->ext_cd_gpio);
+	else {
+		pr_info("%s : External  SD detect pin Error\n", __func__);
+		return  sprintf(buf, "Error\n");
+	}
+
+	if (sc->pdata->ext_cd_gpio_invert) {
+		pr_info("%s : Invert External  SD detect pin\n", __func__);
+		detect = !detect;
+	}
+
+	pr_info("%s : detect = %d.\n", __func__,  detect);
+	if (detect) {
+		printk(KERN_DEBUG "sdhci: card inserted.\n");
+		return sprintf(buf, "Insert\n");
+	} else {
+		printk(KERN_DEBUG "sdhci: card removed.\n");
+		return sprintf(buf, "Remove\n");
+	}
+}
+ 
+static DEVICE_ATTR(tftest, 0444, tflash_detection_cmd_show, NULL);
+
 
 static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 {
@@ -483,7 +565,6 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 	host->irq = irq;
 
 	/* Setup quirks for the controller */
-	host->quirks |= SDHCI_QUIRK_NONSTANDARD_MINCLOCK;
 	host->quirks |= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC;
 
 #ifndef CONFIG_MMC_SDHCI_S3C_DMA
@@ -499,12 +580,8 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 	 * SDHCI block, or a missing configuration that needs to be set. */
 	host->quirks |= SDHCI_QUIRK_NO_BUSY_IRQ;
 
-	if (pdata->cd_type == S3C_SDHCI_CD_NONE ||
-	   pdata->cd_type == S3C_SDHCI_CD_PERMANENT)
+	if (pdata->cd_type == S3C_SDHCI_CD_NONE)
 		host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
-
-	if (pdata->cd_type == S3C_SDHCI_CD_PERMANENT)
-		host->mmc->caps = MMC_CAP_NONREMOVABLE;
 
 	host->quirks |= (SDHCI_QUIRK_32BIT_DMA_ADDR |
 			 SDHCI_QUIRK_32BIT_DMA_SIZE);
@@ -523,32 +600,42 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 
 	host->quirks |= SDHCI_QUIRK_NO_HISPD_BIT;
 
-	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
 #ifdef CONFIG_ARCH_S5PV310
 	host->quirks |= SDHCI_QUIRK_NONSTANDARD_CLOCK;
 	host->quirks |= SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER;
 #endif
-	
+
 	if(pdata->host_caps)
 		host->mmc->caps |= pdata->host_caps;
-	
-	ret = sdhci_add_host(host);
-	if (ret) {
-		dev_err(dev, "sdhci_add_host() failed\n");
-		goto err_add_host;
-	}
-	/* pdata->ext_cd_init might call sdhci_s3c_notify_change immediately,
-	   so it can be called only after sdhci_add_host() */
-	if (pdata->cd_type == S3C_SDHCI_CD_EXTERNAL && pdata->ext_cd_init)
-		pdata->ext_cd_init(&sdhci_s3c_notify_change);
+
+/* Fill External GPIO Value */
+	if (pdata->cd_type == S3C_SDHCI_CD_PERMANENT) {
+		pr_info("%s : S3C_SDHCI_CD_PERMANENT\n", __func__);
+		if(gpio_is_valid(pdata->ext_cd_gpio)) {
+			pr_info("%s : MMC GPIO Level is %d\n", __func__
+				, gpio_get_value(pdata->ext_cd_gpio));
+			gpio_request(pdata->ext_cd_gpio, "SDHCI EXT CD");
+			sc->ext_cd_gpio = gpio_get_value(pdata->ext_cd_gpio);
+
+		}					
+		}					
 
 	if (pdata->cd_type == S3C_SDHCI_CD_GPIO &&
 		gpio_is_valid(pdata->ext_cd_gpio)) {
-
+		pr_info("%s : S3C_SDHCI_CD_GPIO\n", __func__);
 		gpio_request(pdata->ext_cd_gpio, "SDHCI EXT CD");
 		sc->ext_cd_gpio = pdata->ext_cd_gpio;
 
+		sc->regulator_workq = create_singlethread_workqueue("ktflash_requlatord");
+		if (!sc->regulator_workq) {
+			pr_info("%s : ERROR: workqueue for Tflash's regulator.\n"
+				"Regulator for Tflash will be always ON\n",
+				__func__);
+		}
+		INIT_DELAYED_WORK(&sc->regul_work, sdhci_s3c_requlator_work);
+		
 		sc->ext_cd_irq = gpio_to_irq(pdata->ext_cd_gpio);
+		
 		if (sc->ext_cd_irq &&
 			request_irq(sc->ext_cd_irq, sdhci_s3c_gpio_card_detect_isr,
 				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
@@ -556,6 +643,44 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "cannot request irq for card detect\n");
 			sc->ext_cd_irq = 0;
 		}
+
+		if (tflash_detection_cmd_dev == NULL && sc->ext_cd_gpio) {
+			
+			tflash_detection_cmd_dev = device_create(sec_class, NULL, 0, NULL, "tctest");
+			if (IS_ERR(tflash_detection_cmd_dev))
+				pr_err("%s : Failed to create device(ts)!\n", __func__);
+	
+			if (device_create_file(tflash_detection_cmd_dev, &dev_attr_tftest) < 0)
+				pr_err("%s : Failed to create device file(%s)!\n", __func__, dev_attr_tftest.attr.name);
+			
+			dev_set_drvdata(tflash_detection_cmd_dev, sc);
+		}
+
+		/* T-Flash EINT for CD SHOULD be wakeup source */
+		set_irq_wake(sc->ext_cd_irq, 1);
+	}
+	
+	/* Call sdhci_host */
+	ret = sdhci_add_host(host);
+	if (ret) {
+		dev_err(dev, "sdhci_add_host() failed\n");
+		goto err_add_host;
+	}
+	if (pdata->cd_type == S3C_SDHCI_CD_PERMANENT) {
+		host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
+	}
+
+	/* pdata->ext_cd_init might call sdhci_s3c_notify_change immediately,
+	   so it can be called only after sdhci_add_host() */
+	if (pdata->cd_type == S3C_SDHCI_CD_EXTERNAL && pdata->ext_cd_init) {
+		pr_info("%s : S3C_SDHCI_CD_EXTERNAL and external init\n", __func__);
+		pdata->ext_cd_init(&sdhci_s3c_notify_change);
+	}
+
+	if (pdata->cd_type == S3C_SDHCI_CD_GPIO &&
+		gpio_is_valid(pdata->ext_cd_gpio)) {
+		host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
 	}
 
 	return 0;
@@ -602,6 +727,8 @@ static int __devexit sdhci_s3c_remove(struct platform_device *pdev)
 	sdhci_free_host(host);
 	platform_set_drvdata(pdev, NULL);
 
+	destroy_workqueue(sc->regulator_workq);
+
 	return 0;
 }
 
@@ -612,6 +739,7 @@ static int sdhci_s3c_suspend(struct platform_device *dev, pm_message_t pm)
 	struct sdhci_host *host = platform_get_drvdata(dev);
 
 	sdhci_suspend_host(host, pm);
+	
 	return 0;
 }
 
@@ -620,12 +748,20 @@ static int sdhci_s3c_resume(struct platform_device *dev)
 	struct sdhci_host *host = platform_get_drvdata(dev);
 
 	sdhci_resume_host(host);
+	
 	return 0;
 }
 
 #else
-#define sdhci_s3c_suspend NULL
-#define sdhci_s3c_resume NULL
+static int sdhci_s3c_suspend(struct platform_device *dev, pm_message_t pm)
+{
+	return 0;
+}
+
+static int sdhci_s3c_resume(struct platform_device *dev)
+{
+	return 0;
+}
 #endif
 
 static struct platform_driver sdhci_s3c_driver = {

@@ -241,18 +241,23 @@ struct sdhci_host {
 #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
 /* Controller cannot support End Attribute in NOP ADMA descriptor */
 #define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26)
-/* Controller has nonstandard clock management */
-#define SDHCI_QUIRK_NONSTANDARD_MINCLOCK		(1<<27)
-/* Controller has no write-protect pin connected with SD card */
-#define SDHCI_QUIRK_NO_WP_BIT				(1<<28)
+/* Controller is missing device caps. Use caps provided by host */
+#define SDHCI_QUIRK_MISSING_CAPS			(1<<27)
+/* Controller uses Auto CMD12 command to stop the transfer */
+#define SDHCI_QUIRK_MULTIBLOCK_READ_ACMD12		(1<<28)
+/* Controller doesn't have HISPD bit field in HI-SPEED SD card */
 #define SDHCI_QUIRK_NO_HISPD_BIT			(1<<29)
 /* Controller has no clock divider and uses the divider outside */
 #define SDHCI_QUIRK_BROKEN_CLOCK_DIVIDER		(1<<30)
+/* Controller has no write-protect pin connected with SD card */
+#define SDHCI_QUIRK_NO_WP_BIT				(1<<31)
 
 	int			irq;		/* Device IRQ */
 	void __iomem *		ioaddr;		/* Mapped address */
 
 	const struct sdhci_ops	*ops;		/* Low level hw interface */
+
+	struct regulator	*vmmc;		/* Power regulator */
 
 	/* Internal data */
 	struct mmc_host		*mmc;		/* MMC structure */
@@ -277,6 +282,7 @@ struct sdhci_host {
 	unsigned int		timeout_clk;	/* Timeout freq (KHz) */
 
 	unsigned int		clock;		/* Current clock (MHz) */
+	unsigned int		clock_to_restore;	/* Saved clock for dynamic clock gating (MHz) */
 	u8			pwr;		/* Current voltage */
 
 	struct mmc_request	*mrq;		/* Current request */
@@ -299,6 +305,9 @@ struct sdhci_host {
 	struct tasklet_struct	finish_tasklet;
 
 	struct timer_list	timer;		/* Timer for timeouts */
+	struct timer_list	clock_timer;	/* Timer for clock gating */
+
+	unsigned int		caps;		/* Alternative capabilities */
 
 	unsigned long		private[0] ____cacheline_aligned;
 };
@@ -418,6 +427,7 @@ static inline void *sdhci_priv(struct sdhci_host *host)
 	return (void *)host->private;
 }
 
+extern void sdhci_card_detect(struct sdhci_host *host);
 extern int sdhci_add_host(struct sdhci_host *host);
 extern void sdhci_remove_host(struct sdhci_host *host, int dead);
 

@@ -18,6 +18,9 @@
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
+#ifdef CONFIG_MMC_DISCARD_MERGE
+#include <linux/mmc/discard.h>
+#endif
 #include "queue.h"
 
 #define MMC_QUEUE_BOUNCESZ	65536
@@ -29,10 +32,17 @@
  */
 static int mmc_prep_request(struct request_queue *q, struct request *req)
 {
+#ifdef CONFIG_MMC_DISCARD
+	/*
+	 * We only like normal block requests and discards.
+	 */
+	if (!blk_fs_request(req) && !blk_discard_rq(req)) {
+#else /* CONFIG_MMC_DISCARD */
 	/*
 	 * We only like normal block requests.
 	 */
 	if (!blk_fs_request(req)) {
+#endif /* CONFIG_MMC_DISCARD */
 		blk_dump_rq_flags(req, "MMC bad request");
 		return BLKPREP_KILL;
 	}
@@ -46,6 +56,11 @@ static int mmc_queue_thread(void *d)
 {
 	struct mmc_queue *mq = d;
 	struct request_queue *q = mq->queue;
+#ifdef CONFIG_MMC_DISCARD_MERGE
+	int ret;
+	int state = DCS_NO_DISCARD_REQ;
+	int flag;
+#endif
 
 	current->flags |= PF_MEMALLOC;
 
@@ -65,11 +80,41 @@ static int mmc_queue_thread(void *d)
 				set_current_state(TASK_RUNNING);
 				break;
 			}
+#ifdef CONFIG_MMC_DISCARD_MERGE
+			if (mmc_card_mmc(mq->card)) {
+				flag = mmc_read_idle(mq->card);
+				if (flag == DCS_IDLE_OPS_TURNED_ON) {
+				mmc_claim_host(mq->card->host);
+				ret = mmc_do_idle_ops(mq->card);
+				mmc_release_host(mq->card->host);
+					if (ret) {
+						if (mq->flags & MMC_QUEUE_SUSPENDED)
+							goto sched;
+					} else {
+						state = DCS_NO_DISCARD_REQ;
+						mmc_clear_idle(mq->card);
+					}
+					continue;
+				} else if (flag == DCS_MMC_DEVICE_REMOVED) {
+					/* do nothing */
+				} else if (state == DCS_DISCARD_REQ) {
+					state = DCS_IDLE_TIMER_TRIGGERED;
+					mmc_trigger_idle_timer(mq->card);
+				}
+			}
+sched:
+#endif
 			up(&mq->thread_sem);
 			schedule();
 			down(&mq->thread_sem);
 			continue;
 		}
+#ifdef CONFIG_MMC_DISCARD_MERGE
+		else if (mmc_card_mmc(mq->card)) {
+			if (state == DCS_NO_DISCARD_REQ && blk_discard_rq(req))
+				state = DCS_DISCARD_REQ;
+		}
+#endif
 		set_current_state(TASK_RUNNING);
 
 		mq->issue_fn(mq, req);
@@ -130,6 +175,12 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card, spinlock_t *lock
 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
 	blk_queue_ordered(mq->queue, QUEUE_ORDERED_DRAIN, NULL);
 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
+#ifdef CONFIG_MMC_DISCARD
+	if (mmc_can_trim(card)) {
+		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, mq->queue);
+		mq->queue->limits.max_discard_sectors = UINT_MAX;
+	}
+#endif /* CONFIG_MMC_DISCARD */
 
 #ifdef CONFIG_MMC_BLOCK_BOUNCE
 	if (host->max_hw_segs == 1) {

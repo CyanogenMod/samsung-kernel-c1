@@ -353,6 +353,227 @@ int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd)
 			ext_csd, 512);
 }
 
+#ifdef CONFIG_MMC_DISCARD_MOVINAND
+static int mmc_send_trimsize_cmd(struct mmc_card *card, u32 arg)
+{
+	int err;
+    unsigned int timeout = 0;
+	struct mmc_command cmd;
+	u32 status;
+
+	BUG_ON(!card);
+	BUG_ON(!card->host);
+
+	memset(&cmd, 0, sizeof(struct mmc_command));
+	
+    cmd.opcode = 62;
+    cmd.arg = arg;
+    cmd.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+	err = mmc_wait_for_cmd(card->host, &cmd, MMC_CMD_RETRIES);
+	if (err)
+		return err;
+
+    // Check to see if the moviNAND release DAT[0] or not
+    while (timeout < 0xF0000) {
+		mmc_send_status(card, &status);
+		if(((status >> 9) & 0xF) == 0x4) break;
+			timeout++;
+	}
+
+    if(timeout >= 0xF0000) {
+        printk("mmc_get_trim_size() : Time-out waiting for releasing DAT0\r\n");
+        return 0;
+    }
+
+	return 0;
+}
+
+static int mmc_send_trimsize_erase_cmd(struct mmc_card *card)
+{
+	int err;
+    unsigned int timeout = 0;
+	struct mmc_command cmd;
+	u32 status;
+
+	BUG_ON(!card);
+	BUG_ON(!card->host);
+
+	memset(&cmd, 0, sizeof(struct mmc_command));
+	cmd.opcode = MMC_ERASE_GROUP_START;
+	cmd.arg = 0x4000A018;
+	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_AC;
+	err = mmc_wait_for_cmd(card->host, &cmd, 0);
+	if (err) {
+		printk(KERN_ERR "mmc_erase: group start error %d, "
+		       "status %#x\n", err, cmd.resp[0]);
+		err = -EINVAL;
+		goto out;
+	}
+
+	memset(&cmd, 0, sizeof(struct mmc_command));
+	cmd.opcode = MMC_ERASE_GROUP_END;
+	cmd.arg = 0x00006400;
+	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_AC;
+	err = mmc_wait_for_cmd(card->host, &cmd, 0);
+	if (err) {
+		printk(KERN_ERR "mmc_erase: group end error %d, status %#x\n",
+		       err, cmd.resp[0]);
+		err = -EINVAL;
+		goto out;
+	}
+
+	memset(&cmd, 0, sizeof(struct mmc_command));
+	cmd.opcode = MMC_ERASE;
+	cmd.arg = 0x0;
+	cmd.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+	cmd.erase_timeout = 1000;
+	//mmc_set_erase_timeout(card, &cmd, 0x0, 1000);
+	err = mmc_wait_for_cmd(card->host, &cmd, 0);
+	if (err) {
+		printk(KERN_ERR "mmc_erase: erase error %d, status %#x\n",
+		       err, cmd.resp[0]);
+		err = -EIO;
+		goto out;
+	}
+
+	if (mmc_host_is_spi(card->host))
+		goto out;
+
+	do {
+		memset(&cmd, 0, sizeof(struct mmc_command));
+		cmd.opcode = MMC_SEND_STATUS;
+		cmd.arg = card->rca << 16;
+		cmd.flags = MMC_RSP_R1 | MMC_CMD_AC;
+		/* Do not retry else we can't see errors */
+		err = mmc_wait_for_cmd(card->host, &cmd, 0);
+		if (err || (cmd.resp[0] & 0xFDF92000)) {
+			printk(KERN_ERR "error %d requesting status %#x\n",
+				err, cmd.resp[0]);
+			err = -EIO;
+			goto out;
+		}
+	} while (!(cmd.resp[0] & R1_READY_FOR_DATA) ||
+		 R1_CURRENT_STATE(cmd.resp[0]) == 7);
+out:
+	return err;
+}
+
+
+static int mmc_read_trimsize_data(struct mmc_card *card, u32 *trimsize)
+{
+	struct mmc_request mrq;
+	struct mmc_command cmd;
+	struct mmc_data data;
+	struct scatterlist sg;
+	u8 *buf;
+	unsigned int len = 512;
+
+	buf = kmalloc(len, GFP_KERNEL);
+	if (buf == NULL)
+		return -ENOMEM;
+
+	memset(&mrq, 0, sizeof(struct mmc_request));
+	memset(&cmd, 0, sizeof(struct mmc_command));
+	memset(&data, 0, sizeof(struct mmc_data));
+
+	mrq.cmd = &cmd;
+	mrq.data = &data;
+
+	cmd.opcode = MMC_READ_SINGLE_BLOCK;
+	cmd.arg = 0;
+	cmd.flags = MMC_RSP_R1 | MMC_CMD_ADTC;
+
+	data.blksz = len;
+	data.blocks = 1;
+	data.flags = MMC_DATA_READ;
+	data.sg = &sg;
+	data.sg_len = 1;
+
+	sg_init_one(&sg, buf, len);
+
+	mmc_wait_for_req(card->host, &mrq);
+
+	*trimsize = (buf[84] << 0 |
+			buf[84 + 1] << 8 |
+			buf[84 + 2] << 16 |
+			buf[84 + 3] << 24);
+	*trimsize /= 512; /* in sectors */
+	kfree(buf);
+
+	if (cmd.error)
+		return cmd.error;
+	if (data.error)
+		return data.error;
+
+	return 0;
+}
+
+int mmc_send_trimsize(struct mmc_card *card, u32 *trimsize)
+{
+	int ret;
+	u32 status;
+
+	/*init trimsize to zero*/
+	*trimsize = 0;
+
+#if 0
+    /*set trimsize forcely*/
+
+    if(card->ext_csd.rev == 5 )
+    	{
+    	if(card->ext_csd.sectors <= 32 * 1024 * 1024 * 2) {
+			*trimsize = 256;
+    	} else {
+    		*trimsize = 512;
+    		}
+    	}
+
+	return 0;
+#endif
+
+	ret = mmc_send_trimsize_cmd(card, 0xEFAC62EC);
+
+	if (ret)
+		return ret;
+	ret = mmc_send_trimsize_cmd(card, 0x10210000);
+	if (ret)
+		return ret;
+	
+	/*do not return even if error is happend to escape vendor mode*/
+    mmc_send_trimsize_erase_cmd(card);	
+
+		
+	ret = mmc_send_trimsize_cmd(card,  0xEFAC62EC);
+	if (ret)
+		return ret;
+	ret = mmc_send_trimsize_cmd(card,  0xDECCEE);
+	if (ret)
+		return ret;
+	
+	
+	ret = mmc_send_trimsize_cmd(card, 0xEFAC62EC);
+
+	if (ret)
+		return ret;
+	ret = mmc_send_trimsize_cmd(card, 0xCCEE);
+	if (ret)
+		return ret;
+
+	/*do not return even if error is happend to escape vendor mode*/
+	mmc_read_trimsize_data(card, trimsize);
+	printk("[MMC] %s trim size is %d\n",__func__,*trimsize);
+	
+	ret = mmc_send_trimsize_cmd(card, 0xEFAC62EC);
+	if (ret)
+		return ret;
+	ret = mmc_send_trimsize_cmd(card, 0xDECCEE);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+#endif /* CONFIG_MMC_DISCARD_MOVINAND */
+
 int mmc_spi_read_ocr(struct mmc_host *host, int highcap, u32 *ocrp)
 {
 	struct mmc_command cmd;

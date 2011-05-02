@@ -1,16 +1,18 @@
-/* linux/drivers/mmc/host/mshci-s3c.c
- *
- * Copyright 2008 Openmoko Inc.
- * Copyright 2008 Simtec Electronics
- *      Ben Dooks <ben@simtec.co.uk>
- *      http://armlinux.simtec.co.uk/
- *
- * MSHCI (HSMMC) support for Samsung SoC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
+/*
+* linux/drivers/mmc/host/mshci-s3c.c
+* Mobile Storage Host Controller Interface driver
+*
+* Copyright (c) 2011 Samsung Electronics Co., Ltd.
+*		http://www.samsung.com
+*
+* Based on linux/drivers/mmc/host/sdhci-s3c.c
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or (at
+* your option) any later version.
+*
+*/
 
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
@@ -24,7 +26,7 @@
 
 #include <plat/gpio-cfg.h>
 #include <plat/mshci.h>
-#include <plat/regs-sdhci.h>
+#include <plat/clock.h>
 
 #include "mshci.h"
 
@@ -77,8 +79,9 @@ static unsigned int mshci_s3c_get_max_clk(struct mshci_host *host)
 			continue;
 
 		rate = clk_get_rate(busclk);
+		/* It should be checked later ############# */
 		if (rate > max)
-			max = rate;
+			max = rate >> 1;
 	}
 
 	return max;
@@ -194,9 +197,77 @@ static void mshci_s3c_cfg_wp(unsigned int gpio_num)
 	s3c_gpio_setpull(gpio_num, S3C_GPIO_PULL_UP);
 }
 
+static void mshci_s3c_set_ios(struct mshci_host *host,
+			      struct mmc_ios *ios)
+{
+	struct mshci_s3c *ourhost = to_s3c(host);
+	struct s3c_mshci_platdata *pdata = ourhost->pdata;
+	int width;
+
+	if (ios->power_mode != MMC_POWER_OFF) {
+		switch (ios->bus_width) {
+		case MMC_BUS_WIDTH_8:
+		case MMC_BUS_WIDTH_8_DDR:
+			width = 8;
+			break;
+		case MMC_BUS_WIDTH_4:
+		case MMC_BUS_WIDTH_4_DDR:
+			width = 4;
+			break;
+		case MMC_BUS_WIDTH_1:
+			width = 1;
+			break;
+		default:
+			BUG();
+		}
+
+		if (pdata->cfg_gpio)
+			pdata->cfg_gpio(ourhost->pdev, width);
+	}
+
+	if (pdata->cfg_card)
+		pdata->cfg_card(ourhost->pdev, host->ioaddr,
+				ios, host->mmc->card);
+
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+	if (pdata->cfg_ddr) {
+		if (ios->bus_width == MMC_BUS_WIDTH_8_DDR ||
+			ios->bus_width == MMC_BUS_WIDTH_4_DDR )
+			pdata->cfg_ddr(ourhost->pdev, 1 );
+		else if (ios->bus_width == MMC_BUS_WIDTH_8 ||
+			ios->bus_width == MMC_BUS_WIDTH_4)
+			pdata->cfg_ddr(ourhost->pdev, 0);
+	}
+#endif
+
+	mdelay(1);
+}
+
+#ifdef CONFIG_MACH_C1
+/**
+ * mshci_s3c_init_card - Reset eMMC device
+ *
+ * init eMMC_card.
+ */
+
+static void mshci_s3c_init_card(struct mshci_host *host)
+{
+	struct mshci_s3c *ourhost = to_s3c(host);
+	struct s3c_mshci_platdata *pdata = ourhost->pdata;
+
+	if (pdata->init_card)
+		pdata->init_card(ourhost->pdev);
+}
+#endif
+
 static struct mshci_ops mshci_s3c_ops = {
 	.get_max_clock		= mshci_s3c_get_max_clk,
 	.set_clock		= mshci_s3c_set_clock,
+	.set_ios		= mshci_s3c_set_ios,
+#ifdef CONFIG_MACH_C1
+	.init_card		= mshci_s3c_init_card,
+#endif
 };
 
 static void mshci_s3c_notify_change(struct platform_device *dev, int state)
@@ -209,16 +280,29 @@ static void mshci_s3c_notify_change(struct platform_device *dev, int state)
 	if (host) {
 		if (state) {
 			dev_dbg(&dev->dev, "card inserted.\n");
+			pr_info("%s : card inserted.\n",__func__);
 			host->flags &= ~MSHCI_DEVICE_DEAD;
 			tasklet_schedule(&host->card_tasklet);
 		} else {
 			dev_dbg(&dev->dev, "card removed.\n");
+			pr_info("%s : card removed.\n",__func__);
 			host->flags |= MSHCI_DEVICE_DEAD;
 			tasklet_schedule(&host->card_tasklet);
 		}
 	}
 	local_irq_restore(flags);
 }
+
+static irqreturn_t mshci_s3c_gpio_card_detect_isr(int irq, void *dev_id)
+{
+	struct mshci_s3c *sc = dev_id;
+	int status = gpio_get_value(sc->ext_cd_gpio);
+	if (sc->pdata->ext_cd_gpio_invert)
+		status = !status;
+	mshci_s3c_notify_change(sc->pdev, status);
+	return IRQ_HANDLED;
+}
+
 
 static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 {
@@ -233,7 +317,7 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 		dev_err(dev, "no device data specified\n");
 		return -ENOENT;
 	}
-	
+
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(dev, "no irq specified\n");
@@ -256,6 +340,7 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 	sc->pdata = pdata;
 	sc->ext_cd_gpio = -1;
 
+#ifndef CONFIG_S5PV310_FPGA
 	platform_set_drvdata(pdev, host);
 
 	sc->clk_io = clk_get(dev, "mshc");
@@ -278,10 +363,57 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 			continue;
 		}
 
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+	if (!strcmp("sclk_mshc",name)) {
+		struct clk *parent_clk;
+
+		if (!(parent_clk = clk_get_parent(clk))) {
+			dev_err(dev, "failed to get parent clock %s\n"
+			, (char *)(clk->name));
+		} else {
+			for ( ; ; ) {
+				parent_clk = clk_get_parent(parent_clk);
+				if ( parent_clk ) {
+#ifdef CONFIG_S5PV310_MSHC_EPLL_45MHZ
+					if (!strcmp("fout_epll", \
+							parent_clk->name)) {
+#if defined(CONFIG_MACH_C1Q1_REV02) || defined(CONFIG_MACH_P6_REV02)
+						clk_set_rate \
+							(parent_clk, 144000000);
+#else
+						clk_set_rate \
+							(parent_clk, 180633600);
+#endif
+						pdata->cfg_ddr(pdev, 0);
+#elif defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ)
+					if (!strcmp("fout_vpll", \
+							parent_clk->name)) {
+						clk_set_rate \
+							(parent_clk, 370882812);
+						pdata->cfg_ddr(pdev, 0);
+#endif
+						clk_enable(parent_clk);
+						break;
+					}
+					else
+						continue;
+				} else {
+					dev_err(dev, "failed to"
+								"get parent"
+								"clock %s\n"
+								, clk->name);
+					break;
+				}
+			}
+		}
+	}
+#endif
 		clks++;
 		sc->clk_bus[ptr] = clk;
 		clk_enable(clk);
-		
+
+
 		dev_info(dev, "clock source %d: %s (%ld Hz)\n",
 			 ptr, name, clk_get_rate(clk));
 	}
@@ -292,6 +424,7 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 		ret = -ENOENT;
 		goto err_no_busclks;
 	}
+#endif
 
 	sc->ioarea = request_mem_region(res->start, resource_size(res),
 					mmc_hostname(host->mmc));
@@ -312,6 +445,7 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 	if (pdata->cfg_gpio) {
 		pdata->cfg_gpio(pdev, pdata->max_width);
 	} else {
+		dev_err(dev, "cfg_gpio dose not exist.!\n");
 	}
 
 	host->hw_name = "samsung-mshci";
@@ -325,10 +459,12 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 		host->mmc->caps = 0;
 
 	if (pdata->cd_type == S3C_MSHCI_CD_PERMANENT){
+		host->quirks |= MSHCI_QUIRK_BROKEN_PRESENT_BIT;
 		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
 	}
+
 	/* IF SD controller's WP pin donsn't connected with SD card and there
-	 * is an allocated GPIO for getting WP data form SD card, 
+	 * is an allocated GPIO for getting WP data form SD card,
 	 * use this quirk and send the GPIO number in pdata->wp_gpio. */
 	if (pdata->has_wp_gpio && gpio_is_valid(pdata->wp_gpio)) {
 		mshci_s3c_ops.get_ro = mshci_s3c_get_ro;
@@ -337,6 +473,24 @@ static int __devinit mshci_s3c_probe(struct platform_device *pdev)
 	}
 
 	ret = mshci_add_host(host);
+
+	if (pdata->cd_type == S3C_MSHCI_CD_GPIO &&
+		gpio_is_valid(pdata->ext_cd_gpio)) {
+
+		gpio_request(pdata->ext_cd_gpio, "SDHCI EXT CD");
+		sc->ext_cd_gpio = pdata->ext_cd_gpio;
+
+		sc->ext_cd_irq = gpio_to_irq(pdata->ext_cd_gpio);
+		if (sc->ext_cd_irq &&
+			request_irq(sc->ext_cd_irq, mshci_s3c_gpio_card_detect_isr,
+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+				dev_name(&pdev->dev), sc)) {
+			dev_err(&pdev->dev, "cannot request irq for card detect\n");
+			sc->ext_cd_irq = 0;
+		}
+		dev_dbg(&pdev->dev, "mshci detects a card insertion/removal"
+							"by EINT\n");
+	}
 
 	if (ret) {
 		dev_err(dev, "mshci_add_host() failed\n");
@@ -387,9 +541,31 @@ static int mshci_s3c_resume(struct platform_device *dev)
 	return 0;
 }
 
+static void mshci_s3c_shutdown(struct platform_device *dev, pm_message_t pm)
+{
+	struct mshci_host *host = platform_get_drvdata(dev);
+	struct s3c_mshci_platdata *pdata = dev->dev.platform_data;
+
+	mshci_suspend_host(host, pm);
+
+	if (pdata->shutdown)
+		pdata->shutdown();
+}
+
 #else
-#define mshci_s3c_suspend NULL
-#define mshci_s3c_resume NULL
+
+static int mshci_s3c_suspend(struct platform_device *dev, pm_message_t pm)
+{
+	pr_info("%s : is DUMMY\n", __func__);
+	return 0;
+}
+
+static int mshci_s3c_resume(struct platform_device *dev)
+{
+	pr_info("%s : is DUMMY\n", __func__);
+	return 0;
+}
+
 #endif
 
 static struct platform_driver mshci_s3c_driver = {
@@ -397,6 +573,7 @@ static struct platform_driver mshci_s3c_driver = {
 	.remove		= __devexit_p(mshci_s3c_remove),
 	.suspend	= mshci_s3c_suspend,
 	.resume	        = mshci_s3c_resume,
+	.shutdown	= mshci_s3c_shutdown,
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "s3c-mshci",
@@ -417,6 +594,6 @@ module_init(mshci_s3c_init);
 module_exit(mshci_s3c_exit);
 
 MODULE_DESCRIPTION("Samsung MSHCI (HSMMC) glue");
-MODULE_AUTHOR("Ben Dooks, <ben@simtec.co.uk>");
+MODULE_AUTHOR("Hyunsung Jang, <hs79.jang@samsung.com>");
 MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:s3c-mshci");

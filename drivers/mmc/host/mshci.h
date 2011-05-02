@@ -1,13 +1,18 @@
 /*
- *  linux/drivers/mmc/host/sdhci.h - Secure Digital Host Controller Interface driver
- *
- *  Copyright (C) 2005-2008 Pierre Ossman, All Rights Reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- */
+* linux/drivers/mmc/host/mshci.h
+* Mobile Storage Host Controller Interface driver
+*
+* Copyright (c) 2011 Samsung Electronics Co., Ltd.
+*		http://www.samsung.com
+*
+* Based on linux/drivers/mmc/host/sdhci.h
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or (at
+* your option) any later version.
+*
+*/
 
 #include <linux/scatterlist.h>
 #include <linux/compiler.h>
@@ -58,6 +63,7 @@
 #define MSHCI_IDSTS     0x8C    /* Internal DMAC status */
 #define MSHCI_IDINTEN   0x90    /* Internal DMAC interrupt enable */
 #define MSHCI_DSCADDR   0x94    /* Current host descriptor address */
+#define MSHCI_CLKSEL	0x9C
 #define MSHCI_BUFADDR   0x98    /* Current host buffer address */
 #define MSHCI_WAKEUPCON 0xA0    /* Wakeup control register */
 #define MSHCI_CLOCKCON  0xA4    /* Clock (delay) control register */
@@ -283,7 +289,7 @@
  *  Bus Mode Register
  *  MSHCI_BMOD - offset 0x80
  *****************************************************/
-#define BMOD_IDMAC_RESET        (0x1<<1)
+#define BMOD_IDMAC_RESET        (0x0<<1)
 #define BMOD_IDMAC_FB           (0x1<<1)
 #define BMOD_IDMAC_ENABLE       (0x1<<7)
 
@@ -342,6 +348,7 @@ struct mshci_host {
 /* Controller has no write-protect pin connected with SD card */
 #define MSHCI_QUIRK_NO_WP_BIT                           (1<<0)
 #define MSHCI_QUIRK_BROKEN_CARD_DETECTION               (1<<1)
+#define MSHCI_QUIRK_BROKEN_PRESENT_BIT					(1<<2)
 
 	int			irq;		/* Device IRQ */
 	void __iomem *		ioaddr;		/* Mapped address */
@@ -365,6 +372,9 @@ struct mshci_host {
 	unsigned int		timeout_clk;	/* Timeout freq (KHz) */
 
 	unsigned int		clock;		/* Current clock (MHz) */
+	unsigned int		clock_to_restore;	/* Saved clock for dynamic clock gating (MHz) */
+
+	unsigned int 		cur_buswidth;
 	u8			pwr;		/* Current voltage */
 
 	struct mmc_request	*mrq;		/* Current request */
@@ -387,24 +397,19 @@ struct mshci_host {
 	struct tasklet_struct	finish_tasklet;
 
 	struct timer_list	timer;		/* Timer for timeouts */
+	struct timer_list	clock_timer;	/* Timer for clock gating */
 
 	u32			fifo_depth;
 	u32 			fifo_threshold;
 	u32			data_transfered;
+
+	u32			error_state;
+
 	unsigned long		private[0] ____cacheline_aligned;
 };
 
 
 struct mshci_ops {
-#ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
-	u32		(*readl)(struct mshci_host *host, int reg);
-	u16		(*readw)(struct mshci_host *host, int reg);
-	u8		(*readb)(struct mshci_host *host, int reg);
-	void		(*writel)(struct mshci_host *host, u32 val, int reg);
-	void		(*writew)(struct mshci_host *host, u16 val, int reg);
-	void		(*writeb)(struct mshci_host *host, u8 val, int reg);
-#endif
-
 	void	(*set_clock)(struct mshci_host *host, unsigned int clock);
 
 	int		(*enable_dma)(struct mshci_host *host);
@@ -415,27 +420,10 @@ struct mshci_ops {
 				   struct mmc_ios *ios);
 	int             (*get_ro) (struct mmc_host *mmc);
 	void		(*init_issue_cmd)(struct mshci_host *host);
+#ifdef CONFIG_MACH_C1
+	void		(*init_card)(struct mshci_host *host);
+#endif
 };
-
-#ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
-
-static inline void mshci_writel(struct mshci_host *host, u32 val, int reg)
-{
-	if (unlikely(host->ops->writel))
-		host->ops->writel(host, val, reg);
-	else
-		writel(val, host->ioaddr + reg);
-}
-
-static inline u32 mshci_readl(struct mshci_host *host, int reg)
-{
-	if (unlikely(host->ops->readl))
-		return host->ops->readl(host, reg);
-	else
-		return readl(host->ioaddr + reg);
-}
-
-#else
 
 static inline void mshci_writel(struct mshci_host *host, u32 val, int reg)
 {
@@ -446,8 +434,6 @@ static inline u32 mshci_readl(struct mshci_host *host, int reg)
 {
 	return readl(host->ioaddr + reg);
 }
-
-#endif /* CONFIG_MMC_SDHCI_IO_ACCESSORS */
 
 extern struct mshci_host *mshci_alloc_host(struct device *dev,
 	size_t priv_size);

@@ -28,7 +28,9 @@ struct mmc_bus_ops {
 
 void mmc_attach_bus(struct mmc_host *host, const struct mmc_bus_ops *ops);
 void mmc_detach_bus(struct mmc_host *host);
-
+#ifdef CONFIG_MMC_DISCARD
+void mmc_init_erase(struct mmc_card *card);
+#endif /* CONFIG_MMC_DISCARD */
 void mmc_set_chip_select(struct mmc_host *host, int mode);
 void mmc_set_clock(struct mmc_host *host, unsigned int hz);
 void mmc_set_bus_mode(struct mmc_host *host, unsigned int mode);

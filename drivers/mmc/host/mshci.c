@@ -1,17 +1,19 @@
 /*
- *  linux/drivers/mmc/host/mshci.c - Secure Digital Host Controller Interface driver
- *
- *  Copyright (C) 2005-2008 Pierre Ossman, All Rights Reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at
- * your option) any later version.
- *
- * Thanks to the following companies for their support:
- *
- *     - JMicron (hardware and technical support)
- */
+* linux/drivers/mmc/host/mshci.c
+* Mobile Storage Host Controller Interface driver
+*
+* Copyright (c) 2011 Samsung Electronics Co., Ltd.
+*		http://www.samsung.com
+*
+* Based on linux/drivers/mmc/host/sdhci.c
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or (at
+* your option) any later version.
+*
+*/
+
 #include <linux/delay.h>
 #include <linux/highmem.h>
 #include <linux/io.h>
@@ -24,6 +26,9 @@
 #include <linux/mmc/host.h>
 
 #include "mshci.h"
+
+#include <mach/gpio.h>
+#include <plat/gpio-cfg.h>
 
 #define DRIVER_NAME "mshci"
 
@@ -40,7 +45,15 @@ static void mshci_finish_data(struct mshci_host *);
 
 static void mshci_send_command(struct mshci_host *, struct mmc_command *);
 static void mshci_finish_command(struct mshci_host *);
+static void mshci_fifo_init(struct mshci_host *host);
 
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+static void mshci_set_clock (struct mshci_host *host,
+				unsigned int clock, u32 bus_width);
+#else
+static void mshci_set_clock(struct mshci_host *host, unsigned int clock);
+#endif
 
 static void mshci_dumpregs(struct mshci_host *host)
 {
@@ -153,10 +166,16 @@ static void mshci_set_card_detection(struct mshci_host *host, bool enable)
 {
 	u32 irqs = INTMSK_CDETECT;
 
-	if (enable)
-		mshci_unmask_irqs(host, irqs);
-	else
+	/* it can makes a problme if enable CD_DETECT interrupt,
+	 * when CD pin dose not exist. */
+	if (host->quirks & MSHCI_QUIRK_BROKEN_CARD_DETECTION ||
+	    host->quirks & MSHCI_QUIRK_BROKEN_PRESENT_BIT) {
 		mshci_mask_irqs(host, irqs);
+	} else if (enable) {
+		mshci_unmask_irqs(host, irqs);
+	} else {
+		mshci_mask_irqs(host, irqs);
+	}
 }
 
 static void mshci_enable_card_detection(struct mshci_host *host)
@@ -206,6 +225,7 @@ static void mshci_reset_fifo(struct mshci_host *host)
 			mshci_dumpregs(host);
 			return;
 		}
+
 		timeout--;
 		mdelay(1);
 	}
@@ -234,9 +254,81 @@ static void mshci_reset_dma(struct mshci_host *host)
 
 static void mshci_reset_all(struct mshci_host *host)
 {
+	int count,err=0;
+#ifdef CONFIG_MACH_C1
+	unsigned int gpio;
+#endif
+
+	/* Wait max 100 ms */
+	count = 10000;
+
+	/* before reset ciu, it should check DATA0. if when DATA0 is low and
+	   it resets ciu, it might make a problem */
+	do {
+		if (!(mshci_readl(host, MSHCI_STATUS) & (1<<9))) {
+			udelay(100);
+			if (!(mshci_readl(host, MSHCI_STATUS) & (1<<9))) {
+				udelay(100);
+				if (!(mshci_readl(host, MSHCI_STATUS) & (1<<9))) {
+#ifdef CONFIG_MACH_C1
+					for (gpio = S5PV310_GPK0(3); gpio <= S5PV310_GPK0(6); gpio++) {
+						s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0));
+					}
+					if (!gpio_get_value(S5PV310_GPK0(3)) ||
+						!gpio_get_value(S5PV310_GPK0(4)) ||
+						!gpio_get_value(S5PV310_GPK0(5)) ||
+						!gpio_get_value(S5PV310_GPK0(6))) {
+						err = 1;
+
+						break;
+					}
+					else
+#endif
+						break;
+				}
+			}
+		}
+		if (count == 0) {
+			printk(KERN_ERR "%s: Controller never released "
+				"data0 before reset ciu.\n",
+				mmc_hostname(host->mmc));
+			mshci_dumpregs(host);
+			err = 1;
+		}
+		count--;
+		udelay(10);
+	} while (1);
+
+#ifdef CONFIG_MACH_C1
+	for (gpio = S5PV310_GPK0(3); gpio <= S5PV310_GPK0(6); gpio++) {
+		s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
+	}
+
+	if(err && host->ops->init_card) {
+		printk(KERN_ERR "%s: eMMC's data lines get low.\n"
+			"Reset eMMC.\n",mmc_hostname(host->mmc));
+		host->ops->init_card(host);
+	}
+
+#endif
 	mshci_reset_ciu(host);
+
+#ifdef CONFIG_MACH_C1
+	count = 1000;
+	while ((mshci_readl(host, MSHCI_STATUS) & (1<<31)) && count != 0 ) {
+		count--;
+		mdelay(1);
+	}
+
+	if ( count == 0) {
+		printk(KERN_ERR "%s: dma request isgnal state\n"
+			"can not get inactivate state.\n",
+			mmc_hostname(host->mmc));
+	}
+#endif
 	mshci_reset_fifo(host);
 	mshci_reset_dma(host);
+
 }
 
 static void mshci_init(struct mshci_host *host)
@@ -506,17 +598,9 @@ static void mshci_set_transfer_irqs(struct mshci_host *host)
 	u32 pio_irqs = INTMSK_TXDR | INTMSK_RXDR;
 
 	if (host->flags & MSHCI_REQ_USE_DMA) {
-		/* Next codes are the W/A for DDR */
-		if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16))
-			dma_irqs |= INTMSK_DCRC;
-		/* clear interrupts for PIO */
 		mshci_clear_set_irqs(host, dma_irqs, 0);
 	} else {
-		/* Next codes are the W/A for DDR */
-		if(mshci_readl(host, MSHCI_UHS_REG) && (1 << 16))
-			mshci_clear_set_irqs(host, INTMSK_DCRC, pio_irqs);
-		else
-			mshci_clear_set_irqs(host, 0, pio_irqs);
+		mshci_clear_set_irqs(host, 0, pio_irqs);
 	}
 }
 
@@ -665,7 +749,6 @@ static void mshci_finish_data(struct mshci_host *host)
 	}
 	else
 		data->bytes_xfered = data->blksz * data->blocks;
-
 	if (data->stop) 
 		mshci_send_command(host, data->stop);
 	else
@@ -707,6 +790,21 @@ static void mshci_send_command(struct mshci_host *host, struct mmc_command *cmd)
 	
 	WARN_ON(host->cmd);
 
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING) {
+		del_timer(&host->clock_timer);
+		if(host->clock_to_restore != 0 && host->clock == 0)
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+			mshci_set_clock(host, host->clock_to_restore,  host->cur_buswidth);
+#else
+			mshci_set_clock(host, host->clock_to_restore);
+#endif
+	}
+
+	/* clear error_state */
+	if (cmd->opcode != 12)
+		host->error_state = 0;
+
 	/* disable interrupt before issuing cmd to the card. */
 	mshci_writel(host, (mshci_readl(host, MSHCI_CTRL) & ~INT_ENABLE), 
 					MSHCI_CTRL);	
@@ -736,7 +834,7 @@ static void mshci_send_command(struct mshci_host *host, struct mmc_command *cmd)
 	}
 	if (cmd->flags & MMC_RSP_CRC)
 		flags |= CMD_CHECK_CRC_BIT;
-	flags |= (cmd->opcode | CMD_STRT_BIT | CMD_WAIT_PRV_DAT_BIT); 
+	flags |= (cmd->opcode | CMD_STRT_BIT | CMD_WAIT_PRV_DAT_BIT);
 
 	ret = mshci_readl(host, MSHCI_CMD);
 	if (ret & CMD_STRT_BIT)
@@ -784,13 +882,73 @@ static void mshci_finish_command(struct mshci_host *host)
 	host->cmd = NULL;
 }
 
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+static void mshci_set_clock(struct mshci_host *host,
+				unsigned int clock, u32 bus_width)
+{
+	int div;
+	volatile u32 loop_count;
+
+	host->cur_buswidth = bus_width;
+
+	/* befor changing clock. clock needs to be off. */
+	mshci_clock_onoff(host, CLK_DISABLE);
+
+	if (clock == 0)
+		goto out;
+
+	/* these code will be changed better soon */
+	if (bus_width == MMC_BUS_WIDTH_8 ||
+			bus_width == MMC_BUS_WIDTH_4) {
+		div = 0;
+	} else if (bus_width == MMC_BUS_WIDTH_8_DDR ||
+					bus_width == MMC_BUS_WIDTH_4_DDR) {
+		div = 1;
+	} else if (clock >= host->max_clk) {
+		div = 0;
+	} else {
+		for (div = 1;div < 255;div++) {
+			if ((host->max_clk / (div<<1)) <= clock)
+				break;
+		}
+	}
+
+	mshci_writel(host, div, MSHCI_CLKDIV);
+
+	mshci_writel(host, 0, MSHCI_CMD);
+	mshci_writel(host, CMD_ONLY_CLK, MSHCI_CMD);
+	loop_count = 0x100000;
+
+	do {
+		if (!(mshci_readl(host, MSHCI_CMD) & CMD_STRT_BIT))
+			break;
+		loop_count--;
+	} while(loop_count);
+
+	if (loop_count == 0) {
+		printk(KERN_ERR "%s: Changing clock has been failed.\n "
+				, mmc_hostname(host->mmc));
+	}
+	mshci_writel(host, mshci_readl(host, MSHCI_CMD)&(~CMD_SEND_CLK_ONLY),
+					MSHCI_CMD);
+
+	mshci_clock_onoff(host, CLK_ENABLE);
+
+out:
+	host->clock = clock;
+}
+
+#else
 static void mshci_set_clock(struct mshci_host *host, unsigned int clock)
 {
 	int div;
 	volatile u32 loop_count;
 
+
 	if (clock == host->clock)
 		return;
+
 
 	/* befor changing clock. clock needs to be off. */
 	mshci_clock_onoff(host, CLK_DISABLE);
@@ -811,7 +969,7 @@ static void mshci_set_clock(struct mshci_host *host, unsigned int clock)
 
 	mshci_writel(host, 0, MSHCI_CMD);
 	mshci_writel(host, CMD_ONLY_CLK, MSHCI_CMD);
-	loop_count = 0x10000000;
+	loop_count = 0x100000;
 
 	do {
 		if (!(mshci_readl(host, MSHCI_CMD) & CMD_STRT_BIT))
@@ -831,6 +989,8 @@ static void mshci_set_clock(struct mshci_host *host, unsigned int clock)
 out:
 	host->clock = clock;
 }
+
+#endif
 
 static void mshci_set_power(struct mshci_host *host, unsigned short power)
 {
@@ -862,16 +1022,75 @@ static void mshci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	struct mshci_host *host;
 	bool present;
 	unsigned long flags;
+	int timeout;
+	ktime_t expires;
+	u64 add_time = 50000; /* 50us */
 
 	host = mmc_priv(mmc);
-
-	spin_lock_irqsave(&host->lock, flags);
 
 	WARN_ON(host->mrq != NULL);
 
 	host->mrq = mrq;
 
-	present = !(mshci_readl(host, MSHCI_CDETECT) & CARD_PRESENT);
+	/* Wait max 1 sec */
+	timeout = 100000;
+
+	/* We shouldn't wait for data inihibit for stop commands, even
+	   though they might use busy signaling */
+	if (mrq->cmd->opcode == 12) {
+		/* nothing to do */
+	} else {
+		for(;;) {
+			spin_lock_irqsave(&host->lock, flags);
+			if (mshci_readl(host, MSHCI_STATUS) & (1<<9)) {
+				if (timeout == 0) {
+					printk(KERN_ERR "%s: Controller never"
+						" released  data0.\n",
+						mmc_hostname(host->mmc));
+					mshci_dumpregs(host);
+
+					mrq->cmd->error = -ENOTRECOVERABLE;
+					host->error_state = 1;
+
+					tasklet_schedule \
+						(&host->finish_tasklet);
+					spin_unlock_irqrestore \
+						(&host->lock, flags);
+					return;
+				}
+				timeout--;
+
+				/* if previous command made an error,
+				* this function might be called by tasklet.
+				* So, it SHOULD NOT use schedule_hrtimeout */
+				if ( host->error_state == 1) {
+					spin_unlock_irqrestore
+						(&host->lock, flags);
+					udelay(10);
+				} else {
+					spin_unlock_irqrestore
+						(&host->lock, flags);
+					expires = ktime_add_ns
+						(ktime_get(), add_time);
+					set_current_state
+						(TASK_UNINTERRUPTIBLE);
+					schedule_hrtimeout
+						(&expires, HRTIMER_MODE_ABS);
+				}
+			} else {
+				spin_unlock_irqrestore(&host->lock, flags);
+				break;
+			}
+		}
+	}
+
+	spin_lock_irqsave(&host->lock, flags);
+	/* If polling, assume that the card is always present. */
+	if (host->quirks & MSHCI_QUIRK_BROKEN_CARD_DETECTION || 
+			host->quirks & MSHCI_QUIRK_BROKEN_PRESENT_BIT)
+		present = true;
+	else
+		present = !(mshci_readl(host, MSHCI_CDETECT) & CARD_PRESENT);
 		
 	if (!present || host->flags & MSHCI_DEVICE_DEAD) { 
 		host->mrq->cmd->error = -ENOMEDIUM;
@@ -900,10 +1119,33 @@ static void mshci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		mshci_reinit(host);
 	}
 
+
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+	if ( ios->bus_width == MMC_BUS_WIDTH_8 ||
+			ios->bus_width == MMC_BUS_WIDTH_4 ) {
+		if (host->ops->set_ios)
+			host->ops->set_ios(host, ios);
+		mshci_set_clock(host, ios->clock, ios->bus_width);
+	} else {
+		mshci_set_clock(host, ios->clock, ios->bus_width);
+		if (host->ops->set_ios)
+			host->ops->set_ios(host, ios);
+	}
+#else
 	if (host->ops->set_ios)
 		host->ops->set_ios(host, ios);
 
 	mshci_set_clock(host, ios->clock);
+#endif
+
+
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+	defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+	mshci_set_clock(host, ios->clock, ios->bus_width);
+#else
+	mshci_set_clock(host, ios->clock);
+#endif
 
 	if (ios->power_mode == MMC_POWER_OFF)
 		mshci_set_power(host, -1);
@@ -912,16 +1154,24 @@ static void mshci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (ios->bus_width == MMC_BUS_WIDTH_8) { 
 		mshci_writel(host, (0x1<<16), MSHCI_CTYPE);
+		mshci_writel(host, (0x0<<0), MSHCI_UHS_REG);
+		mshci_writel(host, (0x00010001), MSHCI_CLKSEL);
 	} else if (ios->bus_width == MMC_BUS_WIDTH_4) {
 		mshci_writel(host, (0x1<<0), MSHCI_CTYPE);
+		mshci_writel(host, (0x0<<0), MSHCI_UHS_REG);
+		mshci_writel(host, (0x00010001), MSHCI_CLKSEL);
 	} else if (ios->bus_width == MMC_BUS_WIDTH_8_DDR) {
 		mshci_writel(host, (0x1<<16), MSHCI_CTYPE);
 		mshci_writel(host, (0x1<<16), MSHCI_UHS_REG);
+		mshci_writel(host, (0x00020002), MSHCI_CLKSEL);
 	} else if (ios->bus_width == MMC_BUS_WIDTH_4_DDR) {
 		mshci_writel(host, (0x1<<0), MSHCI_CTYPE);
 		mshci_writel(host, (0x1<<16), MSHCI_UHS_REG);
+		mshci_writel(host, (0x00020002), MSHCI_CLKSEL);
 	} else {
+		mshci_writel(host, 0, MSHCI_UHS_REG);
 		mshci_writel(host, (0x0<<0), MSHCI_CTYPE);
+		mshci_writel(host, (0x00010001), MSHCI_CLKSEL);
 	}
 out:
 	mmiowb();
@@ -972,11 +1222,36 @@ out:
 	spin_unlock_irqrestore(&host->lock, flags);
 }
 
+#ifdef CONFIG_MACH_C1
+static void mshci_init_card(struct mmc_host *mmc, struct mmc_card *card)
+{
+	struct mshci_host *host;
+	unsigned long flags;
+
+	host = mmc_priv(mmc);
+
+	spin_lock_irqsave(&host->lock, flags);
+
+	if (host->flags & MSHCI_DEVICE_DEAD)
+		goto out;
+
+	if (host->ops->init_card)
+		host->ops->init_card(host);
+out:
+	mmiowb();
+
+	spin_unlock_irqrestore(&host->lock, flags);
+}
+#endif
+
 static struct mmc_host_ops mshci_ops = {
 	.request	= mshci_request,
 	.set_ios	= mshci_set_ios,
 	.get_ro		= mshci_get_ro,
 	.enable_sdio_irq = mshci_enable_sdio_irq,
+#ifdef CONFIG_MACH_C1
+	.init_card	= mshci_init_card,
+#endif
 };
 
 /*****************************************************************************\
@@ -994,7 +1269,9 @@ static void mshci_tasklet_card(unsigned long param)
 
 	spin_lock_irqsave(&host->lock, flags);
 
-	if (mshci_readl(host, MSHCI_CDETECT) & CARD_PRESENT) {
+	if ((host->quirks & MSHCI_QUIRK_BROKEN_CARD_DETECTION) ||
+			(host->quirks & MSHCI_QUIRK_BROKEN_PRESENT_BIT) ||
+			(mshci_readl(host, MSHCI_CDETECT) & CARD_PRESENT)) {
 		if (host->mrq) {
 			printk(KERN_ERR "%s: Card removed during transfer!\n",
 				mmc_hostname(host->mmc));
@@ -1017,13 +1294,19 @@ static void mshci_tasklet_finish(unsigned long param)
 	unsigned long flags;
 	struct mmc_request *mrq;
 
-	host = (struct mshci_host*)param;
+	host = (struct mshci_host *)param;
+
+	if (host == NULL)
+		return;
 
 	spin_lock_irqsave(&host->lock, flags);
 
 	del_timer(&host->timer);
 
 	mrq = host->mrq;
+
+	if (mrq == NULL || mrq->cmd == NULL)
+		goto out;
 
 	/*
 	 * The controller needs a reset of internal state machines
@@ -1034,9 +1317,16 @@ static void mshci_tasklet_finish(unsigned long param)
 		 (mrq->data && (mrq->data->error ||
 		  (mrq->data->stop && mrq->data->stop->error))))) {
 
-		/* Spec says we should do both at the same time, but Ricoh
-		   controllers do not like that. */
 		mshci_reset_fifo(host);
+	}
+
+out:
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING) {
+		/* Disable the clock for power saving */
+		if (host->clock != 0) {
+			mod_timer(&host->clock_timer,
+				  jiffies + msecs_to_jiffies(10));
+		}
 	}
 
 	host->mrq = NULL;
@@ -1080,6 +1370,35 @@ static void mshci_timeout_timer(unsigned long data)
 	spin_unlock_irqrestore(&host->lock, flags);
 }
 
+static void mshci_clock_gate_timer(unsigned long data)
+{
+	struct mshci_host *host;
+	unsigned long flags;
+
+	host = (struct mshci_host*)data;
+
+	spin_lock_irqsave(&host->lock, flags);
+
+	/* if data line is busy or cmd, data and mrq exist,
+	 * don't turn clock off
+	 */
+	if ((mshci_readl(host,MSHCI_STATUS) & (1<<9))
+		|| host->cmd || host->data || host->mrq ) {
+		mod_timer(&host->clock_timer, jiffies + msecs_to_jiffies(10));
+	} else {
+		host->clock_to_restore = host->clock;
+#if defined (CONFIG_S5PV310_MSHC_VPLL_46MHZ) || \
+			defined (CONFIG_S5PV310_MSHC_EPLL_45MHZ)
+		mshci_set_clock(host, 0, host->cur_buswidth);
+#else
+		mshci_set_clock(host, 0);
+#endif
+	}
+
+	spin_unlock_irqrestore(&host->lock, flags);
+}
+
+
 /*****************************************************************************\
  *                                                                           *
  * Interrupt handling                                                        *
@@ -1098,16 +1417,23 @@ static void mshci_cmd_irq(struct mshci_host *host, u32 intmask)
 		return;
 	}
 
-	if (intmask & INTMSK_RTO)
+	if (intmask & INTMSK_RTO) {
 		host->cmd->error = -ETIMEDOUT;
-	else if (intmask & (INTMSK_RCRC | INTMSK_RE))
+		printk(KERN_ERR "%s: cmd %d response timeout error\n", 
+				mmc_hostname(host->mmc),host->cmd->opcode);
+	} else if (intmask & (INTMSK_RCRC | INTMSK_RE)) {
 		host->cmd->error = -EILSEQ;
-
+		printk(KERN_ERR "%s: cmd %d repsonse %s error\n", 
+				mmc_hostname(host->mmc),host->cmd->opcode,
+				(intmask & INTMSK_RCRC) ? "crc":"RE");
+	}
 	if (host->cmd->error) {
+		/* to notify an error happend */
+		host->error_state = 1;
 		tasklet_schedule(&host->finish_tasklet);
 		return;
 	}
-
+	
 	if (intmask & INTMSK_CDONE)
 		mshci_finish_command(host);
 }
@@ -1180,6 +1506,8 @@ static void mshci_data_irq(struct mshci_host *host, u32 intmask, u8 intr_src)
 	}
 
 	if (host->data->error) {
+		/* to notify an error happend */
+		host->error_state = 1;
 		mshci_finish_data(host);
 	} else {
 		if (!(host->flags & MSHCI_REQ_USE_DMA) &&
@@ -1210,7 +1538,7 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 	struct mshci_host* host = dev_id;
 	u32 intmask;
 	int cardint = 0;
-	int timeout = 100;
+	int timeout = 0x10000;
 
 	spin_lock(&host->lock);
 
@@ -1233,9 +1561,10 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 
 	mshci_writel(host, intmask, MSHCI_RINTSTS);
 
-	if (intmask & (INTMSK_CDETECT))
-		tasklet_schedule(&host->card_tasklet);
-
+	if (intmask & (INTMSK_CDETECT)) {
+		if(!(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+			tasklet_schedule(&host->card_tasklet);
+	}
 	intmask &= ~INTMSK_CDETECT;
 
 	if (intmask & CMD_STATUS) {
@@ -1247,8 +1576,8 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 			 * so, it has to wait for cmd done intr.
 			 */
 			while ( --timeout && 
-				!(mshci_readl(host, MSHCI_MINTSTS) 
-				  & INTMSK_CDONE) )
+				!(mshci_readl(host, MSHCI_MINTSTS)
+				  & INTMSK_CDONE));
 			if (!timeout)
 				printk(KERN_ERR"*** %s time out for\
 					CDONE intr\n",
@@ -1271,8 +1600,8 @@ static irqreturn_t mshci_irq(int irq, void *dev_id)
 			 * so, it has to wait for DTO intr.
 			 */
 			while ( --timeout && 
-				!(mshci_readl(host, MSHCI_MINTSTS) 
-				  & INTMSK_DTO) )
+				!(mshci_readl(host, MSHCI_MINTSTS)
+				  & INTMSK_DTO));
 			if (!timeout)
 				printk(KERN_ERR"*** %s time out for\
 					CDONE intr\n",
@@ -1342,19 +1671,40 @@ EXPORT_SYMBOL_GPL(mshci_suspend_host);
 int mshci_resume_host(struct mshci_host *host)
 {
 	int ret;
+	int count;
 
 	if (host->flags & (MSHCI_USE_IDMA)) {
 		if (host->ops->enable_dma)
 			host->ops->enable_dma(host);
 	}
 
+	mshci_init(host);
+
 	ret = request_irq(host->irq, mshci_irq, IRQF_SHARED,
 			  mmc_hostname(host->mmc), host);
 	if (ret)
 		return ret;
 
-	mshci_init(host);
 	mmiowb();
+
+	mshci_fifo_init(host);
+
+	/* set debounce filter value*/
+	mshci_writel(host, 0xfffff, MSHCI_DEBNCE);
+
+	/* clear card type. set 1bit mode */
+	mshci_writel(host, 0x0, MSHCI_CTYPE);
+
+	/* set bus mode register for IDMAC */
+	if (host->flags & MSHCI_USE_IDMA) {
+		mshci_writel(host, BMOD_IDMAC_RESET, MSHCI_BMOD);
+		count = 100;
+		while( (mshci_readl(host, MSHCI_BMOD) & BMOD_IDMAC_RESET )
+			&& --count ) ; /* nothing to do */
+
+		mshci_writel(host, (mshci_readl(host, MSHCI_BMOD) |
+				(BMOD_IDMAC_ENABLE|BMOD_IDMAC_FB)), MSHCI_BMOD);
+	}
 
 	ret = mmc_resume_host(host->mmc);
 	if (ret)
@@ -1408,7 +1758,8 @@ static void mshci_fifo_init(struct mshci_host *host)
 	
 	fifo_val &= ~(RX_WMARK | TX_WMARK | MSIZE_MASK);
 
-	fifo_val |= (fifo_threshold | (fifo_threshold<<16));
+	/* to prevent early-wakeup problem status */
+	fifo_val |= (0x8 | (0x8<<16));
 	fifo_val |= MSIZE_8;
 
 	mshci_writel(host, fifo_val, MSHCI_FIFOTH);
@@ -1483,11 +1834,15 @@ int mshci_add_host(struct mshci_host *host)
 		mshci_ops.get_ro = host->ops->get_ro;
 
 	mmc->ops = &mshci_ops;
-	mmc->f_min = host->max_clk / 510;
+	mmc->f_min = 400000;
 	mmc->f_max = host->max_clk;
+#ifdef CONFIG_MMC_DISCARD
+	mmc->caps |= MMC_CAP_SDIO_IRQ | MMC_CAP_ERASE;
+#else /* CONFIG_MMC_DISCARD */
 	mmc->caps |= MMC_CAP_SDIO_IRQ;
+#endif /* CONFIG_MMC_DISCARD */
 
-		mmc->caps |= MMC_CAP_4_BIT_DATA;
+	mmc->caps |= MMC_CAP_4_BIT_DATA;
 
 	mmc->ocr_avail = 0;
 	mmc->ocr_avail |= MMC_VDD_32_33|MMC_VDD_33_34;
@@ -1553,7 +1908,9 @@ int mshci_add_host(struct mshci_host *host)
 		mshci_tasklet_finish, (unsigned long)host);
 
 	setup_timer(&host->timer, mshci_timeout_timer, (unsigned long)host);
-
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING)
+		setup_timer(&host->clock_timer, mshci_clock_gate_timer,
+			    (unsigned long)host);
 	ret = request_irq(host->irq, mshci_irq, IRQF_SHARED,
 		mmc_hostname(mmc), host);
 	if (ret)
@@ -1637,6 +1994,8 @@ void mshci_remove_host(struct mshci_host *host, int dead)
 	free_irq(host->irq, host);
 
 	del_timer_sync(&host->timer);
+	if (host->mmc->caps & MMC_CAP_CLOCK_GATING)
+		del_timer_sync(&host->clock_timer);
 
 	tasklet_kill(&host->card_tasklet);
 	tasklet_kill(&host->finish_tasklet);
@@ -1665,7 +2024,7 @@ EXPORT_SYMBOL_GPL(mshci_free_host);
 static int __init mshci_drv_init(void)
 {
 	printk(KERN_INFO DRIVER_NAME
-		": Secure Digital Host Controller Interface driver\n");
+		": Mobile Storage Host Controller Interface driver\n");
 	printk(KERN_INFO DRIVER_NAME ": Copyright(c) Pierre Ossman\n");
 
 	return 0;
@@ -1680,8 +2039,8 @@ module_exit(mshci_drv_exit);
 
 module_param(debug_quirks, uint, 0444);
 
-MODULE_AUTHOR("Pierre Ossman <pierre@ossman.eu>");
-MODULE_DESCRIPTION("Secure Digital Host Controller Interface core driver");
+MODULE_AUTHOR("Hyunsung Jang, <hs79.jang@samsung.com>");
+MODULE_DESCRIPTION("Mobile Storage Host Controller Interface core driver");
 MODULE_LICENSE("GPL");
 
 MODULE_PARM_DESC(debug_quirks, "Force certain quirks.");

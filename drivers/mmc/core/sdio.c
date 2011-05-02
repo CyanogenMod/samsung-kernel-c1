@@ -28,6 +28,8 @@
 #include <linux/mmc/sdio_ids.h>
 #endif
 
+#define BRCM_PATCH
+
 static int sdio_read_fbr(struct sdio_func *func)
 {
 	int ret;
@@ -384,7 +386,8 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
 		 * high-speed, but it seems that 50 MHz is
 		 * mandatory.
 		 */
-		mmc_set_clock(host, 50000000);
+		mmc_set_clock(host, 48000000);
+		//mmc_set_clock(host, 16000000);
 	} else {
 		mmc_set_clock(host, card->cis.max_dtr);
 	}
@@ -465,7 +468,7 @@ static void mmc_sdio_detect(struct mmc_host *host)
 static int mmc_sdio_suspend(struct mmc_host *host)
 {
 	int i, err = 0;
-
+#ifndef BRCM_PATCH
 	for (i = 0; i < host->card->sdio_funcs; i++) {
 		struct sdio_func *func = host->card->sdio_func[i];
 		if (func && sdio_func_present(func) && func->dev.driver) {
@@ -483,7 +486,8 @@ static int mmc_sdio_suspend(struct mmc_host *host)
 		struct sdio_func *func = host->card->sdio_func[i];
 		if (func && sdio_func_present(func) && func->dev.driver) {
 			const struct dev_pm_ops *pmops = func->dev.driver->pm;
-			pmops->resume(&func->dev);
+			if (pmops && pmops->resume)
+				pmops->resume(&func->dev);
 		}
 	}
 
@@ -492,14 +496,14 @@ static int mmc_sdio_suspend(struct mmc_host *host)
 		sdio_disable_wide(host->card);
 		mmc_release_host(host);
 	}
-
+#endif
 	return err;
 }
 
 static int mmc_sdio_resume(struct mmc_host *host)
 {
-	int i, err;
-
+	int i, err = 0;
+#ifndef BRCM_PATCH
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
@@ -528,10 +532,11 @@ static int mmc_sdio_resume(struct mmc_host *host)
 		struct sdio_func *func = host->card->sdio_func[i];
 		if (func && sdio_func_present(func) && func->dev.driver) {
 			const struct dev_pm_ops *pmops = func->dev.driver->pm;
-			err = pmops->resume(&func->dev);
+			if (pmops && pmops->resume)
+				err = pmops->resume(&func->dev);
 		}
 	}
-
+#endif
 	return err;
 }
 
@@ -733,7 +738,8 @@ int sdio_reset_comm(struct mmc_card *card)
 		 * high-speed, but it seems that 50 MHz is
 		 * mandatory.
 		 */
-		mmc_set_clock(host, 50000000);
+		mmc_set_clock(host, 48000000);
+		//mmc_set_clock(host, 16000000);
 	} else {
 		mmc_set_clock(host, card->cis.max_dtr);
 	}

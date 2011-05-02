@@ -28,6 +28,7 @@
 #include <linux/clk.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/core.h>
+#include <linux/mmc/mmc.h>
 #include <linux/io.h>
 #include <linux/semaphore.h>
 #include <linux/gpio.h>
@@ -531,6 +532,12 @@ static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
 		irq_mask = INT_EN_MASK & ~(BRR_ENABLE | BWR_ENABLE);
 	else
 		irq_mask = INT_EN_MASK;
+
+#ifdef CONFIG_MMC_DISCARD
+	/* Disable timeout for erases */
+	if (host->cmd->opcode == MMC_ERASE)
+		irq_mask &= ~DTO_ENABLE;
+#endif
 
 	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
 	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
@@ -2103,7 +2110,9 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
 
 	if (mmc_slot(host).nonremovable)
 		mmc->caps |= MMC_CAP_NONREMOVABLE;
-
+	#ifdef CONFIG_MMC_DISCARD
+ 	   mmc->caps |= MMC_CAP_ERASE;
+	#endif 
 	omap_hsmmc_conf_bus_power(host);
 
 	/* Select DMA lines */
