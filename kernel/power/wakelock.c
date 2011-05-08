@@ -23,6 +23,7 @@
 #include <linux/proc_fs.h>
 #endif
 #include "power.h"
+#include <mach/sec_debug.h>
 
 enum {
 	DEBUG_EXIT_SUSPEND = 1U << 0,
@@ -542,6 +543,11 @@ static int __init wakelocks_init(void)
 	int ret;
 	int i;
 
+	if( 0 != sec_debug_level()) {
+		pr_info("wakelocks_init: add DEBUG_EXPIRE\n");
+		debug_mask =debug_mask | DEBUG_EXPIRE;
+	}
+	
 	for (i = 0; i < ARRAY_SIZE(active_wake_locks); i++)
 		INIT_LIST_HEAD(&active_wake_locks[i]);
 

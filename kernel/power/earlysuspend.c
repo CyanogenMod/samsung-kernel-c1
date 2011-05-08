@@ -22,6 +22,7 @@
 #include <linux/workqueue.h>
 
 #include "power.h"
+#include <mach/sec_debug.h>
 
 enum {
 	DEBUG_USER_STATE = 1U << 0,
@@ -108,8 +109,11 @@ static void early_suspend(struct work_struct *work)
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("early_suspend: call handlers\n");
 	list_for_each_entry(pos, &early_suspend_handlers, link) {
-		if (pos->suspend != NULL)
+		if (pos->suspend != NULL) {
+			if (debug_mask & DEBUG_SUSPEND)
+				pr_info("early_suspend: func(%x)\n", (unsigned int)pos->suspend);
 			pos->suspend(pos);
+		}
 	}
 	mutex_unlock(&early_suspend_lock);
 
@@ -149,6 +153,8 @@ static void late_resume(struct work_struct *work)
 		pr_info("late_resume: call handlers\n");
 	list_for_each_entry_reverse(pos, &early_suspend_handlers, link)
 		if (pos->resume != NULL) {
+			if (debug_mask & DEBUG_SUSPEND)
+				pr_info("late_resume: func(%x)\n", (unsigned int)pos->resume);
 			pos->resume(pos);
 			if (in_atomic()) {
 				pr_err("%s: became atomic after executing %p(%p)\n",
@@ -166,6 +172,10 @@ void request_suspend_state(suspend_state_t new_state)
 {
 	unsigned long irqflags;
 	int old_sleep;
+
+	if( 0 != sec_debug_level()) {
+		debug_mask =debug_mask | DEBUG_SUSPEND;
+	}
 
 	spin_lock_irqsave(&state_lock, irqflags);
 	old_sleep = state & SUSPEND_REQUESTED;

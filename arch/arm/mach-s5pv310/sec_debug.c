@@ -487,6 +487,11 @@ __init int sec_debug_init(void)
 	return 0;
 }
 
+int sec_debug_level(void)
+{
+	return enable;
+}
+
 /* klaatu - schedule log */
 #ifdef CONFIG_SEC_DEBUG_SCHED_LOG
 void sec_debug_task_sched_log(int cpu, struct task_struct *task)

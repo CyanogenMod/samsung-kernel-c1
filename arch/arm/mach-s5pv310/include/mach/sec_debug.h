@@ -19,6 +19,7 @@ extern void sec_getlog_supply_kloginfo(void *klog_buf);
 
 extern void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 				  unsigned short rq_offset);
+extern int sec_debug_level(void);
 #else
 static inline int sec_debug_init(void)
 {
@@ -50,6 +51,7 @@ static inline void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 					 unsigned short rq_offset)
 {
 }
+static inline int sec_debug_level(void) {}
 
 #endif
 
