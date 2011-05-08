@@ -2270,11 +2270,11 @@ static int max8997_muic_charger_cb(cable_type_t cable_type)
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_MHL_VB:
-	case CABLE_TYPE_DESKDOCK:
 		value.intval = POWER_SUPPLY_TYPE_MISC;
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_TA:
+	case CABLE_TYPE_DESKDOCK:
 	case CABLE_TYPE_CARDOCK:
 	case CABLE_TYPE_JIG_UART_OFF_VB:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;
@@ -3054,8 +3054,13 @@ struct max17042_reg_data max17042_init_data[] = {
 };
 
 struct max17042_reg_data max17042_alert_init_data[] = {
-	/* SALRT Threshold setting to 1% => 0% power off*/
+#ifdef CONFIG_TARGET_LOCALE_KOR
+	/* SALRT Threshold setting to 1% => 0% power off */
 	{ MAX17042_REG_SALRT_TH,	0x01,	0xFF },
+#else
+	/* SALRT Threshold setting to 2% => 1% wake lock */
+	{ MAX17042_REG_SALRT_TH,	0x02,	0xFF },
+#endif
 	/* VALRT Threshold setting (disable) */
 	{ MAX17042_REG_VALRT_TH,	0x00,	0xFF },
 	/* TALRT Threshold setting (disable) */
@@ -3113,6 +3118,7 @@ static struct max17042_platform_data s5pv310_max17042_info = {
 	.alert_init = max17042_alert_init_data,
 	.alert_init_size = sizeof(max17042_alert_init_data),
 	.alert_gpio = GPIO_FUEL_ALERT,
+	.alert_irq = 0,
 	.enable_current_sense = false,
 	.enable_gauging_temperature = true,
 #ifdef RECAL_SOC_FOR_MAXIM
@@ -4891,6 +4897,9 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
 #endif
+#ifdef CONFIG_S3C_ADC
+	&s3c_device_adc,
+#endif
 #ifdef CONFIG_I2C_S3C2410
 	&s3c_device_i2c0,
 #if defined(CONFIG_S3C_DEV_I2C1)
@@ -4965,7 +4974,6 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_SND_S5P_RP
 	&s5pv310_device_rp,
 #endif
-
 #ifdef CONFIG_MTD_NAND
 	&s3c_device_nand,
 #endif
@@ -4990,10 +4998,6 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_HSMMC3
 	&s3c_device_hsmmc3,
 #endif
-#ifdef CONFIG_S3C_ADC
-	&s3c_device_adc,
-#endif
-
 #ifdef CONFIG_VIDEO_TVOUT
 	&s5p_device_tvout,
 	&s5p_device_cec,
@@ -5030,7 +5034,9 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
 #endif
-
+#ifdef CONFIG_SEC_DEV_JACK
+	&sec_device_jack,
+#endif
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
@@ -5068,9 +5074,6 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 	&s5pv310_device_sata,
 #endif
 	&c1_keypad,
-#ifdef CONFIG_SEC_DEV_JACK
-	&sec_device_jack,
-#endif
 	&sec_device_rfkill,
 
 #ifdef CONFIG_HAVE_PWM

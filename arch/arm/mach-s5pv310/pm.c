@@ -539,6 +539,7 @@ static int s5pv310_pm_prepare(void)
 
 static void s5pv310_pm_end(void)
 {
+	printk(KERN_DEBUG "s5pv310_pm_end\n");
 }
 
 static int s5pv310_pm_add(struct sys_device *sysdev)
