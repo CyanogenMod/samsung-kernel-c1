@@ -518,6 +518,29 @@ static ssize_t k3g_power_on(struct device *dev,
 	return sprintf(buf, "%d\n", (err < 0 ? 0 : 1));
 }
 
+
+static ssize_t k3g_force_sleep(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	int err = 5;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct k3g_data *k3g_data = i2c_get_clientdata(client);
+
+	err = i2c_smbus_write_byte_data(k3g_data->client,
+					CTRL_REG1, 0x00);
+	if(err == 0)
+	{
+		err = 1;
+	}
+	else
+	{
+		err = 0;
+	}
+
+	return sprintf(buf, "%d\n", err);
+}
+
+
 static ssize_t k3g_get_temp(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -776,6 +799,8 @@ exit:
 
 static DEVICE_ATTR(gyro_power_on, 0664,
 	k3g_power_on, NULL);
+static DEVICE_ATTR(gyro_force_sleep, 0664,
+	k3g_force_sleep, NULL);
 static DEVICE_ATTR(gyro_get_temp, 0664,
 	k3g_get_temp, NULL);
 static DEVICE_ATTR(gyro_selftest, 0664,
@@ -936,6 +961,12 @@ static int k3g_probe(struct i2c_client *client,
 		pr_err("%s: Failed to create device file(%s)!\n", __func__,
 			dev_attr_gyro_power_on.attr.name);
 		goto device_create_file3;
+	}
+
+	if (device_create_file(data->dev, &dev_attr_gyro_force_sleep) < 0) {
+		pr_err("%s: Failed to create device file(%s)!\n", __func__,
+			dev_attr_gyro_force_sleep.attr.name);
+		goto device_create_file4;
 	}
 
 	if (device_create_file(data->dev, &dev_attr_gyro_get_temp) < 0) {

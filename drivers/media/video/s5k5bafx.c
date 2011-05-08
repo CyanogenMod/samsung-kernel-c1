@@ -530,28 +530,6 @@ static int s5k5bafx_get_exif(struct v4l2_subdev *sd)
 	return 0;
 }
 
-static int s5k5bafx_set_capture_start(struct v4l2_subdev *sd)
-{
-	struct s5k5bafx_state *state = to_state(sd);
-	int err = -EINVAL;
-
-	/* set initial regster value */
-#ifdef CONFIG_LOAD_FILE
-	err = s5k5bafx_write_regs_from_sd(sd, "s5k5bafx_capture");
-#else
-	err = s5k5bafx_write_regs(sd, s5k5bafx_capture,
-		sizeof(s5k5bafx_capture) / sizeof(s5k5bafx_capture[0]));
-#endif
-	if (unlikely(err)) {
-		cam_err("failed to make capture\n");
-		return err;
-	}
-
-	s5k5bafx_get_exif(sd);
-
-	return err;
-}
-
 static int s5k5bafx_check_dataline(struct v4l2_subdev *sd, s32 val)
 {
 	int err = 0;
@@ -577,6 +555,35 @@ static int s5k5bafx_check_dataline(struct v4l2_subdev *sd, s32 val)
 	if (unlikely(err)) {
 		cam_err("fail to DTP setting\n");
 		return err;
+	}
+
+	return 0;
+}
+
+static int s5k5bafx_debug_sensor_status(struct v4l2_subdev *sd)
+{
+	u16 val = 0;
+	int err = -EINVAL;
+
+	/* Read Mon_DBG_Counters_2 */
+	/*err = s5k5bafx_read_reg(sd, 0x7000, 0x0402, &val);
+	CHECK_ERR(err);
+	cam_info("counter = %d\n", val); */
+
+	/* Read REG_TC_GP_EnableCaptureChanged. */
+	err = s5k5bafx_read_reg(sd, 0x7000, 0x01F6, &val);
+	CHECK_ERR(err);
+	
+	switch(val) {
+	case 0:
+		cam_info("In normal mode(0)\n");
+		break;
+	case 1:
+		cam_info("In swiching to capture mode(1).....\n");
+		break;
+	default:
+		cam_err("In Unknown mode(?)\n");
+		break;
 	}
 
 	return 0;
@@ -646,6 +653,28 @@ static int s5k5bafx_set_preview_stop(struct v4l2_subdev *sd)
 {
 	int err = 0;
 	cam_info("do nothing.\n");
+
+	return err;
+}
+
+static int s5k5bafx_set_capture_start(struct v4l2_subdev *sd)
+{
+	struct s5k5bafx_state *state = to_state(sd);
+	int err = -EINVAL;
+
+	/* set initial regster value */
+#ifdef CONFIG_LOAD_FILE
+	err = s5k5bafx_write_regs_from_sd(sd, "s5k5bafx_capture");
+#else
+	err = s5k5bafx_write_regs(sd, s5k5bafx_capture,
+		sizeof(s5k5bafx_capture) / sizeof(s5k5bafx_capture[0]));
+#endif
+	if (unlikely(err)) {
+		cam_err("failed to make capture\n");
+		return err;
+	}
+
+	s5k5bafx_get_exif(sd);
 
 	return err;
 }
@@ -1477,6 +1506,7 @@ static int s5k5bafx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		break;
 
 	case V4L2_CID_CAMERA_CHECK_SENSOR_STATUS:
+		s5k5bafx_debug_sensor_status(sd);
 		err = s5k5bafx_check_sensor_status(sd);
 		break;
 

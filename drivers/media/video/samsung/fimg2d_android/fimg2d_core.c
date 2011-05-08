@@ -116,6 +116,9 @@ int g2d_init_regs(struct g2d_global *g2d_dev, g2d_params *params)
 	g2d_clip * clip     = &params->clip;
 	g2d_flag * flag     = &params->flag;
 
+	if (g2d_check_params(params) < 0)
+		return -1;
+
 	/* source image */	
 	blt_cmd |= g2d_set_src_img(g2d_dev, src_rect, flag);    
 
@@ -206,7 +209,6 @@ int g2d_do_blit(struct g2d_global *g2d_dev, g2d_params *params)
 	g2d_sysmmu_set_pgd((u32)virt_to_phys((void *)pgd));
 
 	if(g2d_init_regs(g2d_dev, params) < 0) {
-		FIMG2D_ERROR("error : g2d_init_regs\n");
 		return false;
 	}
 

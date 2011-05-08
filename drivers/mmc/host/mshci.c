@@ -254,7 +254,7 @@ static void mshci_reset_dma(struct mshci_host *host)
 
 static void mshci_reset_all(struct mshci_host *host)
 {
-	int count,err=0;
+	int count, count2, err=0;
 #ifdef CONFIG_MACH_C1
 	unsigned int gpio;
 #endif
@@ -294,6 +294,7 @@ static void mshci_reset_all(struct mshci_host *host)
 				mmc_hostname(host->mmc));
 			mshci_dumpregs(host);
 			err = 1;
+			break;
 		}
 		count--;
 		udelay(10);
@@ -309,26 +310,47 @@ static void mshci_reset_all(struct mshci_host *host)
 			"Reset eMMC.\n",mmc_hostname(host->mmc));
 		host->ops->init_card(host);
 	}
-
 #endif
 	mshci_reset_ciu(host);
 
 #ifdef CONFIG_MACH_C1
 	count = 1000;
+	count2 = 1000;
+
 	while ((mshci_readl(host, MSHCI_STATUS) & (1<<31)) && count != 0 ) {
 		count--;
 		mdelay(1);
 	}
 
-	if ( count == 0) {
+	while ((mshci_readl(host, MSHCI_STATUS) & (1<<10)) && count2 != 0 ) {
+		count2--;
+		mdelay(1);
+	}
+
+	if ( count == 0 || count2 == 0 ) {
+		int fifo_cnt,tmp;
+		if (count == 0)
 		printk(KERN_ERR "%s: dma request isgnal state\n"
 			"can not get inactivate state.\n",
 			mmc_hostname(host->mmc));
-	}
-#endif
-	mshci_reset_fifo(host);
-	mshci_reset_dma(host);
+		if (count2 == 0)
+			printk(KERN_ERR "%s: data_state_mc_busy\n"
+				"is never released.\n",
+				mmc_hostname(host->mmc));
 
+		/* to clear fifo */
+		fifo_cnt = (mshci_readl(host,MSHCI_STATUS)&FIFO_COUNT)>>17;
+		while(fifo_cnt) {
+			tmp = mshci_readl(host, MSHCI_FIFODAT);
+			fifo_cnt--;
+	}
+	} else {
+		mshci_reset_fifo(host);
+	}
+#else
+	mshci_reset_fifo(host);
+#endif
+	mshci_reset_dma(host);
 }
 
 static void mshci_init(struct mshci_host *host)
@@ -744,6 +766,11 @@ static void mshci_finish_data(struct mshci_host *host)
 	}
 
 	if (data->error) {
+		/* to go to idle state */
+		mshci_reset_ciu(host);
+		/* to clear fifo */
+		mshci_reset_fifo(host);
+		/* to reset dma */
 		mshci_reset_dma(host);
 		data->bytes_xfered = 0;
 	}
@@ -994,7 +1021,7 @@ out:
 
 static void mshci_set_power(struct mshci_host *host, unsigned short power)
 {
-	u8 pwr;
+	u8 pwr = power;
 
 	if (power == (unsigned short)-1)
 		pwr = 0;

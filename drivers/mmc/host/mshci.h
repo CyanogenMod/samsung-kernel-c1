@@ -289,7 +289,7 @@
  *  Bus Mode Register
  *  MSHCI_BMOD - offset 0x80
  *****************************************************/
-#define BMOD_IDMAC_RESET        (0x0<<1)
+#define BMOD_IDMAC_RESET        (0x1<<0)
 #define BMOD_IDMAC_FB           (0x1<<1)
 #define BMOD_IDMAC_ENABLE       (0x1<<7)
 

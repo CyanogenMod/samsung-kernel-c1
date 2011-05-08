@@ -1204,7 +1204,7 @@ static int fimc_open(struct file *filp)
 	struct fimc_control *ctrl;
 	struct s3c_platform_fimc *pdata;
 	struct fimc_prv_data *prv_data;
-	int in_use;
+	int in_use, max_use;
 	int ret;
 	int i;
 
@@ -1214,7 +1214,12 @@ static int fimc_open(struct file *filp)
 	mutex_lock(&ctrl->lock);
 
 	in_use = atomic_read(&ctrl->in_use);
-	if (in_use > FIMC_MAX_CTXS) {
+	if (ctrl->id == FIMC0 || ctrl->id == FIMC2)
+		max_use = 1;
+	else
+		max_use = FIMC_MAX_CTXS + 1;
+
+	if (in_use >= max_use) {
 		ret = -EBUSY;
 		goto resource_busy;
 	} else {

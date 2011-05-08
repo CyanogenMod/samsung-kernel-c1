@@ -606,6 +606,8 @@ void sii9234_cfg_power(bool on)
 		msleep(10);
 		gpio_set_value(GPIO_MHL_RST, GPIO_LEVEL_HIGH);
 		s3c_gpio_setpull(GPIO_AP_SCL_18V, S3C_GPIO_PULL_NONE);
+
+		sii9234_unmaks_interrupt();
 	}
 	else
 	{

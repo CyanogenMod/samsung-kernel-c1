@@ -77,9 +77,10 @@ obj-$(CONFIG_VIDEO_S5K3BA)		+= s5k3ba.o
 obj-$(CONFIG_VIDEO_S5K4BA)		+= s5k4ba.o
 obj-$(CONFIG_VIDEO_S5K4EA)		+= s5k4ea.o
 obj-$(CONFIG_VIDEO_S5K6AA)		+= s5k6aa.o
+
 obj-$(CONFIG_VIDEO_M5MO)		+= m5mo.o
-obj-$(CONFIG_VIDEO_S5K6AAFX)		+= s5k6aafx.o
-obj-$(CONFIG_VIDEO_S5K5BAFX)		+= s5k5bafx.o
+obj-$(CONFIG_VIDEO_S5K6AAFX)	+= s5k6aafx.o
+obj-$(CONFIG_VIDEO_S5K5BAFX)	+= s5k5bafx.o
 
 obj-$(CONFIG_SOC_CAMERA_MT9M001)	+= mt9m001.o
 obj-$(CONFIG_SOC_CAMERA_MT9M111)	+= mt9m111.o

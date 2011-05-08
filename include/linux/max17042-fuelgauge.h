@@ -62,6 +62,7 @@ struct max17042_platform_data {
 	struct	max17042_reg_data *alert_init;
 	int alert_init_size;
 	int alert_gpio;
+	unsigned int alert_irq;
 
 	bool enable_current_sense;
 	bool enable_gauging_temperature;

@@ -46,7 +46,9 @@ struct max17042_chip {
 	int soc;			/* battery capacity */
 	int raw_soc;		/* fuel gauge raw data */
 	int temperature;
+	int fuel_alert_soc;		/* fuel alert threshold */
 	bool is_fuel_alerted;	/* fuel alerted */
+	struct wake_lock fuel_alert_wake_lock;
 
 #ifdef RECAL_SOC_FOR_MAXIM
 	int cnt;
@@ -487,6 +489,33 @@ static void max17042_work(struct work_struct *work)
 	if (chip->pdata->enable_gauging_temperature)
 		max17042_get_temperature(chip->client);
 
+	/* polling check for fuel alert for booting in low battery*/
+	if (chip->raw_soc < chip->fuel_alert_soc) {
+		if(!(chip->is_fuel_alerted) &&
+			chip->pdata->low_batt_cb) {
+			wake_lock(&chip->fuel_alert_wake_lock);
+			chip->pdata->low_batt_cb();
+			chip->is_fuel_alerted = true;
+
+			dev_info(&chip->client->dev,
+				"fuel alert activated by polling check (raw:%d)\n",
+				chip->raw_soc);
+		}
+		else
+			dev_info(&chip->client->dev,
+				"fuel alert already activated (raw:%d)\n",
+				chip->raw_soc);
+	} else if (chip->raw_soc == chip->fuel_alert_soc) {
+		if(chip->is_fuel_alerted) {
+			wake_unlock(&chip->fuel_alert_wake_lock);
+			chip->is_fuel_alerted = false;
+
+			dev_info(&chip->client->dev,
+				"fuel alert deactivated by polling check (raw:%d)\n",
+				chip->raw_soc);
+		}
+	}
+
 #ifdef LOG_REG_FOR_MAXIM
 	{
 		int reg;
@@ -654,13 +683,13 @@ static irqreturn_t max17042_irq_thread(int irq, void *irq_data)
 	if (max17042_alert_status /* && !(chip->is_fuel_alerted)*/) {
 		if (max17042_read_reg(chip->client, MAX17042_REG_CONFIG, data)
 			< 0)
-			return -1;
+			return IRQ_HANDLED;
 
 		data[1] |= (0x1 << 3);
 
 		if (chip->pdata->low_batt_cb && !(chip->is_fuel_alerted)) {
+			wake_lock(&chip->fuel_alert_wake_lock);
 			chip->pdata->low_batt_cb();
-			
 			chip->is_fuel_alerted = true;
 		} else
 			dev_err(&chip->client->dev,
@@ -672,11 +701,13 @@ static irqreturn_t max17042_irq_thread(int irq, void *irq_data)
 			"%s : low batt alerted!! config_reg(%02x%02x)\n",
 			__func__, data[1], data[0]);
 	} else if (!max17042_alert_status /* && (chip->is_fuel_alerted)*/) {
+		if (chip->is_fuel_alerted)
+			wake_unlock(&chip->fuel_alert_wake_lock);
 		chip->is_fuel_alerted = false;
 
 		if (max17042_read_reg(chip->client, MAX17042_REG_CONFIG, data)
 			< 0)
-			return -1;
+			return IRQ_HANDLED;
 
 		data[1] &= (~(0x1 << 3));
 
@@ -768,8 +799,8 @@ static int max17042_irq_init(struct max17042_chip *chip)
 	chip->is_fuel_alerted = false;
 
 	/* 2. Request irq */
-	if (chip->client->irq) {
-		ret = request_threaded_irq(chip->client->irq, NULL,
+	if (chip->pdata->alert_irq) {
+		ret = request_threaded_irq(chip->pdata->alert_irq, NULL,
 				max17042_irq_thread, IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				   "max17042 fuel alert", chip);
 		if (ret) {
@@ -777,7 +808,7 @@ static int max17042_irq_init(struct max17042_chip *chip)
 			return ret;
 		}
 
-		ret = enable_irq_wake(chip->client->irq);
+		ret = enable_irq_wake(chip->pdata->alert_irq);
 		if (ret < 0)
 			dev_err(&chip->client->dev,
 				"failed to enable wakeup src %d\n", ret);
@@ -792,8 +823,8 @@ static int max17042_irq_init(struct max17042_chip *chip)
 
 	max17042_write_reg(chip->client, MAX17042_REG_CONFIG, data);
 
-	dev_info(&chip->client->dev, "%s : config_reg(%02x%02x)\n",
-		__func__, data[1], data[0]);
+	dev_info(&chip->client->dev, "%s : config_reg(%02x%02x) irq(%d)\n",
+		__func__, data[1], data[0], chip->pdata->alert_irq);
 
 	return 0;
 }
@@ -803,6 +834,8 @@ static int __devinit max17042_probe(struct i2c_client *client,
 {
 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
 	struct max17042_chip *chip;
+	int i;
+	struct max17042_reg_data *data;
 	int ret;
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE))
@@ -842,6 +875,21 @@ static int __devinit max17042_probe(struct i2c_client *client,
 
 #ifndef NO_READ_I2C_FOR_MAXIM
 	/* register low batt intr */
+	chip->pdata->alert_irq = gpio_to_irq(chip->pdata->alert_gpio);
+
+	wake_lock_init(&chip->fuel_alert_wake_lock, WAKE_LOCK_SUSPEND,
+		       "fuel_alerted");
+
+	data = chip->pdata->alert_init;
+	for (i = 0; i < chip->pdata->alert_init_size; i += 3)
+		if ((data + i)->reg_addr ==
+			MAX17042_REG_SALRT_TH)
+			chip->fuel_alert_soc =
+			(data + i)->reg_data1;
+
+	dev_info(&client->dev, "fuel alert soc (%d)\n",
+		chip->fuel_alert_soc);
+
 	ret = max17042_irq_init(chip);
 	if (ret)
 		goto err_kfree;
@@ -858,6 +906,7 @@ static int __devinit max17042_probe(struct i2c_client *client,
 	return 0;
 
 err_kfree:
+	wake_lock_destroy(&chip->fuel_alert_wake_lock);
 	kfree(chip);
 	return ret;
 }
@@ -868,6 +917,7 @@ static int __devexit max17042_remove(struct i2c_client *client)
 
 	power_supply_unregister(&chip->battery);
 	cancel_delayed_work(&chip->work);
+	wake_lock_destroy(&chip->fuel_alert_wake_lock);
 	kfree(chip);
 	return 0;
 }

@@ -1487,7 +1487,6 @@ static int s3c_change_usb_mode(int mode)
 		case USB_CABLE_DETACHED_WITHOUT_NOTI:
 			dev->gadget.speed = USB_SPEED_UNKNOWN;
 			retval = s3c_vbus_enable(NULL, 0);
-			atomic_set(&dev->usb_status, USB_CABLE_ATTACHED);
 			break;
 
 		case USB_CABLE_ATTACHED:

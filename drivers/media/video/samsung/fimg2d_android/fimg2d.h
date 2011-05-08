@@ -348,6 +348,7 @@ enum fimg2d_log {
 
 
 /**** function declearation***************************/
+int g2d_check_params(g2d_params *params);
 void g2d_start_bitblt(struct g2d_global *g2d_dev, g2d_params *params);
 void g2d_check_fifo_state_wait(struct g2d_global *g2d_dev);
 u32  g2d_set_src_img(struct g2d_global *g2d_dev, g2d_rect * rect, g2d_flag * flag);

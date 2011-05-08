@@ -59,7 +59,7 @@ static int last_uevent_state;
 atomic_t hdmi_status;
 atomic_t poll_state;
 
-static struct kobject *hpd_tvout_kobj, *hpd_video_kobj;
+static struct kobject *hpd_tvout_kobj, *hpd_video_kobj = NULL;
 
 
 static void s5p_hpd_kobject_uevent(void)
@@ -71,6 +71,10 @@ static void s5p_hpd_kobject_uevent(void)
 	int hpd_state = atomic_read(&hpd_struct.state);
 
 	HPDIFPRINTK("++\n");
+
+	if (hpd_tvout_kobj == NULL || hpd_video_kobj == NULL)
+		return;
+
 	memset(env_buf, 0, sizeof(env_buf));
 
 	if (hpd_state)
@@ -130,6 +134,9 @@ void rcp_cbus_uevent(u8 rcpCode)	//NAGSM_Android_SEL_Kernel_Aakash_20101206
 	char env_buf[120];
 	char *envp[2];
 	int env_offset = 0;
+
+	if (hpd_tvout_kobj == NULL || hpd_video_kobj == NULL)
+		return;
 
 	memset(env_buf, 0, sizeof(env_buf));
 	printk("%s : RCP Message Recvd , rcpCode = 0x%x\n",__func__,rcpCode);

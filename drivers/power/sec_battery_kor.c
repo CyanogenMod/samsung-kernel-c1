@@ -245,9 +245,23 @@ static int sec_bat_check_vf(struct sec_bat_info *info)
 			health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
 		} else
 			health = POWER_SUPPLY_HEALTH_DEAD;
+	} else {
+		health = POWER_SUPPLY_HEALTH_GOOD;
 	}
 
-	info->batt_health = health;
+	/* update health */
+	if (health != info->batt_health) {
+		if (health == POWER_SUPPLY_HEALTH_UNSPEC_FAILURE ||
+			health == POWER_SUPPLY_HEALTH_DEAD){
+			info->batt_health = health;
+			printk("%s : vf error update\n", __func__);
+		} else if (info->batt_health != POWER_SUPPLY_HEALTH_OVERHEAT &&
+			info->batt_health != POWER_SUPPLY_HEALTH_COLD &&
+			health == POWER_SUPPLY_HEALTH_GOOD) {
+			info->batt_health = health;
+			printk("%s : recovery form vf error\n", __func__);
+		}
+	}
 	
 	return 0;
 }
@@ -1566,8 +1580,10 @@ static void sec_bat_measure_work(struct work_struct *work)
 
 	wake_lock(&info->measure_wake_lock);
 	sec_bat_check_temper_adc(info);
-	if (sec_bat_check_detbat(info) == BAT_NOT_DETECTED && info->present == 1)
+	if (sec_bat_check_detbat(info) == BAT_NOT_DETECTED && info->present == 1) {
+		msleep(100);
 		sec_bat_check_detbat(info); /* AGAIN_FEATURE */
+	}
 
 	if (info->initial_check_count) {
 		queue_delayed_work(info->monitor_wqueue, &info->measure_work,

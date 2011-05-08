@@ -2165,8 +2165,8 @@ done:
 		(!dhd->pub.dongle_reset))) {
 
 		if (++hang_retry > 3) {
-		DHD_ERROR(("%s: Event HANG send up\n", __FUNCTION__));
-		net_os_send_hang_message(net);
+			DHD_ERROR(("%s: Event HANG send up\n", __FUNCTION__));
+			net_os_send_hang_message(net);
 			hang_retry = 0;
 		}
 	}

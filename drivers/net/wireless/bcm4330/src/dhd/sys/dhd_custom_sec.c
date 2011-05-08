@@ -149,7 +149,7 @@ int WriteRDWR_Macaddr(struct ether_addr *mac)
 
 	if ((g_iMacFlag != MACADDR_COB) && (g_iMacFlag != MACADDR_MOD))
 		return 0;
-	
+
 	sprintf(buf,"%02X:%02X:%02X:%02X:%02X:%02X\n",
 			mac->octet[0],mac->octet[1],mac->octet[2],
 			mac->octet[3],mac->octet[4],mac->octet[5]);
@@ -173,9 +173,7 @@ int WriteRDWR_Macaddr(struct ether_addr *mac)
 		set_fs(oldfs);
 		filp_close(fp_mac, NULL);
 	}
-
-	return 0;
-	
+ 		return 0;
 }
 
 #if 0 /* disable because it's not used yet */
@@ -434,11 +432,14 @@ int Write_Macaddr(struct ether_addr *mac)
 	mm_segment_t oldfs		= {0};
 	int ret = -1;
 
+startwrite:
+	
 	sprintf(buf,"%02X:%02X:%02X:%02X:%02X:%02X\n",
 			mac->octet[0],mac->octet[1],mac->octet[2],
 			mac->octet[3],mac->octet[4],mac->octet[5]);
 
 	fp_mac = filp_open(filepath, O_RDWR | O_CREAT, 0666); // File is always created.
+
 	if(IS_ERR(fp_mac)) {
 		DHD_ERROR(("[WIFI] %s: File open error\n", filepath));
 		return -1;
@@ -457,7 +458,17 @@ int Write_Macaddr(struct ether_addr *mac)
 		set_fs(oldfs);
 		filp_close(fp_mac, NULL);
 	}
+	/* check .mac.info file is 0 byte */
+	fp_mac = filp_open(filepath, O_RDONLY, 0);
+	ret = kernel_read(fp_mac, 0, buf, 18);
 
+  if(ret==0){
+  	filp_close(fp_mac, NULL);
+  	goto startwrite;
+  }	
+	
+  filp_close(fp_mac, NULL);
+  
 	return 0;
 	
 }
@@ -484,6 +495,7 @@ void sec_control_pm(dhd_pub_t *dhd, uint *power_mode)
 		fp = filp_open(filepath, O_RDWR | O_CREAT, 0666);
 		if (IS_ERR(fp) || (fp==NULL)) {
 			DHD_ERROR(("[%s, %d] /data/.psm.info open failed\n", __FUNCTION__, __LINE__));
+			return;
 		}
 		else {
 			oldfs = get_fs();

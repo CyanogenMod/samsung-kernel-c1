@@ -660,10 +660,8 @@ static long  mtpg_ioctl(struct file *fd, unsigned int code, unsigned long arg)
 			if (dev->cdev && dev->cdev->gadget )
 			{
 				printk("[%s] B4 disconnecting gadget\tline = [%d] \n", __func__,__LINE__);
-				usb_gadget_disconnect(dev->cdev->gadget);
+				usb_composite_force_reset(dev->cdev);
 				printk("[%s] \tline = [%d] calling usb_gadget_connect after msleep of 5 \n", __func__,__LINE__);
-				msleep(5);
-				usb_gadget_connect(dev->cdev->gadget);
 			}
 			status = 10;
 			printk("[%s]  [%d] MTP_ONLY_ENABLE ioctl and clearing the error = 0 \n", __func__,__LINE__);

@@ -37,6 +37,8 @@ when              who                         what, where, why
 void sii9234_interrupt_event(void);
 bool sii9234_init(void);
 
+void sii9234_unmaks_interrupt(void);
+
 //MHL IOCTL INTERFACE
 #define MHL_READ_RCP_DATA 0x1
 

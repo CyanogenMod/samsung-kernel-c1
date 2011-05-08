@@ -2052,6 +2052,11 @@ int fimc_qbuf_capture(void *fh, struct v4l2_buffer *b)
 	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
 	struct fimc_capinfo *cap = ctrl->cap;
 
+	if (!cap || !ctrl->cam) {
+		fimc_err("%s: No capture device.\n", __func__);
+		return -ENODEV;
+	}
+
 	if (b->memory != V4L2_MEMORY_MMAP) {
 		fimc_err("%s: invalid memory type\n", __func__);
 		return -EINVAL;
@@ -2090,6 +2095,11 @@ int fimc_dqbuf_capture(void *fh, struct v4l2_buffer *b)
 	int pp, ret = 0;
 
 	struct s3c_platform_fimc *pdata = to_fimc_plat(ctrl->dev);
+
+	if (!cap || !ctrl->cam) {
+		fimc_err("%s: No capture device.\n", __func__);
+		return -ENODEV;
+	}
 
 	if (b->memory != V4L2_MEMORY_MMAP) {
 		fimc_err("%s: invalid memory type\n", __func__);

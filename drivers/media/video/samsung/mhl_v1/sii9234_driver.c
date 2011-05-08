@@ -2892,3 +2892,28 @@ void sii9234_interrupt_event(void)
 	printk(KERN_ERR "[MHL]sii9234_interrupt_event :: flag: %x\n",(int) flag );
 }
 EXPORT_SYMBOL(sii9234_interrupt_event);
+
+
+/*===========================================================================
+  FUNCTION sii9234_unmaks_interrupt
+
+  DESCRIPTION
+  Unmask interrupt, we add this function to prevent interrupt before sii9234 power on
+
+  DEPENDENCIES
+  None
+
+  RETURN VALUE
+  None
+
+  SIDE EFFECTS
+  None
+  ===========================================================================*/
+void sii9234_unmaks_interrupt(void)
+{
+	UNMASK_INTR_4_INTERRUPTS;
+	UNMASK_INTR_1_INTERRUPTS;
+
+	return;
+}
+

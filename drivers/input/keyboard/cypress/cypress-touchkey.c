@@ -286,8 +286,6 @@ void touchkey_work_func(struct work_struct *p)
 	}
 #endif
 
-	printk(KERN_DEBUG "[TouchKey] %s\n", __func__);
-
 	set_touchkey_debug('a');
 
 #ifdef CONFIG_CPU_FREQ
@@ -299,7 +297,6 @@ void touchkey_work_func(struct work_struct *p)
 	ret = i2c_touchkey_read(KEYCODE_REG, data, 3);
 #endif
 
-	printk(KERN_DEBUG"[TOUCHKEY] data[0] is %d\n", data[0]);
 
 #ifdef TEST_JIG_MODE
 	menu_sensitivity = data[7];
@@ -371,8 +368,11 @@ void touchkey_work_func(struct work_struct *p)
 
 		input_report_key(touchkey_driver->input_dev, touchkey_keycode[data[0] & KEYCODE_BIT], 0);
 		input_sync(touchkey_driver->input_dev);
+		
+		/*
 		printk(KERN_DEBUG "[TouchKey] release keycode:%d \n",
 		       touchkey_keycode[data[0] & KEYCODE_BIT]);
+		*/
 
 #ifdef TEST_JIG_MODE
 		if(touchkey_keycode[data[0] & KEYCODE_BIT] == touchkey_keycode[1])
@@ -395,9 +395,12 @@ void touchkey_work_func(struct work_struct *p)
 
 			input_report_key(touchkey_driver->input_dev,  touchkey_keycode[data[0] & KEYCODE_BIT], 1);
 			input_sync(touchkey_driver->input_dev);
+			
+			/*
 			printk(KERN_DEBUG
 			       "[TouchKey] press keycode:%d \n",
 			       touchkey_keycode[data[0] & KEYCODE_BIT]);
+			*/
 
 #ifdef TEST_JIG_MODE
 			if(touchkey_keycode[data[0] & KEYCODE_BIT] == touchkey_keycode[1])
@@ -730,7 +733,6 @@ static ssize_t touch_led_control(struct device *dev,
 	int data;
 	int errnum;
 	if (sscanf(buf, "%d\n", &data) == 1) {
-		printk(KERN_DEBUG "[TouchKey] touch_led_control: %d \n", data);
 		errnum = i2c_touchkey_write((u8 *)&data, 1);
 		if(errnum==-ENODEV) {
 			touchled_cmd_reversed = 1;

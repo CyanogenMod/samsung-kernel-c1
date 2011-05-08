@@ -366,8 +366,12 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 
 	input_event(input, type, button->code,
 		    (desc->status & IRQ_WAKEUP) ? 1 : !!state);
+	
+	/*
 	if (bdata->key_state == 1)
 		printk(KERN_ERR "key [%d] is pressed\n", bdata->button->code);
+	*/
+	
 	input_sync(input);
 }
 

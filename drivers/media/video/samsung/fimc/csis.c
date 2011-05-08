@@ -288,22 +288,16 @@ void s3c_csis_stop(int csis_id)
 static irqreturn_t s3c_csis_irq(int irq, void *dev_id)
 {
 	u32 cfg;
-#ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
-	/* We check the below error lists:
-	ERR_SOT_HS, ERR_LOST_FS, ERR_LOST_FE,
-	ERR_OVER, ERR_ECC, ERR_CRC, ERR_ID */
-	const u32 err_int = 0x0F03F;
-#endif
+
 	struct platform_device *pdev = (struct platform_device *) dev_id;
 	/* just clearing the pends */
 	cfg = readl(s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
 	writel(cfg, s3c_csis[pdev->id]->regs + S3C_CSIS_INTSRC);
 
 #ifdef CONFIG_VIDEO_DEBUG_NO_FRAME
-	if (unlikely(cfg & err_int != 0)) {
-		if (err_print_cnt < 20) {
-			printk(KERN_WARNING "%s: cnt=%d, error=0x%X\n\n",
-					__func__, err_print_cnt, cfg);
+	if (unlikely(cfg & S3C_CSIS_INTSRC_ERR)) {
+		if (err_print_cnt < 30) {
+			err("csis error interrupt[%d]: %#x\n", err_print_cnt, cfg);
 			err_print_cnt++;
 		}
 	}

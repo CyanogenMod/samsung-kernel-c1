@@ -49,7 +49,7 @@
 #define M5MO_I2C_VERIFY		100
 #define M5MO_ISP_TIMEOUT	3000
 #define M5MO_ISP_AFB_TIMEOUT	15000 /* FIXME */
-#define M5MO_ISP_ESD_TIMEOUT	1000
+#define M5MO_ISP_ESD_TIMEOUT		1000
 
 #define M5MO_JPEG_MAXSIZE	0x3A0000
 #define M5MO_THUMB_MAXSIZE	0xFC00
@@ -2434,6 +2434,7 @@ static int m5mo_s_stream_preview(struct v4l2_subdev *sd, int enable)
 				return -ETIMEDOUT;
 			}
 		}
+		
 
 		m5mo_set_lock(sd, 0);
 

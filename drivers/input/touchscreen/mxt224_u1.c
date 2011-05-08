@@ -931,16 +931,18 @@ static void report_input_data(struct mxt224_data *data)
 		input_mt_sync(data->input_dev);
 
 		if (g_debug_switch)
-			printk(KERN_ERR "[TSP] ID-%d, X-%d, Y-%d\n", i, data->fingers[i].x, data->fingers[i].y);
+			printk(KERN_ERR "[TSP] ID-%d, %4d,%4d\n", i, data->fingers[i].x, data->fingers[i].y);
 			
 		if (touch_is_pressed_arr[i]!=0)
 			touch_is_pressed = 1;
 
 		/* logging */
+		/*
 		if (touch_is_pressed_arr[i]==0)
-			printk(KERN_ERR "[TSP] Release ID-%d, X-%d ,Y-%d\n", i, data->fingers[i].x, data->fingers[i].y);
+			printk(KERN_ERR "[TSP] Up[%d] %4d,%4d\n", i, data->fingers[i].x, data->fingers[i].y);
 		else if (touch_is_pressed_arr[i]==1)
-			printk(KERN_ERR "[TSP] Press   ID-%d, X-%d ,Y-%d\n", i, data->fingers[i].x, data->fingers[i].y);
+			printk(KERN_ERR "[TSP] Dn[%d] %4d,%4d\n", i, data->fingers[i].x, data->fingers[i].y);
+		*/
 
 		if (data->fingers[i].z == 0)
 			data->fingers[i].z = -1;

@@ -69,29 +69,24 @@ int g2d_check_params(g2d_params *params)
 	/* source */
 	if (0 == src_rect->h || 0 == src_rect->w) {
 		return -1;
-        }
-	
+	}
+
 	if (8000 < src_rect->x+src_rect->w || 8000 < src_rect->y+src_rect->h) {
-	        return -1;
+		return -1;
 	}
 
 	/* destination */
 	if (0 == dst_rect->h || 0 == dst_rect->w) {
 		return -1;
-        }		
+	}		
 
 	if (8000 < dst_rect->x+dst_rect->w || 8000 < dst_rect->y+dst_rect->h) {
-                return -1;
+		return -1;
 	}
 
-	if ( src_rect->color_format >= G2D_MAX_COLOR_SPACE
-	    || dst_rect->color_format >= G2D_MAX_COLOR_SPACE) {
-	        return -1;
-        }
-	
 	if (flag->alpha_val > G2D_ALPHA_BLENDING_OPAQUE) {
 		return -1; 
-        }
+	}
 
 	return 0;
 }
@@ -140,8 +135,8 @@ u32 g2d_set_src_img(struct g2d_global *g2d_dev, g2d_rect * rect, g2d_flag * flag
 		data = ((rect->y + rect->h) << 16) | (rect->x + rect->w);
 		writel(data, g2d_dev->base + SRC_RIGHT_BOTTOM_REG);
         
-                if (flag->potterduff_mode == G2D_Src_Mode) {
-                        blt_cmd |= G2D_BLT_CMD_R_SRC_NON_PRE_BLEND_CONSTANT_ALPHA;
+		if (flag->potterduff_mode == G2D_Src_Mode) {
+			blt_cmd |= G2D_BLT_CMD_R_SRC_NON_PRE_BLEND_CONSTANT_ALPHA;
 		}
 	}
 
@@ -364,7 +359,7 @@ void g2d_set_int_finish(struct g2d_global *g2d_dev)
 void g2d_start_bitblt(struct g2d_global *g2d_dev, g2d_params *params)
 {
 	if (!(params->flag.render_mode & G2D_POLLING)) {
-    	        writel(G2D_INTEN_R_CF_ENABLE, g2d_dev->base + INTEN_REG);
+		writel(G2D_INTEN_R_CF_ENABLE, g2d_dev->base + INTEN_REG);
 	}
 	writel(0x7, g2d_dev->base + CACHECTL_REG);
 
