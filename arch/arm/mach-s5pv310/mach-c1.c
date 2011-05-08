@@ -2695,12 +2695,15 @@ static const u8 *mxt224_config[] = {
 	Configuration for MXT224
 */
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
-				48, 255, 25 /* 25 * 200ms = 5s */};
+				48,		/* IDLEACQINT */
+				255,	/* ACTVACQINT */
+				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 				10, 0, 5, 1, 0, 0, 9, 30};/*byte 3: 0*/
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				131, 0, 0, 19, 11, 0, 32, MXT224_THRESHOLD, 2, 1, 0, 15, 1,
-				11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
+				131, 0, 0, 19, 11, 0, 32, MXT224_THRESHOLD, 2, 1, 0,
+				15,		/* MOVHYSTI */
+				1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 0, 0, 0, 0, 143, 55, 143, 90, 18};
 
 static u8 t18_config[] = {SPT_COMCONFIG_T18,
@@ -2729,14 +2732,18 @@ static const u8 *mxt224_config[] = {
 	Configuration for MXT224-E
 */
 static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
-				64, 255, 20};
+				48,		/* IDLEACQINT */
+				255,	/* ACTVACQINT */
+				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
 				27, 0, 5, 1, 0, 0, 8, 8, 0, 0};
 #if 1 /* MXT224E_0V5_CONFIG */	
 /* NEXTTCHDI added */
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				131, 0, 0, 19, 11, 0, 16, 35, 2, 1,
-				10, 10, 1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,//3  
+				10, 
+				15,		/* MOVHYSTI */
+				1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 10, 10, 10, 10, 143, 40, 143, 80,
 				18, 15, 50, 50, 2};
 #else
@@ -2775,7 +2782,9 @@ static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
 				1, 12, 80, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 6, 6, 0, 0, 100, 4, 64,
 				10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
-				0, 0, 0, 0, 0, 50, 2, 10, 1, 11,
+				0, 0, 0, 0, 0, 50, 2, 
+				15,		/* MOVHYSTI */ 
+				1, 11,
 				10, 5, 40, 10, 0, 10, 10, 143, 40, 143,
 				80, 18, 15, 2};
 #else
