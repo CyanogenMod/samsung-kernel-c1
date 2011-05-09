@@ -19,7 +19,6 @@ extern void sec_getlog_supply_kloginfo(void *klog_buf);
 
 extern void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 				  unsigned short rq_offset);
-extern int sec_debug_level(void);
 #else
 static inline int sec_debug_init(void)
 {
@@ -51,16 +50,12 @@ static inline void sec_gaf_supply_rqinfo(unsigned short curr_offset,
 					 unsigned short rq_offset)
 {
 }
-static inline int sec_debug_level(void) {}
 
 #endif
 
 #ifdef CONFIG_SEC_DEBUG_SCHED_LOG
 extern void sec_debug_task_sched_log(int cpu, struct task_struct *task);
 extern void sec_debug_irq_sched_log(unsigned int irq, void *fn, int en);
-extern void sec_debug_irq_sched_log_end(void);
-extern void sec_debug_softirq_sched_log(void *fn);
-extern void sec_debug_softirq_sched_log_end(void);
 extern void sec_debug_sched_log_init(void);
 #else
 static inline void sec_debug_task_sched_log(int cpu, struct task_struct *task)
@@ -69,23 +64,14 @@ static inline void sec_debug_task_sched_log(int cpu, struct task_struct *task)
 static inline void sec_debug_irq_sched_log(unsigned int irq, void *fn, int en)
 {
 }
-static inline void sec_debug_irq_sched_log_end(void)
-{
-}
-static inline void sec_debug_softirq_sched_log(void *fn)
-{
-}
-static inline void sec_debug_softirq_sched_log_end(void)
-{
-}
 static inline void sec_debug_sched_log_init(void)
 {
 }
 #endif
 #ifdef CONFIG_SEC_DEBUG_IRQ_EXIT_LOG
-extern void sec_debug_irq_enterexit_log(unsigned int irq, unsigned long long start_time);
+extern void sec_debug_irq_last_exit_log(void);
 #else
-static inline void sec_debug_irq_enterexit_log(unsigned int irq, unsigned long long start_time)
+static void sec_debug_irq_last_exit_log(void)
 {
 }
 #endif
@@ -127,32 +113,18 @@ static inline void debug_rwsemaphore_up_log(struct rw_semaphore *sem)
 
 /* klaatu - schedule log */
 #ifdef CONFIG_SEC_DEBUG_SCHED_LOG
-#define SCHED_LOG_MAX 2048
+#define SCHED_LOG_MAX 4096
 
 struct irq_log{
-	unsigned long long time;
+	int cpu;
 	int irq;
 	void *fn;
 	int en;
-	unsigned long long elapsed_time;
-};
-
-struct softirq_log{
-	unsigned long long time;
-	void *fn;
-	unsigned long long elapsed_time;
-};
-
-struct enterexit_log{
-    unsigned int irq;
-	unsigned long long time;
-	unsigned long long end_time;
-	unsigned long long elapsed_time;
 };
 
 struct task_info{
-	unsigned long long time;
 	char comm[TASK_COMM_LEN];
+	int cpu;
 	pid_t pid;
 };
 

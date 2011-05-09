@@ -74,3 +74,4 @@ ifneq ($(CONFIG_USE_EXT_GIC),y)
 obj-$(CONFIG_CPU_IDLE)			+= irq-extgic.o dev-egic.o
 endif
 obj-$(CONFIG_SEC_DEBUG)			+= sec_debug.o sec_getlog.o sec_gaf.o
+obj-$(CONFIG_S5PV310_WATCHDOG_RESET)	+= c1-watchdog.o

@@ -462,6 +462,14 @@ config SEC_DEBUG_IRQ_EXIT_LOG
 	default n
 	help
 	  Verbose Logging for IRQ delay.
+
+menuconfig S5PV310_WATCHDOG_RESET
+	bool "S5PV310 watchdog reset to exit from lockup"
+	depends on CPU_S5PV310
+	default n
+	help
+	  Use S5PV310 watchdog reset to exit from lockup
+
 endif
 
 menu "Support dynamic cpu hotplug (Experimental)"

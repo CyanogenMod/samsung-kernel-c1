@@ -130,14 +130,9 @@ static char gkernel_sec_build_info[100];
 
 /* klaatu - schedule log */
 #ifdef CONFIG_SEC_DEBUG_SCHED_LOG
-static struct task_info gExcpTaskLog[2][SCHED_LOG_MAX] __cacheline_aligned;
-static struct irq_log gExcpIrqLog[2][SCHED_LOG_MAX] __cacheline_aligned;
-static struct softirq_log gExcpSoftIrqLog[2][SCHED_LOG_MAX] __cacheline_aligned;
-static struct enterexit_log gExcpIrqEnterExitLog[2][SCHED_LOG_MAX] __cacheline_aligned;
+static struct sched_log gExcpTaskLog[2][SCHED_LOG_MAX] __cacheline_aligned;
 static atomic_t gExcpTaskLogIdx[2] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
-static atomic_t gExcpIrqLogIdx[2] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
-static atomic_t gExcpSoftIrqLogIdx[2] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
-static atomic_t gExcpIrqEnterExitLogIdx[2] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
+static unsigned long long gExcpIrqExitTime[2];
 
 static int checksum_sched_log()
 {
@@ -487,11 +482,6 @@ __init int sec_debug_init(void)
 	return 0;
 }
 
-int sec_debug_level(void)
-{
-	return enable;
-}
-
 /* klaatu - schedule log */
 #ifdef CONFIG_SEC_DEBUG_SCHED_LOG
 void sec_debug_task_sched_log(int cpu, struct task_struct *task)
@@ -499,54 +489,28 @@ void sec_debug_task_sched_log(int cpu, struct task_struct *task)
 	unsigned i =
 	    atomic_inc_return(&gExcpTaskLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
 	gExcpTaskLog[cpu][i].time = cpu_clock(cpu);
-	strcpy(gExcpTaskLog[cpu][i].comm, task->comm);
-	gExcpTaskLog[cpu][i].pid = task->pid;
+	strcpy(gExcpTaskLog[cpu][i].log.task.comm, task->comm);
+	gExcpTaskLog[cpu][i].log.task.pid = task->pid;
+	gExcpTaskLog[cpu][i].log.task.cpu = cpu;
 }
 
 void sec_debug_irq_sched_log(unsigned int irq, void *fn, int en)
 {
 	int cpu = smp_processor_id();
 	unsigned i =
-	    atomic_inc_return(&gExcpIrqLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
-	gExcpIrqLog[cpu][i].time = cpu_clock(cpu);
-	gExcpIrqLog[cpu][i].irq = irq;
-	gExcpIrqLog[cpu][i].fn = (void *)fn;
-	gExcpIrqLog[cpu][i].en = en;
-}
-
-void sec_debug_irq_sched_log_end(void)
-{
-	int cpu = smp_processor_id();
-	unsigned i = atomic_read(&gExcpIrqLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
-	gExcpIrqLog[cpu][i].elapsed_time = cpu_clock(cpu) -gExcpIrqLog[cpu][i].time;
-}
-
-void sec_debug_softirq_sched_log(void *fn)
-{
-	int cpu = smp_processor_id();
-	unsigned i =
-	    atomic_inc_return(&gExcpSoftIrqLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
-	gExcpSoftIrqLog[cpu][i].time = cpu_clock(cpu);
-	gExcpSoftIrqLog[cpu][i].fn = (void *)fn;
-}
-
-void sec_debug_softirq_sched_log_end(void)
-{
-	int cpu = smp_processor_id();
-	unsigned i = atomic_read(&gExcpSoftIrqLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
-	gExcpSoftIrqLog[cpu][i].elapsed_time = cpu_clock(cpu) -gExcpSoftIrqLog[cpu][i].time;
+	    atomic_inc_return(&gExcpTaskLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
+	gExcpTaskLog[cpu][i].time = cpu_clock(cpu);
+	gExcpTaskLog[cpu][i].log.irq.cpu = cpu;
+	gExcpTaskLog[cpu][i].log.irq.irq = irq;
+	gExcpTaskLog[cpu][i].log.irq.fn = (void *)fn;
+	gExcpTaskLog[cpu][i].log.irq.en = en;
 }
 
 #ifdef CONFIG_SEC_DEBUG_IRQ_EXIT_LOG
-void sec_debug_irq_enterexit_log(unsigned int irq, unsigned long long start_time)
+void sec_debug_irq_last_exit_log(void)
 {
 	int cpu = smp_processor_id();
-	unsigned i =
-	    atomic_inc_return(&gExcpIrqEnterExitLogIdx[cpu]) & (SCHED_LOG_MAX - 1);
-	gExcpIrqEnterExitLog[cpu][i].time = start_time;
-	gExcpIrqEnterExitLog[cpu][i].end_time = cpu_clock(cpu);
-	gExcpIrqEnterExitLog[cpu][i].irq = irq;
-	gExcpIrqEnterExitLog[cpu][i].elapsed_time = gExcpIrqEnterExitLog[cpu][i].end_time -start_time;
+    gExcpIrqExitTime[cpu] = cpu_clock(cpu);
 }
 #endif
 #endif /* CONFIG_SEC_DEBUG_SCHED_LOG */

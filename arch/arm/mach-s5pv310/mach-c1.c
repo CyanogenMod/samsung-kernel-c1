@@ -2270,11 +2270,11 @@ static int max8997_muic_charger_cb(cable_type_t cable_type)
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_MHL_VB:
+	case CABLE_TYPE_DESKDOCK:
 		value.intval = POWER_SUPPLY_TYPE_MISC;
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_TA:
-	case CABLE_TYPE_DESKDOCK:
 	case CABLE_TYPE_CARDOCK:
 	case CABLE_TYPE_JIG_UART_OFF_VB:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;
@@ -2697,11 +2697,12 @@ static const u8 *mxt224_config[] = {
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
 				48,		/* IDLEACQINT */
 				255,	/* ACTVACQINT */
-				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
+				25		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 				10, 0, 5, 1, 0, 0, 9, 30};/*byte 3: 0*/
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				131, 0, 0, 19, 11, 0, 32, MXT224_THRESHOLD, 2, 1, 0,
+				131, 0, 0, 19, 11, 0, 32, MXT224_THRESHOLD, 2, 1,
+				0,
 				15,		/* MOVHYSTI */
 				1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 0, 0, 0, 0, 143, 55, 143, 90, 18};
@@ -2734,14 +2735,14 @@ static const u8 *mxt224_config[] = {
 static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
 				48,		/* IDLEACQINT */
 				255,	/* ACTVACQINT */
-				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
+				25		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
 				27, 0, 5, 1, 0, 0, 8, 8, 0, 0};
-#if 1 /* MXT224E_0V5_CONFIG */	
+#if 1 /* MXT224E_0V5_CONFIG */
 /* NEXTTCHDI added */
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				131, 0, 0, 19, 11, 0, 16, 35, 2, 1,
-				10, 
+				10,
 				15,		/* MOVHYSTI */
 				1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 10, 10, 10, 10, 143, 40, 143, 80,
@@ -2782,8 +2783,8 @@ static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
 				1, 12, 80, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 6, 6, 0, 0, 100, 4, 64,
 				10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
-				0, 0, 0, 0, 0, 50, 2, 
-				15,		/* MOVHYSTI */ 
+				0, 0, 0, 0, 0, 50, 2,
+				15,		/* MOVHYSTI */
 				1, 11,
 				10, 5, 40, 10, 0, 10, 10, 143, 40, 143,
 				80, 18, 15, 2};
@@ -3063,13 +3064,8 @@ struct max17042_reg_data max17042_init_data[] = {
 };
 
 struct max17042_reg_data max17042_alert_init_data[] = {
-#ifdef CONFIG_TARGET_LOCALE_KOR
-	/* SALRT Threshold setting to 1% => 0% power off */
-	{ MAX17042_REG_SALRT_TH,	0x01,	0xFF },
-#else
 	/* SALRT Threshold setting to 2% => 1% wake lock */
 	{ MAX17042_REG_SALRT_TH,	0x02,	0xFF },
-#endif
 	/* VALRT Threshold setting (disable) */
 	{ MAX17042_REG_VALRT_TH,	0x00,	0xFF },
 	/* TALRT Threshold setting (disable) */
@@ -4881,7 +4877,17 @@ static struct platform_device pmu_device = {
 	.num_resources	= 2,
 };
 
+#ifdef CONFIG_S5PV310_WATCHDOG_RESET
+static struct platform_device watchdog_reset_device = {
+	.name = "watchdog-reset",
+	.id = -1,
+};
+#endif
+
 static struct platform_device *smdkc210_devices[] __initdata = {
+#ifdef CONFIG_S5PV310_WATCHDOG_RESET
+	&watchdog_reset_device,
+#endif
 #ifdef CONFIG_S5PV310_DEV_PD
 	&s5pv310_device_pd[PD_MFC],
 	&s5pv310_device_pd[PD_G3D],
@@ -4905,9 +4911,6 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #endif
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
-#endif
-#ifdef CONFIG_S3C_ADC
-	&s3c_device_adc,
 #endif
 #ifdef CONFIG_I2C_S3C2410
 	&s3c_device_i2c0,
@@ -4983,6 +4986,7 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_SND_S5P_RP
 	&s5pv310_device_rp,
 #endif
+
 #ifdef CONFIG_MTD_NAND
 	&s3c_device_nand,
 #endif
@@ -5007,6 +5011,10 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_S3C_DEV_HSMMC3
 	&s3c_device_hsmmc3,
 #endif
+#ifdef CONFIG_S3C_ADC
+	&s3c_device_adc,
+#endif
+
 #ifdef CONFIG_VIDEO_TVOUT
 	&s5p_device_tvout,
 	&s5p_device_cec,
@@ -5043,9 +5051,7 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_FIMG2D
 	&s5p_device_fimg2d,
 #endif
-#ifdef CONFIG_SEC_DEV_JACK
-	&sec_device_jack,
-#endif
+
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
@@ -5083,6 +5089,9 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 	&s5pv310_device_sata,
 #endif
 	&c1_keypad,
+#ifdef CONFIG_SEC_DEV_JACK
+	&sec_device_jack,
+#endif
 	&sec_device_rfkill,
 
 #ifdef CONFIG_HAVE_PWM
@@ -5383,7 +5392,23 @@ static struct gpio_init_data c1_init_gpios[] = {
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S5P_GPIO_DRVSTR_LV1,
-	}, {	/*GPY0 */
+	},
+#if defined(CONFIG_TARGET_LOCALE_NTT)
+	{	/*GPY0 */
+		.num	= S5PV310_GPY0(0),
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_ZERO,
+		.pud	= S3C_GPIO_PULL_DOWN,
+		.drv	= S5P_GPIO_DRVSTR_LV1,
+	}, {
+		.num	= S5PV310_GPY0(1),
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_ZERO,
+		.pud	= S3C_GPIO_PULL_DOWN,
+		.drv	= S5P_GPIO_DRVSTR_LV1,
+	},
+#endif
+	{	/*GPY0 */
 		.num	= S5PV310_GPY0(2),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
@@ -5630,7 +5655,7 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPB(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPB(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPB(5),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
-#endif	
+#endif
 #else //esper,2011-01-24 for KOR TDMB
 	{ S5PV310_GPB(0),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPB(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
@@ -5669,13 +5694,15 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPD1(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPD1(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPD1(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
+
 #if !defined(CONFIG_VIDEO_TSI)
 	{ S5PV310_GPE0(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE0(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE0(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE0(3),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
-	{ S5PV310_GPE0(4),  S3C_GPIO_SLP_OUT1,	S3C_GPIO_PULL_NONE},
 #endif
+	{ S5PV310_GPE0(4),  S3C_GPIO_SLP_OUT1,	S3C_GPIO_PULL_NONE},
+
 	{ S5PV310_GPE1(0),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE1(1),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE1(2),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
@@ -5686,6 +5713,7 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPE1(6),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE1(7),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 #endif
+
 	{ S5PV310_GPE2(0),  S3C_GPIO_SLP_PREV,	S3C_GPIO_PULL_DOWN},
 	{ S5PV310_GPE2(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE2(2),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
@@ -5833,14 +5861,9 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPL2(7),  S3C_GPIO_SLP_PREV,	S3C_GPIO_PULL_NONE},
 #endif
 
-#if defined(CONFIG_PN544) && defined(CONFIG_TARGET_LOCALE_KOR)
-	{ S5PV310_GPY0(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
-	{ S5PV310_GPY0(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
-#else
 	{ S5PV310_GPY0(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
 	{ S5PV310_GPY0(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
-#endif
-	
+
 	{ S5PV310_GPY0(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY0(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY0(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
@@ -5853,13 +5876,13 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 
 	{ S5PV310_GPY2(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY2(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
-	{ S5PV310_GPY2(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},	/* ONENAND_INT */
+	{ S5PV310_GPY2(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY2(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY2(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY2(5),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 
 	{ S5PV310_GPY3(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},	/* MHL_SDA_1.8V */
-	{ S5PV310_GPY3(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
+        { S5PV310_GPY3(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPY3(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},	/* MHL_SCL_1.8V */
 	{ S5PV310_GPY3(3),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPY3(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
@@ -5904,10 +5927,6 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPZ(4),  S3C_GPIO_SLP_OUT0,  S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPZ(5),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPZ(6),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
-
-#if defined(CONFIG_TARGET_LOCALE_NTT)
-	{ S5PV310_GPX1(7),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
-#endif
 };
 
 

@@ -113,7 +113,7 @@ static struct platform_driver watchdog_driver = {
 	.probe = watchdog_probe,
 	.driver = {
 		   .owner = THIS_MODULE,
-		   .name = "watchdog",
+		   .name = "watchdog-reset",
 		   .pm = &watchdog_pm_ops,
 	},
 };
