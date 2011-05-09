@@ -1419,7 +1419,7 @@ static int s5k5bafx_check_dataline_stop(struct v4l2_subdev *sd)
 	s5k5bafx_write(client, 0xFCFCD000);
 	s5k5bafx_write(client, 0x0028D000);
 	s5k5bafx_write(client, 0x002A3100);
-	s5k5bafx_write(client, 0x0F120000);
+    	s5k5bafx_write(client, 0x0F120000);
 
    //	err =  s5k5bafx_write_regs(sd, s5k5bafx_pattern_off,	sizeof(s5k5bafx_pattern_off) / sizeof(s5k5bafx_pattern_off[0]));
 	printk("%s: sensor reset\n", __func__);
