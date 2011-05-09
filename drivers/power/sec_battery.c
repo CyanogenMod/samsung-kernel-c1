@@ -889,7 +889,7 @@ static bool sec_bat_charging_time_management(struct sec_bat_info *info)
 					info->charging_next_time)) {
 			/*reset current in charging status */
 			if (!sec_bat_enable_charging(info, true)) {
-				info->charging_next_time =
+			info->charging_next_time =
 					info->charging_passed_time + RESETTING_CHG_TIME;
 
 				dev_info(info->dev,
@@ -1133,8 +1133,12 @@ static void sec_bat_vf_check_work(struct work_struct *work)
 
 	sec_bat_check_vf(info);
 
-	if (info->batt_health == POWER_SUPPLY_HEALTH_UNSPEC_FAILURE)
-		power_supply_changed(&info->psy_bat);
+	if (info->batt_health == POWER_SUPPLY_HEALTH_UNSPEC_FAILURE) {
+		dev_info(info->dev, "%s: Battery Disconnected\n", __func__);
+
+		wake_lock(&info->monitor_wake_lock);
+		queue_work(info->monitor_wqueue, &info->monitor_work);
+	}
 
 	schedule_delayed_work(&info->vf_check_work,
 			      msecs_to_jiffies(VF_CHECK_INTERVAL));
@@ -1506,7 +1510,7 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 	}
 
 	info->present = value.intval;
-	
+
 	if (info->present == BAT_NOT_DETECTED)
 		info->batt_health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
 	else
