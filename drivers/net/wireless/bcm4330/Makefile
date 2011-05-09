@@ -75,6 +75,7 @@ EXTRA_CFLAGS += -DROAM_API
 #2.4G only scan for the initial broad scan
 EXTRA_CFLAGS += -DUSE_INITIAL_2G_SCAN
 
+
 ###############################################################################################
 
 EXTRA_CFLAGS += -I$(src)/src/include/

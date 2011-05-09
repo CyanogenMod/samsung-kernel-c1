@@ -149,7 +149,7 @@ int WriteRDWR_Macaddr(struct ether_addr *mac)
 
 	if ((g_iMacFlag != MACADDR_COB) && (g_iMacFlag != MACADDR_MOD))
 		return 0;
-
+	
 	sprintf(buf,"%02X:%02X:%02X:%02X:%02X:%02X\n",
 			mac->octet[0],mac->octet[1],mac->octet[2],
 			mac->octet[3],mac->octet[4],mac->octet[5]);
@@ -173,7 +173,9 @@ int WriteRDWR_Macaddr(struct ether_addr *mac)
 		set_fs(oldfs);
 		filp_close(fp_mac, NULL);
 	}
- 		return 0;
+
+	return 0;
+	
 }
 
 #if 0 /* disable because it's not used yet */
@@ -468,7 +470,7 @@ startwrite:
   }	
 	
   filp_close(fp_mac, NULL);
-  
+
 	return 0;
 	
 }
