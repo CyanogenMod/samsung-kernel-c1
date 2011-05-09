@@ -64,6 +64,7 @@ struct ld9040 {
 	struct spi_device		*spi;
 	unsigned int			power;
 	unsigned int			gamma_mode;
+	unsigned int			current_gamma_mode;
 	unsigned int			current_brightness;
 	unsigned int			gamma_table_count;
 	unsigned int			bl;
@@ -173,7 +174,7 @@ static int ld9040_gamma_ctl(struct ld9040 *lcd)
 	}
 
 	lcd->current_brightness = lcd->bl;
-
+	lcd->current_gamma_mode = lcd->gamma_mode;
 gamma_err:
 	return ret;
 }
@@ -693,8 +694,12 @@ static ssize_t ld9040_sysfs_store_gamma_mode(struct device *dev,
 		dev_info(dev, "%s :: gamma_mode=%d\n", __FUNCTION__, lcd->gamma_mode);
 
 	if (lcd->ldi_enable)
-		ld9040_gamma_ctl(lcd);
-
+	{
+		if((lcd->current_brightness == lcd->bl) && (lcd->current_gamma_mode == lcd->gamma_mode))
+			printk("there is no gamma_mode & brightness changed\n");	
+		else	
+			ld9040_gamma_ctl(lcd);
+	}	
 	return len;
 }
 
