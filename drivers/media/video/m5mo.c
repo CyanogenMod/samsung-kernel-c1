@@ -37,7 +37,11 @@
 #define M5MO_FW_PATH		"/sdcard/RS_M5LS.bin"
 #endif /* SDCARD_FW */
 #define M5MOT_FW_REQUEST_PATH	"m5mo/RS_M5LS_T.bin"	/* Techwin */
-#define M5MOO_FW_REQUEST_PATH	"m5mo/RS_M5LS_O.bin"	/* Optical communication */
+#ifdef CONFIG_TARGET_LOCALE_NTT
+#define M5MOC_FW_REQUEST_PATH	"m5mo/RS_M5LS_C.bin"	/* Optical communication - LSI */
+#else
+#define M5MOO_FW_REQUEST_PATH	"m5mo/RS_M5LS_O.bin"	/* Optical communication - SONY*/
+#endif
 #define M5MO_FW_DUMP_PATH	"/data/RS_M5LS_dump.bin"
 #define M5MO_FW_VER_LEN		22
 #define M5MO_FW_VER_FILE_CUR	0x16FF00
@@ -49,7 +53,7 @@
 #define M5MO_I2C_VERIFY		100
 #define M5MO_ISP_TIMEOUT	3000
 #define M5MO_ISP_AFB_TIMEOUT	15000 /* FIXME */
-#define M5MO_ISP_ESD_TIMEOUT		1000
+#define M5MO_ISP_ESD_TIMEOUT	1000
 
 #define M5MO_JPEG_MAXSIZE	0x3A0000
 #define M5MO_THUMB_MAXSIZE	0xFC00
@@ -736,8 +740,13 @@ request_fw:
 
 	if (sensor_ver[0] == 'T' && sensor_ver[1] == 'B') {
 		err = request_firmware(&fentry, M5MOT_FW_REQUEST_PATH, dev);
+#ifdef CONFIG_TARGET_LOCALE_NTT		
+	} else if (sensor_ver[0] == 'O' && sensor_ver[1] == 'C') {
+		err = request_firmware(&fentry, M5MOC_FW_REQUEST_PATH, dev);
+#else
 	} else if (sensor_ver[0] == 'O' && sensor_ver[1] == 'B') {
 		err = request_firmware(&fentry, M5MOO_FW_REQUEST_PATH, dev);
+#endif
 	} else {
 		cam_warn("cannot find the matched F/W file\n");
 		err = request_firmware(&fentry, M5MOT_FW_REQUEST_PATH, dev);
@@ -939,17 +948,14 @@ retry:
 		err = m5mo_writeb(sd, M5MO_CATEGORY_AE, M5MO_AE_MODE, 0x03);
 		CHECK_ERR(err);
 		break;
-
 	case METERING_SPOT:
 		err = m5mo_writeb(sd, M5MO_CATEGORY_AE, M5MO_AE_MODE, 0x06);
 		CHECK_ERR(err);
 		break;
-
 	case METERING_MATRIX:
 		err = m5mo_writeb(sd, M5MO_CATEGORY_AE, M5MO_AE_MODE, 0x01);
 		CHECK_ERR(err);
 		break;
-
 	default:
 		cam_warn("invalid value, %d\n", val);
 		val = METERING_CENTER;
@@ -1742,10 +1748,10 @@ static int m5mo_start_capture(struct v4l2_subdev *sd, int val)
 	}
 
 	err = m5mo_readl(sd, M5MO_CATEGORY_CAPCTRL, M5MO_CAPCTRL_IMG_SIZE,
-				&state->jpeg.main_size);
+		&state->jpeg.main_size);
 	CHECK_ERR(err);
 	err = m5mo_readl(sd, M5MO_CATEGORY_CAPCTRL, M5MO_CAPCTRL_THUMB_SIZE,
-				&state->jpeg.thumb_size);
+		&state->jpeg.thumb_size);
 	CHECK_ERR(err);
 
 	state->jpeg.main_offset = 0;
@@ -1764,25 +1770,20 @@ static int m5mo_set_hdr(struct v4l2_subdev *sd, int val)
 	int err;
 	cam_trace("E\n");
 
-	switch (val) {
-	case 0:
-		err = m5mo_set_mode(sd, M5MO_MONITOR_MODE);
-		CHECK_ERR(err);
-		int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
-		if (!(int_factor & M5MO_INT_MODE)) {
-			cam_err("M5MO_INT_MODE isn't issued, %#x\n",
-				int_factor);
-			return -ETIMEDOUT;
-		}
-		break;
-	case 1:
-	case 2:
-		err = m5mo_writeb(sd, M5MO_CATEGORY_SYS,
-			M5MO_SYS_ROOT_EN, 0x01);
-		int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
-		break;
-	default:
-		cam_err("invalid HDR count\n");
+	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPCTRL, M5MO_CAPCTRL_FRM_SEL, val + 1);
+	CHECK_ERR(err);
+
+	int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
+	if (!(int_factor & M5MO_INT_CAPTURE)) {
+		cam_warn("M5MO_INT_CAPTURE isn't issued on transfer, %#x\n", int_factor);
+		return -ETIMEDOUT;
+	}
+
+	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPCTRL, M5MO_CAPCTRL_TRANSFER, 0x01);
+	int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
+	if (!(int_factor & M5MO_INT_CAPTURE)) {
+		cam_warn("M5MO_INT_CAPTURE isn't issued on transfer, %#x\n", int_factor);
+		return -ETIMEDOUT;
 	}
 
 	cam_trace("X\n");
@@ -1949,7 +1950,7 @@ static int m5mo_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	default:
 		cam_err("no such control id %d, value %d\n",
-				ctrl->id - V4L2_CID_PRIVATE_BASE, ctrl->value);
+			ctrl->id - V4L2_CID_PRIVATE_BASE, ctrl->value);
 		/*err = -ENOIOCTLCMD;*/
 		err = 0;
 		break;
@@ -1957,7 +1958,7 @@ static int m5mo_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	if (err < 0 && err != -ENOIOCTLCMD)
 		cam_err("failed, id %d, value %d\n",
-				ctrl->id - V4L2_CID_PRIVATE_BASE, ctrl->value);
+			ctrl->id - V4L2_CID_PRIVATE_BASE, ctrl->value);
 	return err;
 }
 
@@ -2155,8 +2156,13 @@ request_fw:
 
 	if (sensor_ver[0] == 'T' && sensor_ver[1] == 'B') {
 		err = request_firmware(&fentry, M5MOT_FW_REQUEST_PATH, dev);
+#ifdef CONFIG_TARGET_LOCALE_NTT
+	} else if (sensor_ver[0] == 'O' && sensor_ver[1] == 'C') {
+		err = request_firmware(&fentry, M5MOC_FW_REQUEST_PATH, dev);
+#else
 	} else if (sensor_ver[0] == 'O' && sensor_ver[1] == 'B') {
 		err = request_firmware(&fentry, M5MOO_FW_REQUEST_PATH, dev);
+#endif
 	} else {
 		cam_err("cannot find the matched F/W file\n");
 		err = -EINVAL;
@@ -2164,8 +2170,8 @@ request_fw:
 
 	if (err != 0) {
 		cam_err("request_firmware falied\n");
-			err = -EINVAL;
-			goto out;
+		err = -EINVAL;
+		goto out;
 	}
 
 	cam_dbg("start, size %d Bytes\n", fentry->size);
@@ -2247,7 +2253,7 @@ static int m5mo_set_frmsize(struct v4l2_subdev *sd)
 	int err;
 	cam_trace("E\n");
 
-	if (state->format_mode != V4L2_PIX_FMT_MODE_CAPTURE) {
+	if (state->format_mode == V4L2_PIX_FMT_MODE_PREVIEW) {
 		err = m5mo_set_mode(sd, M5MO_PARMSET_MODE);
 		CHECK_ERR(err);
 
@@ -2293,13 +2299,13 @@ static int m5mo_s_fmt(struct v4l2_subdev *sd, struct v4l2_format *f)
 
 	state->format_mode = f->fmt.pix.priv;
 
-	frmsize = state->format_mode != V4L2_PIX_FMT_MODE_CAPTURE ?
+	frmsize = state->format_mode == V4L2_PIX_FMT_MODE_PREVIEW ?
 		&state->preview : &state->capture;
 
 	old_index = *frmsize ? (*frmsize)->index : -1;
 	*frmsize = NULL;
 
-	if (state->format_mode != V4L2_PIX_FMT_MODE_CAPTURE) {
+	if (state->format_mode == V4L2_PIX_FMT_MODE_PREVIEW) {
 		num_entries = ARRAY_SIZE(preview_frmsizes);
 		for (i = 0; i < num_entries; i++) {
 			if (width == preview_frmsizes[i].width &&
@@ -2321,7 +2327,7 @@ static int m5mo_s_fmt(struct v4l2_subdev *sd, struct v4l2_format *f)
 
 	if (*frmsize == NULL) {
 		cam_warn("invalid frame size %dx%d\n", width, height);
-		*frmsize = state->format_mode != V4L2_PIX_FMT_MODE_CAPTURE ?
+		*frmsize = state->format_mode == V4L2_PIX_FMT_MODE_PREVIEW ?
 			m5mo_get_frmsize(preview_frmsizes, num_entries,
 				M5MO_PREVIEW_VGA) :
 			m5mo_get_frmsize(capture_frmsizes, num_entries,
@@ -2389,7 +2395,7 @@ static int m5mo_enum_framesizes(struct v4l2_subdev *sd,
 	* In case of image capture,
 	* this returns the default camera resolution (VGA)
 	*/
-	if (state->format_mode != V4L2_PIX_FMT_MODE_CAPTURE) {
+	if (state->format_mode == V4L2_PIX_FMT_MODE_PREVIEW) {
 		if (state->preview == NULL || state->preview->index < 0)
 			return -EINVAL;
 
@@ -2434,7 +2440,6 @@ static int m5mo_s_stream_preview(struct v4l2_subdev *sd, int enable)
 				return -ETIMEDOUT;
 			}
 		}
-		
 
 		m5mo_set_lock(sd, 0);
 
@@ -2473,29 +2478,56 @@ static int m5mo_s_stream_capture(struct v4l2_subdev *sd, int enable)
 
 static int m5mo_s_stream_hdr(struct v4l2_subdev *sd, int enable)
 {
-	int err;
+	struct m5mo_state *state = to_state(sd);
+	int int_en, int_factor, i, err;
 
-	err = m5mo_set_mode(sd, M5MO_PARMSET_MODE);
+	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPCTRL,
+		M5MO_CAPCTRL_CAP_MODE, enable ? 0x06 : 0x00);
 	CHECK_ERR(err);
 
+	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPPARM,
+		M5MO_CAPPARM_YUVOUT_MAIN, enable ? 0x00 : 0x21);
+		CHECK_ERR(err);
+
+	err = m5mo_readb(sd, M5MO_CATEGORY_SYS, M5MO_SYS_INT_EN, &int_en);
+		CHECK_ERR(err);
+
+	if (enable)
+		int_en |= M5MO_INT_FRAME_SYNC;
+	else
+		int_en &= ~M5MO_INT_FRAME_SYNC;
+
+	err = m5mo_writeb(sd, M5MO_CATEGORY_SYS, M5MO_SYS_INT_EN, int_en);
+		CHECK_ERR(err);
+
 	if (enable) {
-		err = m5mo_writeb(sd, M5MO_CATEGORY_TEST, 0x50, 0x02);
-		CHECK_ERR(err);
+		err = m5mo_set_mode(sd, M5MO_STILLCAP_MODE);
+		if (err <= 0) {
+			cam_err("failed to set mode\n");
+			return err;
+		}
 
-		err = m5mo_writeb(sd, M5MO_CATEGORY_TEST, 0x51, 0x80);
-		CHECK_ERR(err);
+		/* convert raw to jpeg by the image data processing and store memory on ISP
+		and receive preview jpeg image from ISP */
+		for (i = 0; i < 3; i++) {
+			int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
+			if (!(int_factor & M5MO_INT_FRAME_SYNC)) {
+				cam_err("M5MO_INT_FRAME_SYNC isn't issued, %#x\n",
+					int_factor);
+				return -ETIMEDOUT;
+			}
+		}
 
-		err = m5mo_writeb(sd, M5MO_CATEGORY_PARM,
-			M5MO_PARM_HDR_MON, 0x01);
-		CHECK_ERR(err);
-
-		err = m5mo_writeb(sd, M5MO_CATEGORY_PARM,
-			M5MO_PARM_HDR_MON_OFFSET_EV, 0x64);
-		CHECK_ERR(err);
+		/* stop ring-buffer */
+		if (!(state->isp.int_factor & M5MO_INT_CAPTURE)) {
+			int_factor = m5mo_wait_interrupt(sd, M5MO_ISP_TIMEOUT);
+			if (!(int_factor & M5MO_INT_CAPTURE)) {
+				cam_err("M5MO_INT_FRAME_SYNC isn't issued, %#x\n",
+					int_factor);
+				return -ETIMEDOUT;
+			}
+		}
 	} else {
-		err = m5mo_writeb(sd, M5MO_CATEGORY_PARM,
-			M5MO_PARM_HDR_MON, 0x00);
-		CHECK_ERR(err);
 	}
 	return 0;
 }
@@ -2589,6 +2621,7 @@ static int m5mo_init_param(struct v4l2_subdev *sd)
 	err = m5mo_writeb(sd, M5MO_CATEGORY_PARM, M5MO_PARM_OUT_SEL, 0x02);
 	CHECK_ERR(err);
 
+	/* Capture */
 	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPPARM,
 		M5MO_CAPPARM_YUVOUT_MAIN, 0x21);
 	CHECK_ERR(err);
@@ -2597,10 +2630,18 @@ static int m5mo_init_param(struct v4l2_subdev *sd)
 		M5MO_CAPPARM_THUMB_JPEG_MAX, M5MO_THUMB_MAXSIZE);
 	CHECK_ERR(err);
 
+	/* Face detect */
 	err = m5mo_writeb(sd, M5MO_CATEGORY_FD, M5MO_FD_SIZE, 0x01);
 	CHECK_ERR(err);
 
 	err = m5mo_writeb(sd, M5MO_CATEGORY_FD, M5MO_FD_MAX, 0x0B);
+	CHECK_ERR(err);
+
+	/* HDR */
+	err = m5mo_writeb(sd, M5MO_CATEGORY_CAPCTRL, M5MO_CAPCTRL_CAP_FRM_COUNT, 0x03);
+	CHECK_ERR(err);
+
+	err = m5mo_writeb(sd, M5MO_CATEGORY_AE, M5MO_AE_AUTO_BRACKET_EV, 0x64);
 	CHECK_ERR(err);
 
 #ifdef CONFIG_TARGET_LOCALE_KOR
@@ -2620,6 +2661,9 @@ static int m5mo_init(struct v4l2_subdev *sd, u32 val)
 	wake_lock_timeout(&state->wake_lock, 2*HZ);
 
 	/* Default state values */
+	state->isp.bad_fw = 0;
+	state->isp.issued = 0;
+
 	state->preview = NULL;
 	state->capture = NULL;
 
@@ -2629,9 +2673,6 @@ static int m5mo_init(struct v4l2_subdev *sd, u32 val)
 	state->beauty_mode = 0;
 
 	state->fps = 0;			/* auto */
-
-	state->isp.bad_fw = 0;
-	state->isp.issued = 0;
 
 	memset(&state->focus, 0, sizeof(state->focus));
 
@@ -2726,7 +2767,7 @@ static ssize_t m5mo_camera_type_show(struct device *dev,
 	struct m5mo_state *state = to_state(sd);
 
 	char type[25];
-	
+
 	if (state->exif.unique_id[1] == 'B') {
 		strcpy(type, "SONY_IMX105PQ_M5MOLS");
 	} else if (state->exif.unique_id[1] == 'C') {
