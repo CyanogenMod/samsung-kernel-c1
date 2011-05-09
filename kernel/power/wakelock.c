@@ -23,7 +23,6 @@
 #include <linux/proc_fs.h>
 #endif
 #include "power.h"
-#include <mach/sec_debug.h>
 
 enum {
 	DEBUG_EXIT_SUSPEND = 1U << 0,
@@ -32,7 +31,7 @@ enum {
 	DEBUG_EXPIRE = 1U << 3,
 	DEBUG_WAKE_LOCK = 1U << 4,
 };
-static int debug_mask = DEBUG_EXIT_SUSPEND | DEBUG_WAKEUP | DEBUG_SUSPEND ;
+static int debug_mask = DEBUG_EXIT_SUSPEND | DEBUG_WAKEUP;
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
 #define WAKE_LOCK_TYPE_MASK              (0x0f)
@@ -543,11 +542,6 @@ static int __init wakelocks_init(void)
 	int ret;
 	int i;
 
-	if( 0 != sec_debug_level()) {
-		pr_info("wakelocks_init: add DEBUG_EXPIRE\n");
-		debug_mask =debug_mask | DEBUG_EXPIRE;
-	}
-	
 	for (i = 0; i < ARRAY_SIZE(active_wake_locks); i++)
 		INIT_LIST_HEAD(&active_wake_locks[i]);
 
