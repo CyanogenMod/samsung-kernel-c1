@@ -415,6 +415,7 @@ CONFIG_SEC_DEBUG_SCHED_LOG=y
 CONFIG_SEC_DEBUG_USER=y
 # CONFIG_SEC_DEBUG_PM_TEMP is not set
 # CONFIG_SEC_DEBUG_IRQ_EXIT_LOG is not set
+# CONFIG_S5PV310_WATCHDOG_RESET is not set
 
 #
 # Support dynamic cpu hotplug (Experimental)
@@ -1516,7 +1517,6 @@ CONFIG_VIDEO_S5K5BAFX=y
 # CONFIG_VIDEO_S5K4EA is not set
 # CONFIG_VIDEO_S5K6AA is not set
 # CONFIG_VIDEO_M5MO_USE_SWI2C is not set
-CONFIG_VIDEO_DEBUG_NO_FRAME=y
 
 #
 # Video and audio decoders
