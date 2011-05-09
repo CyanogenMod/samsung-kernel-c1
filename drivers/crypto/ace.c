@@ -50,7 +50,7 @@
 
 #define CONFIG_ACE_AES_FALLBACK
 
-#define CONFIG_ACE_BC_ASYNC
+#undef CONFIG_ACE_BC_ASYNC
 #undef CONFIG_ACE_BC_IRQMODE
 
 #define CONFIG_ACE_HASH
@@ -1253,13 +1253,9 @@ static int s5p_ace_aes_crypt(struct blkcipher_desc *desc,
 	s5p_ace_aes_set_encmode(sctx, encmode);
 
 	s5p_ace_resume_device(&s5p_ace_dev);
-	s5p_ace_clock_gating(ACE_CLOCK_ON);
-	local_bh_disable();
-	while (test_and_set_bit(FLAGS_BC_BUSY, &s5p_ace_dev.flags)) {
-		local_bh_enable();
+	while (test_and_set_bit(FLAGS_BC_BUSY, &s5p_ace_dev.flags))
 		schedule();
-		local_bh_disable();
-	}
+	s5p_ace_clock_gating(ACE_CLOCK_ON);
 
 	s5p_ace_dev.ctx_bc = sctx;
 
@@ -1272,9 +1268,8 @@ static int s5p_ace_aes_crypt(struct blkcipher_desc *desc,
 
 	s5p_ace_dev.ctx_bc = NULL;
 
-	clear_bit(FLAGS_BC_BUSY, &s5p_ace_dev.flags);
-	local_bh_enable();
 	s5p_ace_clock_gating(ACE_CLOCK_OFF);
+	clear_bit(FLAGS_BC_BUSY, &s5p_ace_dev.flags);
 
 	if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) != ACE_AES_OPERMODE_ECB)
 		memcpy(desc->info, sctx->sfr_semikey, AES_BLOCK_SIZE);
@@ -2382,4 +2377,3 @@ module_exit(s5p_ace_exit);
 MODULE_DESCRIPTION("S5P ACE(Advanced Crypto Engine) support");
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Dong Jin PARK");
-
