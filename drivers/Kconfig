@@ -116,6 +116,8 @@ source "drivers/platform/Kconfig"
 
 source "drivers/gib/Kconfig"
 
+source "drivers/samsung/Kconfig"
+
 source "drivers/svnet/Kconfig"
 
 endmenu

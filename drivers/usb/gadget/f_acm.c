@@ -321,6 +321,7 @@ static void acm_complete_set_line_coding(struct usb_ep *ep,
 	if (req->actual != sizeof(acm->port_line_coding)) {
 		DBG(cdev, "acm ttyGS%d short resp, len %d\n",
 				acm->port_num, req->actual);
+
 		usb_ep_set_halt(ep);
 	} else {
 		struct usb_cdc_line_coding	*value = req->buf;

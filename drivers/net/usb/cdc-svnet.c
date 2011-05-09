@@ -30,7 +30,7 @@
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 
-#define DEFAULT_RAW_WAKE_TIME (7*HZ) //esper edit to fix FD error
+#define DEFAULT_RAW_WAKE_TIME (6*HZ)
 #define DEFAULT_FMT_WAKE_TIME (HZ/2)
 #define SVNET_SUSPEND_UNLOCK_DELAY msecs_to_jiffies(20)
 #endif

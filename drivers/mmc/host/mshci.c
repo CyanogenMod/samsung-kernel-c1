@@ -330,9 +330,9 @@ static void mshci_reset_all(struct mshci_host *host)
 	if ( count == 0 || count2 == 0 ) {
 		int fifo_cnt,tmp;
 		if (count == 0)
-		printk(KERN_ERR "%s: dma request isgnal state\n"
-			"can not get inactivate state.\n",
-			mmc_hostname(host->mmc));
+			printk(KERN_ERR "%s: dma request isgnal state\n"
+				"can not get inactivate state.\n",
+				mmc_hostname(host->mmc));
 		if (count2 == 0)
 			printk(KERN_ERR "%s: data_state_mc_busy\n"
 				"is never released.\n",
@@ -343,7 +343,7 @@ static void mshci_reset_all(struct mshci_host *host)
 		while(fifo_cnt) {
 			tmp = mshci_readl(host, MSHCI_FIFODAT);
 			fifo_cnt--;
-	}
+		}
 	} else {
 		mshci_reset_fifo(host);
 	}

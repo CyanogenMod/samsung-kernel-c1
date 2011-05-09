@@ -56,10 +56,6 @@ struct xfrm_selector {
 	__u8	proto;
 	int	ifindex;
 	__kernel_uid32_t	user;
-#if 1 // IWLAN 
-	__be16 sport_end;
-	__be16 dport_end; 
-#endif
 };
 
 #define XFRM_INF (~(__u64)0)

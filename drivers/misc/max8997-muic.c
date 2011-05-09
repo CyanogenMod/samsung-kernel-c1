@@ -109,7 +109,7 @@ enum {
 	ADC_JIG_USB_OFF		= 0x18,
 	ADC_JIG_USB_ON		= 0x19,
 	ADC_DESKDOCK		= 0x1a,
-	ADC_CEA936ATYPE2_CHG	= 0x1b,	
+	ADC_CEA936ATYPE2_CHG	= 0x1b,
 	ADC_JIG_UART_OFF	= 0x1c,
 	ADC_JIG_UART_ON		= 0x1d,
 	ADC_CARDOCK		= 0x1d,
@@ -426,7 +426,7 @@ static ssize_t max8997_muic_set_adc_debounce_time(struct device *dev,
 	sscanf(buf, "%d", &value);
 
 	value = (value & 0x3);
-	
+
 #if 0
 	max8997_muic_set_adcdbset(info, value);
 #else
@@ -568,8 +568,28 @@ static int max8997_muic_handle_dock_vol_key(struct max8997_muic_info *info,
 
 	adc = status1 & STATUS1_ADC_MASK;
 
-	if (adc == ADC_OPEN || info->cable_type != CABLE_TYPE_DESKDOCK)
+	if (info->cable_type != CABLE_TYPE_DESKDOCK)
 		return 0;
+
+	if (adc == ADC_OPEN) {
+		switch (pre_key) {
+		case DOCK_KEY_VOL_UP_PRESSED:
+			code = KEY_VOLUMEUP;
+			state = 0;
+			info->previous_key = DOCK_KEY_VOL_UP_RELEASED;
+			break;
+		case DOCK_KEY_VOL_DOWN_PRESSED:
+			code = KEY_VOLUMEDOWN;
+			state = 0;
+			info->previous_key = DOCK_KEY_VOL_DOWN_RELEASED;
+			break;
+		default:
+			return 0;
+		}
+		input_event(input, EV_KEY, code, state);
+		input_sync(input);
+		return 1;
+	}
 
 	if (pre_key == DOCK_KEY_NONE) {
 		if (adc != ADC_DOCK_VOL_UP && adc != ADC_DOCK_VOL_DN)
