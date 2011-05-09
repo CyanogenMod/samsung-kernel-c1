@@ -33,7 +33,7 @@
 #define ACC_DEV_NAME "accelerometer"
 #define ACC_DEV_MAJOR 241
 
-#define CALIBRATION_FILE_PATH	"/data/system/calibration_data"
+#define CALIBRATION_FILE_PATH	"/efs/calibration_data"
 #define CALIBRATION_DATA_AMOUNT	20
 
 static const struct odr_delay {
