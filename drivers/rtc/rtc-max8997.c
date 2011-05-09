@@ -54,6 +54,15 @@
 /* RTC Update Register1 */
 #define RTC_UDR_SHIFT			0
 #define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
+/* WTSR and SMPL Register */
+#define WTSRT_SHIFT			0
+#define SMPLT_SHIFT			2
+#define WTSR_EN_SHIFT			6
+#define SMPL_EN_SHIFT			7
+#define WTSRT_MASK			(3 << WTSRT_SHIFT)
+#define SMPLT_MASK			(3 << SMPLT_SHIFT)
+#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
+#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
 /* RTC Hour register */
 #define HOUR_PM_SHIFT			6
 #define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
@@ -381,6 +390,60 @@ static const struct rtc_class_ops max8997_rtc_ops = {
 	.alarm_irq_enable = max8997_rtc_alarm_irq_enable,
 };
 
+static void max8997_rtc_enable_wtsr(struct max8997_rtc_info *info, bool enable)
+{
+	int ret;
+	u8 val, mask;
+
+	if (enable)
+		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
+	else
+		val = 0;
+
+	mask = WTSR_EN_MASK | WTSRT_MASK;
+
+	dev_info(info->dev, "%s: %s WTSR\n", __func__,
+			enable ? "enable" : "disable");
+
+	ret = max8997_update_reg(info->rtc, MAX8997_WTSR_SMPL_CNTL, val, mask);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
+				__func__, ret);
+		return;
+	}
+
+	max8997_rtc_set_update_reg(info);
+}
+
+static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
+{
+	int ret;
+	u8 val, mask;
+
+	if (enable)
+		val = (1 << SMPL_EN_SHIFT) | (3 << SMPLT_SHIFT);
+	else
+		val = 0;
+
+	mask = SMPL_EN_MASK | SMPLT_MASK;
+
+	dev_info(info->dev, "%s: %s SMPL\n", __func__,
+			enable ? "enable" : "disable");
+
+	ret = max8997_update_reg(info->rtc, MAX8997_WTSR_SMPL_CNTL, val, mask);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
+				__func__, ret);
+		return;
+	}
+
+	max8997_rtc_set_update_reg(info);
+
+	val = 0;
+	max8997_read_reg(info->rtc, MAX8997_WTSR_SMPL_CNTL, &val);
+	pr_info("%s: WTSR_SMPL(0x%02x)\n", __func__, val);
+}
+
 static int max8997_rtc_init_reg(struct max8997_rtc_info *info)
 {
 	u8 data[2];
@@ -429,6 +492,9 @@ static int __devinit max8997_rtc_probe(struct platform_device *pdev)
 		goto err_rtc;
 	}
 
+	max8997_rtc_enable_wtsr(info, true);
+	max8997_rtc_enable_smpl(info, true);
+
 	device_init_wakeup(&pdev->dev, 1);
 
 	info->rtc_dev = rtc_device_register("max8997-rtc", &pdev->dev,
@@ -473,6 +539,13 @@ static int __devexit max8997_rtc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void max8997_rtc_shutdown(struct platform_device *pdev)
+{
+	struct max8997_rtc_info *info = platform_get_drvdata(pdev);
+
+	max8997_rtc_enable_wtsr(info, false);
+}
+
 static const struct platform_device_id rtc_id[] = {
 	{ "max8997-rtc", 0 },
 	{},
@@ -485,6 +558,7 @@ static struct platform_driver max8997_rtc_driver = {
 	},
 	.probe		= max8997_rtc_probe,
 	.remove		= __devexit_p(max8997_rtc_remove),
+	.shutdown	= max8997_rtc_shutdown,
 	.id_table	= rtc_id,
 };
 
