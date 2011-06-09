@@ -1316,7 +1316,9 @@ static int s3c_udc_remove(struct platform_device *pdev)
 
 	DEBUG("%s: %p\n", __func__, pdev);
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	host_notify_dev_unregister(dev->ndev);
+#endif
 	remove_proc_files();
 	usb_gadget_unregister_driver(dev->driver);
 
