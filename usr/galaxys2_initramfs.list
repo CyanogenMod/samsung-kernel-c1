@@ -27,3 +27,11 @@ dir /sdcard 755 0 0
 file /stage1/busybox usr/galaxys2_initramfs_files/busybox 755 0 0
 file /stage1/init usr/galaxys2_initramfs_files/init 755 0 0
 dir /sys 755 0 0
+dir /lib/modules 755 0 0
+file /lib/modules/gspca_main.ko drivers/media/video/gspca/gspca_main.ko 644 0 0
+file /lib/modules/Si4709_driver.ko drivers/samsung/fm_si4709/Si4709_driver.ko 644 0 0
+file /lib/modules/j4fs.ko drivers/samsung/j4fs/j4fs.ko 644 0 0
+file /lib/modules/vibrator.ko drivers/samsung/vibetonz/vibrator.ko 644 0 0
+file /lib/modules/dhd.ko drivers/net/wireless/bcm4330/dhd.ko 644 0 0
+file /lib/modules/scsi_wait_scan.ko drivers/scsi/scsi_wait_scan.ko 644 0 0
+file /lib/modules/bthid.ko drivers/bluetooth/bthid/bthid.ko 644 0 0
