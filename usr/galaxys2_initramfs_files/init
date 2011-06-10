@@ -6,12 +6,11 @@ BOOT_IMAGE=/dev/block/mmcblk0p5
 busybox cd /
 busybox date >>boot.txt
 exec >>boot.txt 2>&1
-set -x
 busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-eval $(busybox grep -m 1 -A 1 BOOT_IMAGE_OFFSETS ${BOOT_IMAGE} | busybox tail -n 1)
+eval $(read_boot_headers ${BOOT_IMAGE})
 
 load_offset=$boot_offset
 load_len=$boot_len
@@ -26,10 +25,6 @@ load_len=$boot_len
 #fi
 #
 #busybox umount /cache
-busybox insmod /lib/modules/j4fs.ko
-busybox mount -t j4fs /mnt/.lfs /dev/block/mmcblk0p4 /mnt/.lfs
-busybox tar cf /lfs.tar /mnt/.lfs
-busybox umount /mnt/.lfs
 
 busybox dd bs=512 if=${BOOT_IMAGE} skip=$load_offset count=$load_len | busybox zcat | busybox cpio -i
 
