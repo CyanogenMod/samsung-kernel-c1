@@ -15,16 +15,11 @@ eval $(read_boot_headers ${BOOT_IMAGE})
 load_offset=$boot_offset
 load_len=$boot_len
 
-busybox mount -t ext4 /dev/block/mmcblk0p7 /cache
-
-if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline ; then
+if busybox grep -q bootmode=2 /proc/cmdline && busybox test "x$recovery_offset" != x ; then
 	# recovery boot
-	busybox rm -fr /cache/.startrecovery
 	load_offset=$recovery_offset
 	load_len=$recovery_len
 fi
-
-busybox umount /cache
 
 busybox dd bs=512 if=${BOOT_IMAGE} skip=$load_offset count=$load_len | busybox zcat | busybox cpio -i
 
