@@ -17,9 +17,8 @@ load_len=$boot_len
 
 busybox mount -t ext4 /dev/block/mmcblk0p7 /cache
 
-if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline ; then
+if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
-	busybox rm -fr /cache/.startrecovery
 	load_offset=$recovery_offset
 	load_len=$recovery_len
 fi
