@@ -19,6 +19,7 @@
 #include <linux/gpio.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/slab.h>
 #include <linux/host_notify.h>
 
 #include <asm/mach/arch.h>
@@ -27,6 +28,7 @@
 #include <mach/hardware.h>
 #include <mach/map.h>
 #include <mach/dma.h>
+
 
 #include <plat/devs.h>
 #include <plat/gpio-cfg.h>
@@ -919,6 +921,8 @@ EXPORT_SYMBOL(s3c_device_usb_otghcd);
 
 /* Android USB OTG Gadget */
 #include <linux/usb/android_composite.h>
+#include <linux/usb/f_accessory.h>
+
 #define S3C_VENDOR_ID		0x18d1
 #define S3C_PRODUCT_ID		0x0001
 #define S3C_ADB_PRODUCT_ID	0x0005
@@ -940,6 +944,14 @@ static char *usb_functions_ums_adb[] = {
 	"adb",
 };
 #endif
+
+static char *usb_functions_accessory[] = {
+	"accessory",
+};
+static char *usb_functions_accessory_adb[] = {
+	"accessory",
+	"adb",
+};
 
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 #  ifdef CONFIG_USB_ANDROID_SAMSUNG_ESCAPE /* USE DEVGURU HOST DRIVER */
@@ -981,6 +993,9 @@ static char *usb_functions_mtp[] = {
 #endif
 
 static char *usb_functions_all[] = {
+#ifdef CONFIG_USB_ACCESSORY
+	"accessory",
+#endif
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 #  ifdef CONFIG_USB_ANDROID_SAMSUNG_ESCAPE /* USE DEVGURU HOST DRIVER */
 	"usb_mass_storage",
@@ -1203,6 +1218,18 @@ static struct android_usb_product usb_products[] = {
 		.product_id	= S3C_ADB_PRODUCT_ID,
 		.num_functions	= ARRAY_SIZE(usb_functions_ums_adb),
 		.functions	= usb_functions_ums_adb,
+	},
+	{
+		.vendor_id	= USB_ACCESSORY_VENDOR_ID,
+		.product_id	= USB_ACCESSORY_PRODUCT_ID,
+		.num_functions	= ARRAY_SIZE(usb_functions_accessory),
+		.functions	= usb_functions_accessory,
+	},
+	{
+		.vendor_id	= USB_ACCESSORY_VENDOR_ID,
+		.product_id	= USB_ACCESSORY_ADB_PRODUCT_ID,
+		.num_functions	= ARRAY_SIZE(usb_functions_accessory_adb),
+		.functions	= usb_functions_accessory_adb,
 	},
 #endif
 };
