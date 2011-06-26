@@ -184,11 +184,12 @@ static ssize_t c1_switch_store_vbus(struct device *dev,
 	}
 
 	pr_info("%s: disable=%d\n", __func__, disable);
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	usb_mode = disable ? USB_CABLE_DETACHED_WITHOUT_NOTI : USB_CABLE_ATTACHED;
 	ret = udc->change_usb_mode(usb_mode);
 	if (ret < 0)
 		pr_err("%s: fail to change mode!!!\n", __func__);
-
+#endif
 	regulator = regulator_get(NULL, "safeout1");
 	if (IS_ERR(regulator)) {
 		pr_warn("%s: fail to get regulator\n", __func__);
@@ -242,20 +243,27 @@ static ssize_t c1_switch_store_usb_lock(struct device *dev,
 		return count;
 	}
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	if (IS_ERR_OR_NULL(udc) ||
 		IS_ERR_OR_NULL(udc->change_usb_mode))
 		return count;
+#else
+	if (IS_ERR_OR_NULL(udc))
+		return count;
+#endif
 
 	pr_info("%s: lock=%d\n", __func__, lock);
 
 	if (lock != usb_access_lock) {
 		usb_access_lock = lock;
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		if (lock) {
 			ret = udc->change_usb_mode(USB_CABLE_DETACHED);
 			if (ret < 0)
 				pr_err("%s: fail to detach usb\n", __func__);
 		}
+#endif
 	}
 
 	return count;
@@ -2305,10 +2313,11 @@ static void max8997_muic_usb_cb(u8 usb_mode)
 
 	if (lpcharging == 1) {
 		pr_info("%s: lpcharging: disable USB\n", __func__);
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		ret = udc->change_usb_mode(USB_CABLE_DETACHED);
 		if (ret < 0)
 			pr_warn("%s: fail to change mode!!!\n", __func__);
-
+#endif
 		regulator = regulator_get(NULL, "safeout1");
 		if (IS_ERR(regulator)) {
 			pr_err("%s: fail to get regulator\n", __func__);
@@ -2333,13 +2342,14 @@ static void max8997_muic_usb_cb(u8 usb_mode)
 			max8997_muic_charger_cb(CABLE_TYPE_OTG);
 		}
 
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		prev_usb_mode = udc->get_usb_mode();
 		pr_info("%s: prev_usb_mode=%d\n", __func__, prev_usb_mode);
 
 		ret = udc->change_usb_mode(usb_mode);
 		if (ret < 0)
 			pr_err("%s: fail to change mode!!!\n", __func__);
-
+#endif
 		if (usb_mode == USB_OTGHOST_DETACHED)
 			otg_data->set_pwr_cb(0);
 	}
