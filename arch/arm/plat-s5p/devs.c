@@ -923,28 +923,31 @@ EXPORT_SYMBOL(s3c_device_usb_otghcd);
 #include <linux/usb/android_composite.h>
 #include <linux/usb/f_accessory.h>
 
-#define S3C_VENDOR_ID		0x18d1
-#define S3C_PRODUCT_ID		0x0001
-#define S3C_ADB_PRODUCT_ID	0x0005
+#define S3C_VENDOR_ID			0x18d1
+#define S3C_UMS_PRODUCT_ID		0x4E21
+#define S3C_UMS_ADB_PRODUCT_ID		0x4E22
+#define S3C_RNDIS_PRODUCT_ID		0x4E23
+#define S3C_RNDIS_ADB_PRODUCT_ID	0x4E24
+#define S3C_RNDIS_UMS_ADB_PRODUCT_ID	0x4E25
+
 #define MAX_USB_SERIAL_NUM	17
 
 static char *usb_functions_ums[] = {
 	"usb_mass_storage",
 };
-#ifdef CONFIG_USB_ANDROID_RNDIS
+
 static char *usb_functions_rndis[] = {
 	"rndis",
 };
-#endif
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-/* Do not use below compoiste */
-#else
+
+static char *usb_functions_rndis_adb[] = {
+	"rndis",
+	"adb",
+};
 static char *usb_functions_ums_adb[] = {
 	"usb_mass_storage",
 	"adb",
 };
-#endif
-
 static char *usb_functions_accessory[] = {
 	"accessory",
 };
@@ -953,271 +956,47 @@ static char *usb_functions_accessory_adb[] = {
 	"adb",
 };
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-#  ifdef CONFIG_USB_ANDROID_SAMSUNG_ESCAPE /* USE DEVGURU HOST DRIVER */
-/* kies mode : using MS Composite*/
-#    ifdef CONFIG_USB_ANDROID_SAMSUNG_KIES_UMS
-static char *usb_functions_ums_acm[] = {
-	"usb_mass_storage",
-	"acm",
-};
-#    else
-static char *usb_functions_mtp_acm[] = {
-	"mtp",
-	"acm",
-};
-#    endif
-/* debug mode : using MS Composite*/
-static char *usb_functions_ums_acm_adb[] = {
-	"usb_mass_storage",
-	"acm",
-	"adb",
-};
-#  else /* USE MCCI HOST DRIVER */
-/* kies mode */
-static char *usb_functions_acm_mtp[] = {
-	"acm",
-	"mtp",
-};
-/* debug mode */
-static char *usb_functions_acm_ums_adb[] = {
-	"acm",
-	"usb_mass_storage",
-	"adb",
-};
-#  endif
-/* mtp only mode */
-static char *usb_functions_mtp[] = {
-	"mtp",
-};
-#endif
-
 static char *usb_functions_all[] = {
+#ifdef CONFIG_USB_ANDROID_RNDIS
+	"rndis",
+#endif
 #ifdef CONFIG_USB_ACCESSORY
 	"accessory",
 #endif
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-#  ifdef CONFIG_USB_ANDROID_SAMSUNG_ESCAPE /* USE DEVGURU HOST DRIVER */
+#ifdef CONFIG_USB_ANDROID_MASS_STORAGE
 	"usb_mass_storage",
-	"acm",
+#endif
+#ifdef CONFIG_USB_ANDROID_ADB
 	"adb",
-#    ifdef CONFIG_USB_ANDROID_RNDIS
-	"rndis",
-#    endif
-#    ifndef CONFIG_USB_ANDROID_SAMSUNG_KIES_UMS
-	"mtp",
-#    endif
-#  else /* USE MCCI HOST DRIVER */
-	"acm",
-	"usb_mass_storage",
-	"adb",
-#    ifdef CONFIG_USB_ANDROID_RNDIS
-	"rndis",
-#    endif
-	"mtp",
-#  endif
-#else /* original */
-#  ifdef CONFIG_USB_ANDROID_RNDIS
-	"rndis",
-#  endif
-	"usb_mass_storage",
-	"adb",
-#  ifdef CONFIG_USB_ANDROID_ACM
-	"acm",
-#  endif
-#endif /* CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE */
+#endif
+#ifdef CONFIG_USB_ANDROID_MTP
+    "mtp",
+#endif
+#ifdef CONFIG_USB_ANDROID_ACM
+    "acm",
+#endif
 };
 
-
 static struct android_usb_product usb_products[] = {
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-#  ifdef CONFIG_USB_ANDROID_SAMSUNG_ESCAPE /* USE DEVGURU HOST DRIVER */
-#    ifdef CONFIG_USB_ANDROID_SAMSUNG_KIES_UMS
 	{
-		.product_id	= SAMSUNG_DEBUG_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums_acm_adb),
-		.functions	= usb_functions_ums_acm_adb,
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_DEBUG_CONFIG_STRING,
-		.mode		= USBSTATUS_ADB,
-	},
-	{
-		.product_id	= SAMSUNG_KIES_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums_acm),
-		.functions	= usb_functions_ums_acm,
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_KIES_CONFIG_STRING,
-		.mode		= USBSTATUS_SAMSUNG_KIES,
-	},
-	{
-		.product_id	= SAMSUNG_UMS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums),
-		.functions	= usb_functions_ums,
-		.bDeviceClass	= USB_CLASS_PER_INTERFACE,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_UMS_CONFIG_STRING,
-		.mode		= USBSTATUS_UMS,
-	},
-#      ifdef CONFIG_USB_ANDROID_RNDIS
-	{
-		.product_id	= SAMSUNG_RNDIS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_rndis),
-		.functions	= usb_functions_rndis,
-#        ifdef CONFIG_USB_ANDROID_SAMSUNG_RNDIS_WITH_MS_COMPOSITE
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-#        else
-#          ifdef CONFIG_USB_ANDROID_RNDIS_WCEIS
-		.bDeviceClass	= USB_CLASS_WIRELESS_CONTROLLER,
-#          else
-		.bDeviceClass	= USB_CLASS_COMM,
-#          endif
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-#        endif
-		.s		= ANDROID_RNDIS_CONFIG_STRING,
-		.mode		= USBSTATUS_VTP,
-	},
-#      endif
-#    else /* Not used KIES_UMS */
-	{
-		.product_id	= SAMSUNG_DEBUG_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums_acm_adb),
-		.functions	= usb_functions_ums_acm_adb,
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_DEBUG_CONFIG_STRING,
-		.mode		= USBSTATUS_ADB,
-	},
-	{
-		.product_id	= SAMSUNG_KIES_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_mtp_acm),
-		.functions	= usb_functions_mtp_acm,
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_KIES_CONFIG_STRING,
-		.mode		= USBSTATUS_SAMSUNG_KIES,
-	},
-	{
-		.product_id	= SAMSUNG_UMS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums),
-		.functions	= usb_functions_ums,
-		.bDeviceClass	= USB_CLASS_PER_INTERFACE,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_UMS_CONFIG_STRING,
-		.mode		= USBSTATUS_UMS,
-	},
-#      ifdef CONFIG_USB_ANDROID_RNDIS
-	{
-		.product_id	= SAMSUNG_RNDIS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_rndis),
-		.functions	= usb_functions_rndis,
-#        ifdef CONFIG_USB_ANDROID_SAMSUNG_RNDIS_WITH_MS_COMPOSITE
-		.bDeviceClass	= 0xEF,
-		.bDeviceSubClass= 0x02,
-		.bDeviceProtocol= 0x01,
-#        else
-#          ifdef CONFIG_USB_ANDROID_RNDIS_WCEIS
-		.bDeviceClass	= USB_CLASS_WIRELESS_CONTROLLER,
-#          else
-		.bDeviceClass	= USB_CLASS_COMM,
-#          endif
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-#        endif
-		.s		= ANDROID_RNDIS_CONFIG_STRING,
-		.mode		= USBSTATUS_VTP,
-	},
-#      endif
-	{
-		.product_id	= SAMSUNG_MTP_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_mtp),
-		.functions	= usb_functions_mtp,
-		.bDeviceClass	= USB_CLASS_PER_INTERFACE,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_MTP_CONFIG_STRING,
-		.mode		= USBSTATUS_MTPONLY,
-	},
-#    endif
-#  else  /* USE MCCI HOST DRIVER */
-	{
-		.product_id	= SAMSUNG_DEBUG_PRODUCT_ID, /* change sequence */
-		.num_functions	= ARRAY_SIZE(usb_functions_acm_ums_adb),
-		.functions	= usb_functions_acm_ums_adb,
-		.bDeviceClass	= USB_CLASS_COMM,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_DEBUG_CONFIG_STRING,
-		.mode		= USBSTATUS_ADB,
-	},
-	{
-		.product_id	= SAMSUNG_KIES_PRODUCT_ID, /* change sequence */
-		.num_functions	= ARRAY_SIZE(usb_functions_acm_mtp),
-		.functions	= usb_functions_acm_mtp,
-		.bDeviceClass	= USB_CLASS_COMM,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_KIES_CONFIG_STRING,
-		.mode		= USBSTATUS_SAMSUNG_KIES,
-
-	},
-	{
-		.product_id	= SAMSUNG_UMS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums),
-		.functions	= usb_functions_ums,
-		.bDeviceClass	= USB_CLASS_PER_INTERFACE,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_UMS_CONFIG_STRING,
-		.mode		= USBSTATUS_UMS,
-	},
-#    ifdef CONFIG_USB_ANDROID_RNDIS
-	{
-		.product_id	= SAMSUNG_RNDIS_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_rndis),
-		.functions	= usb_functions_rndis,
-#      ifdef CONFIG_USB_ANDROID_RNDIS_WCEIS
-		.bDeviceClass	= USB_CLASS_WIRELESS_CONTROLLER,
-#      else
-		.bDeviceClass	= USB_CLASS_COMM,
-#      endif
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0,
-		.s		= ANDROID_RNDIS_CONFIG_STRING,
-		.mode		= USBSTATUS_VTP,
-	},
-#    endif
-	{
-		.product_id	= SAMSUNG_MTP_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_mtp),
-		.functions	= usb_functions_mtp,
-		.bDeviceClass	= USB_CLASS_PER_INTERFACE,
-		.bDeviceSubClass= 0,
-		.bDeviceProtocol= 0x01,
-		.s		= ANDROID_MTP_CONFIG_STRING,
-		.mode		= USBSTATUS_MTPONLY,
-	},
-#  endif
-#else /* original */
-	{
-		.product_id	= S3C_PRODUCT_ID,
+		.product_id	= S3C_UMS_PRODUCT_ID,
 		.num_functions	= ARRAY_SIZE(usb_functions_ums),
 		.functions	= usb_functions_ums,
 	},
 	{
-		.product_id	= S3C_ADB_PRODUCT_ID,
+		.product_id	= S3C_UMS_ADB_PRODUCT_ID,
 		.num_functions	= ARRAY_SIZE(usb_functions_ums_adb),
 		.functions	= usb_functions_ums_adb,
+	},
+	{
+		.product_id	= S3C_RNDIS_PRODUCT_ID,
+		.num_functions	= ARRAY_SIZE(usb_functions_rndis),
+		.functions	= usb_functions_rndis,
+	},
+	{
+		.product_id	= S3C_RNDIS_ADB_PRODUCT_ID,
+		.num_functions	= ARRAY_SIZE(usb_functions_rndis_adb),
+		.functions	= usb_functions_rndis_adb,
 	},
 	{
 		.vendor_id	= USB_ACCESSORY_VENDOR_ID,
@@ -1231,25 +1010,18 @@ static struct android_usb_product usb_products[] = {
 		.num_functions	= ARRAY_SIZE(usb_functions_accessory_adb),
 		.functions	= usb_functions_accessory_adb,
 	},
-#endif
 };
+
 // serial number should be changed as real device for commercial release
 static char device_serial[MAX_USB_SERIAL_NUM]="0123456789ABCDEF";
 /* standard android USB platform data */
 
 // Information should be changed as real product for commercial release
 static struct android_usb_platform_data android_usb_pdata = {
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-	.vendor_id		= SAMSUNG_VENDOR_ID,
-	.product_id		= SAMSUNG_KIES_PRODUCT_ID,
-	.manufacturer_name	= "SAMSUNG",
-	.product_name		= "SAMSUNG_Android",
-#else
 	.vendor_id		= S3C_VENDOR_ID,
-	.product_id		= S3C_PRODUCT_ID,
-	.manufacturer_name	= "Android",//"Samsung",
-	.product_name		= "Android",//"Samsung SMDKV210",
-#endif
+	.product_id		= S3C_UMS_PRODUCT_ID,
+	.manufacturer_name	= "Samsung",
+	.product_name		= "Galaxy S2",
 	.serial_number		= device_serial,
 	.num_products		= ARRAY_SIZE(usb_products),
 	.products		= usb_products,
@@ -1267,13 +1039,8 @@ struct platform_device s3c_device_android_usb = {
 EXPORT_SYMBOL(s3c_device_android_usb);
 
 static struct usb_mass_storage_platform_data ums_pdata = {
-#ifdef CONFIG_TARGET_LOCALE_KOR
-	.vendor			= "SAMSUNG",
-	.product		= "SHW-M250S",
-#else
-	.vendor			= "Android   ",//"Samsung",
-	.product		= "UMS Composite",//"SMDKV210",
-#endif
+	.vendor			= "Android   ",
+	.product		= "UMS Composite",
 	.release		= 1,
 	.nluns			= 2,
 };
