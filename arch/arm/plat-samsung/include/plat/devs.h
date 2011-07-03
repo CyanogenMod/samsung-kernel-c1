@@ -163,6 +163,9 @@ extern struct platform_device s3c_device_usb_mass_storage;
 
 /* soonyong.cho : This is for setting unique serial number */
 void __init s3c_usb_set_serial(void);
+#else
+#include <plat/fb.h>
+void __init s3c_usb_otg_composite_pdata(struct s3c_platform_fb *);
 #endif /* CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE */
 
 #ifdef CONFIG_USB_ANDROID_RNDIS

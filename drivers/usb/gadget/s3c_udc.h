@@ -178,13 +178,11 @@ struct s3c_udc {
 #endif
 	struct platform_device *dev;
 	spinlock_t lock;
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	atomic_t usb_status;
 	int	(*get_usb_mode)(void);
 	int	(*change_usb_mode)(int mode);
 	struct mutex		mutex;
 	struct host_notify_dev * ndev;
-#endif
 	u16 status;
 	int ep0state;
 	struct s3c_ep ep[S3C_MAX_ENDPOINTS];

@@ -365,6 +365,7 @@ struct usb_composite_dev {
 	struct switch_dev		sw_config;
 	/* current connected state for sw_connected */
 	bool				connected;
+    bool                mute_switch;
 
 	struct work_struct switch_work;
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE

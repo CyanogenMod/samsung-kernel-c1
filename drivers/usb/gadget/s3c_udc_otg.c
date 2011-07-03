@@ -164,13 +164,11 @@ static void reconfig_usbd(void);
 static void set_max_pktsize(struct s3c_udc *dev, enum usb_device_speed speed);
 static void nuke(struct s3c_ep *ep, int status);
 static int s3c_udc_set_halt(struct usb_ep *_ep, int value);
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 static int s3c_get_usb_mode(void);
 static int s3c_change_usb_mode(int mode);
 #include <plat/udc-hs.h>
 /* It must be changed when we receive new otg host driver from MCCI */
 extern struct platform_driver s5pc110_otg_driver;
-#endif
 
 static struct usb_ep_ops s3c_ep_ops = {
 	.enable = s3c_ep_enable,
@@ -383,12 +381,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 
 	printk(KERN_INFO "Registered gadget driver '%s'\n",
 			driver->driver.name);
-#ifndef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
-	udc_enable(dev);
-	CSY_DBG("after udc_enable(dev)");
-#else
 	CSY_DBG("Do not enable udc in usb_gadget_register_driver");
-#endif
 
 	return 0;
 }
@@ -426,11 +419,10 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 }
 EXPORT_SYMBOL(usb_gadget_unregister_driver);
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 static int s3c_udc_power(struct s3c_udc *dev, char en)
 {
     	int ret;
-	pr_debug("%s : %s\n", __func__, en ? "ON" : "OFF");
+        pr_debug("%s : %s\n", __func__, en ? "ON" : "OFF");
 #ifdef USE_USB_LDO_CONTROL
 	if (en) {
 		CSY_DBG_ESS("Enable usb LDO.\n");
@@ -494,7 +486,6 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int enable)
 
 	return 0;
 }
-#endif
 
 /*
  *	done - retire a request; caller blocked irqs
@@ -984,9 +975,7 @@ static const struct usb_gadget_ops s3c_udc_ops = {
 	.wakeup = s3c_udc_wakeup,
 	/* current versions must always be self-powered */
 	.pullup = s3c_udc_pullup,
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	.vbus_session = s3c_vbus_enable,
-#endif
 };
 
 static void nop_release(struct device *dev)
@@ -1271,7 +1260,6 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	}
 #endif
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	atomic_set(&dev->usb_status, -1); /* -1 means that it is not ready. */
 	dev->get_usb_mode = s3c_get_usb_mode;
 	dev->change_usb_mode = s3c_change_usb_mode;
@@ -1282,7 +1270,6 @@ static int s3c_udc_probe(struct platform_device *pdev)
 		printk("Register host notify driver : %s\n", dev->ndev->name);
 		host_notify_dev_register(dev->ndev);
 	}
-#endif
 	the_controller = dev;
 	platform_set_drvdata(pdev, dev);
 
@@ -1297,9 +1284,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	if (retval != 0) {
 		DEBUG(KERN_ERR "%s: can't get irq %i, err %d\n", driver_name,
 		      IRQ_OTG, retval);
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 		mutex_destroy(&dev->mutex);
-#endif		
 		return -EBUSY;
 	}
 
@@ -1316,16 +1301,12 @@ static int s3c_udc_remove(struct platform_device *pdev)
 
 	DEBUG("%s: %p\n", __func__, pdev);
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	host_notify_dev_unregister(dev->ndev);
-#endif
 	remove_proc_files();
 	usb_gadget_unregister_driver(dev->driver);
 
 	free_irq(IRQ_OTG, dev);
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	mutex_destroy(&dev->mutex);
-#endif	
 	platform_set_drvdata(pdev, 0);
 
 	the_controller = 0;
@@ -1334,7 +1315,6 @@ static int s3c_udc_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-#  ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 static int s3c_udc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct s3c_udc *dev = the_controller;
@@ -1361,56 +1341,11 @@ static int s3c_udc_resume(struct platform_device *pdev)
 
 	return 0;
 }
-#  else
-static int s3c_udc_suspend(struct platform_device *pdev, pm_message_t state)
-{
-	struct s3c_udc *dev = the_controller;
-	int i;
-
-	if (dev->driver) {
-		if (dev->driver->suspend)
-			dev->driver->suspend(&dev->gadget);
-
-		/* Terminate any outstanding requests  */
-		for (i = 0; i < S3C_MAX_ENDPOINTS; i++) {
-			struct s3c_ep *ep = &dev->ep[i];
-			if (ep->dev != NULL)
-				spin_lock(&ep->dev->lock);
-			ep->stopped = 1;
-			nuke(ep, -ESHUTDOWN);
-			if (ep->dev != NULL)
-				spin_unlock(&ep->dev->lock);
-		}
-
-		disable_irq(IRQ_OTG);
-		udc_disable(dev);
-	}
-
-	return 0;
-}
-
-static int s3c_udc_resume(struct platform_device *pdev)
-{
-	struct s3c_udc *dev = the_controller;
-
-	if (dev->driver) {
-		udc_reinit(dev);
-		enable_irq(IRQ_OTG);
-		udc_enable(dev);
-
-		if (dev->driver->resume)
-			dev->driver->resume(&dev->gadget);
-	}
-
-	return 0;
-}
-#  endif
 #else
 #  define s3c_udc_suspend NULL
 #  define s3c_udc_resume  NULL
 #endif /* CONFIG_PM */
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 /* Description : Get host mode
  * Return value :
  *                -> USB_CABLE_DETACHED   : disabled udc
@@ -1557,7 +1492,6 @@ static int s3c_change_usb_mode(int mode)
 	mutex_unlock(&dev->mutex);
 	return 0;
 }
-#endif /* CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE */
 
 /*-------------------------------------------------------------------------*/
 static struct platform_driver s3c_udc_driver = {
@@ -1575,11 +1509,7 @@ static int __init udc_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	usb_ctrl=kmalloc(4096, GFP_KERNEL);
-#else
-	usb_ctrl=kmalloc(sizeof(struct usb_ctrlrequest), GFP_KERNEL);
-#endif
 
 	ret = platform_driver_register(&s3c_udc_driver);
 	if (!ret)

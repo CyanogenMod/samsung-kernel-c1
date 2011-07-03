@@ -65,6 +65,7 @@ typedef struct os_string_descriptor_set os_string_descriptor_set;
  */
 #define CSY_DEBUG_ESS
 
+
 #ifdef CSY_DEBUG
 #  ifdef CSY_MORE_DEBUG
 #    define CSY_DBG(fmt, args...) printk(KERN_INFO "usb %s:%d "fmt, __func__, __LINE__, ##args)

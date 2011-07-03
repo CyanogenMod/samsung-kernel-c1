@@ -1098,6 +1098,7 @@ void __init s3c_usb_otg_composite_pdata(struct s3c_platform_fb *pd)
 #ifdef CONFIG_USB_ANDROID_RNDIS
 	int i;
 	char *src;
+	sprintf(device_serial, "%08X%08X", system_serial_high, system_serial_low);
 	/* create a fake MAC address from our serial number.
 	 * first byte is 0x02 to signify locally administered.
 	 */
