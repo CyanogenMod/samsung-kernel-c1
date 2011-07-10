@@ -39,3 +39,6 @@ file /lib/modules/vibrator.ko drivers/samsung/vibetonz/vibrator.ko 644 0 0
 file /lib/modules/dhd.ko drivers/net/wireless/bcm4330/dhd.ko 644 0 0
 file /lib/modules/scsi_wait_scan.ko drivers/scsi/scsi_wait_scan.ko 644 0 0
 file /lib/modules/bthid.ko drivers/bluetooth/bthid/bthid.ko 644 0 0
+dir /vendor 755 0 0
+dir /vendor/firmware 755 0 0
+file /vendor/firmware/mfc_fw.bin usr/galaxys2_initramfs_files/mfc_fw.bin 644 0 0
