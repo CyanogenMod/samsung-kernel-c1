@@ -402,6 +402,7 @@ static void mxt224_ta_probe(int ta_status)
 	unsigned int register_address = 7;
 	u8 calcfg;
 	u8 noise_threshold;
+	u8 movfilter;	
 
 	if (!mxt224_enabled) {
 		printk(KERN_ERR"[TSP] mxt224_enabled is 0\n");
@@ -412,15 +413,17 @@ static void mxt224_ta_probe(int ta_status)
 		threshold = 70;
 		calcfg = 112;
 		noise_threshold = 40;
+		movfilter = 46;
 	} else {
 	    if (boot_or_resume==1)
-			threshold = 70;
+			threshold = 55;
 		else
 		    threshold = 40;
         calcfg = 80;
 		noise_threshold = 30;
+		movfilter = 11;
 	}
-
+	
 	if (copy_data->family_id==0x81) {
 		value = calcfg;
 		register_address = 2;
@@ -428,14 +431,20 @@ static void mxt224_ta_probe(int ta_status)
 		size_one = 1;
 		write_mem(copy_data, obj_address+(u16)register_address, size_one, &value);
 		read_mem(copy_data, obj_address+(u16)register_address, (u8)size_one, &val);
-		printk(KERN_ERR"[TSP]MXT224e T%d Byte%d is %d\n",48,register_address,val);
+		printk(KERN_ERR "[TSP] TA_probe MXT224e T%d Byte%d is %d\n", 48, register_address,val);
 	} else {
-		value = (u8)threshold;
 		ret = get_object_info(copy_data, TOUCH_MULTITOUCHSCREEN_T9, &size_one, &obj_address);
 		size_one = 1;
+		value = (u8)threshold;
 		write_mem(copy_data, obj_address+(u16)register_address, size_one, &value);
 		read_mem(copy_data, obj_address+(u16)register_address, (u8)size_one, &val);
-		printk(KERN_ERR"[TSP]MXT224 T%d Byte%d is %d\n", 9, register_address, val);
+		printk(KERN_ERR "[TSP] TA_probe MXT224 T%d Byte%d is %d\n", 9, register_address, val);
+
+		value = (u8)movfilter;
+		register_address = 13;		
+		write_mem(copy_data, obj_address+(u16)register_address, size_one, &value);
+		read_mem(copy_data, obj_address+(u16)register_address, (u8)size_one, &val);
+		printk(KERN_ERR "[TSP] TA_probe MXT224 T%d Byte%d is %d\n", 9, register_address, val);
 
 		value = noise_threshold;
 		register_address = 8;
@@ -443,9 +452,8 @@ static void mxt224_ta_probe(int ta_status)
 		size_one = 1;
 		write_mem(copy_data, obj_address+(u16)register_address, size_one, &value);
 		read_mem(copy_data, obj_address+(u16)register_address, (u8)size_one, &val);
-		printk(KERN_ERR"[TSP]MXT224 T%d Byte%d is %d\n", 22, register_address, val);
+		printk(KERN_ERR "[TSP] TA_probe MXT224 T%d Byte%d is %d\n", 22, register_address, val);		
 	}
-
 };
 
 void check_chip_calibration(unsigned char one_touch_input_flag)

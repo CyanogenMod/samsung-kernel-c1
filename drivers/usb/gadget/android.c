@@ -817,6 +817,10 @@ static ssize_t tethering_switch_store(struct device *dev, struct device_attribut
 
 	if (value) {
 		CSY_DBG_ESS("Enable tethering\n");
+		if(a_dev->cdev) {
+			if(a_dev->cdev->gadget->speed == USB_SPEED_UNKNOWN)
+				a_dev->cdev->mute_switch = 1;
+		}
 		samsung_enable_function(USBSTATUS_VTP);
 		if(a_dev->cdev)
 			if(a_dev->cdev->gadget)

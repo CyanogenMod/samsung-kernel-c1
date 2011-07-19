@@ -142,6 +142,7 @@ struct max8997_muic_info {
 	struct mutex		mutex;
 
 	bool			is_usb_ready;
+	bool			is_mhl_ready;
 
 	struct input_dev	*input;
 	int			previous_key;
@@ -588,7 +589,7 @@ static int max8997_muic_handle_dock_vol_key(struct max8997_muic_info *info,
 		}
 		input_event(input, EV_KEY, code, state);
 		input_sync(input);
-		return 1;
+		return 0;
 	}
 
 	if (pre_key == DOCK_KEY_NONE) {
@@ -753,7 +754,7 @@ static int max8997_muic_attach_dock_type(struct max8997_muic_info *info,
 	return 0;
 }
 
-static void max8997_muic_attach_mhl(struct max8997_muic_info *info)
+static void max8997_muic_attach_mhl(struct max8997_muic_info *info, u8 chgtyp)
 {
 	struct max8997_muic_data *mdata = info->muic_data;
 
@@ -762,6 +763,8 @@ static void max8997_muic_attach_mhl(struct max8997_muic_info *info)
 	if (info->cable_type == CABLE_TYPE_USB) {
 		if (mdata->usb_cb && info->is_usb_ready)
 			mdata->usb_cb(USB_CABLE_DETACHED);
+
+		max8997_muic_set_charging_type(info, true);
 	}
 #if 0
 	if (info->cable_type == CABLE_TYPE_MHL) {
@@ -771,8 +774,13 @@ static void max8997_muic_attach_mhl(struct max8997_muic_info *info)
 #endif
 	info->cable_type = CABLE_TYPE_MHL;
 
-	if (mdata->mhl_cb)
+	if (mdata->mhl_cb && info->is_mhl_ready)
 		mdata->mhl_cb(MAX8997_MUIC_ATTACHED);
+
+	if (chgtyp == CHGTYP_USB) {
+		info->cable_type = CABLE_TYPE_MHL_VB;
+		max8997_muic_set_charging_type(info, false);
+	}
 }
 
 static void max8997_muic_handle_jig_uart(struct max8997_muic_info *info,
@@ -845,15 +853,19 @@ static int max8997_muic_handle_attach(struct max8997_muic_info *info,
 		}
 	}
 
+	/* 1Kohm ID regiter detection (mHL)
+	 * Old MUIC : ADC value:0x00 or 0x01, ADCLow:1
+	 * New MUIC : ADC value is not set(Open), ADCLow:1, ADCError:1
+	 */
 	if (adclow && adcerr) {
-		max8997_muic_attach_mhl(info);
+		max8997_muic_attach_mhl(info, chgtyp);
 		return 0;
 	}
 
 	switch (adc) {
 	case ADC_GND:
 		if (adclow) {
-			max8997_muic_attach_mhl(info);
+			max8997_muic_attach_mhl(info, chgtyp);
 			break;
 		}
 
@@ -870,6 +882,7 @@ static int max8997_muic_handle_attach(struct max8997_muic_info *info,
 			if (mdata->usb_cb && info->is_usb_ready)
 				mdata->usb_cb(USB_OTGHOST_ATTACHED);
 		} else if (chgtyp == CHGTYP_USB ||
+				chgtyp == CHGTYP_DOWNSTREAM_PORT ||
 				chgtyp == CHGTYP_DEDICATED_CHGR ||
 				chgtyp == CHGTYP_500MA	||
 				chgtyp == CHGTYP_1A) {
@@ -879,7 +892,7 @@ static int max8997_muic_handle_attach(struct max8997_muic_info *info,
 		}
 		break;
 	case ADC_MHL:
-		max8997_muic_attach_mhl(info);
+		max8997_muic_attach_mhl(info, chgtyp);
 		break;
 	case ADC_JIG_UART_OFF:
 		max8997_muic_handle_jig_uart(info, vbvolt);
@@ -892,6 +905,7 @@ static int max8997_muic_handle_attach(struct max8997_muic_info *info,
 	case ADC_CARDOCK:
 		max8997_muic_attach_dock_type(info, adc);
 		if (chgtyp == CHGTYP_USB ||
+				chgtyp == CHGTYP_DOWNSTREAM_PORT ||
 				chgtyp == CHGTYP_DEDICATED_CHGR ||
 				chgtyp == CHGTYP_500MA	||
 				chgtyp == CHGTYP_1A)
@@ -919,6 +933,7 @@ static int max8997_muic_handle_attach(struct max8997_muic_info *info,
 			}
 			ret = max8997_muic_attach_usb_type(info, adc);
 			break;
+		case CHGTYP_DOWNSTREAM_PORT:
 		case CHGTYP_DEDICATED_CHGR:
 		case CHGTYP_500MA:
 		case CHGTYP_1A:
@@ -1057,7 +1072,7 @@ static int max8997_muic_handle_detach(struct max8997_muic_info *info)
 		max8997_muic_set_charging_type(info, false);
 
 		if (mdata->is_mhl_attached && mdata->is_mhl_attached()) {
-			if (mdata->mhl_cb)
+			if (mdata->mhl_cb && info->is_mhl_ready)
 				mdata->mhl_cb(MAX8997_MUIC_DETACHED);
 		}
 		break;
@@ -1106,6 +1121,7 @@ static void max8997_muic_detect_dev(struct max8997_muic_info *info)
 		if (chgtyp == CHGTYP_NO_VOLTAGE)
 			intr = INT_DETACH;
 		else if (chgtyp == CHGTYP_USB ||
+				chgtyp == CHGTYP_DOWNSTREAM_PORT ||
 				chgtyp == CHGTYP_DEDICATED_CHGR ||
 				chgtyp == CHGTYP_500MA	||
 				chgtyp == CHGTYP_1A) {
@@ -1226,14 +1242,13 @@ static void max8997_muic_mhl_detect(struct work_struct *work)
 	dev_info(info->dev, "%s\n", __func__);
 
 	mutex_lock(&info->mutex);
-	if (mdata->is_mhl_attached) {
-		if (!mdata->is_mhl_attached())
-			goto out;
-	}
+	info->is_mhl_ready = true;
 
-	if (mdata->mhl_cb)
-		mdata->mhl_cb(MAX8997_MUIC_ATTACHED);
-out:
+	if (info->cable_type == CABLE_TYPE_MHL ||
+			info->cable_type == CABLE_TYPE_MHL_VB) {
+		if (mdata->mhl_cb)
+			mdata->mhl_cb(MAX8997_MUIC_ATTACHED);
+	}
 	mutex_unlock(&info->mutex);
 }
 

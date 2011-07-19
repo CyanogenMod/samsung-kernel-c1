@@ -1,18 +1,34 @@
-/*===========================================================================
+/***************************************************************************
 
-  SiI9234 Driver Processor
+* 
 
+*   SiI9244 - MHL Transmitter Driver
 
-  DESCRIPTION
-  This file explains the SiI9024A initialization and call the virtual main function.
+*
 
+* Copyright (C) (2011, Silicon Image Inc)
 
-  Copyright (c) 2002-2009, Silicon Image, Inc.  All rights reserved.             
-  No part of this work may be reproduced, modified, distributed, transmitted,    
-  transcribed, or translated into any language or computer format, in any form   
-  or by any means without written permission of: Silicon Image, Inc.,            
-  1060 East Arques Avenue, Sunnyvale, California 94085                           
-  ===========================================================================*/
+*
+
+* This program is free software; you can redistribute it and/or modify
+
+* it under the terms of the GNU General Public License as published by
+
+* the Free Software Foundation version 2.
+
+*
+
+* This program is distributed ¡°as is¡± WITHOUT ANY WARRANTY of any
+
+* kind, whether express or implied; without even the implied warranty
+
+* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+* GNU General Public License for more details.
+
+*
+
+*****************************************************************************/
 
 
 /*===========================================================================

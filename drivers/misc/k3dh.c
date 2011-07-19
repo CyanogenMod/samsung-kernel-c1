@@ -429,8 +429,8 @@ static ssize_t k3dh_calibration_show(struct device *dev,
 	if (err < 0)
 		pr_err("%s: k3dh_open_calibration() failed\n", __func__);
 
-	return sprintf(buf, "%d %d %d\n",
-		k3dh->cal_data.x, k3dh->cal_data.y, k3dh->cal_data.z);
+	return sprintf(buf, "%d %d %d %d\n",
+		err, k3dh->cal_data.x, k3dh->cal_data.y, k3dh->cal_data.z);
 }
 
 static ssize_t k3dh_calibration_store(struct device *dev,
@@ -440,8 +440,10 @@ static ssize_t k3dh_calibration_store(struct device *dev,
 	int err;
 
 	err = k3dh_do_calibrate(dev);
-	if (err < 0)
+	if (err < 0) {
 		pr_err("%s: k3dh_do_calibrate() failed\n", __func__);
+		return err;
+	}
 
 	return count;
 }

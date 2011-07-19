@@ -42,6 +42,8 @@
 #ifdef CONFIG_ANDROID_PMEM
 #include <linux/android_pmem.h>
 #endif
+#include <linux/reboot.h>
+#include <linux/host_notify.h>
 
 #include <asm/pmu.h>
 #include <asm/mach/arch.h>
@@ -84,6 +86,11 @@
 #endif
 #ifdef CONFIG_VIDEO_S5K5BAFX
 #include <media/s5k5bafx_platform.h>
+#endif
+
+#if defined(CONFIG_DEV_THERMAL)
+#include <plat/s5p-tmu.h>
+#include <mach/regs-tmu.h>
 #endif
 
 #include <mach/regs-gpio.h>
@@ -2269,12 +2276,12 @@ static int max8997_muic_charger_cb(cable_type_t cable_type)
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_MHL_VB:
-	case CABLE_TYPE_DESKDOCK:
 		value.intval = POWER_SUPPLY_TYPE_MISC;
 		is_cable_attached = true;
 		break;
 	case CABLE_TYPE_TA:
 	case CABLE_TYPE_CARDOCK:
+	case CABLE_TYPE_DESKDOCK:
 	case CABLE_TYPE_JIG_UART_OFF_VB:
 		value.intval = POWER_SUPPLY_TYPE_MAINS;
 		is_cable_attached = true;
@@ -2694,7 +2701,7 @@ static const u8 *mxt224_config[] = {
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
 				48,		/* IDLEACQINT */
 				255,	/* ACTVACQINT */
-				25		/* ACTV2IDLETO: 25 * 200ms = 5s */};
+				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 				10, 0, 5, 1, 0, 0, 9, 30};/*byte 3: 0*/
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
@@ -2732,14 +2739,14 @@ static const u8 *mxt224_config[] = {
 static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
 				48,		/* IDLEACQINT */
 				255,	/* ACTVACQINT */
-				25		/* ACTV2IDLETO: 25 * 200ms = 5s */};
+				25 		/* ACTV2IDLETO: 25 * 200ms = 5s */};
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
 				27, 0, 5, 1, 0, 0, 8, 8, 0, 0};
-#if 1 /* MXT224E_0V5_CONFIG */
+#if 1 /* MXT224E_0V5_CONFIG */	
 /* NEXTTCHDI added */
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				131, 0, 0, 19, 11, 0, 16, 35, 2, 1,
-				10,
+				10, 
 				15,		/* MOVHYSTI */
 				1, 11, MXT224_MAX_MT_FINGERS, 5, 40, 10, 31, 3,
 				223, 1, 10, 10, 10, 10, 143, 40, 143, 80,
@@ -2780,8 +2787,8 @@ static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
 				1, 12, 80, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 6, 6, 0, 0, 100, 4, 64,
 				10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
-				0, 0, 0, 0, 0, 50, 2,
-				15,		/* MOVHYSTI */
+				0, 0, 0, 0, 0, 50, 2, 
+				15,		/* MOVHYSTI */ 
 				1, 11,
 				10, 5, 40, 10, 0, 10, 10, 143, 40, 143,
 				80, 18, 15, 2};
@@ -4127,7 +4134,7 @@ static struct android_pmem_platform_data pmem_pdata = {
 	.name = "pmem",
 	.no_allocator = 1,
 #ifdef CONFIG_TARGET_LOCALE_KOR
-	.cached = 1,
+	.cached = 0,
 #else
 	.cached = 0,
 #endif
@@ -4604,18 +4611,12 @@ static unsigned int sec_bat_get_lpcharging_state(void)
 
 	if (val == 1) {
 		psy->get_property(psy, POWER_SUPPLY_PROP_STATUS, &value);
-		if (value.intval == POWER_SUPPLY_STATUS_DISCHARGING) {
-#ifdef CONFIG_TARGET_LOCALE_KOR
-			printk(KERN_DEBUG "%s: POWER_SUPPLY_STATUS_DISCHARGING\n");
-#else
-			if (pm_power_off)
-				pm_power_off();
-#endif
-		}
+		pr_info("%s: charging status: %d\n", __func__, value.intval);
+		if (value.intval == POWER_SUPPLY_STATUS_DISCHARGING)
+			pr_warn("%s: DISCHARGING\n", __func__);
 	}
 
-	pr_info("%s: LP charging:%d, charging status :%d\n", __func__, val,
-		value.intval);
+	pr_info("%s: LP charging:%d\n", __func__, val);
 	return val;
 }
 
@@ -4874,17 +4875,7 @@ static struct platform_device pmu_device = {
 	.num_resources	= 2,
 };
 
-#ifdef CONFIG_S5PV310_WATCHDOG_RESET
-static struct platform_device watchdog_reset_device = {
-	.name = "watchdog-reset",
-	.id = -1,
-};
-#endif
-
 static struct platform_device *smdkc210_devices[] __initdata = {
-#ifdef CONFIG_S5PV310_WATCHDOG_RESET
-	&watchdog_reset_device,
-#endif
 #ifdef CONFIG_S5PV310_DEV_PD
 	&s5pv310_device_pd[PD_MFC],
 	&s5pv310_device_pd[PD_G3D],
@@ -5103,6 +5094,10 @@ static struct platform_device *smdkc210_devices[] __initdata = {
 	&s3c_device_tsi,
 #endif
 	&pmu_device,
+
+#ifdef CONFIG_DEV_THERMAL
+	&s5p_device_tmu,
+#endif
 };
 
 #ifdef CONFIG_VIDEO_TVOUT
@@ -5391,23 +5386,7 @@ static struct gpio_init_data c1_init_gpios[] = {
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S5P_GPIO_DRVSTR_LV1,
-	},
-#if defined(CONFIG_TARGET_LOCALE_NTT)
-	{	/*GPY0 */
-		.num	= S5PV310_GPY0(0),
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S5P_GPIO_DRVSTR_LV1,
-	}, {
-		.num	= S5PV310_GPY0(1),
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S5P_GPIO_DRVSTR_LV1,
-	},
-#endif
-	{	/*GPY0 */
+	}, {	/*GPY0 */
 		.num	= S5PV310_GPY0(2),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
@@ -5654,7 +5633,7 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPB(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPB(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPB(5),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
-#endif
+#endif	
 #else //esper,2011-01-24 for KOR TDMB
 	{ S5PV310_GPB(0),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPB(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
@@ -5693,15 +5672,13 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPD1(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPD1(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPD1(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
-
 #if !defined(CONFIG_VIDEO_TSI)
 	{ S5PV310_GPE0(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE0(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE0(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE0(3),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
-#endif
 	{ S5PV310_GPE0(4),  S3C_GPIO_SLP_OUT1,	S3C_GPIO_PULL_NONE},
-
+#endif
 	{ S5PV310_GPE1(0),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE1(1),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE1(2),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_NONE},
@@ -5712,7 +5689,6 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPE1(6),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPE1(7),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 #endif
-
 	{ S5PV310_GPE2(0),  S3C_GPIO_SLP_PREV,	S3C_GPIO_PULL_DOWN},
 	{ S5PV310_GPE2(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPE2(2),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
@@ -5862,7 +5838,7 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 
 	{ S5PV310_GPY0(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
 	{ S5PV310_GPY0(1),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
-
+	
 	{ S5PV310_GPY0(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY0(3),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPY0(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
@@ -5881,7 +5857,7 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPY2(5),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},	/* NC */
 
 	{ S5PV310_GPY3(0),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},	/* MHL_SDA_1.8V */
-        { S5PV310_GPY3(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
+	{ S5PV310_GPY3(1),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPY3(2),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},	/* MHL_SCL_1.8V */
 	{ S5PV310_GPY3(3),  S3C_GPIO_SLP_OUT0,	S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPY3(4),  S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
@@ -5926,6 +5902,10 @@ static unsigned int c1_sleep_gpio_table[][3] = {
 	{ S5PV310_GPZ(4),  S3C_GPIO_SLP_OUT0,  S3C_GPIO_PULL_NONE},
 	{ S5PV310_GPZ(5),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
 	{ S5PV310_GPZ(6),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
+
+#if defined(CONFIG_TARGET_LOCALE_NTT)
+	{ S5PV310_GPX1(7),  S3C_GPIO_SLP_INPUT, S3C_GPIO_PULL_DOWN},	/* NC */
+#endif
 };
 
 
@@ -6261,6 +6241,10 @@ static void __init smdkc210_machine_init(void)
 
 #ifdef CONFIG_S3C_ADC
 	s3c_adc_set_platdata(&s3c_adc_platform);
+#endif
+
+#ifdef CONFIG_DEV_THERMAL
+	s5p_tmu_set_platdata(NULL);
 #endif
 
 #ifdef CONFIG_VIDEO_TVOUT

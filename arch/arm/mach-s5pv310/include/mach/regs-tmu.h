@@ -14,11 +14,8 @@
 #define __ASM_ARCH_REGS_THERMAL_H __FILE__
 
 #define TRIMINFO			 (0x0)
-#define TRIMINFO_CFG		 (0x10)
-#define TRIMINFO_CON		 (0x14)
 
 #define TMU_CON0			 (0x20)
-#define TMU_CON1			 (0x24)
 #define TMU_STATUS			 (0x28)
 #define SAMPLING_INTERNAL	 (0x2C)
 #define CNT_VALUE0			 (0x30)
@@ -44,7 +41,12 @@
 #define INTEN0              (1)
 #define INTEN1              (1<<4)
 #define INTEN2              (1<<8)
-#define INTEN3              (1<12)
+#define INTEN3              (1<<12)
+
+#define INTSTAT0			(1)
+#define INTSTAT1			(1<<4)
+#define INTSTAT2			(1<<8)
+#define INTSTAT3			(1<<12)
 
 #define TRIM_TEMP_MASK		(0xFF)
 
@@ -52,5 +54,7 @@
 #define INTCLEAR1			(1<<4)
 #define INTCLEAR2			(1<<8)
 #define	INTCLEAR3			(1<<12)
+#define INTCLEARALL			(INTCLEAR0 | INTCLEAR1 |\
+							 INTCLEAR2 | INTCLEAR2)
 
 #endif

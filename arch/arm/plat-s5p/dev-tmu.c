@@ -30,11 +30,6 @@ static struct resource s5p_tmu_resource[] = {
 		.start	= IRQ_TMU_TRIG0,
 		.end	= IRQ_TMU_TRIG0,
 		.flags	= IORESOURCE_IRQ,
-	},
-	[2] = {
-		.start	= IRQ_TMU_TRIG1,
-		.end	= IRQ_TMU_TRIG1,
-		.flags	= IORESOURCE_IRQ
 	}
 };
 
@@ -45,13 +40,12 @@ struct platform_device s5p_device_tmu= {
 	.resource	= s5p_tmu_resource,
 };
 
-EXPORT_SYMBOL(s5p_device_tmu);
-
 static struct tmu_data default_tmu_data __initdata = {
-	.t1 = 40,			  	/* cooling stop temp */
-	.t2 = 125,				/* trimming start temp */
-	.thr_temp	= 90,		/* initial thr temp */
-	.mode =	1,				/* 0: 1-point compensation, 1: 2-point compensation */ 
+	.te1 = 0,
+	.te2 = 0,
+	.cooling = 82,			/* cooling temperature */
+	.tmu_flag = 0,
+	.mode = 0,			/* 0: 1-point compensation, 1: 2-point compensation */ 
 };
 
 int s5p_tmu_get_irqno(int num)
@@ -59,16 +53,16 @@ int s5p_tmu_get_irqno(int num)
 	return platform_get_irq(&s5p_device_tmu,num);
 }
 	
-struct tmu_platform_device *s5p_tmu_get_platdata(void)
+struct s5p_tmu *s5p_tmu_get_platdata(void)
 {   
 	return platform_get_drvdata(&s5p_device_tmu);
 }
 
 void __init s5p_tmu_set_platdata(struct tmu_data *pd)
 {   
-	struct tmu_platform_device *npd;
+	struct s5p_tmu *npd;
 
-	npd = kmalloc(sizeof(struct tmu_platform_device), GFP_KERNEL);
+	npd = kmalloc(sizeof(struct s5p_tmu), GFP_KERNEL);
 	if (!npd)
 		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
 	

@@ -406,7 +406,6 @@ CONFIG_SEC_DEBUG_SEMAPHORE_LOG=y
 CONFIG_SEC_DEBUG_USER=y
 # CONFIG_SEC_DEBUG_PM_TEMP is not set
 # CONFIG_SEC_DEBUG_IRQ_EXIT_LOG is not set
-# CONFIG_S5PV310_WATCHDOG_RESET is not set
 
 #
 # Support dynamic cpu hotplug (Experimental)
