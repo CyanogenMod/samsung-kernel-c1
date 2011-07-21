@@ -597,7 +597,7 @@ extern int register_pm_notifier(struct notifier_block *nb);
 extern int unregister_pm_notifier(struct notifier_block *nb);
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP) */
 	/* && defined(DHD_GPL) */
-static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
+void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 {
 #ifdef PKT_FILTER_SUPPORT
 	DHD_TRACE(("%s: %d\n", __FUNCTION__, value));
@@ -671,7 +671,9 @@ int dhd_set_suspend(int value, dhd_pub_t *dhd)
 					iovbuf, sizeof(iovbuf));
 				dhdcdc_set_ioctl(dhd, 0, WLC_SET_VAR, iovbuf, sizeof(iovbuf), 1);
 #endif /* CONFIG_MACH_MAHIMAHI */
+				dhd->early_suspended = 1;
 			} else {
+				dhd->early_suspended = 0;
 
 				/* Kernel resumed  */
 				DHD_TRACE(("%s: Remove extra suspend setting \n", __FUNCTION__));
@@ -2557,7 +2559,7 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 	 * Save the dhd_info into the priv
 	 */
 	memcpy(netdev_priv(net), &dhd, sizeof(dhd));
-	
+
 #if defined(CONFIG_MACH_GODIN) && defined(CONFIG_WIFI_CONTROL_FUNC)
 	g_bus = bus;
 #endif

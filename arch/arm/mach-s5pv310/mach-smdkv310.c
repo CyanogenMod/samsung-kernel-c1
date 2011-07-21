@@ -80,7 +80,7 @@
 #include <linux/mfd/wm8994/pdata.h>
 #endif
 
-#if defined(CONFIG_S5P_THERMAL)
+#if defined(CONFIG_DEV_THERMAL)
 #include <plat/s5p-tmu.h>
 #include <mach/regs-tmu.h>
 #endif
@@ -1079,10 +1079,10 @@ static struct resource pmu_resource[] = {
 };
 
 static struct platform_device pmu_device = {
-	.name		= "arm-pmu",
-	.id		= ARM_PMU_DEVICE_CPU,
-	.resource	= &pmu_resource,
-	.num_resources	= 2,
+	.name 		= "arm-pmu",
+	.id 		= ARM_PMU_DEVICE_CPU,
+	.resource 	= &pmu_resource,
+	.num_resources 	= 2,
 };
 
 static struct platform_device *smdkv310_devices[] __initdata = {
@@ -1276,7 +1276,7 @@ static struct platform_device *smdkv310_devices[] __initdata = {
 	&s5pv310_device_sata,
 #endif
 
-#ifdef CONFIG_S5P_THERMAL
+#ifdef CONFIG_DEV_THERMAL
 	&s5p_device_tmu,
 #endif
 	&pmu_device,
@@ -1441,7 +1441,7 @@ static void __init smdkv310_machine_init(void)
 #endif
 #endif
 
-#ifdef CONFIG_S5P_THERMAL
+#ifdef CONFIG_DEV_THERMAL
 	s5p_tmu_set_platdata(NULL);
 #endif
 

@@ -34,3 +34,4 @@ void s5pv310_setup_mshci_cfg_card(struct platform_device *dev,
 {
 	/* still now, It dose not have something to do on booting time*/
 }
+

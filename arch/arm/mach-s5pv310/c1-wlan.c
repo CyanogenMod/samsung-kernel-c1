@@ -153,7 +153,7 @@ void *wlan_mem_prealloc(int section, unsigned long size)
 }
 EXPORT_SYMBOL(wlan_mem_prealloc);
 
-#define DHD_SKB_HDRSIZE			336
+#define DHD_SKB_HDRSIZE 		336
 #define DHD_SKB_1PAGE_BUFSIZE	((PAGE_SIZE*1)-DHD_SKB_HDRSIZE)
 #define DHD_SKB_2PAGE_BUFSIZE	((PAGE_SIZE*2)-DHD_SKB_HDRSIZE)
 #define DHD_SKB_4PAGE_BUFSIZE	((PAGE_SIZE*4)-DHD_SKB_HDRSIZE)
@@ -172,13 +172,13 @@ static int __init init_wifi_mem(void)
 		if (!wlan_static_skb[i])
 			goto err_skb_alloc;
 	}
-
+	
 	for (; i < 16; i++) {
 		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_2PAGE_BUFSIZE);
 		if (!wlan_static_skb[i])
 			goto err_skb_alloc;
 	}
-
+	
 	wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_4PAGE_BUFSIZE);
 	if (!wlan_static_skb[i])
 		goto err_skb_alloc;

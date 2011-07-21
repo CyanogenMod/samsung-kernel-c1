@@ -2027,7 +2027,7 @@ static const u32 s5k5bafx_common[] = {
 	0x0F120030,
 	0x0F1200C8,
 	0x0F12012C,
-	0x0F120258,
+	0x0F120210, /* 258 awbb_GainsMaxMove */
 	0x0F120003,
 
 	/* Set CCM */
@@ -2307,8 +2307,8 @@ static const u32 s5k5bafx_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F12050F, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120A0F, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120203, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120203, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120303, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120303, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -2371,8 +2371,8 @@ static const u32 s5k5bafx_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -2435,8 +2435,8 @@ static const u32 s5k5bafx_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -2499,8 +2499,8 @@ static const u32 s5k5bafx_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -4588,7 +4588,7 @@ static const u32 s5k5bafx_vt_common[] =
 	0x0F120030,
 	0x0F1200C8,
 	0x0F12012C,
-	0x0F120258,
+	0x0F120210, /* 258 awbb_GainsMaxMove */
 	0x0F120003,
 	
 	
@@ -4870,8 +4870,8 @@ static const u32 s5k5bafx_vt_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                         */
 	0x0F12050F, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"     bin: desparity low  */
 	0x0F120A0F, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"  bin: desparity high */
-	0x0F120203, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
-	0x0F120203, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
+	0x0F120303, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
+	0x0F120303, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                      */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                        */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"              */
@@ -4934,8 +4934,8 @@ static const u32 s5k5bafx_vt_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                         */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"     bin: desparity low  */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"  bin: desparity high */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                      */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                        */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"              */
@@ -4998,8 +4998,8 @@ static const u32 s5k5bafx_vt_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                         */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"     bin: desparity low  */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"  bin: desparity high */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                      */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                        */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"              */
@@ -5062,8 +5062,8 @@ static const u32 s5k5bafx_vt_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                         */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"     bin: desparity low  */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"  bin: desparity high */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"       */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin           */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                      */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                        */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"              */
@@ -7148,7 +7148,7 @@ static const u32 s5k5bafx_vt_wifi_common[] =
 	0x0F120030,
 	0x0F1200C8,
 	0x0F12012C,
-	0x0F120258,
+	0x0F120210, /* 258 awbb_GainsMaxMove */
 	0x0F120003,
 	
 	
@@ -7430,8 +7430,8 @@ static const u32 s5k5bafx_vt_wifi_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp*/
 	0x0F12050F, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin" bin: desparity low */
 	0x0F120A0F, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin" */
-	0x0F120203, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
-	0x0F120203, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
+	0x0F120303, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
+	0x0F120303, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                    */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                      */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"            */
@@ -7494,8 +7494,8 @@ static const u32 s5k5bafx_vt_wifi_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                       */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"    bin: desparity low */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                    */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                    */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                      */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"            */
@@ -7558,8 +7558,8 @@ static const u32 s5k5bafx_vt_wifi_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                       */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"    bin: desparity low */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                    */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                    */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                      */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"            */
@@ -7622,8 +7622,8 @@ static const u32 s5k5bafx_vt_wifi_common[] =
 	0x0F12006F, /* DSMix1_iDemClamp                                                       */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"    bin: desparity low */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                    */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin"     */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin         */
 	0x0F121408, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                    */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                      */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"            */
@@ -7741,7 +7741,7 @@ static const u32 s5k5bafx_capture[] =
 #ifdef CONFIG_TARGET_LOCALE_KOR
 static const u32 s5k5bafx_recording_60Hz_common[] = {
 	
-	/* recording 25fps Anti-Flicker 50Hz*/
+	/* recording 25fps Anti-Flicker 60Hz*/
 	
 	0xFCFCD000,
 	
@@ -9766,7 +9766,7 @@ static const u32 s5k5bafx_recording_60Hz_common[] = {
 	0x0F120030,
 	0x0F1200C8,
 	0x0F12012C,
-	0x0F120258,
+	0x0F120210, /* 258 awbb_GainsMaxMove */
 	0x0F120003,
 	
 	
@@ -10045,8 +10045,8 @@ static const u32 s5k5bafx_recording_60Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F12050F, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120A0F, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120203, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120203, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120303, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120303, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -10109,8 +10109,8 @@ static const u32 s5k5bafx_recording_60Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -10173,8 +10173,8 @@ static const u32 s5k5bafx_recording_60Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -10237,8 +10237,8 @@ static const u32 s5k5bafx_recording_60Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -12325,7 +12325,7 @@ static const u32 s5k5bafx_recording_50Hz_common[] = {
 	0x0F120030,
 	0x0F1200C8,
 	0x0F12012C,
-	0x0F120258,
+	0x0F120210, /* 258 awbb_GainsMaxMove */
 	0x0F120003,
 	
 	
@@ -12604,8 +12604,8 @@ static const u32 s5k5bafx_recording_50Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F12050F, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120A0F, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120203, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120203, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120303, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120303, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -12668,8 +12668,8 @@ static const u32 s5k5bafx_recording_50Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -12732,8 +12732,8 @@ static const u32 s5k5bafx_recording_50Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */
@@ -12796,8 +12796,8 @@ static const u32 s5k5bafx_recording_50Hz_common[] = {
 	0x0F12006F, /* DSMix1_iDemClamp                                                   */
 	0x0F120202, /* "Disparity_iDispTH_LowDisparity_iDispTH_Low_Bin"                   */
 	0x0F120502, /* "Disparity_iDispTH_High Disparity_iDispTH_High_Bin"                */
-	0x0F120102, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
-	0x0F120102, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
+	0x0F120202, /* "Despeckle_iCorrectionLevelColdDespeckle_iCorrectionLevelCold_Bin" */
+	0x0F120202, /* Despeckle_iCorrectionLevelHotDespeckle_iCorrectionLevelHot_Bin     */
 	0x0F12140A, /* "Despeckle_iColdThreshLowDespeckle_iColdThreshHigh"                */
 	0x0F12140A, /* "Despeckle_iHotThreshLowDespeckle_iHotThreshHigh"                  */
 	0x0F122828, /* "Denoise1_iLowMaxSlopeAllowedDenoise1_iHighMaxSlopeAllowed"        */

@@ -245,7 +245,7 @@ static const struct rfkill_ops bt_rfkill_ops = {
 
 #ifdef BT_SLEEP_ENABLE
 static int bluetooth_set_sleep(void *data, enum rfkill_user_states state)
-{
+{	
 	switch (state) {
 
 		case RFKILL_USER_STATE_UNBLOCKED:
@@ -271,11 +271,11 @@ static int bluetooth_set_sleep(void *data, enum rfkill_user_states state)
 static int btsleep_rfkill_set_block(void *data, bool blocked)
 {
 	int ret =0;
-
+	
 	ret = bluetooth_set_sleep(data, blocked?
 			RFKILL_USER_STATE_SOFT_BLOCKED :
 			RFKILL_USER_STATE_UNBLOCKED);
-
+		
 	return ret;
 }
 
@@ -379,7 +379,7 @@ err_sleep_register:
 
 err_sleep_alloc:
 	gpio_free(GPIO_BT_WAKE);
-
+	
 err_req_gpio_bt_wake:
 	rfkill_unregister(bt_rfk);
 #endif

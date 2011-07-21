@@ -37,7 +37,7 @@
 #endif
 
 #include <plat/pm.h>
-#include <plat/s5p-tmu.h>
+
 #include <plat/s5pv310.h>
 
 #include <mach/cpufreq.h>
@@ -231,6 +231,12 @@ static struct busfreq_table s5pv310_busfreq_table[] = {
 unsigned int g_cpufreq_lock_id;
 unsigned int g_cpufreq_lock_val[DVFS_LOCK_ID_END];
 unsigned int g_cpufreq_lock_level = CPUFREQ_MIN_LEVEL;
+
+#define CPUFREQ_LIMIT_LEVEL	L0
+
+unsigned int g_cpufreq_limit_id;
+unsigned int g_cpufreq_limit_val[DVFS_LOCK_ID_END];
+unsigned int g_cpufreq_limit_level = CPUFREQ_LIMIT_LEVEL;
 
 #define BUSFREQ_MIN_LEVEL	(LV_END - 1)
 
@@ -916,7 +922,6 @@ void s5pv310_set_busfreq(unsigned int div_index)
 #endif
 }
 
-
 void s5pv310_set_clkdiv(unsigned int div_index)
 {
 	unsigned int tmp;
@@ -1153,6 +1158,7 @@ static int s5pv310_target(struct cpufreq_policy *policy,
 #ifndef CONFIG_S5PV310_BUSFREQ
 	unsigned int int_volt;
 #endif
+
 	unsigned int check_gov = 0;
 
 	mutex_lock(&set_cpu_freq_change);
@@ -1204,40 +1210,20 @@ static int s5pv310_target(struct cpufreq_policy *policy,
 	if ((index > g_cpufreq_lock_level) && check_gov)
 		index = g_cpufreq_lock_level;
 
-
-#ifdef CONFIG_S5P_THERMAL
-	printk(KERN_INFO "cooling temp: %dc   flag_info: %d\n",
-					tmu_dev->data.t1, tmu_dev->dvfs_flag);
-
-	if (tmu_dev->dvfs_flag) {
-		cur_temp = readl(tmu_dev->tmu_base + CURRENT_TEMP);
-		printk(KERN_INFO "Current cpu temperature: %dc\n", cur_temp);
-
-		if (cur_temp >= tmu_dev->data.t2)
-			writel(~INTEN0|INTEN1, tmu_dev->tmu_base + INTEN);
-
-		if (cur_temp > tmu_dev->data.t1)
-			index = L2;
-		else {
-			tmu_dev->dvfs_flag = 0;
-			irq_num = s5p_tmu_get_irqno(0);
-			enable_irq(irq_num);
-
-			irq_num = s5p_tmu_get_irqno(1);
-			enable_irq(irq_num);
-		}
-	}
-#endif
+	if ((index < g_cpufreq_limit_level) && check_gov)
+		index = g_cpufreq_limit_level;
 
 	if (s5pv310_max_armclk == ARMCLOCK_1200MHZ) {
 #ifdef CONFIG_FREQ_STEP_UP_L2_L0
 		/* change L2 -> L0 */
 		if ((index == L0) && (old_index > L2)) {
+			printk(KERN_ERR "index= %d, old_index= %d\n", index, old_index);
 			index = L2;
 		}
 #else
 		/* change L2 -> L1 and change L1 -> L0 */
 		if (index == L0) {
+			printk(KERN_ERR "index= %d, old_index= %d\n", index, old_index);
 			if (old_index > L1)
 				index = L1;
 
@@ -1249,6 +1235,12 @@ static int s5pv310_target(struct cpufreq_policy *policy,
 		/* Prevent from jumping to 1GHz directly */
 		if ((index == L0) && (old_index > L1))
 			index = L1;
+
+		if (index > L3)
+			index = L3;
+
+		if (old_index > L3)
+			old_index = L3;
 	}
 
 	freqs.new = s5pv310_freq_table[index].frequency;
@@ -1579,7 +1571,7 @@ int s5pv310_cpufreq_lock(unsigned int nId,
 		if (cpufreq_level != CPU_L0) {
 			cpufreq_level -= 1;
 		} else {
-			printk(KERN_WARNING
+			printk(KERN_ERR
 				"[CPUFREQ]cpufreq lock to 1GHz in place of 1.2GHz\n");
 		}
 	}
@@ -1628,6 +1620,69 @@ void s5pv310_cpufreq_lock_free(unsigned int nId)
 		}
 	}
 
+	mutex_unlock(&set_cpu_freq_lock);
+}
+
+int s5pv310_cpufreq_upper_limit(unsigned int nId, enum cpufreq_level_request cpufreq_level)
+{
+	int ret = 0, cpu = 0;
+	unsigned int cur_freq;
+
+	if (!s5pv310_cpufreq_init_done)
+		return 0;
+
+	if (s5pv310_max_armclk != ARMCLOCK_1200MHZ) {
+		if (cpufreq_level != CPU_L0) {
+			cpufreq_level -= 1;
+		} else {
+			printk(KERN_DEBUG
+				"[CPUFREQ]cpufreq lock to 1GHz in place of 1.2GHz\n");
+		}
+	}
+
+	if (g_cpufreq_limit_id & (1 << nId)) {
+		printk(KERN_ERR "[CPUFREQ]This device [%d] already limited cpufreq\n", nId);
+		return 0;
+	}
+
+	mutex_lock(&set_cpu_freq_lock);
+	g_cpufreq_limit_id |= (1 << nId);
+	g_cpufreq_limit_val[nId] = cpufreq_level;
+
+	/* If the requested limit level is lower than current value */
+	if (cpufreq_level > g_cpufreq_limit_level)
+		g_cpufreq_limit_level = cpufreq_level;
+
+	mutex_unlock(&set_cpu_freq_lock);
+
+	/* If cur frequency is higher than limit freq, it needs to update */
+	cur_freq = s5pv310_getspeed(cpu);
+	if (cur_freq > s5pv310_freq_table[cpufreq_level].frequency) {
+		ret = cpufreq_driver_target(cpufreq_cpu_get(cpu),
+				s5pv310_freq_table[cpufreq_level].frequency,
+				MASK_ONLY_SET_CPUFREQ);
+	}
+
+	return ret;
+}
+
+void s5pv310_cpufreq_upper_limit_free(unsigned int nId)
+{
+	unsigned int i;
+
+	if (!s5pv310_cpufreq_init_done)
+		return;
+
+	mutex_lock(&set_cpu_freq_lock);
+	g_cpufreq_limit_id &= ~(1 << nId);
+	g_cpufreq_limit_val[nId] = CPUFREQ_LIMIT_LEVEL;
+	g_cpufreq_limit_level = CPUFREQ_LIMIT_LEVEL;
+	if (g_cpufreq_limit_id) {
+		for (i = 0; i < DVFS_LOCK_ID_END; i++) {
+			if (g_cpufreq_limit_val[i] > g_cpufreq_limit_level)
+				g_cpufreq_limit_level = g_cpufreq_limit_val[i];
+		}
+	}
 	mutex_unlock(&set_cpu_freq_lock);
 }
 
@@ -2323,8 +2378,6 @@ static void s5pv310_asv_set_voltage()
 
 static int s5pv310_update_dvfs_table()
 {
-	struct chip_id_info *chip;
-	unsigned int package_id;
 	unsigned int i, j;
 	int ret = 0;
 
