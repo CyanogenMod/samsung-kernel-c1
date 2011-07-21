@@ -144,11 +144,11 @@ static int set_vibetonz(int timeout)
 			regulator = regulator_get(NULL, "vmotor");
 
 			if (IS_ERR(regulator)) {
-				DbgOut((KERN_ERR "Failed to get vmoter regulator.\n"));
+				DbgOut((KERN_ERR"Failed to get vmoter regulator.\n"));
 				return 0;
 			}
 
-			regulator_force_disable(regulator);
+			regulator_disable(regulator);
 			regulator_put(regulator);
 
 			regulator_hapticmotor_enabled = 0;
@@ -165,7 +165,7 @@ static int set_vibetonz(int timeout)
 		regulator = regulator_get(NULL, "vmotor");
 
 		if (IS_ERR(regulator)) {
-			DbgOut((KERN_ERR "Failed to get vmoter regulator.\n"));
+			DbgOut((KERN_ERR"Failed to get vmoter regulator.\n"));
 			return 0;
 		}
 
@@ -178,8 +178,6 @@ static int set_vibetonz(int timeout)
 	}
 
 	vibrator_value = timeout;
-
-	printk(KERN_DEBUG "tspdrv: %s (%d)\n", __func__, regulator_hapticmotor_enabled);
 
 	return 0;
 }
@@ -220,7 +218,7 @@ static int get_time_for_vibetonz(struct timed_output_dev *dev)
 
 static void enable_vibetonz_from_user(struct timed_output_dev *dev, int value)
 {
-	printk(KERN_DEBUG "tspdrv: Enable time = %d msec\n", value);
+	printk(KERN_DEBUG "[VIBETONZ] %s : time = %d msec\n", __func__, value);
 	hrtimer_cancel(&timer);
 
 	/* set_vibetonz(value); */

@@ -1204,7 +1204,7 @@ static int fimc_open(struct file *filp)
 	struct fimc_control *ctrl;
 	struct s3c_platform_fimc *pdata;
 	struct fimc_prv_data *prv_data;
-	int in_use;
+	int in_use, max_use;
 	int ret;
 	int i;
 
@@ -1214,7 +1214,12 @@ static int fimc_open(struct file *filp)
 	mutex_lock(&ctrl->lock);
 
 	in_use = atomic_read(&ctrl->in_use);
-	if (in_use > FIMC_MAX_CTXS) {
+	if (ctrl->id == FIMC0 || ctrl->id == FIMC2)
+		max_use = 1;
+	else
+		max_use = FIMC_MAX_CTXS + 1;
+
+	if (in_use >= max_use) {
 		ret = -EBUSY;
 		goto resource_busy;
 	} else {
@@ -1338,8 +1343,8 @@ static int fimc_open(struct file *filp)
 			writel(0x3f, qos_regs1 + 0x4);
 			fimc_info1("0x11200400 = 0x%x , 0x11200404 = 0x%x \n", readl(qos_regs1 + 0), readl(qos_regs1 + 4));
 
-			iounmap(qos_regs0);
-			qos_regs0 = NULL;
+			iounmap(qos_regs1);
+			qos_regs1 = NULL;
 		}
 
 	}
@@ -2320,6 +2325,21 @@ static inline int fimc_resume_cap(struct fimc_control *ctrl)
 	struct fimc_global *fimc = get_fimc_dev();
 	int tmp;
 	fimc_dbg("%s\n", __func__);
+	u32 timeout;
+
+	__raw_writel(S5P_INT_LOCAL_PWR_EN, S5P_PMU_CAM_CONF);
+
+	/*  Wait max 1ms */
+	timeout = 10;
+	while ((__raw_readl(S5P_PMU_CAM_CONF + 0x4) & S5P_INT_LOCAL_PWR_EN)
+			!= S5P_INT_LOCAL_PWR_EN) {
+		if (timeout == 0) {
+			printk(KERN_ERR "Power domain CAM enable failed.\n");
+			break;
+		}
+		timeout--;
+		udelay(100);
+	}
 
 	if (ctrl->cam->id == CAMERA_WB || ctrl->cam->id == CAMERA_WB_B) {
 		fimc_info1("%s : framecnt_seq : %d\n",
@@ -2344,6 +2364,7 @@ static inline int fimc_resume_cap(struct fimc_control *ctrl)
 		}
 	}
 	/* fimc_streamon_capture((void *)ctrl); */
+	ctrl->power_status = FIMC_POWER_ON;
 
 	return 0;
 }

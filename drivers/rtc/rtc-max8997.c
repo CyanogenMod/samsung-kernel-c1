@@ -421,7 +421,7 @@ static void max8997_rtc_enable_smpl(struct max8997_rtc_info *info, bool enable)
 	u8 val, mask;
 
 	if (enable)
-		val = (1 << SMPL_EN_SHIFT) | (3 << SMPLT_SHIFT);
+		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
 	else
 		val = 0;
 
@@ -542,8 +542,20 @@ static int __devexit max8997_rtc_remove(struct platform_device *pdev)
 static void max8997_rtc_shutdown(struct platform_device *pdev)
 {
 	struct max8997_rtc_info *info = platform_get_drvdata(pdev);
+	int i;
+	u8 val = 0;
 
-	max8997_rtc_enable_wtsr(info, false);
+	for (i = 0; i < 3; i++) {
+		max8997_rtc_enable_wtsr(info, false);
+		max8997_read_reg(info->rtc, MAX8997_WTSR_SMPL_CNTL, &val);
+		pr_info("%s: WTSR_SMPL reg(0x%02x)\n", __func__, val);
+		if (val & WTSR_EN_MASK)
+			pr_emerg("%s: fail to disable WTSR\n", __func__);
+		else {
+			pr_info("%s: success to disable WTSR\n", __func__);
+			break;
+		}
+	}
 }
 
 static const struct platform_device_id rtc_id[] = {

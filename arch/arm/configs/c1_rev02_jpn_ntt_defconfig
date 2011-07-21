@@ -415,7 +415,6 @@ CONFIG_SEC_DEBUG_SCHED_LOG=y
 CONFIG_SEC_DEBUG_USER=y
 # CONFIG_SEC_DEBUG_PM_TEMP is not set
 # CONFIG_SEC_DEBUG_IRQ_EXIT_LOG is not set
-# CONFIG_S5PV310_WATCHDOG_RESET is not set
 
 #
 # Support dynamic cpu hotplug (Experimental)
@@ -427,11 +426,6 @@ CONFIG_S5PV310_ASV=y
 # BUS Frequency and Voltage scaling (Experimental)
 #
 CONFIG_S5PV310_BUSFREQ=y
-
-#
-# CPUFreq step up sequence selection: 2 step or 3 step
-#
-CONFIG_FREQ_STEP_UP_L2_L0=y
 
 #
 # Processor Type
@@ -982,7 +976,7 @@ CONFIG_EEPROM_AT24=y
 # CONFIG_EEPROM_MAX6875 is not set
 # CONFIG_EEPROM_93CX6 is not set
 # CONFIG_IWMC3200TOP is not set
-# CONFIG_PN544 is not set
+CONFIG_PN544=y
 CONFIG_HAVE_IDE=y
 # CONFIG_IDE is not set
 
@@ -1047,7 +1041,7 @@ CONFIG_NETDEVICES=y
 # CONFIG_BONDING is not set
 # CONFIG_MACVLAN is not set
 # CONFIG_EQUALIZER is not set
-CONFIG_TUN=y
+# CONFIG_TUN is not set
 # CONFIG_VETH is not set
 # CONFIG_NET_ETHERNET is not set
 CONFIG_MII=y

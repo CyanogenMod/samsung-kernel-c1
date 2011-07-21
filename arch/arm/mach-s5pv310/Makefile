@@ -73,5 +73,5 @@ obj-$(CONFIG_S5PV310_DEV_PD)		+= dev-pd.o
 ifneq ($(CONFIG_USE_EXT_GIC),y)
 obj-$(CONFIG_CPU_IDLE)			+= irq-extgic.o dev-egic.o
 endif
+obj-$(CONFIG_DEV_THERMAL)		+= tmu.o
 obj-$(CONFIG_SEC_DEBUG)			+= sec_debug.o sec_getlog.o sec_gaf.o
-obj-$(CONFIG_S5PV310_WATCHDOG_RESET)	+= c1-watchdog.o

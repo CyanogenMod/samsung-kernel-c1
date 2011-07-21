@@ -696,7 +696,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	setbit(eventmask, WLC_E_NDIS_LINK);
 	setbit(eventmask, WLC_E_MIC_ERROR);
 	setbit(eventmask, WLC_E_PMKID_CACHE);
-	setbit(eventmask, WLC_E_TXFAIL);
+//	setbit(eventmask, WLC_E_TXFAIL);
 	setbit(eventmask, WLC_E_JOIN_START);
 	setbit(eventmask, WLC_E_SCAN_COMPLETE);
 #ifdef CIQ_SUPPORT
@@ -727,7 +727,8 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
 
 #if defined(USE_KEEP_ALIVE)
-	ret = dhd_enable_keepalive(dhd, 60000); /* 60 sec */
+	DHD_ERROR(("%s: KEEP Alive time is 45s \n", __FUNCTION__));
+	ret = dhd_enable_keepalive(dhd, 45000); /* 45 sec */
 	if (ret) {
 		DHD_ERROR(("%s: Keepalive setting failure, error=%d\n", __FUNCTION__, ret));
 		/* For MFG mode */
@@ -777,6 +778,8 @@ dhd_prot_stop(dhd_pub_t *dhd)
 
 dhd_pub_t *dhd_get_pub(struct net_device *dev); /* dhd_linux.c */
 
+extern void dhd_set_packet_filter(int value, dhd_pub_t *dhd);
+
 int dhd_deepsleep(struct net_device *dev, int flag) 
 {
 	char iovbuf[20];
@@ -789,6 +792,9 @@ int dhd_deepsleep(struct net_device *dev, int flag)
 			DHD_ERROR(("[WiFi] Deepsleep On\n"));
 			/* give some time to _dhd_sysioc_thread() before deepsleep */
 			msleep(200);
+			if (dhd_pkt_filter_enable && !ap_fw_loaded) {
+				dhd_set_packet_filter(0, dhdp);
+			}
 			/* Disable MPC */
 			powervar = 0;
 			bcm_mkiovar("mpc", (char *)&powervar, 4, iovbuf, sizeof(iovbuf));
