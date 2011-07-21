@@ -60,7 +60,7 @@ void s5pv310_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 		}
-		__raw_writel(0xFF, GPK0DRV);
+		__raw_writel(0xFF, GPK0DRV);				
 	default:
 		break;
 	}

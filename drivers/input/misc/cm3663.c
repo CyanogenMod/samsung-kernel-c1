@@ -31,8 +31,9 @@
 #include <linux/uaccess.h>
 #include <linux/cm3663.h>
 
-#define ALS_BUFFER_NUM	10
-#define PROX_READ_NUM	40
+#define ALS_BUFFER_NUM		10
+#define LIGHT_BUFFER_NUM	20
+#define PROX_READ_NUM		40
 
 /* ADDSEL is LOW */
 #define REGS_ARA		0x18
@@ -74,6 +75,14 @@ static u8 reg_defaults[8] = {
 	0x00, /* PS_DATA: read only register */
 	0x0A, /* PS_THD: 10 */
 };
+
+static const int adc_table[4] = {
+	15,
+	150,
+	1500,
+	15000,
+};
+
 enum {
 	LIGHT_ENABLED = BIT(0),
 	PROXIMITY_ENABLED = BIT(1),
@@ -103,6 +112,8 @@ struct cm3663_data {
 	int als_index_count;
 	int irq;
 	int avg[3];
+	int light_count;
+	int light_buffer;
 	ktime_t light_poll_delay;
 	ktime_t prox_poll_delay;
 	u8 power_state;
@@ -168,6 +179,8 @@ int cm3663_i2c_write(struct cm3663_data *cm3663, u8 addr, u8 val)
 static void cm3663_light_enable(struct cm3663_data *cm3663)
 {
 	u8 tmp;
+	cm3663->light_count = 0;
+	cm3663->light_buffer = 0;
 	cm3663_i2c_read(cm3663, REGS_ARA, &tmp);
 	cm3663_i2c_read(cm3663, REGS_ARA, &tmp);
 	cm3663_i2c_read(cm3663, REGS_ARA, &tmp);
@@ -514,13 +527,28 @@ static struct attribute_group proximity_attribute_group = {
 
 static void cm3663_work_func_light(struct work_struct *work)
 {
+	int i;
 	int als;
 	struct cm3663_data *cm3663 = container_of(work, struct cm3663_data,
 					      work_light);
 
 	als = lightsensor_get_alsvalue(cm3663);
-	input_report_abs(cm3663->light_input_dev, ABS_MISC, als);
-	input_sync(cm3663->light_input_dev);
+
+	for (i = 0; ARRAY_SIZE(adc_table); i++)
+		if (als <= adc_table[i])
+			break;
+
+	if (cm3663->light_buffer == i) {
+		if (cm3663->light_count++ == LIGHT_BUFFER_NUM) {
+			input_report_abs(cm3663->light_input_dev,
+							ABS_MISC, als);
+			input_sync(cm3663->light_input_dev);
+			cm3663->light_count = 0;
+		}
+	} else {
+		cm3663->light_buffer = i;
+		cm3663->light_count = 0;
+	}
 }
 
 static void cm3663_work_func_prox(struct work_struct *work)

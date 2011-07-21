@@ -116,6 +116,7 @@ static void hotplug_timer(struct work_struct *work)
 		printk(KERN_ERR "CPUMON D %d\n", avg_load);
 #endif
 		printk("cpu1 off end!\n");
+		hotpluging_rate = CHECK_DELAY;
 	} else if (((avg_load > trans_load_h) && (cur_freq > 200 * 1000)) &&
 		   (cpu_online(1) == 0)) {
 		printk("cpu1 turning on!\n");
@@ -124,6 +125,7 @@ static void hotplug_timer(struct work_struct *work)
 		printk(KERN_ERR "CPUMON U %d\n", avg_load);
 #endif
 		printk("cpu1 on end!\n");
+		hotpluging_rate = CHECK_DELAY * 4;
 	}
  no_hotplug:
 

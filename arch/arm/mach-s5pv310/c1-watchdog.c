@@ -28,6 +28,7 @@
 #include <linux/workqueue.h>
 #include <linux/io.h>
 #include <linux/clk.h>
+#include <linux/cpu.h>
 
 /* PCLK(=PERIR=ACLK_100)/256/128 (~3200:1s) */
 #define TPS 3200
@@ -45,19 +46,21 @@ static void watchdog_workfunc(struct work_struct *work);
 static DECLARE_DELAYED_WORK(watchdog_work, watchdog_workfunc);
 
 static struct clk *wd_clk;
+static spinlock_t wdt_lock;
 
 static void watchdog_workfunc(struct work_struct *work)
 {
 	/* pr_err("%s kicking...\n", __func__); */
 	writel(watchdog_reset * TPS, S3C2410_WTCNT);
-	queue_delayed_work(watchdog_wq, &watchdog_work, watchdog_pet * HZ);
+	queue_delayed_work_on(0, watchdog_wq, &watchdog_work, watchdog_pet * HZ);
 }
 
 static void watchdog_start(void)
 {
 	unsigned int val;
+	unsigned long flags;
 
-	clk_enable(wd_clk);
+	spin_lock_irqsave(&wdt_lock, flags);
 
 	/* set to PCLK / 256 / 128 */
 	val = S3C2410_WTCON_DIV128;
@@ -71,24 +74,39 @@ static void watchdog_start(void)
 	/* start timer */
 	val |= S3C2410_WTCON_RSTEN | S3C2410_WTCON_ENABLE;
 	writel(val, S3C2410_WTCON);
+	spin_unlock_irqrestore(&wdt_lock, flags);
 
 	/* make sure we're ready to pet the dog */
-	queue_delayed_work(watchdog_wq, &watchdog_work, watchdog_pet * HZ);
+	queue_delayed_work_on(0, watchdog_wq, &watchdog_work, watchdog_pet * HZ);
 }
 
 static void watchdog_stop(void)
 {
 	writel(0, S3C2410_WTCON);
-	clk_disable(wd_clk);
 }
 
+static int __devinit watchdog_cpu_callback(struct notifier_block *nfb,
+						unsigned long action,
+						void *hcpu)
+{
+	switch (action) {
+	case CPU_ONLINE:
+		watchdog_start();
+	}
+	return NOTIFY_OK;
+}
 static int watchdog_probe(struct platform_device *pdev)
 {
 	wd_clk = clk_get(NULL, "watchdog");
 	BUG_ON(!wd_clk);
+	clk_enable(wd_clk);
+
+	spin_lock_init(&wdt_lock);
 
 	watchdog_wq = create_rt_workqueue("pet_watchdog");
 	watchdog_start();
+	hotcpu_notifier(watchdog_cpu_callback, 0);
+
 	return 0;
 }
 
@@ -113,7 +131,7 @@ static struct platform_driver watchdog_driver = {
 	.probe = watchdog_probe,
 	.driver = {
 		   .owner = THIS_MODULE,
-		   .name = "watchdog-reset",
+		   .name = "watchdog",
 		   .pm = &watchdog_pm_ops,
 	},
 };

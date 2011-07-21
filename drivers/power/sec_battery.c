@@ -68,6 +68,13 @@
 
 #define INIT_CHECK_COUNT	4
 
+enum tmu_status_t {
+	TMU_STATUS_NORMAL = 0,
+	TMU_STATUS_TRIPPED,
+	TMU_STATUS_THROTTLED,
+	TMU_STATUS_WARNING,
+};
+
 enum cable_type_t {
 	CABLE_TYPE_NONE = 0,
 	CABLE_TYPE_USB,
@@ -165,6 +172,8 @@ struct sec_bat_info {
 	unsigned int vf_check_interval;
 	struct delayed_work vf_check_work;
 #endif
+
+	int batt_tmu_status;
 };
 
 static char *supply_list[] = {
@@ -186,6 +195,9 @@ static enum power_supply_property sec_power_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 };
 
+static int sec_bat_enable_charging(struct sec_bat_info *info,
+	bool enable);
+
 static int calculate_average_adc(struct sec_bat_info *info,
 				 struct adc_sample *sample, int adc)
 {
@@ -203,8 +215,8 @@ static int calculate_average_adc(struct sec_bat_info *info,
 		for (i = 0; i < ADC_TOTAL_COUNT; i++)
 			sample->adc_arr[i] = adc;
 	} else {
-		sample->index = ++index >= ADC_TOTAL_COUNT ? 0 : index;
-		sample->adc_arr[index] = adc;
+		sample->index = (++index >= ADC_TOTAL_COUNT) ? 0 : index;
+		sample->adc_arr[sample->index] = adc;
 		for (i = 0; i < ADC_TOTAL_COUNT; i++)
 			total_adc += sample->adc_arr[i];
 
@@ -212,7 +224,7 @@ static int calculate_average_adc(struct sec_bat_info *info,
 	}
 
 	sample->average_adc = average_adc;
-	dev_dbg(info->dev, "%s: i(%d) adc=%d, avg_adc=%d\n", __func__,
+	dev_info(info->dev, "%s: i(%d) adc=%d, avg_adc=%d\n", __func__,
 		sample->index, adc, average_adc);
 
 	return average_adc;
@@ -307,18 +319,16 @@ static int sec_bat_get_property(struct power_supply *ps,
 	return 0;
 }
 
-static int sec_bat_handle_sub_charger_topoff(struct sec_bat_info *info)
+static void sec_bat_handle_charger_topoff(struct sec_bat_info *info)
 {
-	struct power_supply *psy_sub =
-	    power_supply_get_by_name(info->sub_charger_name);
-	union power_supply_propval value;
+	if (!sec_bat_enable_charging(info, false)) {
+		info->charging_status = POWER_SUPPLY_STATUS_FULL;
+		info->batt_full_status = BATT_FULL;
+		info->recharging_status = false;
 
-	info->charging_status = POWER_SUPPLY_STATUS_FULL;
-	info->batt_full_status = BATT_FULL;
-	info->recharging_status = false;
-	/* disable charging */
-	value.intval = POWER_SUPPLY_STATUS_DISCHARGING;
-	return psy_sub->set_property(psy_sub, POWER_SUPPLY_PROP_STATUS, &value);
+		dev_info(info->dev,
+			 "%s: Charging Top-off\n", __func__);
+	}
 }
 
 static int sec_bat_set_property(struct power_supply *ps,
@@ -339,7 +349,7 @@ static int sec_bat_set_property(struct power_supply *ps,
 		if (info->use_sub_charger) {
 			if (info->cable_type == CABLE_TYPE_USB ||
 					info->cable_type == CABLE_TYPE_MISC)
-				sec_bat_handle_sub_charger_topoff(info);
+				sec_bat_handle_charger_topoff(info);
 			break;
 		}
 
@@ -347,6 +357,11 @@ static int sec_bat_set_property(struct power_supply *ps,
 			info->recharging_status = false;
 			info->batt_full_status = BATT_FULL;
 			info->charging_status = POWER_SUPPLY_STATUS_FULL;
+
+			info->charging_start_time = 0;
+			info->charging_passed_time = 0;
+			info->charging_next_time = 0;
+
 			/* disable charging */
 			value.intval = POWER_SUPPLY_STATUS_DISCHARGING;
 			psy->set_property(psy, POWER_SUPPLY_PROP_STATUS,
@@ -402,10 +417,22 @@ static int sec_bat_set_property(struct power_supply *ps,
 		wake_lock(&info->cable_wake_lock);
 		queue_work(info->monitor_wqueue, &info->cable_work);
 		break;
+	case POWER_SUPPLY_PROP_HEALTH:
+		/* call by TMU driver
+		  * alarm for abnormal temperature increasement
+		  */
+		info->batt_tmu_status = val->intval;
+
+		wake_lock(&info->monitor_wake_lock);
+		queue_work(info->monitor_wqueue, &info->monitor_work);
+
+		dev_info(info->dev, "%s: TMU status has been changed(%d)\n",
+			__func__, info->batt_tmu_status);
+
+		break;
 	default:
 		return -EINVAL;
 	}
-
 	return 0;
 }
 
@@ -589,11 +616,11 @@ static void check_chgcurrent(struct sec_bat_info *info)
 		chg_current_adc = info->batt_current_adc;
 	info->batt_current_adc = chg_current_adc;
 
-	dev_dbg(info->dev,
+	dev_info(info->dev,
 		"[battery] charging current = %d\n", info->batt_current_adc);
 }
 
-static void sec_check_chgcurrent(struct sec_bat_info *info)
+static bool sec_check_chgcurrent(struct sec_bat_info *info)
 {
 	switch (info->charging_status) {
 	case POWER_SUPPLY_STATUS_FULL:
@@ -609,7 +636,9 @@ static void sec_check_chgcurrent(struct sec_bat_info *info)
 				if (info->charging_adc_full_count >=
 				    FULL_CHG_COND_COUNT) {
 					info->charging_adc_full_count = 0;
-					sec_bat_handle_sub_charger_topoff(info);
+					sec_bat_handle_charger_topoff(info);
+
+					return true;
 				}
 				dev_info(info->dev, "%s : ADC full cnt = %d\n",
 					 __func__,
@@ -623,6 +652,8 @@ static void sec_check_chgcurrent(struct sec_bat_info *info)
 		info->batt_current_adc = 0;
 		break;
 	}
+
+	return false;
 }
 
 static void sec_bat_update_info(struct sec_bat_info *info)
@@ -865,12 +896,12 @@ static bool sec_bat_charging_time_management(struct sec_bat_info *info)
 			(unsigned long)RECHARGING_TIME) &&
 		    info->recharging_status == true) {
 			if (!sec_bat_enable_charging(info, false)) {
-			info->recharging_status = false;
+				info->recharging_status = false;
 				dev_info(info->dev,
-					 "%s: Recharging timer expired\n",
-				 __func__);
-			return true;
-		}
+					"%s: Recharging timer expired\n",
+					__func__);
+				return true;
+			}
 		}
 		break;
 	case POWER_SUPPLY_STATUS_CHARGING:
@@ -889,7 +920,7 @@ static bool sec_bat_charging_time_management(struct sec_bat_info *info)
 					info->charging_next_time)) {
 			/*reset current in charging status */
 			if (!sec_bat_enable_charging(info, true)) {
-			info->charging_next_time =
+				info->charging_next_time =
 					info->charging_passed_time + RESETTING_CHG_TIME;
 
 				dev_info(info->dev,
@@ -940,74 +971,132 @@ static void sec_bat_check_vf(struct sec_bat_info *info)
 		info->present_count = 0;
 	}
 
+	dev_info(info->dev, "%s: Battery Health (%d)\n",
+		__func__, info->batt_health);
+
 	return;
 }
 
 static bool sec_bat_check_ing_level_trigger(struct sec_bat_info *info)
 {
-	struct power_supply *psy_sub =
-	    power_supply_get_by_name(info->sub_charger_name);
+	struct power_supply *psy;
 	union power_supply_propval value;
 	int ret;
 
-	ret = psy_sub->get_property(psy_sub, POWER_SUPPLY_PROP_STATUS, &value);
+	if (info->use_sub_charger) {
+		psy = power_supply_get_by_name(info->sub_charger_name);
 
-	if (ret < 0) {
-		dev_err(info->dev, "%s: fail to get status(%d)\n",
-			__func__, ret);
-		return false;
-	}
+		ret = psy->get_property(psy, POWER_SUPPLY_PROP_STATUS, &value);
 
-	switch (info->charging_status) {
-	case POWER_SUPPLY_STATUS_FULL:
-		if (info->recharging_status == false)
-			break;
-	case POWER_SUPPLY_STATUS_CHARGING:
-		switch (value.intval) {
-		case POWER_SUPPLY_STATUS_DISCHARGING:
-			if (info->cable_type != CABLE_TYPE_NONE)
-				info->batt_health = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
-			break;
-		case POWER_SUPPLY_STATUS_NOT_CHARGING:
-			if (info->cable_type == CABLE_TYPE_USB ||
-					info->cable_type == CABLE_TYPE_MISC) {
-				if (info->batt_vcell >=
-				    FULL_CHARGE_COND_VOLTAGE) {
-					/*USB full charged */
-					info->charging_int_full_count++;
-					if (info->charging_int_full_count >=
-						FULL_CHG_COND_COUNT) {
-						info->charging_int_full_count =
-						    0;
-						sec_bat_handle_sub_charger_topoff
-						    (info);
-						return true;
+		if (ret < 0) {
+			dev_err(info->dev, "%s: fail to get status(%d)\n",
+				__func__, ret);
+			return false;
+		}
+
+		switch (info->charging_status) {
+		case POWER_SUPPLY_STATUS_FULL:
+			if (info->recharging_status == false)
+				break;
+		case POWER_SUPPLY_STATUS_CHARGING:
+			switch (value.intval) {
+			case POWER_SUPPLY_STATUS_DISCHARGING:
+				if (info->cable_type != CABLE_TYPE_NONE)
+					info->batt_health = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
+				break;
+			case POWER_SUPPLY_STATUS_NOT_CHARGING:
+				if (info->cable_type == CABLE_TYPE_USB ||
+						info->cable_type == CABLE_TYPE_MISC) {
+					if (info->batt_vcell >=
+					    FULL_CHARGE_COND_VOLTAGE) {
+						/*USB full charged */
+						info->charging_int_full_count++;
+						if (info->charging_int_full_count >=
+							FULL_CHG_COND_COUNT) {
+							info->charging_int_full_count =
+							    0;
+							sec_bat_handle_charger_topoff
+							    (info);
+							return true;
+						}
+						dev_info(info->dev,
+							"%s : full interrupt cnt = %d\n",
+							__func__,
+							info->charging_int_full_count);
+					} else {
+						info->charging_int_full_count = 0;
+						/*reactivate charging in next monitor work
+						    for abnormal full-charged status */
+						info->charging_next_time =
+							info->charging_passed_time + HZ;
 					}
-					dev_info(info->dev,
-						"%s : full interrupt cnt = %d\n",
-						__func__,
-						info->charging_int_full_count);
-				} else {
-					info->charging_int_full_count = 0;
-					/*reactivate charging in next monitor work
-					    for abnormal full-charged status */
-					info->charging_next_time =
-						info->charging_passed_time + HZ;
 				}
+				break;
 			}
 			break;
+		case POWER_SUPPLY_STATUS_NOT_CHARGING:
+			if (info->batt_health == POWER_SUPPLY_HEALTH_OVERVOLTAGE &&
+			    value.intval == POWER_SUPPLY_STATUS_NOT_CHARGING)
+				info->batt_health = POWER_SUPPLY_HEALTH_GOOD;
+			break;
+		default:
+			info->charging_int_full_count = 0;
+			break;
 		}
-		break;
-	case POWER_SUPPLY_STATUS_NOT_CHARGING:
-		if (info->batt_health == POWER_SUPPLY_HEALTH_OVERVOLTAGE &&
-		    value.intval == POWER_SUPPLY_STATUS_NOT_CHARGING)
-			info->batt_health = POWER_SUPPLY_HEALTH_GOOD;
-		break;
-	default:
-		info->charging_int_full_count = 0;
-		break;
+		return false;
+	} else {
+		psy = power_supply_get_by_name(info->charger_name);
+
+		ret = psy->get_property(psy, POWER_SUPPLY_PROP_STATUS, &value);
+
+		if (ret < 0) {
+			dev_err(info->dev, "%s: fail to get status(%d)\n",
+				__func__, ret);
+			return false;
+		}
+
+		switch (info->charging_status) {
+		case POWER_SUPPLY_STATUS_FULL:
+			if (info->recharging_status == false)
+				break;
+		case POWER_SUPPLY_STATUS_CHARGING:
+			switch (value.intval) {
+			case POWER_SUPPLY_STATUS_DISCHARGING:
+				if (info->cable_type == CABLE_TYPE_USB ||
+						info->cable_type == CABLE_TYPE_MISC) {
+					if (info->batt_vcell >=
+						FULL_CHARGE_COND_VOLTAGE) {
+						/*USB full charged */
+						info->charging_int_full_count++;
+						if (info->charging_int_full_count >=
+							FULL_CHG_COND_COUNT) {
+							info->charging_int_full_count =
+								0;
+							sec_bat_handle_charger_topoff
+								(info);
+							return true;
+						}
+						dev_info(info->dev,
+							"%s : full interrupt cnt = %d\n",
+							__func__,
+							info->charging_int_full_count);
+					} else {
+						info->charging_int_full_count = 0;
+						/*reactivate charging in next monitor work
+							for abnormal full-charged status */
+						info->charging_next_time =
+							info->charging_passed_time + HZ;
+					}
+				}
+				break;
+			}
+			break;
+		default:
+			info->charging_int_full_count = 0;
+			break;
+		}
+		return false;
 	}
-	return false;
 }
 
 static void sec_bat_monitor_work(struct work_struct *work)
@@ -1023,13 +1112,12 @@ static void sec_bat_monitor_work(struct work_struct *work)
 	if (sec_bat_charging_time_management(info))
 		goto full_charged;
 
-	if (info->use_sub_charger) {
-		if (sec_bat_check_ing_level_trigger(info))
-			goto full_charged;
-	}
+	if (sec_bat_check_ing_level_trigger(info))
+		goto full_charged;
 
 	if (info->cable_type == CABLE_TYPE_AC)
-		sec_check_chgcurrent(info);
+		if (sec_check_chgcurrent(info))
+			goto full_charged;
 
 	if (info->cable_type == CABLE_TYPE_NONE &&
 	    info->charging_status == POWER_SUPPLY_STATUS_FULL) {
@@ -1054,6 +1142,9 @@ static void sec_bat_monitor_work(struct work_struct *work)
 		case 5: /*abnormal battery */
 			info->batt_health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
 			break;
+		case 6: /*tmu tripped */
+			info->batt_tmu_status = TMU_STATUS_TRIPPED;
+			break;
 		}
 	}
 
@@ -1062,9 +1153,9 @@ static void sec_bat_monitor_work(struct work_struct *work)
 		if (info->batt_vcell < RECHARGING_VOLTAGE &&
 		    info->recharging_status == false) {
 			if (!sec_bat_enable_charging(info, true)) {
-			info->recharging_status = true;
+				info->recharging_status = true;
 
-			dev_info(info->dev,
+				dev_info(info->dev,
 					 "%s: Start Recharging, Vcell = %d\n",
 					 __func__, info->batt_vcell);
 			}
@@ -1078,12 +1169,12 @@ static void sec_bat_monitor_work(struct work_struct *work)
 		case POWER_SUPPLY_HEALTH_DEAD:
 		case POWER_SUPPLY_HEALTH_UNSPEC_FAILURE:
 			if (!sec_bat_enable_charging(info, false)) {
-			info->charging_status =
-			    POWER_SUPPLY_STATUS_NOT_CHARGING;
-			info->recharging_status = false;
+				info->charging_status =
+				    POWER_SUPPLY_STATUS_NOT_CHARGING;
+				info->recharging_status = false;
 
 				dev_info(info->dev, "%s: Not charging\n",
-					 __func__);
+					__func__);
 			}
 			break;
 		default:
@@ -1099,8 +1190,8 @@ static void sec_bat_monitor_work(struct work_struct *work)
 				 __func__);
 			if (info->cable_type != CABLE_TYPE_NONE) {
 				if (!sec_bat_enable_charging(info, true))
-				info->charging_status
-				    = POWER_SUPPLY_STATUS_CHARGING;
+					info->charging_status
+					    = POWER_SUPPLY_STATUS_CHARGING;
 			} else
 				info->charging_status
 				    = POWER_SUPPLY_STATUS_DISCHARGING;
@@ -1190,6 +1281,7 @@ static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(system_rev),
 	SEC_BATTERY_ATTR(fg_psoc),
 	SEC_BATTERY_ATTR(batt_lpm_state),
+	SEC_BATTERY_ATTR(batt_tmu_status),
 };
 
 enum {
@@ -1212,6 +1304,7 @@ enum {
 	BATT_SYSTEM_REV,
 	BATT_FG_PSOC,
 	BATT_LPM_STATE,
+	BATT_TMU_STATUS,
 };
 
 static ssize_t sec_bat_show_property(struct device *dev,
@@ -1282,7 +1375,7 @@ static ssize_t sec_bat_show_property(struct device *dev,
 		break;
 	case BATT_TEST_VALUE:
 		i += scnprintf(buf + i, PAGE_SIZE - i,
-			"0-normal, 1-full, 2-low, 3-high, 4-over, 5-cf (%d)\n",
+			"0-normal, 1-full, 2-low, 3-high, 4-over, 5-cf, 6-trip (%d)\n",
 			info->test_value);
 		break;
 	case BATT_CURRENT_ADC:
@@ -1299,8 +1392,14 @@ static ssize_t sec_bat_show_property(struct device *dev,
 	case BATT_LPM_STATE:
 		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
 			info->batt_lpm_state);
+		break;
+	case BATT_TMU_STATUS:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n",
+			info->batt_tmu_status);
+		break;
 	default:
 		i = -EINVAL;
+		break;
 	}
 
 	return i;
@@ -1332,8 +1431,8 @@ static ssize_t sec_bat_store(struct device *dev,
 	case BATT_TEST_VALUE:
 		if (sscanf(buf, "%d\n", &x) == 1) {
 			info->test_value = x;
-			printk("%s : test case : %d\n", __func__,
-			       info->test_value);
+			dev_info(info->dev, "%s : test case : %d\n",
+				__func__, info->test_value);
 			ret = count;
 		}
 		break;
@@ -1401,7 +1500,7 @@ static int sec_bat_read_proc(char *buf, char **start,
 	cur_time = ktime_to_timespec(ktime);
 
 	len = sprintf(buf, "%lu, %u, %u, %u, %u, %u, %d, %d, %d, \
-%u, %u, %u, %u, %u, %d, %lu\n",
+%u, %u, %u, %u, %u, %u, %d, %lu\n",
 		cur_time.tv_sec,
 		info->batt_raw_soc,
 		info->batt_soc,
@@ -1415,6 +1514,7 @@ static int sec_bat_read_proc(char *buf, char **start,
 		info->batt_temp_adc,
 		info->batt_health,
 		info->charging_status,
+		info->batt_tmu_status,
 		info->present,
 		info->cable_type,
 		info->charging_passed_time);
@@ -1446,25 +1546,22 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 	}
 	info->fuel_gauge_name = pdata->fuel_gauge_name;
 	info->charger_name = pdata->charger_name;
+	info->sub_charger_name = pdata->sub_charger_name;
 	if (system_rev >= HWREV_FOR_BATTERY) {
 		dev_info(&pdev->dev, "%s: use sub-charger\n", __func__);
 		info->adc_arr_size = pdata->adc_sub_arr_size;
 		info->adc_table = pdata->adc_sub_table;
 		info->adc_channel = pdata->adc_sub_channel;
+		info->use_sub_charger = true;
 	} else {
 		dev_info(&pdev->dev, "%s: use main charger\n", __func__);
 		info->adc_arr_size = pdata->adc_arr_size;
 		info->adc_table = pdata->adc_table;
 		info->adc_channel = pdata->adc_channel;
+		info->use_sub_charger = false;
 	}
 
 	info->get_lpcharging_state = pdata->get_lpcharging_state;
-
-	if (pdata->sub_charger_name) {
-		info->sub_charger_name = pdata->sub_charger_name;
-		if (system_rev >= HWREV_FOR_BATTERY)
-			info->use_sub_charger = true;
-	}
 
 	info->psy_bat.name = "battery",
 	    info->psy_bat.type = POWER_SUPPLY_TYPE_BATTERY,
@@ -1543,6 +1640,8 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 
 	info->test_value = 0;
 
+	info->batt_tmu_status = TMU_STATUS_NORMAL;
+
 	/* init power supplier framework */
 	ret = power_supply_register(&pdev->dev, &info->psy_bat);
 	if (ret) {
@@ -1596,6 +1695,7 @@ static __devinit int sec_bat_probe(struct platform_device *pdev)
 	schedule_delayed_work(&info->vf_check_work, 0);
 #endif
 
+	dev_info(info->dev, "%s: SEC Battery Driver Loaded\n", __func__);
 	return 0;
 
 err_supply_unreg_ac:

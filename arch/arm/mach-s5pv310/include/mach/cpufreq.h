@@ -37,6 +37,7 @@ enum cpufreq_lock_ID{
 	DVFS_LOCK_ID_APP,	/* APP */
 	DVFS_LOCK_ID_PM, 	/* PM */
 	DVFS_LOCK_ID_TSP,   /*TSP*/
+	DVFS_LOCK_ID_TMU,   /*TMU*/
 	DVFS_LOCK_ID_END,
 };
 
@@ -45,3 +46,6 @@ void s5pv310_cpufreq_lock_free(unsigned int nId);
 
 int s5pv310_busfreq_lock(unsigned int nId, enum busfreq_level_request busfreq_level);
 void s5pv310_busfreq_lock_free(unsigned int nId);
+
+int s5pv310_cpufreq_upper_limit(unsigned int nId, enum cpufreq_level_request cpufreq_level);
+void s5pv310_cpufreq_upper_limit_free(unsigned int nId);

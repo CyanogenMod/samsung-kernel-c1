@@ -239,6 +239,8 @@ typedef struct iscan_info {
 	int iscan_ex_param_size;
 } iscan_info_t;
 
+extern void dhd_set_packet_filter(int value, dhd_pub_t *dhd);
+
 /* enable bt coex during dhcp */
 /* #define  COEX_DHCP 1 */
 #define BT_COEX_FIX
@@ -825,6 +827,11 @@ wl_iw_set_btcoex_dhcp(
 		WL_TRACE(("%s: DHCP session starts\n", __FUNCTION__));
 
         dhd->dhcp_in_progress = 1;
+
+		/*disable packet filtering*/
+		if(dhd->early_suspended == 1)
+	        dhd_set_packet_filter(0, dhd);
+		
 #ifdef BTC_PARAM_DHCP
 		/* Retrieve and saved orig regs value */
 		if ((saved_status == FALSE) &&
@@ -881,6 +888,9 @@ wl_iw_set_btcoex_dhcp(
 	else if (strnicmp((char *)&powermode_val, "0", strlen("0")) == 0) {
 #endif
         dhd->dhcp_in_progress = 0; 
+		/* enable packet filter */
+		if(dhd->early_suspended == 1)
+			dhd_set_packet_filter(1, dhd);
 
 		WL_TRACE(("%s: DHCP session done\n", __FUNCTION__));
 
@@ -1571,11 +1581,38 @@ wl_control_wl_start(struct net_device *dev)
 	DHD_OS_MUTEX_LOCK(&wl_start_lock);
 
 	if (g_onoff == G_WLAN_SET_OFF) {
-
+#ifdef MOBILEAP_RELOAD		
+		if ( ap_fw_loaded == TRUE ) {			
+			dhd_dev_reset(dev, 1);
+			msleep(100);
+#if defined(BCMLXSDMMC) 		
+			sdioh_stop(NULL);
+#endif
+			dhd_customer_gpio_wlan_ctrl(WLAN_RESET_OFF);
+			msleep(300);
+			dhd_customer_gpio_wlan_ctrl(WLAN_RESET_ON);
+			msleep(100);
+#if defined(BCMLXSDMMC)
+			sdioh_start(NULL, 0);
+#endif 		
+			dhd_dev_reset(dev, 0);
+#if defined(BCMLXSDMMC)
+			sdioh_start(NULL, 1);
+#endif
+			dhd_dev_init_ioctl(dev);
+		} 
+		else {
+			dhd_deepsleep(dev, 0); /* DeepSleep Off */
+#ifdef CONFIG_HAS_EARLYSUSPEND
+			dhd_set_suspend(0, iw->pub);
+#endif
+		}
+#else /* MOBILEAP_RELOAD */
 		dhd_deepsleep(dev, 0); /* DeepSleep Off */
 #ifdef CONFIG_HAS_EARLYSUSPEND
 		dhd_set_suspend(0, iw->pub);
 #endif
+#endif /* MOBILEAP_RELOAD */
 		g_onoff = G_WLAN_SET_ON;
 	}
 	WL_TRACE(("Exited %s \n", __FUNCTION__));
@@ -1752,6 +1789,12 @@ init_ap_profile_from_string(char *param_str, struct ap_profile *ap_cfg)
 	char sub_cmd[16];
 	int ret = 0;
 
+	/************************************************************************
+	 * Samsung patch for ssid including ',' [PLM P110518-4075] 2011.05.18
+	 ************************************************************************/
+	int j=0;
+	/************************************************************************/
+
 	memset(sub_cmd, 0, sizeof(sub_cmd));
 	memset(ap_cfg, 0, sizeof(struct ap_profile));
 
@@ -1768,6 +1811,16 @@ init_ap_profile_from_string(char *param_str, struct ap_profile *ap_cfg)
 	/*  parse the string and write extracted values into the ap_profile structure */
 	/*  NOTE this function may alter the origibal string */
 	ret = get_parameter_from_string(&str_ptr, "SSID=", PTYPE_STRING, ap_cfg->ssid, SSID_LEN);
+
+	/************************************************************************
+	 * Samsung patch for ssid including ',' [PLM P110518-4075] 2011.05.18
+	 ************************************************************************/
+	for(j=0;j<strlen(ap_cfg->ssid);j++)
+	{
+		if(ap_cfg->ssid[j]== (','-40) || ap_cfg->ssid[j]==('='-40))
+			ap_cfg->ssid[j]+=40;
+	}
+	/************************************************************************/
 
 	ret |= get_parameter_from_string(&str_ptr, "SEC=", PTYPE_STRING,  ap_cfg->sec, SEC_LEN);
 
@@ -2190,7 +2243,7 @@ wl_iw_set_mode(
 
 #ifdef CONFIG_MACH_C1
 	WL_ERROR(("%s: SIOCSIWMODE MODE %d SSS \n", dev->name, *uwrq));
-	if (error = dev_wlc_ioctl(dev, WLC_SET_INFRA, &infra, sizeof(infra)))
+	if ((error = dev_wlc_ioctl(dev, WLC_SET_INFRA, &infra, sizeof(infra))))
 		return error;
 #else
 	error = dev_wlc_ioctl(dev, WLC_SET_INFRA, &infra, sizeof(infra));
@@ -3511,6 +3564,7 @@ wl_iw_iscan_set_scan_broadcast_prep(struct net_device *dev, uint flag)
 			rtnl_lock();
 #endif
 		err = dev_wlc_ioctl(dev, WLC_GET_VALID_CHANNELS, chan_buf, sizeof(chan_buf));
+		g_init_scan_chan_num = 0;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
 		if (flag)
 			rtnl_unlock();
@@ -7146,8 +7200,8 @@ iwpriv_fw_reload(struct net_device *dev,
 	WL_SOFTAP(("current firmware_path[]=%s\n", fw_path));
 	ap_fw_loaded = TRUE;
 	WL_SOFTAP(("%s: FORCE APSTA FW\n", __FUNCTION__));
-	return 0;
 
+	return 0;
 #if 0
 	int ret = -1;
 	char extra[256];
@@ -7179,7 +7233,7 @@ iwpriv_fw_reload(struct net_device *dev,
 			goto exit_proc;
 		}
 
-		if  (strstr(fwstr, "apsta") != NULL) {
+		if  (strstr(fwstr, "aps") != NULL) {
 			  WL_SOFTAP(("GOT APSTA FIRMWARE\n"));
 			  ap_fw_loaded = TRUE;
 		} else {
@@ -7195,7 +7249,7 @@ iwpriv_fw_reload(struct net_device *dev,
 
 exit_proc:
 	return ret;
-#endif
+#endif	
 }
 
 #ifdef SOFTAP

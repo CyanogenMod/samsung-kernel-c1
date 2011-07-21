@@ -107,6 +107,11 @@ resume_with_mmu:
 	add	r4, r4, r9
 	str	r12, [r4]
 
+	mov	r3, #0
+	mcr	p15, 0, r3, c8, c7, 0		@ invalidate TLBs
+
+	dsb
+
 	mov	r0, #1
 	ldmfd	sp!, { r3 - r12, pc }
 

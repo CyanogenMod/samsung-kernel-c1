@@ -469,6 +469,10 @@ config VIDEO_M5MO_USE_SWI2C
 	---help---
 	  Support that M5MO camera module uses SW I2C
 
+config VIDEO_DEBUG_NO_FRAME
+	bool "For debugging capture no frame"
+	depends on VIDEO_FIMC_MIPI && VIDEO_S5K5BAFX
+	
 comment "Video and audio decoders"
 
 source "drivers/media/video/cx25840/Kconfig"

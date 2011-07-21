@@ -30,9 +30,9 @@
 	} while (0)
 
 #ifdef CONFIG_CAM_DEBUG
-#define CAM_DEBUG   (1 << 0)
-#define CAM_TRACE   (1 << 1)
-#define CAM_I2C     (1 << 2)
+#define CAM_DEBUG	(1 << 0)
+#define CAM_TRACE	(1 << 1)
+#define CAM_I2C		(1 << 2)
 
 #define cam_dbg(fmt, ...)	\
 	do { \
@@ -118,10 +118,13 @@ struct m5mo_jpeg {
 };
 
 struct m5mo_focus {
+	unsigned int start:1;
+	unsigned int lock:1;
+	unsigned int touch:1;
+
 	unsigned int mode;
-	unsigned int lock;
 	unsigned int status;
-	unsigned int touch;
+
 	unsigned int pos_x;
 	unsigned int pos_y;
 };
@@ -133,13 +136,13 @@ struct m5mo_exif {
 	u16 iso;
 	int tv;			/* shutter speed */
 	int bv;			/* brightness */
-	int ebv;		/* exposure bias */    
+	int ebv;		/* exposure bias */
 };
 
 struct m5mo_state {
 	struct m5mo_platform_data *pdata;
 	struct v4l2_subdev sd;
-	
+
 	struct wake_lock wake_lock;
 
 	struct m5mo_isp isp;
@@ -150,8 +153,8 @@ struct m5mo_state {
 	enum v4l2_pix_format_mode format_mode;
 	enum v4l2_sensor_mode sensor_mode;
 	enum v4l2_flash_mode flash_mode;
+	enum v4l2_scene_mode scene_mode;
 	int vt_mode;
-	int beauty_mode;
 	int zoom;
 
 	unsigned int fps;
@@ -159,13 +162,16 @@ struct m5mo_state {
 
 	struct m5mo_jpeg jpeg;
 	struct m5mo_exif exif;
-	
-	int check_dataline;
+
 	char *fw_version;
 
 #ifdef CONFIG_CAM_DEBUG
 	u8 dbg_level;
 #endif
+
+	unsigned int face_beauty:1;
+	unsigned int recording:1;
+	unsigned int check_dataline:1;
 };
 
 /* Category */
@@ -194,6 +200,7 @@ struct m5mo_state {
 #define M5MO_SYS_ESD_INT	0x0E
 #define M5MO_SYS_INT_FACTOR	0x10
 #define M5MO_SYS_INT_EN		0x11
+#define M5MO_SYS_ROOT_EN	0x12
 
 /* M5MO_CATEGORY_PARAM: 0x01 */
 #define M5MO_PARM_OUT_SEL	0x00
@@ -201,6 +208,8 @@ struct m5mo_state {
 #define M5MO_PARM_EFFECT	0x0B
 #define M5MO_PARM_FLEX_FPS	0x31
 #define M5MO_PARM_HDMOVIE	0x32
+#define M5MO_PARM_HDR_MON	0x39
+#define M5MO_PARM_HDR_MON_OFFSET_EV	0x3A
 
 /* M5MO_CATEGORY_MON: 0x02 */
 #define M5MO_MON_ZOOM		0x01
@@ -222,7 +231,6 @@ struct m5mo_state {
 #define M5MO_AE_FLICKER		0x06
 #define M5MO_AE_EP_MODE_MON	0x0A
 #define M5MO_AE_EP_MODE_CAP	0x0B
-#define M5MO_AE_AUTO_BRACKET_EV	0x20
 #define M5MO_AE_ONESHOT_MAX_EXP	0x36
 #define M5MO_AE_INDEX		0x38
 
@@ -276,15 +284,13 @@ struct m5mo_state {
 #define M5MO_CAPPARM_AFB_CAP_EN		0x53
 
 /* M5MO_CATEGORY_CAPCTRL: 0x0C */
-#define M5MO_CAPCTRL_CAP_MODE	0x00
-#define M5MO_CAPCTRL_CAP_FRM_COUNT 0x02
 #define M5MO_CAPCTRL_FRM_SEL	0x06
 #define M5MO_CAPCTRL_TRANSFER	0x09
 #define M5MO_CAPCTRL_IMG_SIZE	0x0D
 #define M5MO_CAPCTRL_THUMB_SIZE	0x11
 
 /* M5MO_CATEGORY_ADJST: 0x0E */
-#define M5MO_ADJST_AWB_RG_H	0x3B
+#define M5MO_ADJST_AWB_RG_H	0x3C
 #define M5MO_ADJST_AWB_RG_L	0x3D
 #define M5MO_ADJST_AWB_BG_H	0x3E
 #define M5MO_ADJST_AWB_BG_L	0x3F
@@ -299,8 +305,8 @@ struct m5mo_state {
 #define M5MO_FLASH_SEL		0x13
 
 /* M5MO_CATEGORY_TEST:	0x0D */
-#define M5MO_TEST_OUTPUT_YCO_TEST_DATA	0x1B
-#define M5MO_TEST_ISP_PROCESS		0x59
+#define M5MO_TEST_OUTPUT_YCO_TEST_DATA		0x1B
+#define M5MO_TEST_ISP_PROCESS			0x59
 
 /* M5MO Sensor Mode */
 #define M5MO_SYSINIT_MODE	0x0
