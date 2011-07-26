@@ -53,6 +53,9 @@
 #include <linux/mfd/max8997-private.h>
 #include "tspdrv.h"
 #include "ImmVibeSPI.c"
+
+#define VIBE_DEBUG
+
 #if defined(VIBE_DEBUG) && defined(VIBE_RECORD)
 #include <tspdrvRecorder.c>
 #endif
@@ -673,12 +676,14 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
 
 	case TSPDRV_MAGIC_NUMBER:
 		file->private_data = (void *)TSPDRV_MAGIC_NUMBER;
+                DbgOut((KERN_INFO "tspdrv: TSPDRV_MAGIC_NUMBER\n"));
 		break;
 
 	case TSPDRV_ENABLE_AMP:
 		wake_lock(&vib_wake_lock);
 		ImmVibeSPI_ForceOut_AmpEnable(arg);
 		DbgRecorderReset((arg));
+                DbgOut((KERN_INFO "tspdrv: TSPDRV_ENABLE_AMP\n"));
 		DbgRecord((arg, ";------- TSPDRV_ENABLE_AMP ---------\n"));
 		break;
 
@@ -688,6 +693,7 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
 		if (!g_bStopRequested)
 			ImmVibeSPI_ForceOut_AmpDisable(arg);
 		wake_unlock(&vib_wake_lock);
+                DbgOut((KERN_INFO "tspdrv: TSPDRV_DISABLE_AMP\n"));
 		break;
 
 	case TSPDRV_GET_NUM_ACTUATORS:
