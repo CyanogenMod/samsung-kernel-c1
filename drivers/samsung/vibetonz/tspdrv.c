@@ -686,10 +686,7 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
 		break;
 
 	case TSPDRV_DISABLE_AMP:
-		/* Small fix for now to handle proper combination of TSPDRV_STOP_KERNEL_TIMER and TSPDRV_DISABLE_AMP together */
-		/* If a stop was requested, ignore the request as the amp will be disabled by the timer proc when it's ready */
-		if (!g_bStopRequested)
-			ImmVibeSPI_ForceOut_AmpDisable(arg);
+		ImmVibeSPI_ForceOut_AmpDisable(arg);
 		wake_unlock(&vib_wake_lock);
                 DbgOut((KERN_INFO "tspdrv: TSPDRV_DISABLE_AMP\n"));
 		break;
