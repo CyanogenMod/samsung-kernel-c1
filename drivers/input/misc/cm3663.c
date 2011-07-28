@@ -759,10 +759,6 @@ static int cm3663_i2c_probe(struct i2c_client *client,
 	INIT_WORK(&cm3663->work_light, cm3663_work_func_light);
 	INIT_WORK(&cm3663->work_prox, cm3663_work_func_prox);
 
-        /* 07-28-2011 codeworkx: set initial proximity value as 1 */
-        input_report_abs(input_dev, ABS_DISTANCE, 1);
-        input_sync(input_dev);
-
 	/* allocate lightsensor-level input_device */
 	input_dev = input_allocate_device();
 	if (!input_dev) {
@@ -839,6 +835,10 @@ static int cm3663_i2c_probe(struct i2c_client *client,
 		goto err_light_device_create_file;
 	}
 	dev_set_drvdata(cm3663->switch_cmd_dev, cm3663);
+
+	/* 07-28-2011 codeworkx: set initial proximity value as 1 */
+	input_report_abs(cm3663->proximity_input_dev, ABS_DISTANCE, 1);
+	input_sync(cm3663->proximity_input_dev);
 
 	goto done;
 
