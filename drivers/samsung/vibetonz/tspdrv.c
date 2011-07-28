@@ -30,6 +30,8 @@
 #define __KERNEL__
 #endif
 
+#define VIBE_DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/timer.h>
@@ -53,8 +55,6 @@
 #include <linux/mfd/max8997-private.h>
 #include "tspdrv.h"
 #include "ImmVibeSPI.c"
-
-#define VIBE_DEBUG
 
 #if defined(VIBE_DEBUG) && defined(VIBE_RECORD)
 #include <tspdrvRecorder.c>

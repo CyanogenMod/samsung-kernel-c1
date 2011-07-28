@@ -79,9 +79,9 @@ static void _pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 		prev_period_ns = period_ns;
 
 		pwm_config(pwm, duty_ns, period_ns);
-		DbgOut(KERN_DEBUG "_pwm_config called in [if]\n");
+		DbgOut((KERN_DEBUG "_pwm_config called in [if]\n"));
 	} else
-		DbgOut(KERN_DEBUG "_pwm_config called in [else]\n");
+		DbgOut((KERN_DEBUG "_pwm_config called in [else]\n"));
 }
 
 static void vibe_control_max8997(struct pwm_device *pwm, bool on)
@@ -94,7 +94,7 @@ static void vibe_control_max8997(struct pwm_device *pwm, bool on)
 
 		ret = max8997_write_reg(haptic_i2c, MAX8997_MUIC_REG_INT2, value);
 		if (ret < 0)
-			DbgOut(KERN_ERR "i2c write err in on\n");
+			DbgOut((KERN_ERR "i2c write err in on\n"));
 
 		pwm_enable(pwm);
 	} else {
@@ -104,7 +104,7 @@ static void vibe_control_max8997(struct pwm_device *pwm, bool on)
 
 		ret = max8997_write_reg(haptic_i2c, MAX8997_MUIC_REG_INT2, value);
 		if (ret < 0)
-			DbgOut(KERN_ERR "i2c write err in off\n");
+			DbgOut((KERN_ERR "i2c write err in off\n"));
 	}
 }
 
