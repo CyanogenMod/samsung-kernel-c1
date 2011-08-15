@@ -139,14 +139,16 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 			regulator = regulator_get(NULL, "vmotor");
 
 			if (IS_ERR(regulator)) {
-				DbgOut((KERN_ERR"Failed to get vmoter regulator.\n"));
+				DbgOut((KERN_ERR "Failed to get vmoter regulator.\n"));
 				return 0;
 			}
 
-			regulator_disable(regulator);
+			regulator_force_disable(regulator);
 			regulator_put(regulator);
 
 			regulator_hapticmotor_enabled = 0;
+
+			printk(KERN_DEBUG "tspdrv: %s (%d)\n", __func__, regulator_hapticmotor_enabled);
 		}
 
 		vibe_control_max8997(Immvib_pwm, 0);
@@ -185,7 +187,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 		regulator = regulator_get(NULL, "vmotor");
 
 		if (IS_ERR(regulator)) {
-			DbgOut((KERN_ERR"Failed to get vmoter regulator.\n"));
+			DbgOut((KERN_ERR "Failed to get vmoter regulator.\n"));
 			return 0;
 		}
 
@@ -193,6 +195,8 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 		regulator_put(regulator);
 
 		regulator_hapticmotor_enabled = 1;
+
+		printk(KERN_DEBUG "tspdrv: %s (%d)\n", __func__, regulator_hapticmotor_enabled);
 	}
 
 	return VIBE_S_SUCCESS;
@@ -339,4 +343,5 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
 {
 	return VIBE_S_SUCCESS;
 }
+
 
