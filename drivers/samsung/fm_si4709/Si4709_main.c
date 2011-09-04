@@ -47,8 +47,7 @@ static const struct file_operations Si4709_fops = {
 
 static struct miscdevice Si4709_misc_device = {
 	.minor = MISC_DYNAMIC_MINOR,
-//	.name = "radio0",
-	.name = "fmradio",		
+	.name = "radio0",
 	.fops = &Si4709_fops,
 };
 
@@ -665,7 +664,7 @@ static irqreturn_t Si4709_isr(int irq, void *unused)
 		RDS_Data_Available++;
 		RDS_Groups_Available_till_now++;
 
-		debug_rds("Si4709_isr:RDS_Groups_Available_till_now b/w Power ON/OFF : %d",
+		debug_rds("RDS_Groups_Available_till_now b/w Power ON/OFF : %d",
 			  RDS_Groups_Available_till_now);
 
 		if (RDS_Data_Available > 1)
