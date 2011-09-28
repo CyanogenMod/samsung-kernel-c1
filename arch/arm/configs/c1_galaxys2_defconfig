@@ -1654,6 +1654,7 @@ CONFIG_UMP_MEM_SIZE=512
 # CONFIG_VIDEO_UMP_DEBUG is not set
 CONFIG_VIDEO_MHL_V1=y
 # CONFIG_VIDEO_TSI is not set
+CONFIG_GPU_CLOCK_CONTROL=y
 
 #
 # Reserved memory configurations
