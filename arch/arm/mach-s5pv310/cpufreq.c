@@ -1860,7 +1860,7 @@ static int s5pv310_cpufreq_notifier_event(struct notifier_block *this,
 	case PM_SUSPEND_PREPARE:
 		max = policy->max;
 		min = policy->min;
-		policy->max = policy->min = s5pv310_freq_table[L3].frequency;
+		policy->max = policy->min = s5pv310_freq_table[L4].frequency;
 		ret = cpufreq_driver_target(policy,
 		s5pv310_freq_table[L4].frequency, DISABLE_FURTHER_CPUFREQ);
 		if (WARN_ON(ret < 0))
