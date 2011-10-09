@@ -131,8 +131,8 @@ obj-$(CONFIG_VIDEO_MALI400MP)		+= mali.o
 # Use our defines when compiling
 # MALI
 INCLUDES = \
-		-I$(KBUILD_SRC) \
-		-I$(KBUILD_OUTPUT) \
+        -I$(KBUILD_SRC) \
+        -I$(KBUILD_OUTPUT) \
 		-I$(MALI_FILE_PREFIX)\
 		-I$(MALI_FILE_PREFIX)/platform\
 		-I$(MALI_FILE_PREFIX)/common \

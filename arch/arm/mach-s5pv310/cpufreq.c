@@ -85,6 +85,7 @@ void __iomem *dac_base;
 #define ARMCLOCK_1400MHZ		1400000
 #define ARMCLOCK_1200MHZ		1200000
 #define ARMCLOCK_1000MHZ		1000000
+#define ARMCLOCK_500MHZ			 500000
 
 static int s5pv310_max_armclk;
 
@@ -1134,6 +1135,11 @@ void s5pv310_set_frequency(unsigned int old_index, unsigned int new_index)
 			s5pv310_set_clkdiv(new_index);
 
 			/* 2. Change the apll m,p,s value */
+			if (freqs.new == ARMCLOCK_500MHZ) {
+				regulator_set_voltage(arm_regulator,
+					s5pv310_volt_table[new_index - 1].arm_volt,
+					s5pv310_volt_table[new_index - 1].arm_volt);
+			}
 			s5pv310_set_apll(new_index);
 		}
 #else
@@ -1199,6 +1205,11 @@ void s5pv310_set_frequency(unsigned int old_index, unsigned int new_index)
 			/* Clock Configuration Procedure */
 
 			/* 1. Change the apll m,p,s value */
+			if (freqs.old == ARMCLOCK_500MHZ) {
+				regulator_set_voltage(arm_regulator,
+					s5pv310_volt_table[new_index - 2].arm_volt,
+					s5pv310_volt_table[new_index - 2].arm_volt);
+			}
 			s5pv310_set_apll(new_index);
 
 			/* 2. Change the system clock divider values */
@@ -1281,30 +1292,6 @@ static int s5pv310_target(struct cpufreq_policy *policy,
 
 	if ((index < g_cpufreq_limit_level) && check_gov)
 		index = g_cpufreq_limit_level;
-
-#ifdef CONFIG_S5P_THERMAL
-	printk(KERN_INFO "cooling temp: %dc   flag_info: %d\n",
-					tmu_dev->data.t1, tmu_dev->dvfs_flag);
-
-	if (tmu_dev->dvfs_flag) {
-		cur_temp = readl(tmu_dev->tmu_base + CURRENT_TEMP);
-		printk(KERN_INFO "Current cpu temperature: %dc\n", cur_temp);
-
-		if (cur_temp >= tmu_dev->data.t2)
-			writel(~INTEN0|INTEN1, tmu_dev->tmu_base + INTEN);
-
-		if (cur_temp > tmu_dev->data.t1)
-			index = L2;
-		else {
-			tmu_dev->dvfs_flag = 0;
-			irq_num = s5p_tmu_get_irqno(0);
-			enable_irq(irq_num);
-
-			irq_num = s5p_tmu_get_irqno(1);
-			enable_irq(irq_num);
-		}
-	}
-#endif
 
 	if (s5pv310_max_armclk == ARMCLOCK_1600MHZ) {
 #ifdef CONFIG_FREQ_STEP_UP_L2_L0

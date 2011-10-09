@@ -104,14 +104,17 @@ static int g_nMajor;
 #endif
 
 /* timed_output */
-#if 1
+#ifndef CONFIG_TARGET_LOCALE_NA
 #define VIBRATOR_PERIOD	38022	/* 128 * 205 = 26.240 */
 #else
-#define VIBRATOR_PERIOD	22400	/* 128 * 207 = 26.496 */
+#define VIBRATOR_PERIOD	44643	/* 128 * 175 = 22.4KHz */
 #endif
 
+#ifdef CONFIG_TARGET_LOCALE_NA
+#define VIBRATOR_DUTY		40178	/* 90% of period */
+#else
 #define VIBRATOR_DUTY	34220
-
+#endif /* CONFIG_TARGET_LOCALE_NA */
 
 static void _set_vibetonz_work(struct work_struct *unused);
 
@@ -673,21 +676,21 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
 
 	case TSPDRV_MAGIC_NUMBER:
 		file->private_data = (void *)TSPDRV_MAGIC_NUMBER;
-                DbgOut((KERN_INFO "tspdrv: TSPDRV_MAGIC_NUMBER\n"));
 		break;
 
 	case TSPDRV_ENABLE_AMP:
 		wake_lock(&vib_wake_lock);
 		ImmVibeSPI_ForceOut_AmpEnable(arg);
 		DbgRecorderReset((arg));
-                DbgOut((KERN_INFO "tspdrv: TSPDRV_ENABLE_AMP\n"));
 		DbgRecord((arg, ";------- TSPDRV_ENABLE_AMP ---------\n"));
 		break;
 
 	case TSPDRV_DISABLE_AMP:
-		ImmVibeSPI_ForceOut_AmpDisable(arg);
+		/* Small fix for now to handle proper combination of TSPDRV_STOP_KERNEL_TIMER and TSPDRV_DISABLE_AMP together */
+		/* If a stop was requested, ignore the request as the amp will be disabled by the timer proc when it's ready */
+		if (!g_bStopRequested)
+			ImmVibeSPI_ForceOut_AmpDisable(arg);
 		wake_unlock(&vib_wake_lock);
-                DbgOut((KERN_INFO "tspdrv: TSPDRV_DISABLE_AMP\n"));
 		break;
 
 	case TSPDRV_GET_NUM_ACTUATORS:
@@ -734,5 +737,4 @@ static void platform_release(struct device *dev)
 {
 	DbgOut((KERN_INFO "tspdrv: platform_release.\n"));
 }
-
 

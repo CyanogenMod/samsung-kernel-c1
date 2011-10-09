@@ -29,7 +29,6 @@
 #include <mach/map.h>
 #include <mach/dma.h>
 
-
 #include <plat/devs.h>
 #include <plat/gpio-cfg.h>
 #include <plat/irqs.h>
@@ -1011,7 +1010,6 @@ static struct android_usb_product usb_products[] = {
 		.functions	= usb_functions_accessory_adb,
 	},
 };
-
 // serial number should be changed as real device for commercial release
 static char device_serial[MAX_USB_SERIAL_NUM]="0123456789ABCDEF";
 /* standard android USB platform data */

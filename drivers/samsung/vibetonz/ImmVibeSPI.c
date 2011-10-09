@@ -46,8 +46,10 @@
 #define NUM_ACTUATORS	1
 
 #define PWM_DUTY_MAX    579 /* 13MHz / (579 + 1) = 22.4kHz */
-#if defined (CONFIG_TARGET_LOCALE_KOR) || defined (CONFIG_TARGET_LOCALE_NTT)
+#if defined (CONFIG_TARGET_LOCALE_KOR) || defined (CONFIG_TARGET_LOCALE_NA)
 #define FREQ_COUNT	44643
+#elif defined (CONFIG_TARGET_LOCALE_NTT)
+#define FREQ_COUNT      44138
 #else
 #define FREQ_COUNT	38022
 #endif
@@ -79,9 +81,9 @@ static void _pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 		prev_period_ns = period_ns;
 
 		pwm_config(pwm, duty_ns, period_ns);
-		DbgOut((KERN_DEBUG "_pwm_config called in [if]\n"));
+		DbgOut(KERN_DEBUG "_pwm_config called in [if]\n");
 	} else
-		DbgOut((KERN_DEBUG "_pwm_config called in [else]\n"));
+		DbgOut(KERN_DEBUG "_pwm_config called in [else]\n");
 }
 
 static void vibe_control_max8997(struct pwm_device *pwm, bool on)
@@ -94,7 +96,7 @@ static void vibe_control_max8997(struct pwm_device *pwm, bool on)
 
 		ret = max8997_write_reg(haptic_i2c, MAX8997_MUIC_REG_INT2, value);
 		if (ret < 0)
-			DbgOut((KERN_ERR "i2c write err in on\n"));
+			DbgOut(KERN_ERR "i2c write err in on\n");
 
 		pwm_enable(pwm);
 	} else {
@@ -104,7 +106,7 @@ static void vibe_control_max8997(struct pwm_device *pwm, bool on)
 
 		ret = max8997_write_reg(haptic_i2c, MAX8997_MUIC_REG_INT2, value);
 		if (ret < 0)
-			DbgOut((KERN_ERR "i2c write err in off\n"));
+			DbgOut(KERN_ERR "i2c write err in off\n");
 	}
 }
 
@@ -343,5 +345,4 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
 {
 	return VIBE_S_SUCCESS;
 }
-
 
