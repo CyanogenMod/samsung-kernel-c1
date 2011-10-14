@@ -360,6 +360,7 @@ static struct s3c2410_uartcfg smdkc210_uartcfgs[] __initdata = {
 		.ulcon		= SMDKC210_ULCON_DEFAULT,
 		.ufcon		= SMDKC210_UFCON_DEFAULT,
 		.cfg_gpio	= s3c_setup_uart_cfg_gpio,
+		.wake_peer	= c1_bt_uart_wake_peer,
 	},
 	[1] = {
 		.hwport		= 1,

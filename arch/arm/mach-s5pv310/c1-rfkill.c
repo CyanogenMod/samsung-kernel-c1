@@ -35,7 +35,7 @@
 #include <plat/gpio-cfg.h>
 #include <plat/irqs.h>
 
-#define BT_SLEEP_ENABLE
+/*#define BT_SLEEP_ENABLE*/
 
 #define IRQ_BT_HOST_WAKE      IRQ_EINT(22)
 
