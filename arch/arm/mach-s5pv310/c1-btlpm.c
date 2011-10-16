@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#define DEBUG 1
+
 #include <linux/err.h>
 #include <linux/gpio.h>
 #include <linux/hrtimer.h>
@@ -28,10 +30,10 @@ static struct c1_bt_lpm {
 
 static enum hrtimer_restart bt_enter_lpm(struct hrtimer *timer)
 {
-	gpio_set_value(GPIO_BT_WAKE, 0);
+    gpio_set_value(GPIO_BT_WAKE, 0);
     pr_debug("[BT] GPIO_BT_WAKE = %d\n", gpio_get_value(GPIO_BT_WAKE) );
 
-	return HRTIMER_NORESTART;
+    return HRTIMER_NORESTART;
 }
 
 void c1_bt_uart_wake_peer(struct uart_port *port)
@@ -40,8 +42,11 @@ void c1_bt_uart_wake_peer(struct uart_port *port)
 		return;
 
 	hrtimer_try_to_cancel(&bt_lpm.bt_lpm_timer);
-	gpio_set_value(GPIO_BT_WAKE, 1);
-    pr_debug("[BT] GPIO_BT_WAKE = %d\n", gpio_get_value(GPIO_BT_WAKE) );
+
+    if (!gpio_get_value(GPIO_BT_WAKE)) {
+        gpio_set_value(GPIO_BT_WAKE, 1);
+        pr_debug("[BT] GPIO_BT_WAKE = %d\n", gpio_get_value(GPIO_BT_WAKE) );
+    }
 	hrtimer_start(&bt_lpm.bt_lpm_timer, bt_lpm.bt_lpm_delay, HRTIMER_MODE_REL);
 }
 
