@@ -520,10 +520,11 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 		case DISABLE_BL:
 			printk(KERN_DEBUG "[LED] DISABLE_BL\n");
 
+            /* prevent race with late resume*/
+            down(&enable_sem);
+
 			/* only do this if a notification is on already, do nothing if not */
 			if (led_on == 1) {
-				/* prevent race with late resume*/
-				down(&enable_sem);
 
 				/* disable the regulators */
 				touchkey_led_ldo_on(0);	/* "touch_led" regulator */
@@ -535,9 +536,6 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 				touchkey_enable = 0;
 				led_on = 0;
 
-				/* prevent race */
-				up(&enable_sem);
-
 				/* a notification timeout was set, disable the timer */
 				if (notification_timeout > 0) {
 					del_timer(&notification_timer);
@@ -548,6 +546,10 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 					wake_unlock(&led_wake_lock);
 				}
 			}
+
+            /* prevent race */
+            up(&enable_sem);
+
 			break;
 		}
 	}
@@ -679,6 +681,20 @@ static int melfas_touchkey_late_resume(struct early_suspend *h)
 		/* ensure the light is ON */
 		status = 1;
 		i2c_touchkey_write((u8 *)&status, 1);
+
+        if (led_on) {
+            /* a notification timeout was set, disable the timer */
+            if (notification_timeout > 0) {
+                del_timer(&notification_timer);
+            }
+
+            /* we were using a wakelock, unlock it */
+            if (wake_lock_active(&led_wake_lock)) {
+                wake_unlock(&led_wake_lock);
+            }
+
+            led_on = 0; /* force DISABLE_BL to ignore the led state because we want it left on */
+        }
 	}
 
 	/* restart the timer if needed */
