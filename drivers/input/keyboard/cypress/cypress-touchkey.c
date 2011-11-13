@@ -526,14 +526,15 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 			/* only do this if a notification is on already, do nothing if not */
 			if (led_on == 1) {
 
+#if 0 /* leave touchkey ldos to early_suspend
 				/* disable the regulators */
 				touchkey_led_ldo_on(0);	/* "touch_led" regulator */
 				touchkey_ldo_on(0);	/* "touch" regulator */
-
+				touchkey_enable = 0;
+#endif
 				/* turn off the backlight */
 				status = 2; /* light off */
 				i2c_touchkey_write((u8 *)&status, 1);
-				touchkey_enable = 0;
 				led_on = 0;
 
 				/* a notification timeout was set, disable the timer */
