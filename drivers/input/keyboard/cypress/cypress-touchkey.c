@@ -70,6 +70,7 @@
 #define BL_ALWAYS_OFF	-2
 
 int led_on = 0;
+int screen_on = 0;
 int led_timeout = BL_ALWAYS_ON; /* never time out */
 int notification_timeout = -1; /* never time out */
 int notification_enabled = -1; /* Disabled by default */
@@ -494,6 +495,11 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 		switch (data) {
 		case ENABLE_BL:
 			printk(KERN_DEBUG "[LED] ENABLE_BL\n");
+
+			/* do nothing if the screen is on */
+			if (screen_on == 1)
+				break;
+			
 			if (notification_enabled > 0) {
 				/* we are using a wakelock, activate it */
 				if (!wake_lock_active(&led_wake_lock)) {
@@ -519,19 +525,22 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 
 		case DISABLE_BL:
 			printk(KERN_DEBUG "[LED] DISABLE_BL\n");
-
-		        /* prevent race with late resume*/
-            		down(&enable_sem);
+			
+			/* do nothing if the screen is on */
+			if (screen_on == 1)
+				break;
+			
+		    /* prevent race with late resume*/
+            down(&enable_sem);
 
 			/* only do this if a notification is on already, do nothing if not */
 			if (led_on == 1) {
 
-#if 0 /* leave touchkey ldos to early_suspend
 				/* disable the regulators */
 				touchkey_led_ldo_on(0);	/* "touch_led" regulator */
 				touchkey_ldo_on(0);	/* "touch" regulator */
 				touchkey_enable = 0;
-#endif
+
 				/* turn off the backlight */
 				status = 2; /* light off */
 				i2c_touchkey_write((u8 *)&status, 1);
@@ -548,8 +557,8 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 				}
 			}
 
-            		/* prevent race */
-            		up(&enable_sem);
+            /* prevent race */
+            up(&enable_sem);
 
 			break;
 		}
@@ -645,6 +654,9 @@ static int melfas_touchkey_early_suspend(struct early_suspend *h)
 	/* disable ldo11 */
 	touchkey_ldo_on(0);
 
+	/* indicate the screen is off */
+	screen_on = 0;
+	
 	return 0;
 }
 
@@ -678,20 +690,23 @@ static int melfas_touchkey_late_resume(struct early_suspend *h)
 	touchkey_led_ldo_on(1);
 	touchkey_enable = 1;
 
-        /* see if late_resume is running before DISABLE_BL */
-        if (led_on) {
-            /* if a notification timeout was set, disable the timer */
-            if (notification_timeout > 0) {
-                del_timer(&notification_timer);
-            }
-
-            /* we were using a wakelock, unlock it */
-            if (wake_lock_active(&led_wake_lock)) {
-                wake_unlock(&led_wake_lock);
-            }
-
-            led_on = 0; /* force DISABLE_BL to ignore the led state because we want it left on */
+	/* indicate that the screen is now on */
+	screen_on = 1;
+	
+    /* see if late_resume is running before DISABLE_BL */
+    if (led_on) {
+        /* if a notification timeout was set, disable the timer */
+        if (notification_timeout > 0) {
+            del_timer(&notification_timer);
         }
+
+        /* we were using a wakelock, unlock it */
+        if (wake_lock_active(&led_wake_lock)) {
+            wake_unlock(&led_wake_lock);
+        }
+
+        led_on = 0; /* force DISABLE_BL to ignore the led state because we want it left on */
+    }
 
 	if (led_timeout != BL_ALWAYS_OFF) {
 		/* ensure the light is ON */
