@@ -70,6 +70,7 @@
 #define BL_ALWAYS_OFF	-2
 
 int led_on = 0;
+int screen_on = 1;
 int led_timeout = BL_ALWAYS_ON; /* never time out */
 int notification_timeout = -1; /* never time out */
 int notification_enabled = -1; /* Disabled by default */
@@ -500,12 +501,14 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 					wake_lock(&led_wake_lock);
 				}
 
-				/* enable regulators */
-				touchkey_ldo_on(1);         /* "touch" regulator */
-				touchkey_led_ldo_on(1);		/* "touch_led" regulator */
+				if (!screen_on) {
+					/* enable regulators */
+					touchkey_ldo_on(1);         /* "touch" regulator */
+					touchkey_led_ldo_on(1);		/* "touch_led" regulator */
+					touchkey_enable = 1;
+				}
 
 				/* enable the backlight */
-				touchkey_enable = 1;
 				status = 1;
 				i2c_touchkey_write((u8 *)&status, 1);
 				led_on = 1;
@@ -526,16 +529,17 @@ static ssize_t led_status_write( struct device *dev, struct device_attribute *at
 			/* only do this if a notification is on already, do nothing if not */
 			if (led_on == 1) {
 
-#if 0 /* leave touchkey ldos to early_suspend
-				/* disable the regulators */
-				touchkey_led_ldo_on(0);	/* "touch_led" regulator */
-				touchkey_ldo_on(0);	/* "touch" regulator */
-				touchkey_enable = 0;
-#endif
 				/* turn off the backlight */
 				status = 2; /* light off */
 				i2c_touchkey_write((u8 *)&status, 1);
 				led_on = 0;
+
+				if (!screen_on) {
+					/* disable the regulators */
+					touchkey_led_ldo_on(0);	/* "touch_led" regulator */
+					touchkey_ldo_on(0);	/* "touch" regulator */
+					touchkey_enable = 0;
+				}
 
 				/* a notification timeout was set, disable the timer */
 				if (notification_timeout > 0) {
@@ -644,7 +648,7 @@ static int melfas_touchkey_early_suspend(struct early_suspend *h)
 
 	/* disable ldo11 */
 	touchkey_ldo_on(0);
-
+	screen_on = 0;
 	return 0;
 }
 
@@ -678,20 +682,21 @@ static int melfas_touchkey_late_resume(struct early_suspend *h)
 	touchkey_led_ldo_on(1);
 	touchkey_enable = 1;
 
-        /* see if late_resume is running before DISABLE_BL */
-        if (led_on) {
-            /* if a notification timeout was set, disable the timer */
-            if (notification_timeout > 0) {
-                del_timer(&notification_timer);
-            }
+	screen_on = 1;
+	/* see if late_resume is running before DISABLE_BL */
+	if (led_on) {
+		/* if a notification timeout was set, disable the timer */
+		if (notification_timeout > 0) {
+			del_timer(&notification_timer);
+		}
 
-            /* we were using a wakelock, unlock it */
-            if (wake_lock_active(&led_wake_lock)) {
-                wake_unlock(&led_wake_lock);
-            }
+		/* we were using a wakelock, unlock it */
+		if (wake_lock_active(&led_wake_lock)) {
+			wake_unlock(&led_wake_lock);
+		}
 
-            led_on = 0; /* force DISABLE_BL to ignore the led state because we want it left on */
-        }
+		led_on = 0; /* force DISABLE_BL to ignore the led state because we want it left on */
+	}
 
 	if (led_timeout != BL_ALWAYS_OFF) {
 		/* ensure the light is ON */
